@@ -1,6 +1,8 @@
+use core::str::FromStr;
+
 use appchain_barnacle_runtime::{
 	AccountId, BabeConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
-	SystemConfig, WASM_BINARY,
+	SystemConfig, WASM_BINARY, DeipConfig,
 };
 use sc_service::ChainType;
 use sp_core::{sr25519, Pair, Public};
@@ -16,6 +18,8 @@ use beefy_primitives::crypto::AuthorityId as BeefyId;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_octopus_appchain::AuthorityId as OctopusId;
 use sp_consensus_babe::AuthorityId as BabeId;
+
+use pallet_deip::{DomainId, Domain};
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -85,6 +89,16 @@ pub fn development_config() -> Result<ChainSpec, String> {
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_account_id_from_seed::<sr25519::Public>("Bob"),
 				]),
+                vec![
+					DomainId::from_str("6c4bb3bcf1a88e3b51de88576d592f1f980c5bbb").unwrap(), // Common
+					DomainId::from_str("7c3d37cbfea2513a7e03e674448bbeee8ae3d862").unwrap(), // Biology
+					DomainId::from_str("9f0224709d86e02b9625b5ebf2786b80ba6bed17").unwrap(), // Physics
+					DomainId::from_str("6a8b20f002a7dedf7b873dbc86e0b0051d4fa898").unwrap(), // Chemistry
+					DomainId::from_str("a47bf84ac30d0843accb737d5924434ef3ed0517").unwrap(), // Earth sciences
+					DomainId::from_str("8e2a3711649993a87848337b9b401dcf64425e2d").unwrap(), // Space sciences
+					DomainId::from_str("721e75eb0535e152669b0c3fbbb9e21675483553").unwrap(), // Medicine and health
+					DomainId::from_str("2519ef55e1b69f1a7e13275e3273950cce7e26a8").unwrap(), // Aquaculture
+				],
 				true,
 			)
 		},
@@ -126,6 +140,16 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 					get_account_id_from_seed::<sr25519::Public>("Eve"),
 					get_account_id_from_seed::<sr25519::Public>("Ferdie"),
 				]),
+				vec![
+					DomainId::from_str("6c4bb3bcf1a88e3b51de88576d592f1f980c5bbb").unwrap(), // Common
+					DomainId::from_str("7c3d37cbfea2513a7e03e674448bbeee8ae3d862").unwrap(), // Biology
+					DomainId::from_str("9f0224709d86e02b9625b5ebf2786b80ba6bed17").unwrap(), // Physics
+					DomainId::from_str("6a8b20f002a7dedf7b873dbc86e0b0051d4fa898").unwrap(), // Chemistry
+					DomainId::from_str("a47bf84ac30d0843accb737d5924434ef3ed0517").unwrap(), // Earth sciences
+					DomainId::from_str("8e2a3711649993a87848337b9b401dcf64425e2d").unwrap(), // Space sciences
+					DomainId::from_str("721e75eb0535e152669b0c3fbbb9e21675483553").unwrap(), // Medicine and health
+					DomainId::from_str("2519ef55e1b69f1a7e13275e3273950cce7e26a8").unwrap(), // Aquaculture
+				],
 				true,
 			)
 		},
@@ -148,6 +172,7 @@ fn testnet_genesis(
 	initial_authorities: Vec<(AccountId, BabeId, GrandpaId, ImOnlineId, BeefyId, OctopusId)>,
 	root_key: AccountId,
 	endowed_accounts: Option<Vec<AccountId>>,
+    domains: Vec<DomainId>,
 	_enable_println: bool,
 ) -> GenesisConfig {
 	let mut endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(|| {
@@ -213,5 +238,9 @@ fn testnet_genesis(
 			asset_id_by_name: vec![("usdc.testnet".to_string(), 0)],
 			validators,
 		},
+        deip: DeipConfig {
+            domains: domains.iter().cloned().map(|k|(k, Domain { external_id: k })).collect(),
+            domain_count: domains.len() as u32,
+        },
 	}
 }

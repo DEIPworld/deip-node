@@ -51,6 +51,8 @@ beefy-gadget-rpc = { version = "0.1.0", git = "https://github.com/octopus-networ
 pallet-octopus-appchain = { git = "https://github.com/octopus-network/octopus-pallets", branch = "main" }
 pallet-octopus-lpos = { git = "https://github.com/octopus-network/octopus-pallets", branch = "main" }
 
+pallet-deip = { path = "../pallets/deip", version = "3.0.0"}
+
 [dependencies.frame-benchmarking]
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'

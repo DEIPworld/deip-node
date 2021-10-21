@@ -60,6 +60,10 @@ use sp_runtime::traits::Keccak256;
 /// Import the template pallet.
 pub use pallet_template;
 
+use pallet_deip::*;
+
+mod deip_account;
+
 /// An index to a block.
 pub type BlockNumber = u32;
 
@@ -72,6 +76,9 @@ pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::Account
 
 /// Balance of an account.
 pub type Balance = u128;
+
+/// Balance of an UIAs.
+pub type AssetBalance = u64;
 
 /// Type used for expressing timestamp.
 pub type Moment = u64;
@@ -595,6 +602,87 @@ impl pallet_template::Config for Runtime {
 	type Event = Event;
 }
 
+impl pallet_deip::Config for Runtime {
+    type Event = Event;
+    type DeipAccountId = deip_account::DeipAccountId<Self::AccountId, ()>;
+    type Currency = Balances;
+    type AssetSystem = Self;
+}
+
+impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
+    type Balance = AssetBalance;
+    // type AssetId = AssetId;
+    type AssetId = ();
+
+    fn try_get_tokenized_project(_id: &Self::AssetId) -> Option<ProjectId> {
+        todo!()
+        // DeipAssets::try_get_tokenized_project(id)
+    }
+
+    fn account_balance(_account: &AccountId, _asset: &Self::AssetId) -> Self::Balance {
+        todo!()
+        // DeipAssets::account_balance(account, asset)
+    }
+
+    fn total_supply(_asset: &Self::AssetId) -> Self::Balance {
+        todo!()
+        // DeipAssets::total_supply(asset)
+    }
+
+    fn get_project_nfts(_id: &ProjectId) -> Vec<Self::AssetId> {
+        todo!()
+        // DeipAssets::get_project_nfts(id)
+    }
+
+    fn get_nft_balances(_id: &Self::AssetId) -> Option<Vec<AccountId>> {
+        todo!()
+        // DeipAssets::get_nft_balances(id)
+    }
+
+    fn transactionally_transfer(
+        _from: &AccountId,
+        _asset: Self::AssetId,
+        _transfers: &[(Self::Balance, AccountId)],
+    ) -> Result<(), ()> {
+        todo!()
+        // DeipAssets::transactionally_transfer(from, asset, transfers)
+    }
+
+    fn transactionally_reserve(
+        _account: &AccountId,
+        _id: InvestmentId,
+        _shares: &[(Self::AssetId, Self::Balance)],
+        _asset: Self::AssetId,
+    ) -> Result<(), deip_assets_error::ReserveError<Self::AssetId>> {
+        todo!()
+        // DeipAssets::transactionally_reserve(account, id, shares, asset)
+    }
+
+    fn transactionally_unreserve(_id: InvestmentId) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
+        todo!()
+        // DeipAssets::transactionally_unreserve(id)
+    }
+
+    fn transfer_from_reserved(
+        _id: InvestmentId,
+        _who: &AccountId,
+        _asset: Self::AssetId,
+        _amount: Self::Balance,
+    ) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
+        todo!()
+        // DeipAssets::transfer_from_reserved(id, who, asset, amount)
+    }
+
+    fn transfer_to_reserved(
+        _who: &AccountId,
+        _id: InvestmentId,
+        _amount: Self::Balance,
+    ) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
+        todo!()
+        // DeipAssets::transfer_to_reserved(who, id, amount)
+    }
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -622,6 +710,7 @@ construct_runtime!(
 		Beefy: pallet_beefy::{Pallet, Config<T>},
 		// Include the custom logic from the pallet-template in the runtime.
 		TemplateModule: pallet_template::{Pallet, Call, Storage, Event<T>},
+        Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
 	}
 );
 

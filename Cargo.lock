@@ -151,6 +151,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "jsonrpc-core",
+ "pallet-deip",
  "pallet-im-online",
  "pallet-mmr-rpc",
  "pallet-octopus-appchain",
@@ -201,6 +202,7 @@ name = "appchain-barnacle-runtime"
 version = "3.0.0-monthly-2021-08"
 dependencies = [
  "beefy-primitives",
+ "deip-assets-error",
  "frame-benchmarking",
  "frame-election-provider-support",
  "frame-executive",
@@ -215,6 +217,7 @@ dependencies = [
  "pallet-babe",
  "pallet-balances",
  "pallet-beefy",
+ "pallet-deip",
  "pallet-grandpa",
  "pallet-im-online",
  "pallet-mmr",
@@ -1422,6 +1425,10 @@ dependencies = [
  "data-encoding",
  "syn",
 ]
+
+[[package]]
+name = "deip-assets-error"
+version = "0.1.0"
 
 [[package]]
 name = "derive_more"
@@ -4132,6 +4139,26 @@ dependencies = [
  "pallet-session",
  "parity-scale-codec",
  "serde",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-deip"
+version = "3.0.0"
+dependencies = [
+ "deip-assets-error",
+ "frame-support",
+ "frame-system",
+ "pallet-assets",
+ "pallet-balances",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "parking_lot 0.11.1",
+ "serde",
+ "sp-api",
+ "sp-core",
+ "sp-io",
  "sp-runtime",
  "sp-std",
 ]
