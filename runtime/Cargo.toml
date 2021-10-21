@@ -29,6 +29,16 @@ pallet-octopus-appchain = { default-features = false, git = "https://github.com/
 pallet-octopus-lpos = { default-features = false, git = "https://github.com/octopus-network/octopus-pallets", branch = "main" }
 pallet-octopus-upward-messages = { default-features = false, git = "https://github.com/octopus-network/octopus-pallets", branch = "main" }
 
+[dependencies.deip-assets-error]
+default-features = false
+path = '../deip_common/deip_assets_error'
+version = '0.1.0'
+
+[dependencies.pallet-deip]
+default-features = false
+path = '../pallets/deip'
+version = '3.0.0'
+
 [dependencies.pallet-template]
 default-features = false
 path = '../pallets/template'
@@ -229,6 +239,7 @@ std = [
     'pallet-timestamp/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-transaction-payment/std',
+    'pallet-deip/std',
     'sp-api/std',
     'sp-block-builder/std',
     'sp-consensus-babe/std',

@@ -1,7 +1,8 @@
 [workspace]
 members = [
+    'deip_common/*',
     'node',
-    'pallets/template',
+    'pallets/*',
     'runtime',
 ]
 [profile.release]
