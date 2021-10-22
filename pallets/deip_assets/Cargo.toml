@@ -1,10 +1,10 @@
 [package]
 authors = ['DEIP world <https://github.com/DEIPworld>']
-description = 'FRAME pallet defined DEIP porjects'
+description = 'FRAME pallet that wraps Substrate assets'
 edition = '2018'
 homepage = 'https://deip.world/'
 license = 'Apache-2.0'
-name = 'pallet-deip'
+name = 'pallet-deip-assets'
 repository = 'https://github.com/DEIPworld/deip-polkadot'
 version = '3.0.0'
 
@@ -20,21 +20,16 @@ version = '2.0.0'
 
 [dependencies]
 frame-support = { default-features = false, version = '3.0.0' }
-pallet-timestamp = { default-features = false, version = '3.0.0' }
 frame-system = { default-features = false, version = '3.0.0' }
 sp-std = { default-features = false, version = '3.0.0' }
 sp-runtime = { version = '3.0.0', default-features = false }
-sp-core = { default-features = false, version = '3.0.0' }
+serde = { version = "1.0.123", optional = true, features = ["derive"]}
+pallet-assets = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git" }
 sp-io = { default-features = false, version = '3.0.0' }
-serde = { version = "1.0.119", optional = true, features = ["derive"]}
 deip-assets-error = { path = "../../deip_common/deip_assets_error", default-features = false }
-sp-api = { version = '3.0.0', default-features = false}
 
 [dev-dependencies]
-pallet-balances = { default-features = false, version = '3.0.0' }
-pallet-assets = { default-features = false, version = '3.0.0' }
-pallet-deip-assets = { path = "../deip_assets", default-features = false }
-parking_lot = "0.11.1"
+sp-runtime = { default-features = false, version = '3.0.0' }
 
 [features]
 default = ['std']
@@ -43,10 +38,6 @@ std = [
     'frame-support/std',
     'frame-system/std',
     'sp-std/std',
-    'sp-runtime/std',
-    'sp-core/std',
-    'sp-io/std',
-    'pallet-timestamp/std',
     'serde',
-    "sp-api/std"
+    'pallet-assets/std',
 ]

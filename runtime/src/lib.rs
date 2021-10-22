@@ -532,6 +532,25 @@ impl pallet_assets::Config for Runtime {
 	type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_deip_assets::traits::DeipProjectsInfo<AccountId> for Runtime {
+    type ProjectId = pallet_deip::ProjectId;
+    type InvestmentId = pallet_deip::InvestmentId;
+
+    fn try_get_project_team(id: &Self::ProjectId) -> Option<AccountId> {
+        Deip::try_get_project_team(id)
+    }
+}
+
+parameter_types! {
+    pub const WipePeriod: BlockNumber = DAYS;
+}
+
+impl pallet_deip_assets::Config for Runtime {
+    type ProjectsInfo = Self;
+    type DeipAccountId = deip_account::DeipAccountId<Self::AccountId, ()>;
+    type WipePeriod = WipePeriod;
+}
+
 impl pallet_beefy::Config for Runtime {
 	type BeefyId = BeefyId;
 }
@@ -705,12 +724,13 @@ construct_runtime!(
 		ImOnline: pallet_im_online::{Pallet, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
 		Historical: pallet_session_historical::{Pallet},
 		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage},
-		Assets: pallet_assets::{Pallet, Call, Storage, Event<T>},
+		Assets: pallet_assets::{Pallet, Storage, Event<T>},
 		Mmr: pallet_mmr::{Pallet, Storage},
 		Beefy: pallet_beefy::{Pallet, Config<T>},
 		// Include the custom logic from the pallet-template in the runtime.
 		TemplateModule: pallet_template::{Pallet, Call, Storage, Event<T>},
         Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
+        DeipAssets: pallet_deip_assets::{Pallet, Storage, Call, Config<T>, ValidateUnsigned},
 	}
 );
 
