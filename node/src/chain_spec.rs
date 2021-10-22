@@ -1,6 +1,6 @@
 use core::str::FromStr;
 
-use appchain_barnacle_runtime::{
+use appchain_deip_runtime::{
 	AccountId, BabeConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
 	SystemConfig, WASM_BINARY, DeipConfig,
 	DeipAssetsConfig,
@@ -10,11 +10,11 @@ use sp_core::{sr25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
-use appchain_barnacle_runtime::BeefyConfig;
-use appchain_barnacle_runtime::{
+use appchain_deip_runtime::BeefyConfig;
+use appchain_deip_runtime::{
 	opaque::SessionKeys, Balance, ImOnlineConfig, SessionConfig, DOLLARS,
 };
-use appchain_barnacle_runtime::{OctopusAppchainConfig, OctopusLposConfig};
+use appchain_deip_runtime::{OctopusAppchainConfig, OctopusLposConfig};
 use beefy_primitives::crypto::AuthorityId as BeefyId;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_octopus_appchain::AuthorityId as OctopusId;
@@ -229,7 +229,7 @@ fn testnet_genesis(
 		sudo: SudoConfig { key: root_key.clone() },
 		babe: BabeConfig {
 			authorities: vec![],
-			epoch_config: Some(appchain_barnacle_runtime::BABE_GENESIS_EPOCH_CONFIG),
+			epoch_config: Some(appchain_deip_runtime::BABE_GENESIS_EPOCH_CONFIG),
 		},
 		im_online: ImOnlineConfig { keys: vec![] },
 		grandpa: GrandpaConfig { authorities: vec![] },

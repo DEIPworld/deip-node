@@ -4,9 +4,9 @@ description = 'A minimal template for octopus appchain.'
 edition = '2018'
 homepage = 'https://oct.network/'
 license = 'Apache-2.0'
-name = 'appchain-barnacle'
+name = 'appchain-deip'
 publish = false
-repository = 'https://github.com/octopus-network/barnacle/'
+repository = 'https://github.com/DEIPworld/deip-canary-network/'
 version = '3.0.0-monthly-2021-08'
 build = 'build.rs'
 
@@ -14,13 +14,13 @@ build = 'build.rs'
 targets = ['x86_64-unknown-linux-gnu']
 
 [[bin]]
-name = 'appchain-barnacle'
+name = 'appchain-deip'
 [build-dependencies.substrate-build-script-utils]
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'
 version = '3.0.0'
 
-[dependencies.appchain-barnacle-runtime]
+[dependencies.appchain-deip-runtime]
 path = '../runtime'
 version = '3.0.0-monthly-2021-08'
 
@@ -199,4 +199,4 @@ version = '3.0.0'
 
 [features]
 default = []
-runtime-benchmarks = ['appchain-barnacle-runtime/runtime-benchmarks']
+runtime-benchmarks = ['appchain-deip-runtime/runtime-benchmarks']
