@@ -77,8 +77,9 @@ pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::Account
 /// Balance of an account.
 pub type Balance = u128;
 
+pub type AssetId = u32;
 /// Balance of an UIAs.
-pub type AssetBalance = u64;
+pub type AssetBalance = u128;
 
 /// Type used for expressing timestamp.
 pub type Moment = u64;
@@ -518,8 +519,8 @@ parameter_types! {
 
 impl pallet_assets::Config for Runtime {
 	type Event = Event;
-	type Balance = u128;
-	type AssetId = u32;
+	type Balance = AssetBalance;
+	type AssetId = AssetId;
 	type Currency = Balances;
 	type ForceOrigin = EnsureRoot<AccountId>;
 	type AssetDeposit = AssetDeposit;
@@ -630,75 +631,64 @@ impl pallet_deip::Config for Runtime {
 
 impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
     type Balance = AssetBalance;
-    // type AssetId = AssetId;
-    type AssetId = ();
+    type AssetId = AssetId;
 
-    fn try_get_tokenized_project(_id: &Self::AssetId) -> Option<ProjectId> {
-        todo!()
-        // DeipAssets::try_get_tokenized_project(id)
+    fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId> {
+        DeipAssets::try_get_tokenized_project(id)
     }
 
-    fn account_balance(_account: &AccountId, _asset: &Self::AssetId) -> Self::Balance {
-        todo!()
-        // DeipAssets::account_balance(account, asset)
+    fn account_balance(account: &AccountId, asset: &Self::AssetId) -> Self::Balance {
+        DeipAssets::account_balance(account, asset)
     }
 
-    fn total_supply(_asset: &Self::AssetId) -> Self::Balance {
-        todo!()
-        // DeipAssets::total_supply(asset)
+    fn total_supply(asset: &Self::AssetId) -> Self::Balance {
+        DeipAssets::total_supply(asset)
     }
 
-    fn get_project_nfts(_id: &ProjectId) -> Vec<Self::AssetId> {
-        todo!()
-        // DeipAssets::get_project_nfts(id)
+    fn get_project_nfts(id: &ProjectId) -> Vec<Self::AssetId> {
+        DeipAssets::get_project_nfts(id)
     }
 
-    fn get_nft_balances(_id: &Self::AssetId) -> Option<Vec<AccountId>> {
-        todo!()
-        // DeipAssets::get_nft_balances(id)
+    fn get_nft_balances(id: &Self::AssetId) -> Option<Vec<AccountId>> {
+        DeipAssets::get_nft_balances(id)
     }
 
     fn transactionally_transfer(
-        _from: &AccountId,
-        _asset: Self::AssetId,
-        _transfers: &[(Self::Balance, AccountId)],
+        from: &AccountId,
+        asset: Self::AssetId,
+        transfers: &[(Self::Balance, AccountId)],
     ) -> Result<(), ()> {
-        todo!()
-        // DeipAssets::transactionally_transfer(from, asset, transfers)
+        DeipAssets::transactionally_transfer(from, asset, transfers)
     }
 
     fn transactionally_reserve(
-        _account: &AccountId,
-        _id: InvestmentId,
-        _shares: &[(Self::AssetId, Self::Balance)],
-        _asset: Self::AssetId,
+        account: &AccountId,
+        id: InvestmentId,
+        shares: &[(Self::AssetId, Self::Balance)],
+        asset: Self::AssetId,
     ) -> Result<(), deip_assets_error::ReserveError<Self::AssetId>> {
-        todo!()
-        // DeipAssets::transactionally_reserve(account, id, shares, asset)
+        DeipAssets::transactionally_reserve(account, id, shares, asset)
     }
 
-    fn transactionally_unreserve(_id: InvestmentId) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
-        todo!()
-        // DeipAssets::transactionally_unreserve(id)
+    fn transactionally_unreserve(id: InvestmentId) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
+        DeipAssets::transactionally_unreserve(id)
     }
 
     fn transfer_from_reserved(
-        _id: InvestmentId,
-        _who: &AccountId,
-        _asset: Self::AssetId,
-        _amount: Self::Balance,
+        id: InvestmentId,
+        who: &AccountId,
+        asset: Self::AssetId,
+        amount: Self::Balance,
     ) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
-        todo!()
-        // DeipAssets::transfer_from_reserved(id, who, asset, amount)
+        DeipAssets::transfer_from_reserved(id, who, asset, amount)
     }
 
     fn transfer_to_reserved(
-        _who: &AccountId,
-        _id: InvestmentId,
-        _amount: Self::Balance,
+        who: &AccountId,
+        id: InvestmentId,
+        amount: Self::Balance,
     ) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
-        todo!()
-        // DeipAssets::transfer_to_reserved(who, id, amount)
+        DeipAssets::transfer_to_reserved(who, id, amount)
     }
 }
 
