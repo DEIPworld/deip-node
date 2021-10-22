@@ -1,0 +1,45 @@
+[package]
+authors = ['DEIP world <https://github.com/DEIPworld>']
+description = 'FRAME pallet defined DAO developed by DEIP'
+edition = '2018'
+homepage = 'https://deip.world/'
+license = 'Apache-2.0'
+name = 'pallet-deip-dao'
+repository = 'https://github.com/DEIPworld/deip-polkadot'
+version = '3.0.0'
+
+[package.metadata.docs.rs]
+targets = ['x86_64-unknown-linux-gnu']
+
+# alias "parity-scale-code" to "codec"
+[dependencies.codec]
+default-features = false
+features = ['derive']
+package = 'parity-scale-codec'
+version = '2.0.0'
+
+[dependencies]
+frame-support = { default-features = false, version = '3.0.0' }
+frame-system = { default-features = false, version = '3.0.0' }
+sp-std = { default-features = false, version = '3.0.0' }
+sp-runtime = { version = '3.0.0', default-features = false }
+sp-core = { default-features = false, version = '3.0.0' }
+serde = { version = "1.0.123", optional = true, features = ["derive"]}
+deip-storage-ops = { path = "../../deip_common/deip_storage_ops", default-features = false }
+sp-api = { version = '3.0.0', default-features = false}
+sp-io = { default-features = false, version = '3.0.0' }
+
+[dev-dependencies]
+sp-runtime = { default-features = false, version = '3.0.0' }
+
+[features]
+default = ['std']
+std = [
+    'codec/std',
+    'frame-support/std',
+    'frame-system/std',
+    'sp-std/std', 
+    'serde',
+    'deip-storage-ops/std',
+    "sp-api/std"
+]

@@ -548,7 +548,7 @@ parameter_types! {
 
 impl pallet_deip_assets::Config for Runtime {
     type ProjectsInfo = Self;
-    type DeipAccountId = deip_account::DeipAccountId<Self::AccountId, ()>;
+    type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
     type WipePeriod = WipePeriod;
 }
 
@@ -624,7 +624,7 @@ impl pallet_template::Config for Runtime {
 
 impl pallet_deip::Config for Runtime {
     type Event = Event;
-    type DeipAccountId = deip_account::DeipAccountId<Self::AccountId, ()>;
+    type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
     type Currency = Balances;
     type AssetSystem = Self;
 }
@@ -637,9 +637,14 @@ parameter_types! {
 impl pallet_deip_proposal::pallet::Config for Runtime {
     type Event = Event;
     type Call = Call;
-    type DeipAccountId = deip_account::DeipAccountId<Self::AccountId, ()>;
+    type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
     type Ttl = ProposalTtl;
     type ExpirePeriod = ProposalExpirePeriod;
+}
+
+impl pallet_deip_dao::Config for Runtime {
+    type Event = Event;
+    type Call = Call;
 }
 
 impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
@@ -735,6 +740,7 @@ construct_runtime!(
         Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
         DeipAssets: pallet_deip_assets::{Pallet, Storage, Call, Config<T>, ValidateUnsigned},
         DeipProposal: pallet_deip_proposal::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
+        DeipDao: pallet_deip_dao::{Pallet, Call, Storage, Event<T>, Config},
 	}
 );
 

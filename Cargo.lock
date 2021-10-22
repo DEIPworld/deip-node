@@ -220,6 +220,7 @@ dependencies = [
  "pallet-beefy",
  "pallet-deip",
  "pallet-deip-assets",
+ "pallet-deip-dao",
  "pallet-deip-proposal",
  "pallet-grandpa",
  "pallet-im-online",
@@ -4184,6 +4185,22 @@ dependencies = [
  "pallet-assets",
  "parity-scale-codec",
  "serde",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-deip-dao"
+version = "3.0.0"
+dependencies = [
+ "deip-storage-ops",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "serde",
+ "sp-api",
+ "sp-core",
  "sp-io",
  "sp-runtime",
  "sp-std",
