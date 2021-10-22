@@ -629,6 +629,19 @@ impl pallet_deip::Config for Runtime {
     type AssetSystem = Self;
 }
 
+parameter_types! {
+    pub const ProposalTtl: u64 = 7 * DAYS as u64 * MILLISECS_PER_BLOCK;
+    pub const ProposalExpirePeriod: BlockNumber = HOURS;
+}
+
+impl pallet_deip_proposal::pallet::Config for Runtime {
+    type Event = Event;
+    type Call = Call;
+    type DeipAccountId = deip_account::DeipAccountId<Self::AccountId, ()>;
+    type Ttl = ProposalTtl;
+    type ExpirePeriod = ProposalExpirePeriod;
+}
+
 impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
     type Balance = AssetBalance;
     type AssetId = AssetId;
@@ -721,6 +734,7 @@ construct_runtime!(
 		TemplateModule: pallet_template::{Pallet, Call, Storage, Event<T>},
         Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
         DeipAssets: pallet_deip_assets::{Pallet, Storage, Call, Config<T>, ValidateUnsigned},
+        DeipProposal: pallet_deip_proposal::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
 	}
 );
 

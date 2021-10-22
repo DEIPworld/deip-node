@@ -4,6 +4,7 @@ use appchain_deip_runtime::{
 	AccountId, BabeConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
 	SystemConfig, WASM_BINARY, DeipConfig,
 	DeipAssetsConfig,
+    DeipProposalConfig,
 };
 use sc_service::ChainType;
 use sp_core::{sr25519, Pair, Public};
@@ -249,5 +250,6 @@ fn testnet_genesis(
             balances: endowed_accounts.iter().cloned().map(|k|(k, SerializableAssetBalance((1u64 << 60).into()))).collect(),
             ..Default::default()
         },
+        deip_proposal: DeipProposalConfig {},
 	}
 }

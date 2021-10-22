@@ -220,6 +220,7 @@ dependencies = [
  "pallet-beefy",
  "pallet-deip",
  "pallet-deip-assets",
+ "pallet-deip-proposal",
  "pallet-grandpa",
  "pallet-im-online",
  "pallet-mmr",
@@ -1431,6 +1432,13 @@ dependencies = [
 [[package]]
 name = "deip-assets-error"
 version = "0.1.0"
+
+[[package]]
+name = "deip-storage-ops"
+version = "0.1.0"
+dependencies = [
+ "sp-std",
+]
 
 [[package]]
 name = "derive_more"
@@ -4176,6 +4184,22 @@ dependencies = [
  "pallet-assets",
  "parity-scale-codec",
  "serde",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-deip-proposal"
+version = "3.0.0"
+dependencies = [
+ "deip-storage-ops",
+ "frame-support",
+ "frame-system",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
  "sp-io",
  "sp-runtime",
  "sp-std",

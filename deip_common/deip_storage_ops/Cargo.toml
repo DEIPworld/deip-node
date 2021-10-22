@@ -1,0 +1,24 @@
+[package]
+name = "deip-storage-ops"
+version = "0.1.0"
+edition = "2018"
+description = 'Set of abstractions over storage operations'
+authors = ['DEIP world <https://github.com/DEIPworld>']
+homepage = 'https://deip.world/'
+license = 'Apache-2.0'
+repository = 'https://github.com/DEIPworld/deip-polkadot'
+
+[dependencies]
+#sp-std = { default-features = false, version = '3.0.0' }
+
+[dependencies.sp-std]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[features]
+default = ['std']
+std = [
+    'sp-std/std', 
+]
