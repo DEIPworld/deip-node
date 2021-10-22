@@ -49,6 +49,11 @@ default-features = false
 path = '../pallets/deip_proposal'
 version = '3.0.0'
 
+[dependencies.pallet-deip-dao]
+default-features = false
+path = '../pallets/deip_dao'
+version = '3.0.0'
+
 [dependencies.pallet-template]
 default-features = false
 path = '../pallets/template'
@@ -252,6 +257,7 @@ std = [
     'pallet-deip/std',
     'pallet-deip-assets/std',
     'pallet-deip-proposal/std',
+    'pallet-deip-dao/std',
     'sp-api/std',
     'sp-block-builder/std',
     'sp-consensus-babe/std',
