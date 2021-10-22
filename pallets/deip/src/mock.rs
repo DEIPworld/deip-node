@@ -30,12 +30,12 @@ frame_support::construct_runtime!(
         NodeBlock = Block,
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
-        System: frame_system::{Module, Call, Config, Storage, Event<T>},
-        Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
-        Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
-        Deip: pallet_deip::{Module, Call, Storage, Event<T>, Config},
-        Assets: pallet_assets::{Module, Storage, Event<T>},
-        // DeipAssets: pallet_deip_assets::{Module, Storage, Call},
+        System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+        Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+        Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+        Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config},
+        Assets: pallet_assets::{Pallet, Storage, Event<T>},
+        DeipAssets: pallet_deip_assets::{Pallet, Storage, Call},
     }
 );
 
@@ -67,15 +67,19 @@ impl system::Config for Test {
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
     type SS58Prefix = SS58Prefix;
+    type OnSetCode = ();
 }
 
 parameter_types! {
     pub const ExistentialDeposit: u64 = 1;
     pub const MaxLocks: u32 = 1024;
+    pub const MaxReserves: u32 = 50;
 }
 
 impl pallet_balances::Config for Test {
     type MaxLocks = MaxLocks;
+    type MaxReserves = MaxReserves;
+    type ReserveIdentifier = [u8; 8];
     type Balance = Balance;
     type DustRemoval = ();
     type Event = Event;
@@ -166,8 +170,7 @@ impl pallet_timestamp::Config for Test {
 }
 
 parameter_types! {
-    pub const AssetDepositBase: Balance = 0;
-    pub const AssetDepositPerZombie: Balance = 0;
+    pub const AssetDeposit: Balance = 0;
     pub const ApprovalDeposit: Balance = 0;
     pub const StringLimit: u32 = 50;
     pub const MetadataDepositBase: Balance = 0;
@@ -180,32 +183,34 @@ impl pallet_assets::Config for Test {
     type AssetId = u32;
     type Currency = Balances;
     type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
-    type AssetDepositBase = AssetDepositBase;
-    type AssetDepositPerZombie = AssetDepositPerZombie;
+    type AssetDeposit = AssetDeposit;
     type StringLimit = StringLimit;
     type MetadataDepositBase = MetadataDepositBase;
     type MetadataDepositPerByte = MetadataDepositPerByte;
+    type ApprovalDeposit = ApprovalDeposit;
+    type Freezer = ();
+    type Extra = ();
     type WeightInfo = pallet_assets::weights::SubstrateWeight<Test>;
 }
 
 parameter_types! {
-	pub const WipePeriod: u64 = 10;
+    pub const WipePeriod: u64 = 10;
 }
 
-// impl pallet_deip_assets::traits::DeipProjectsInfo<AccountId> for Test {
-//     type ProjectId = pallet_deip::ProjectId;
-//     type InvestmentId = pallet_deip::InvestmentId;
-// 
-//     fn try_get_project_team(id: &Self::ProjectId) -> Option<AccountId> {
-//         Deip::try_get_project_team(id)
-//     }
-// }
+impl pallet_deip_assets::traits::DeipProjectsInfo<AccountId> for Test {
+    type ProjectId = pallet_deip::ProjectId;
+    type InvestmentId = pallet_deip::InvestmentId;
 
-// impl pallet_deip_assets::Config for Test {
-//     type ProjectsInfo = Self;
-//     type DeipAccountId = Self::AccountId;
-//     type WipePeriod = WipePeriod;
-// }
+    fn try_get_project_team(id: &Self::ProjectId) -> Option<AccountId> {
+        Deip::try_get_project_team(id)
+    }
+}
+
+impl pallet_deip_assets::Config for Test {
+    type ProjectsInfo = Self;
+    type DeipAccountId = Self::AccountId;
+    type WipePeriod = WipePeriod;
+}
 
 impl<LocalCall> system::offchain::SendTransactionTypes<LocalCall> for Test
 where

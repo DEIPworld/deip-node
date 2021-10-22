@@ -3,6 +3,7 @@ use core::str::FromStr;
 use appchain_barnacle_runtime::{
 	AccountId, BabeConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
 	SystemConfig, WASM_BINARY, DeipConfig,
+	DeipAssetsConfig,
 };
 use sc_service::ChainType;
 use sp_core::{sr25519, Pair, Public};
@@ -20,6 +21,7 @@ use pallet_octopus_appchain::AuthorityId as OctopusId;
 use sp_consensus_babe::AuthorityId as BabeId;
 
 use pallet_deip::{DomainId, Domain};
+use pallet_deip_assets::SerializableAssetBalance;
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -224,7 +226,7 @@ fn testnet_genesis(
 				.collect::<Vec<_>>(),
 		},
 		octopus_lpos: OctopusLposConfig { era_payout: 1024, ..Default::default() },
-		sudo: SudoConfig { key: root_key },
+		sudo: SudoConfig { key: root_key.clone() },
 		babe: BabeConfig {
 			authorities: vec![],
 			epoch_config: Some(appchain_barnacle_runtime::BABE_GENESIS_EPOCH_CONFIG),
@@ -241,6 +243,11 @@ fn testnet_genesis(
         deip: DeipConfig {
             domains: domains.iter().cloned().map(|k|(k, Domain { external_id: k })).collect(),
             domain_count: domains.len() as u32,
+        },
+        deip_assets: DeipAssetsConfig {
+            core_asset_admin: root_key,
+            balances: endowed_accounts.iter().cloned().map(|k|(k, SerializableAssetBalance((1u64 << 60).into()))).collect(),
+            ..Default::default()
         },
 	}
 }

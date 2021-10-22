@@ -52,6 +52,7 @@ pallet-octopus-appchain = { git = "https://github.com/octopus-network/octopus-pa
 pallet-octopus-lpos = { git = "https://github.com/octopus-network/octopus-pallets", branch = "main" }
 
 pallet-deip = { path = "../pallets/deip", version = "3.0.0"}
+pallet-deip-assets = { path = "../pallets/deip_assets", version = "3.0.0"}
 
 [dependencies.frame-benchmarking]
 git = 'https://github.com/paritytech/substrate.git'
