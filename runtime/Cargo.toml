@@ -4,9 +4,9 @@ description = 'Substrate FRAME based template for composing and building WASM ru
 edition = '2018'
 homepage = 'https://oct.network'
 license = 'Apache-2.0'
-name = 'appchain-barnacle-runtime'
+name = 'appchain-deip-runtime'
 publish = false
-repository = 'https://github.com/octopus-network/barnacle'
+repository = 'https://github.com/DEIPworld/deip-canary-network/'
 version = '3.0.0-monthly-2021-08'
 
 [package.metadata.docs.rs]

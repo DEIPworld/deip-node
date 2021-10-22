@@ -22,8 +22,8 @@
 
 use std::sync::Arc;
 use sc_consensus_babe;
-use appchain_barnacle_runtime::opaque::Block;
-use appchain_barnacle_runtime::RuntimeApi;
+use appchain_deip_runtime::opaque::Block;
+use appchain_deip_runtime::RuntimeApi;
 use sc_service::{
 	config::Configuration, error::Error as ServiceError, RpcHandlers, TaskManager,
 };
@@ -40,8 +40,8 @@ use sc_finality_grandpa as grandpa;
 // Our native executor instance.
 native_executor_instance!(
 	pub Executor,
-	appchain_barnacle_runtime::api::dispatch,
-	appchain_barnacle_runtime::native_version,
+	appchain_deip_runtime::api::dispatch,
+	appchain_deip_runtime::native_version,
 	frame_benchmarking::benchmarking::HostFunctions,
 );
 
