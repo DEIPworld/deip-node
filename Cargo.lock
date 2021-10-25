@@ -148,9 +148,11 @@ dependencies = [
  "beefy-gadget",
  "beefy-gadget-rpc",
  "beefy-primitives",
+ "deip-proposal-rpc",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "jsonrpc-core",
+ "jsonrpc-pubsub",
  "pallet-deip",
  "pallet-deip-assets",
  "pallet-im-online",
@@ -1463,6 +1465,28 @@ dependencies = [
 [[package]]
 name = "deip-assets-error"
 version = "0.1.0"
+
+[[package]]
+name = "deip-proposal-rpc"
+version = "3.0.0"
+dependencies = [
+ "common-deip-call",
+ "common-deip-rpc",
+ "frame-support",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "pallet-deip-proposal",
+ "parity-scale-codec",
+ "sc-rpc-api",
+ "serde",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
 
 [[package]]
 name = "deip-storage-ops"
