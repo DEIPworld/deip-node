@@ -1084,6 +1084,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "common-deip-rpc"
+version = "0.0.0"
+dependencies = [
+ "frame-support",
+ "jsonrpc-core",
+ "parity-scale-codec",
+ "sc-rpc-api",
+ "serde",
+ "sp-core",
+ "sp-runtime",
+]
+
+[[package]]
 name = "concurrent-queue"
 version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
