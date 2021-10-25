@@ -1031,4 +1031,44 @@ impl_runtime_apis! {
 			Ok(batches)
 		}
 	}
+
+    impl pallet_deip_dao::api::DeipDaoRuntimeApi<Block, AccountId> for Runtime {
+        fn get(name: pallet_deip_dao::dao::DaoId) -> pallet_deip_dao::api::GetResult<AccountId> {
+            DeipDao::rpc_get(name)
+        }
+
+        fn get_multi(names: Vec<pallet_deip_dao::dao::DaoId>) -> pallet_deip_dao::api::GetMultiResult<AccountId> {
+            DeipDao::rpc_get_multi(names)
+        }
+    }
+
+    impl pallet_deip::api::DeipApi<Block, AccountId, Moment, AssetId, AssetBalance, Hash> for Runtime {
+        fn get_project(project_id: &ProjectId) -> Option<ProjectOf<crate::Runtime>> {
+            Deip::get_project(project_id)
+        }
+
+        fn get_project_content(id: &ProjectContentId) -> Option<ProjectContentOf<crate::Runtime>> {
+            Deip::get_project_content(id)
+        }
+
+        fn get_domain(domain_id: &DomainId) -> Option<Domain> {
+            Deip::get_domain(domain_id)
+        }
+
+        fn get_nda(nda_id: &NdaId) -> Option<NdaOf<crate::Runtime>> {
+            Deip::get_nda(nda_id)
+        }
+
+        fn get_review(id: &ReviewId) -> Option<ReviewOf<crate::Runtime>> {
+            Deip::get_review(id)
+        }
+
+        fn get_investment_opportunity(id: &InvestmentId) -> Option<SimpleCrowdfundingOf<crate::Runtime>> {
+            Deip::get_investment_opportunity(id)
+        }
+
+        fn get_contract_agreement(id: &ContractAgreementId) -> Option<ContractAgreementOf<crate::Runtime>> {
+            Deip::get_contract_agreement(id)
+        }
+    }
 }
