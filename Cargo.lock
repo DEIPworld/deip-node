@@ -236,6 +236,7 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "parity-scale-codec",
+ "serde",
  "sp-api",
  "sp-block-builder",
  "sp-consensus-babe",
@@ -1064,6 +1065,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ddfc5b9aa5d4507acaf872de71051dfd0e309860e88966e1051e462a077aac4f"
 dependencies = [
  "bitflags",
+]
+
+[[package]]
+name = "common-deip-call"
+version = "0.0.0"
+dependencies = [
+ "appchain-deip-runtime",
+ "frame-support",
+ "pallet-deip",
+ "pallet-deip-assets",
+ "pallet-deip-dao",
+ "pallet-deip-proposal",
+ "parity-scale-codec",
+ "serde",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]

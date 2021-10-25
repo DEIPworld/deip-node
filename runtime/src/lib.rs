@@ -62,7 +62,7 @@ pub use pallet_template;
 
 use pallet_deip::*;
 
-mod deip_account;
+pub mod deip_account;
 
 /// An index to a block.
 pub type BlockNumber = u32;
