@@ -7,7 +7,7 @@
 
 use std::sync::Arc;
 
-use appchain_deip_runtime::{opaque::Block, AccountId, Balance, BlockNumber, Hash, Index, Moment};
+use appchain_deip_runtime::{opaque::Block, AccountId, Balance, BlockNumber, Hash, Index, Moment, AssetId, AssetBalance};
 use sc_client_api::{AuxStore, BlockchainEvents, ExecutorProvider, ProofProvider, StorageProvider, BlockBackend};
 use sc_consensus_babe::{Config, Epoch};
 use sc_consensus_babe_rpc::BabeRpcHandler;
@@ -184,8 +184,8 @@ where
 		),
 	));
 
-	let subscriptions = SubscriptionManager::new(Arc::new(subscription_executor));
-	let (state, _) = sc_rpc::state::new_full(client, subscriptions, deny_unsafe, None);
+	let subscriptions = SubscriptionManager::new(Arc::new(subscription_executor.clone()));
+	let (state, _) = sc_rpc::state::new_full(client.clone(), subscriptions, deny_unsafe, None);
 
 	io.extend_with(deip_proposal_rpc::DeipProposalRpcApi::<
 		<Block as BlockT>::Hash,
@@ -193,6 +193,20 @@ where
 		Moment,
 		deip_proposal_rpc::Call<appchain_deip_runtime::Call>
 	>::to_delegate(deip_proposal_rpc::DeipProposalRpcApiObj::<
+		sc_rpc::state::State<Block, C>,
+		Block,
+	>::new(state)));
+
+	let subscriptions = SubscriptionManager::new(Arc::new(subscription_executor));
+	let (state, _) = sc_rpc::state::new_full(client, subscriptions, deny_unsafe, None);
+
+	io.extend_with(deip_assets_rpc::DeipAssetsRpc::<
+		<Block as BlockT>::Hash,
+		AssetId,
+		AssetBalance,
+		AccountId,
+		Balance,
+	>::to_delegate(deip_assets_rpc::DeipAssetsRpcObj::<
 		sc_rpc::state::State<Block, C>,
 		Block,
 	>::new(state)));
