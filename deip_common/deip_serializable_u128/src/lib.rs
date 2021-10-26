@@ -21,7 +21,7 @@ use sp_std::convert::TryInto;
 			"arbitrary_precision" doesn't work and hence can't be used.
 */
 
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+#[derive(Encode, Decode, Default, Clone, RuntimeDebug, PartialEq, Eq)]
 pub struct SerializableAtLeast32BitUnsigned<T: Clone + AtLeast32BitUnsigned>(pub T);
 
 const STRUCT_NAME: &str = "u128";

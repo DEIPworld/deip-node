@@ -151,6 +151,7 @@ dependencies = [
  "deip-assets-rpc",
  "deip-dao-rpc",
  "deip-proposal-rpc",
+ "deip-rpc",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "jsonrpc-core",
@@ -1532,6 +1533,26 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "deip-rpc"
+version = "1.0.0"
+dependencies = [
+ "common-deip-rpc",
+ "frame-support",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "pallet-deip",
+ "parity-scale-codec",
+ "sc-rpc-api",
+ "serde",
+ "serde_json",
+ "sp-api",
+ "sp-blockchain",
+ "sp-rpc 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -4421,7 +4442,7 @@ dependencies = [
  "sp-api",
  "sp-blockchain",
  "sp-core",
- "sp-rpc",
+ "sp-rpc 3.0.0 (git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8)",
  "sp-runtime",
 ]
 
@@ -4611,7 +4632,7 @@ dependencies = [
  "sp-api",
  "sp-blockchain",
  "sp-core",
- "sp-rpc",
+ "sp-rpc 3.0.0 (git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8)",
  "sp-runtime",
 ]
 
@@ -6398,7 +6419,7 @@ dependencies = [
  "sp-core",
  "sp-keystore",
  "sp-offchain",
- "sp-rpc",
+ "sp-rpc 3.0.0 (git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8)",
  "sp-runtime",
  "sp-session",
  "sp-state-machine",
@@ -6426,7 +6447,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sp-core",
- "sp-rpc",
+ "sp-rpc 3.0.0 (git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8)",
  "sp-runtime",
  "sp-tracing",
  "sp-transaction-pool",
@@ -6596,7 +6617,7 @@ dependencies = [
  "sp-block-builder",
  "sp-blockchain",
  "sp-core",
- "sp-rpc",
+ "sp-rpc 3.0.0 (git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8)",
  "sp-runtime",
  "sp-storage",
  "sp-tracing",
@@ -7453,6 +7474,16 @@ version = "3.0.0"
 source = "git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8#74101dc21cfffb4c2d014fcc28edc166d5ca1b16"
 dependencies = [
  "backtrace",
+]
+
+[[package]]
+name = "sp-rpc"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2e5b1ed655d11449073b914b048895f45241e02b3919d1d0187f315435fee18"
+dependencies = [
+ "serde",
+ "sp-core",
 ]
 
 [[package]]

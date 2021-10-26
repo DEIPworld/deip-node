@@ -198,9 +198,15 @@
     "end_time": "Moment",
     "status": "SimpleCrowdfundingStatus",
     "asset_id": "AssetId",
-    "total_amount": "AssetsBalanceOf",
-    "soft_cap": "AssetsBalanceOf",
-    "hard_cap": "AssetsBalanceOf",
+    "total_amount": {
+      "0": "AssetsBalanceOf"
+    },
+    "soft_cap": {
+      "0": "AssetsBalanceOf"
+    },
+    "hard_cap": {
+      "0": "AssetsBalanceOf"
+    },
     "shares": "Vec<DeipAsset>"
   },
   "Investment": {
