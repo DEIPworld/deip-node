@@ -4267,6 +4267,7 @@ name = "pallet-deip-assets"
 version = "3.0.0"
 dependencies = [
  "deip-assets-error",
+ "deip_serializable_u128",
  "frame-support",
  "frame-system",
  "pallet-assets",

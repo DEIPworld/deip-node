@@ -27,6 +27,7 @@ serde = { version = "1.0.123", optional = true, features = ["derive"]}
 pallet-assets = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git" }
 sp-io = { default-features = false, version = '3.0.0' }
 deip-assets-error = { path = "../../deip_common/deip_assets_error", default-features = false }
+deip_serializable_u128 = { path = "../../deip_common/deip_serializable_u128", default-features = false }
 
 [dev-dependencies]
 sp-runtime = { default-features = false, version = '3.0.0' }
@@ -40,4 +41,5 @@ std = [
     'sp-std/std',
     'serde',
     'pallet-assets/std',
+    'deip_serializable_u128/std',
 ]

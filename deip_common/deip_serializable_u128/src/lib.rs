@@ -1,10 +1,17 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use codec::{Decode, Encode};
+
+#[cfg(feature = "std")]
 use serde::{
 	de::{self, Deserializer, Visitor},
 	ser::SerializeStruct,
 	Deserialize, Serialize, Serializer,
 };
+
 use sp_runtime::traits::AtLeast32BitUnsigned;
+
+#[cfg(feature = "std")]
 use sp_std::convert::TryInto;
 
 /* This code exists just to workaround an issue in serde{, _json} with u128.
@@ -17,9 +24,11 @@ use sp_std::convert::TryInto;
 #[derive(Encode, Decode)]
 pub struct SerializableAtLeast32BitUnsigned<T: Clone + AtLeast32BitUnsigned>(pub T);
 
+const STRUCT_NAME: &str = "u128";
 const FIRST_FIELD_NAME: &str = "first_be_u64";
 const SECOND_FIELD_NAME: &str = "second_be_u64";
 
+#[cfg(feature = "std")]
 impl<T: Clone + AtLeast32BitUnsigned> Serialize for SerializableAtLeast32BitUnsigned<T> {
 	fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
 	where
@@ -27,7 +36,7 @@ impl<T: Clone + AtLeast32BitUnsigned> Serialize for SerializableAtLeast32BitUnsi
 	{
 		let v: u128 = self.0.clone().unique_saturated_into();
 		let be_bytes = v.to_be_bytes();
-		let mut s = serializer.serialize_struct("u128", 2).unwrap();
+		let mut s = serializer.serialize_struct(STRUCT_NAME, 2).unwrap();
 		s.serialize_field(
 			FIRST_FIELD_NAME,
 			&u64::from_be_bytes(be_bytes[..8].try_into().unwrap()),
@@ -40,8 +49,10 @@ impl<T: Clone + AtLeast32BitUnsigned> Serialize for SerializableAtLeast32BitUnsi
 	}
 }
 
+#[cfg(feature = "std")]
 struct SerializableAtLeast32BitUnsignedVisitor<T>(sp_std::marker::PhantomData<T>);
 
+#[cfg(feature = "std")]
 impl<'de, T: Clone + AtLeast32BitUnsigned> Visitor<'de>
 	for SerializableAtLeast32BitUnsignedVisitor<T>
 {
@@ -89,6 +100,7 @@ impl<'de, T: Clone + AtLeast32BitUnsigned> Visitor<'de>
 	}
 }
 
+#[cfg(feature = "std")]
 impl<'de, T: Clone + AtLeast32BitUnsigned> Deserialize<'de>
 	for SerializableAtLeast32BitUnsigned<T>
 {
@@ -97,6 +109,6 @@ impl<'de, T: Clone + AtLeast32BitUnsigned> Deserialize<'de>
 		D: Deserializer<'de>,
 	{
 		let visitor = SerializableAtLeast32BitUnsignedVisitor(Default::default());
-		deserializer.deserialize_u128(visitor)
+		deserializer.deserialize_struct(STRUCT_NAME, &[FIRST_FIELD_NAME, SECOND_FIELD_NAME], visitor)
 	}
 }

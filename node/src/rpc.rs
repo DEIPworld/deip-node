@@ -7,7 +7,7 @@
 
 use std::sync::Arc;
 
-use appchain_deip_runtime::{opaque::Block, AccountId, Balance, BlockNumber, Hash, Index, Moment, AssetId, AssetBalance};
+use appchain_deip_runtime::{opaque::Block, AccountId, Balance, BlockNumber, Hash, Index, Moment, AssetId, AssetBalance, AssetExtra};
 use sc_client_api::{AuxStore, BlockchainEvents, ExecutorProvider, ProofProvider, StorageProvider, BlockBackend};
 use sc_consensus_babe::{Config, Epoch};
 use sc_consensus_babe_rpc::BabeRpcHandler;
@@ -206,6 +206,7 @@ where
 		AssetBalance,
 		AccountId,
 		Balance,
+		AssetExtra,
 	>::to_delegate(deip_assets_rpc::DeipAssetsRpcObj::<
 		sc_rpc::state::State<Block, C>,
 		Block,

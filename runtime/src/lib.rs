@@ -80,6 +80,7 @@ pub type Balance = u128;
 pub type AssetId = u32;
 /// Balance of an UIAs.
 pub type AssetBalance = u128;
+pub type AssetExtra = ();
 
 /// Type used for expressing timestamp.
 pub type Moment = u64;
@@ -529,7 +530,7 @@ impl pallet_assets::Config for Runtime {
 	type ApprovalDeposit = ApprovalDeposit;
 	type StringLimit = StringLimit;
 	type Freezer = ();
-	type Extra = ();
+	type Extra = AssetExtra;
 	type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
 }
 

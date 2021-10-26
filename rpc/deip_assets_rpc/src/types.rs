@@ -26,10 +26,11 @@ where
 	freezer: AccountId,
 	supply: SerializableAtLeast32BitUnsigned<Balance>,
 	deposit: SerializableAtLeast32BitUnsigned<DepositBalance>,
-	max_zombies: u32,
 	min_balance: SerializableAtLeast32BitUnsigned<Balance>,
-	zombies: u32,
+	is_sufficient: bool,
 	accounts: u32,
+	sufficients: u32,
+	approvals: u32,
 	is_frozen: bool,
 }
 
@@ -79,14 +80,15 @@ where
 #[derive(Decode)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct AssetBalance<Balance: Clone + Decode + AtLeast32BitUnsigned> {
+pub struct AssetBalance<Balance: Clone + Decode + AtLeast32BitUnsigned, Extra: Decode> {
 	balance: SerializableAtLeast32BitUnsigned<Balance>,
 	is_frozen: bool,
-	is_zombie: bool,
+	sufficient: bool,
+	extra: Extra,
 }
 
-impl<Balance: Clone + Decode + AtLeast32BitUnsigned> common_rpc::GetError
-	for AssetBalance<Balance>
+impl<Balance: Clone + Decode + AtLeast32BitUnsigned, Extra: Decode> common_rpc::GetError
+	for AssetBalance<Balance, Extra>
 {
 	fn get_error() -> common_rpc::Error {
 		common_rpc::Error::AssetBalanceDecodeFailed
@@ -95,17 +97,17 @@ impl<Balance: Clone + Decode + AtLeast32BitUnsigned> common_rpc::GetError
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct AssetBalanceWithIds<AssetId, Balance: Decode + Clone + AtLeast32BitUnsigned, AccountId> {
+pub struct AssetBalanceWithIds<AssetId, Balance: Decode + Clone + AtLeast32BitUnsigned, AccountId, Extra: Decode> {
 	pub asset: AssetId,
 	pub account: AccountId,
 	#[serde(flatten)]
-	pub balance: AssetBalance<Balance>,
+	pub balance: AssetBalance<Balance, Extra>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct AssetBalanceWithOwner<Balance: Decode + Clone + AtLeast32BitUnsigned, AccountId> {
+pub struct AssetBalanceWithOwner<Balance: Decode + Clone + AtLeast32BitUnsigned, AccountId, Extra: Decode> {
 	pub account: AccountId,
 	#[serde(flatten)]
-	pub balance: AssetBalance<Balance>,
+	pub balance: AssetBalance<Balance, Extra>,
 }

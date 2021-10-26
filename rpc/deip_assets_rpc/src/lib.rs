@@ -23,12 +23,13 @@ mod types;
 use types::*;
 
 #[rpc]
-pub trait DeipAssetsRpc<BlockHash, AssetId, Balance, AccountId, DepositBalance>
+pub trait DeipAssetsRpc<BlockHash, AssetId, Balance, AccountId, DepositBalance, Extra>
 where
     AssetId: Encode + Decode,
     Balance: Decode + AtLeast32BitUnsigned + Clone,
     AccountId: Decode,
     DepositBalance: Decode + AtLeast32BitUnsigned + Clone,
+    Extra: Decode,
 {
     #[rpc(name = "assets_getAsset")]
     fn get_asset(
@@ -51,7 +52,7 @@ where
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<(AssetId, AccountId)>,
-    ) -> FutureResult<Vec<AssetBalanceWithIds<AssetId, Balance, AccountId>>>;
+    ) -> FutureResult<Vec<AssetBalanceWithIds<AssetId, Balance, AccountId, Extra>>>;
 
     #[rpc(name = "assets_getAssetBalanceByOwner")]
     fn get_asset_balance_by_owner(
@@ -59,7 +60,7 @@ where
         at: Option<BlockHash>,
         owner: AccountId,
         asset: AssetId,
-    ) -> FutureResult<Option<AssetBalance<Balance>>>;
+    ) -> FutureResult<Option<AssetBalance<Balance, Extra>>>;
 
     #[rpc(name = "assets_getAssetBalanceListByAsset")]
     fn get_asset_balance_list_by_asset(
@@ -68,7 +69,7 @@ where
         asset: AssetId,
         count: u32,
         start_id: Option<AccountId>,
-    ) -> FutureResult<Vec<AssetBalanceWithOwner<Balance, AccountId>>>;
+    ) -> FutureResult<Vec<AssetBalanceWithOwner<Balance, AccountId, Extra>>>;
 }
 
 pub struct DeipAssetsRpcObj<State, B> {
@@ -85,14 +86,15 @@ impl<State, B> DeipAssetsRpcObj<State, B> {
     }
 }
 
-impl<State, Block, AssetId, Balance, AccountId, DepositBalance>
-    DeipAssetsRpc<HashOf<Block>, AssetId, Balance, AccountId, DepositBalance>
+impl<State, Block, AssetId, Balance, AccountId, DepositBalance, Extra>
+    DeipAssetsRpc<HashOf<Block>, AssetId, Balance, AccountId, DepositBalance, Extra>
     for DeipAssetsRpcObj<State, Block>
 where
     AssetId: 'static + Codec + Send,
     Balance: 'static + Decode + AtLeast32BitUnsigned + Clone + Send,
     AccountId: 'static + Codec + Send,
     DepositBalance: 'static + Send + Encode + Decode + AtLeast32BitUnsigned + Clone,
+    Extra: 'static + Send + Decode,
     State: sc_rpc_api::state::StateApi<HashOf<Block>>,
     Block: BlockT,
 {
@@ -126,7 +128,7 @@ where
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<(AssetId, AccountId)>,
-    ) -> FutureResult<Vec<AssetBalanceWithIds<AssetId, Balance, AccountId>>> {
+    ) -> FutureResult<Vec<AssetBalanceWithIds<AssetId, Balance, AccountId, Extra>>> {
         let prefix = prefix(b"Assets", b"Account");
 
         let start_key = start_id.map(|(first, second)| {
@@ -197,7 +199,7 @@ where
                         Ok(id) => id,
                     };
 
-                    match AssetBalance::<Balance>::decode(&mut &data.0[..]) {
+                    match AssetBalance::<Balance, Extra>::decode(&mut &data.0[..]) {
                         Err(_) => future::err(to_rpc_error(
                             Error::AssetBalanceDecodeFailed,
                             Some(format!("{:?}", data)),
@@ -221,7 +223,7 @@ where
         at: Option<HashOf<Block>>,
         owner: AccountId,
         asset: AssetId,
-    ) -> FutureResult<Option<AssetBalance<Balance>>> {
+    ) -> FutureResult<Option<AssetBalance<Balance, Extra>>> {
         StorageDoubleMap::<Blake2_128Concat, Blake2_128Concat>::get_value(
             &self.state,
             at,
@@ -238,7 +240,7 @@ where
         asset: AssetId,
         count: u32,
         start_id: Option<AccountId>,
-    ) -> FutureResult<Vec<AssetBalanceWithOwner<Balance, AccountId>>> {
+    ) -> FutureResult<Vec<AssetBalanceWithOwner<Balance, AccountId, Extra>>> {
         let prefix = prefix(b"Assets", b"Account");
 
         let asset_encoded = asset.encode();
@@ -307,7 +309,7 @@ where
                         Ok(id) => id,
                     };
 
-                    match AssetBalance::<Balance>::decode(&mut &data.0[..]) {
+                    match AssetBalance::<Balance, Extra>::decode(&mut &data.0[..]) {
                         Err(_) => future::err(to_rpc_error(
                             Error::AssetBalanceDecodeFailed,
                             Some(format!("{:?}", data)),
