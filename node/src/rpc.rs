@@ -122,6 +122,7 @@ where
 	C::Api: BabeApi<Block>,
 	C::Api: BlockBuilder<Block>,
 	C::Api: Metadata<Block>,
+	C::Api: deip_dao_rpc::DeipDaoRuntimeApi<Block, AccountId>,
 	P: TransactionPool + 'static,
 	SC: SelectChain<Block> + 'static,
 	B: sc_client_api::Backend<Block> + Send + Sync + 'static,
@@ -197,8 +198,8 @@ where
 		Block,
 	>::new(state)));
 
-	let subscriptions = SubscriptionManager::new(Arc::new(subscription_executor));
-	let (state, _) = sc_rpc::state::new_full(client, subscriptions, deny_unsafe, None);
+	let subscriptions = SubscriptionManager::new(Arc::new(subscription_executor.clone()));
+	let (state, _) = sc_rpc::state::new_full(client.clone(), subscriptions, deny_unsafe, None);
 
 	io.extend_with(deip_assets_rpc::DeipAssetsRpc::<
 		<Block as BlockT>::Hash,
@@ -211,6 +212,13 @@ where
 		sc_rpc::state::State<Block, C>,
 		Block,
 	>::new(state)));
+
+	let subscriptions = SubscriptionManager::new(Arc::new(subscription_executor));
+	let (state, _) = sc_rpc::state::new_full(client.clone(), subscriptions, deny_unsafe, None);
+
+	io.extend_with(deip_dao_rpc::DeipDaoRpcApi::to_delegate(
+		deip_dao_rpc::DeipDaoRpcApiObj::new(client, state),
+	));
 
 	io
 }

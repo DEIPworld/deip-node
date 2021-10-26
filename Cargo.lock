@@ -149,6 +149,7 @@ dependencies = [
  "beefy-gadget-rpc",
  "beefy-primitives",
  "deip-assets-rpc",
+ "deip-dao-rpc",
  "deip-proposal-rpc",
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -1478,6 +1479,27 @@ dependencies = [
  "jsonrpc-core-client",
  "jsonrpc-derive",
  "pallet-deip-assets",
+ "parity-scale-codec",
+ "sc-rpc-api",
+ "serde",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "deip-dao-rpc"
+version = "3.0.0"
+dependencies = [
+ "common-deip-rpc",
+ "frame-support",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "pallet-deip-dao",
  "parity-scale-codec",
  "sc-rpc-api",
  "serde",
