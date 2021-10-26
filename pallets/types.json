@@ -187,12 +187,13 @@
   },
   "DeipAsset": {
     "id": "AssetId",
-    "amount": "AssetsBalanceOf"
+    "amount": {
+      "0": "AssetsBalanceOf"
+    }
   },
   "DeipAssetOf": "DeipAsset",
   "SimpleCrowdfunding": {
     "external_id": "InvestmentId",
-    "project_id": "ProjectId",
     "start_time": "Moment",
     "end_time": "Moment",
     "status": "SimpleCrowdfundingStatus",

@@ -14,6 +14,7 @@ pallet-deip-assets = { path = "../../pallets/deip_assets"}
 node-runtime = { package = "appchain-deip-runtime", path = '../../runtime'}
 codec = { package = "parity-scale-codec", version = "2.1", default-features = false, features = ["derive", "full"] }
 serde = { version = "1.0.123", features = ["derive"] }
+deip_serializable_u128 = { path = "../deip_serializable_u128", default-features = false }
 
 frame-support = "3.0.0"
 sp-runtime = "3.0.0"

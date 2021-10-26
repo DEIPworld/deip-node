@@ -2,10 +2,12 @@ use codec::{Decode, Encode};
 use frame_support::Parameter;
 use node_runtime::{Call, Runtime};
 use serde::{ser::Serializer, Serialize, Deserialize};
-use sp_runtime::traits::Member;
+use sp_runtime::traits::{Member, AtLeast32BitUnsigned};
 use sp_std::borrow::Borrow;
 
 use pallet_deip_proposal::proposal::{BatchItem, InputProposalBatch};
+
+use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 
 #[derive(Clone, Debug, Eq, PartialEq, Decode, Encode, Deserialize)]
 pub struct WrappedCall<Call: Parameter + Member>(pub Call);
@@ -415,12 +417,12 @@ impl WrappedCall<Call> {
             create_asset(id, admin, min_balance, project_id) => CallObject {
                 module: "deip_assets",
                 call: "create_asset",
-                args: &DeipAssetsCreateAssetCallArgs {
+                args: &DeipAssetsCreateAssetCallArgs::new(
                     id,
                     admin,
                     min_balance,
                     project_id,
-                },
+                ),
             }
             .serialize(serializer),
 
@@ -437,25 +439,25 @@ impl WrappedCall<Call> {
             issue_asset(id, beneficiary, amount) => CallObject {
                 module: "deip_assets",
                 call: "issue_asset",
-                args: &DeipAssetsIssueAssetCallArgs {
+                args: &DeipAssetsIssueAssetCallArgs::new(
                     id,
                     beneficiary,
                     amount,
-                },
+                ),
             }
             .serialize(serializer),
 
             burn(id, who, amount) => CallObject {
                 module: "deip_assets",
                 call: "burn",
-                args: &DeipAssetsBurnCallArgs { id, who, amount },
+                args: &DeipAssetsBurnCallArgs::new(id, who, amount),
             }
             .serialize(serializer),
 
             transfer(id, target, amount) => CallObject {
                 module: "deip_assets",
                 call: "transfer",
-                args: &DeipAssetsTransferCallArgs { id, target, amount },
+                args: &DeipAssetsTransferCallArgs::new(id, target, amount),
             }
             .serialize(serializer),
 
@@ -584,24 +586,54 @@ struct DeipAssetsFreezeCallArgs<A, B> {
 }
 
 #[derive(Serialize)]
-struct DeipAssetsTransferCallArgs<A, B, C> {
+struct DeipAssetsTransferCallArgs<A, B, C: Clone + AtLeast32BitUnsigned> {
     id: A,
     target: B,
-    amount: C,
+    amount: SerializableAtLeast32BitUnsigned<C>,
+}
+
+impl<A, B, C: Clone + AtLeast32BitUnsigned> DeipAssetsTransferCallArgs<A, B, C> {
+    fn new(id: A, target: B, amount: &C) -> Self {
+        Self {
+            id,
+            target,
+            amount: SerializableAtLeast32BitUnsigned(amount.clone()),
+        }
+    }
 }
 
 #[derive(Serialize)]
-struct DeipAssetsBurnCallArgs<A, B, C> {
+struct DeipAssetsBurnCallArgs<A, B, C: Clone + AtLeast32BitUnsigned> {
     id: A,
     who: B,
-    amount: C,
+    amount: SerializableAtLeast32BitUnsigned<C>,
+}
+
+impl<A, B, C: Clone + AtLeast32BitUnsigned> DeipAssetsBurnCallArgs<A, B, C> {
+    fn new(id: A, who: B, amount: &C) -> Self {
+        Self {
+            id,
+            who,
+            amount: SerializableAtLeast32BitUnsigned(amount.clone()),
+        }
+    }
 }
 
 #[derive(Serialize)]
-struct DeipAssetsIssueAssetCallArgs<A, B, C> {
+struct DeipAssetsIssueAssetCallArgs<A, B, C: Clone + AtLeast32BitUnsigned> {
     id: A,
     beneficiary: B,
-    amount: C,
+    amount: SerializableAtLeast32BitUnsigned<C>,
+}
+
+impl<A, B, C: Clone + AtLeast32BitUnsigned> DeipAssetsIssueAssetCallArgs<A, B, C> {
+    fn new(id: A, beneficiary: B, amount: &C) -> Self {
+        Self {
+            id,
+            beneficiary,
+            amount: SerializableAtLeast32BitUnsigned(amount.clone()),
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -611,11 +643,22 @@ struct DeipAssetsDestroyCallArgs<A, B> {
 }
 
 #[derive(Serialize)]
-struct DeipAssetsCreateAssetCallArgs<A, B, D, E> {
+struct DeipAssetsCreateAssetCallArgs<A, B, D: Clone + AtLeast32BitUnsigned, E> {
     id: A,
     admin: B,
-    min_balance: D,
+    min_balance: SerializableAtLeast32BitUnsigned<D>,
     project_id: E,
+}
+
+impl<A, B, D: Clone + AtLeast32BitUnsigned, E> DeipAssetsCreateAssetCallArgs<A, B, D, E> {
+    fn new(id: A, admin: B, min_balance: &D, project_id: E) -> Self {
+        Self {
+            id,
+            admin,
+            min_balance: SerializableAtLeast32BitUnsigned(min_balance.clone()),
+            project_id,
+        }
+    }
 }
 
 #[derive(Serialize)]

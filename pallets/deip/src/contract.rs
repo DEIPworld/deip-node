@@ -158,7 +158,7 @@ impl<T: Config> Module<T> {
         price: DeipAssetOf<T>,
     ) -> DispatchResult {
         ensure!(
-            price.amount > Zero::zero(),
+            price.amount() > &Zero::zero(),
             Error::<T>::ContractAgreementFeeMustBePositive
         );
 
@@ -301,8 +301,8 @@ impl<T: Config> Module<T> {
         let distribute_percent = Percent::from_percent(100);
         Self::distribute_revenue(
             &licensee,
-            &license.price.id,
-            &license.price.amount,
+            license.price.id(),
+            license.price.amount(),
             distribute_percent,
             &license.project_id,
         )?;

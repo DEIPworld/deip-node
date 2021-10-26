@@ -1076,6 +1076,7 @@ name = "common-deip-call"
 version = "0.0.0"
 dependencies = [
  "appchain-deip-runtime",
+ "deip_serializable_u128",
  "frame-support",
  "pallet-deip",
  "pallet-deip-assets",
@@ -4268,6 +4269,7 @@ name = "pallet-deip"
 version = "3.0.0"
 dependencies = [
  "deip-assets-error",
+ "deip_serializable_u128",
  "frame-support",
  "frame-system",
  "pallet-assets",

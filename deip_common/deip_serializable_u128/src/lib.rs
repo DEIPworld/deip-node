@@ -9,7 +9,7 @@ use serde::{
 	Deserialize, Serialize, Serializer,
 };
 
-use sp_runtime::traits::AtLeast32BitUnsigned;
+use sp_runtime::{RuntimeDebug, traits::AtLeast32BitUnsigned};
 
 #[cfg(feature = "std")]
 use sp_std::convert::TryInto;
@@ -21,7 +21,7 @@ use sp_std::convert::TryInto;
 			"arbitrary_precision" doesn't work and hence can't be used.
 */
 
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
 pub struct SerializableAtLeast32BitUnsigned<T: Clone + AtLeast32BitUnsigned>(pub T);
 
 const STRUCT_NAME: &str = "u128";

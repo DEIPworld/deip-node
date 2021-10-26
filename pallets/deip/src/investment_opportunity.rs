@@ -114,17 +114,17 @@ impl<T: Config> Module<T> {
             Error::<T>::InvestmentOpportunityEndTimeMustBeLaterStartTime
         );
 
-        let asset_id = soft_cap.id;
+        let asset_id = soft_cap.id();
         ensure!(
-            asset_id == hard_cap.id,
+            asset_id == hard_cap.id(),
             Error::<T>::InvestmentOpportunityCapDifferentAssets
         );
         ensure!(
-            soft_cap.amount > Zero::zero(),
+            soft_cap.amount() > &Zero::zero(),
             Error::<T>::InvestmentOpportunitySoftCapMustBeGreaterOrEqualMinimum
         );
         ensure!(
-            hard_cap.amount >= soft_cap.amount,
+            hard_cap.amount() >= soft_cap.amount(),
             Error::<T>::InvestmentOpportunityHardCapShouldBeGreaterOrEqualSoftCap
         );
 
@@ -135,16 +135,16 @@ impl<T: Config> Module<T> {
         let mut shares_to_reserve = Vec::with_capacity(shares.len());
         for token in &shares {
             ensure!(
-                token.id != asset_id,
+                token.id() != asset_id,
                 Error::<T>::InvestmentOpportunityWrongAssetId
             );
 
             ensure!(
-                token.amount > Zero::zero(),
+                token.amount() > &Zero::zero(),
                 Error::<T>::InvestmentOpportunityAssetAmountMustBePositive
             );
 
-            shares_to_reserve.push((token.id, token.amount));
+            shares_to_reserve.push((*token.id(), *token.amount()));
         }
 
         ensure!(
@@ -153,7 +153,7 @@ impl<T: Config> Module<T> {
         );
 
         if let Err(e) =
-            T::AssetSystem::transactionally_reserve(&account, external_id, &shares_to_reserve, asset_id)
+            T::AssetSystem::transactionally_reserve(&account, external_id, &shares_to_reserve, *asset_id)
         {
             match e {
                 ReserveError::<DeipAssetIdOf<T>>::NotEnoughBalance => {
@@ -172,9 +172,9 @@ impl<T: Config> Module<T> {
             external_id,
             start_time,
             end_time,
-            asset_id,
-            soft_cap: soft_cap.amount,
-            hard_cap: hard_cap.amount,
+            asset_id: *asset_id,
+            soft_cap: soft_cap.amount().clone(),
+            hard_cap: hard_cap.amount().clone(),
             shares: shares_to_reserve,
             ..Default::default()
         };
