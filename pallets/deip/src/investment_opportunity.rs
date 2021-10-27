@@ -3,9 +3,11 @@ use crate::*;
 use deip_assets_error::*;
 
 use sp_runtime::{
-    traits::{Saturating, Zero},
+    traits::{Saturating, Zero, AtLeast32BitUnsigned},
     SaturatedConversion,
 };
+
+use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 
 /// Unique InvestmentOpportunity ID reference
 pub type Id = H160;
@@ -50,7 +52,7 @@ pub enum FundingModel<Moment, Asset> {
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct Info<Moment, AssetId, AssetBalance> {
+pub struct Info<Moment, AssetId, AssetBalance: Clone + AtLeast32BitUnsigned> {
     /// Reference for external world and uniques control
     pub external_id: Id,
     /// When the sale starts
@@ -60,11 +62,11 @@ pub struct Info<Moment, AssetId, AssetBalance> {
     pub status: Status,
     pub asset_id: AssetId,
     /// How many contributions already reserved
-    pub total_amount: AssetBalance,
-    pub soft_cap: AssetBalance,
-    pub hard_cap: AssetBalance,
+    pub total_amount: SerializableAtLeast32BitUnsigned<AssetBalance>,
+    pub soft_cap: SerializableAtLeast32BitUnsigned<AssetBalance>,
+    pub hard_cap: SerializableAtLeast32BitUnsigned<AssetBalance>,
     /// How many and what tokens supposed to sale
-    pub shares: Vec<(AssetId, AssetBalance)>,
+    pub shares: Vec<DeipAsset<AssetId, AssetBalance>>,
 }
 
 impl<T: Config> Module<T> {
@@ -114,17 +116,17 @@ impl<T: Config> Module<T> {
             Error::<T>::InvestmentOpportunityEndTimeMustBeLaterStartTime
         );
 
-        let asset_id = soft_cap.id;
+        let asset_id = soft_cap.id();
         ensure!(
-            asset_id == hard_cap.id,
+            asset_id == hard_cap.id(),
             Error::<T>::InvestmentOpportunityCapDifferentAssets
         );
         ensure!(
-            soft_cap.amount > Zero::zero(),
+            soft_cap.amount() > &Zero::zero(),
             Error::<T>::InvestmentOpportunitySoftCapMustBeGreaterOrEqualMinimum
         );
         ensure!(
-            hard_cap.amount >= soft_cap.amount,
+            hard_cap.amount() >= soft_cap.amount(),
             Error::<T>::InvestmentOpportunityHardCapShouldBeGreaterOrEqualSoftCap
         );
 
@@ -135,16 +137,16 @@ impl<T: Config> Module<T> {
         let mut shares_to_reserve = Vec::with_capacity(shares.len());
         for token in &shares {
             ensure!(
-                token.id != asset_id,
+                token.id() != asset_id,
                 Error::<T>::InvestmentOpportunityWrongAssetId
             );
 
             ensure!(
-                token.amount > Zero::zero(),
+                token.amount() > &Zero::zero(),
                 Error::<T>::InvestmentOpportunityAssetAmountMustBePositive
             );
 
-            shares_to_reserve.push((token.id, token.amount));
+            shares_to_reserve.push((*token.id(), *token.amount()));
         }
 
         ensure!(
@@ -153,7 +155,7 @@ impl<T: Config> Module<T> {
         );
 
         if let Err(e) =
-            T::AssetSystem::transactionally_reserve(&account, external_id, &shares_to_reserve, asset_id)
+            T::AssetSystem::transactionally_reserve(&account, external_id, &shares_to_reserve, *asset_id)
         {
             match e {
                 ReserveError::<DeipAssetIdOf<T>>::NotEnoughBalance => {
@@ -172,10 +174,10 @@ impl<T: Config> Module<T> {
             external_id,
             start_time,
             end_time,
-            asset_id,
-            soft_cap: soft_cap.amount,
-            hard_cap: hard_cap.amount,
-            shares: shares_to_reserve,
+            asset_id: *asset_id,
+            soft_cap: SerializableAtLeast32BitUnsigned(soft_cap.amount().clone()),
+            hard_cap: SerializableAtLeast32BitUnsigned(hard_cap.amount().clone()),
+            shares,
             ..Default::default()
         };
 
@@ -189,7 +191,7 @@ impl<T: Config> Module<T> {
     pub(super) fn collect_funds(sale_id: Id, amount: DeipAssetBalanceOf<T>) -> Result<(), ()> {
         SimpleCrowdfundingMap::<T>::mutate_exists(sale_id, |sale| -> Result<(), ()> {
             match sale.as_mut() {
-                Some(s) => s.total_amount = amount.saturating_add(s.total_amount),
+                Some(s) => s.total_amount.0 = amount.saturating_add(s.total_amount.0),
                 None => return Err(()),
             }
             Ok(())
@@ -279,12 +281,12 @@ impl<T: Config> Module<T> {
         let now = pallet_timestamp::Pallet::<T>::get();
         for (id, sale) in SimpleCrowdfundingMap::<T>::iter() {
             if sale.end_time <= now && matches!(sale.status, Status::Active) {
-                if sale.total_amount < sale.soft_cap {
+                if sale.total_amount.0 < sale.soft_cap.0 {
                     let call = Call::expire_crowdfunding(id);
                     let submit =
                         SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
                     debug!("submit expire_crowdfunding: {}", submit.is_ok());
-                } else if sale.total_amount >= sale.soft_cap {
+                } else if sale.total_amount.0 >= sale.soft_cap.0 {
                     let call = Call::finish_crowdfunding(id);
                     let submit =
                         SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
@@ -334,8 +336,8 @@ impl<T: Config> Module<T> {
         let contributions = InvestmentMap::<T>::try_get(sale.external_id)
             .expect("about to finish, but there are no contributions?");
 
-        for (asset_id, asset_amount) in &sale.shares {
-            let mut amount = asset_amount.clone();
+        for asset in &sale.shares {
+            let mut amount = asset.amount().clone();
 
             let mut iter = contributions.iter();
             let (_, ref first_contribution) = iter
@@ -347,8 +349,8 @@ impl<T: Config> Module<T> {
                 let token_amount = contribution
                     .amount
                     .saturated_into::<u128>()
-                    .saturating_mul(asset_amount.clone().saturated_into())
-                    / sale.total_amount.saturated_into::<u128>();
+                    .saturating_mul(asset.amount().clone().saturated_into())
+                    / sale.total_amount.0.saturated_into::<u128>();
                 let token_amount: DeipAssetBalanceOf<T> = token_amount.saturated_into();
                 if token_amount.is_zero() {
                     continue;
@@ -359,7 +361,7 @@ impl<T: Config> Module<T> {
                 T::AssetSystem::transfer_from_reserved(
                     sale.external_id,
                     &contribution.owner,
-                    *asset_id,
+                    *asset.id(),
                     token_amount,
                 )
                 .unwrap_or_else(|_| panic!("Required token_amount should be reserved"));
@@ -369,7 +371,7 @@ impl<T: Config> Module<T> {
                 T::AssetSystem::transfer_from_reserved(
                     sale.external_id,
                     &first_contribution.owner,
-                    *asset_id,
+                    *asset.id(),
                     amount,
                 )
                 .unwrap_or_else(|_| panic!("Required token_amount should be reserved"));

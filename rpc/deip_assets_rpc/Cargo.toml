@@ -1,0 +1,78 @@
+[package]
+authors = ['DEIP world <https://github.com/DEIPworld>']
+description = 'RPC for DEIP Assets pallet'
+edition = '2018'
+homepage = 'https://deip.world/'
+license = 'Apache-2.0'
+name = 'deip-assets-rpc'
+repository = 'https://github.com/DEIPworld/deip-substrate'
+version = '3.0.0'
+
+[package.metadata.docs.rs]
+targets = ['x86_64-unknown-linux-gnu']
+
+[dependencies.codec]
+default-features = false
+features = ['derive']
+package = 'parity-scale-codec'
+version = '2.0.0'
+
+[dependencies.common_rpc]
+default-features = false
+package = 'common-deip-rpc'
+path = "../../deip_common/deip_rpc"
+
+[dependencies]
+sc-rpc-api = '0.9.0'
+serde = { version = "1.0.123", optional = true, features = ["derive"]}
+pallet-deip-assets = { path = "../../pallets/deip_assets", default-features = false }
+deip_serializable_u128 = { path = "../../deip_common/deip_serializable_u128", default-features = false }
+
+# RPC deps:
+jsonrpc-core = "15.0"
+jsonrpc-core-client = "15.0"
+jsonrpc-derive = "15.0"
+sp-blockchain = { version = '3.0', default-features = false}
+
+[dependencies.frame-support]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.sp-std]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.sp-runtime]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.sp-core]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.sp-api]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dev-dependencies]
+sp-io = { default-features = false, version = '3.0.0' }
+
+[features]
+default = ['std']
+std = [
+    'codec/std',
+    'sp-std/std',
+    'serde',
+    'pallet-deip-assets/std',
+    'deip_serializable_u128/std',
+]

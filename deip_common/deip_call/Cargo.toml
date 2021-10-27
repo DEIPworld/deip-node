@@ -1,0 +1,21 @@
+[package]
+authors = ['DEIP world <https://github.com/DEIPworld>']
+name = "common-deip-call"
+version = "0.0.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+pallet-deip-proposal = { path = "../../pallets/deip_proposal" }
+pallet-deip-dao = { path = "../../pallets/deip_dao" }
+pallet-deip = { path = "../../pallets/deip"}
+pallet-deip-assets = { path = "../../pallets/deip_assets"}
+node-runtime = { package = "appchain-deip-runtime", path = '../../runtime'}
+codec = { package = "parity-scale-codec", version = "2.1", default-features = false, features = ["derive", "full"] }
+serde = { version = "1.0.123", features = ["derive"] }
+deip_serializable_u128 = { path = "../deip_serializable_u128", default-features = false }
+
+frame-support = "3.0.0"
+sp-runtime = "3.0.0"
+sp-std = "3.0.0"

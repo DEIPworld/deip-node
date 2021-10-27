@@ -1,11 +1,11 @@
 [package]
 authors = ['DEIP world <https://github.com/DEIPworld>']
-description = 'FRAME pallet that wraps Substrate assets'
+description = 'RPC for DEIP Proposals pallet'
 edition = '2018'
 homepage = 'https://deip.world/'
 license = 'Apache-2.0'
-name = 'pallet-deip-assets'
-repository = 'https://github.com/DEIPworld/deip-polkadot'
+name = "deip-proposal-rpc"
+repository = 'https://github.com/DEIPworld/deip-substrate'
 version = '3.0.0'
 
 [package.metadata.docs.rs]
@@ -18,28 +18,37 @@ features = ['derive']
 package = 'parity-scale-codec'
 version = '2.0.0'
 
+[dependencies.common_rpc]
+default-features = false
+package = 'common-deip-rpc'
+path = "../../deip_common/deip_rpc"
+
 [dependencies]
 frame-support = { default-features = false, version = '3.0.0' }
-frame-system = { default-features = false, version = '3.0.0' }
+sc-rpc-api = '0.9.0'
 sp-std = { default-features = false, version = '3.0.0' }
 sp-runtime = { version = '3.0.0', default-features = false }
+sp-core = { default-features = false, version = '3.0.0' }
 serde = { version = "1.0.123", optional = true, features = ["derive"]}
-pallet-assets = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git" }
-sp-io = { default-features = false, version = '3.0.0' }
-deip-assets-error = { path = "../../deip_common/deip_assets_error", default-features = false }
-deip_serializable_u128 = { path = "../../deip_common/deip_serializable_u128", default-features = false }
+pallet-deip-proposal = { path = "../../pallets/deip_proposal", default-features = false }
+common-deip-call = { path = "../../deip_common/deip_call" }
+
+# RPC deps:
+jsonrpc-core = "15.0"
+jsonrpc-core-client = "15.0"
+jsonrpc-derive = "15.0"
+sp-api = { version = '3.0', default-features = false}
+sp-blockchain = { version = '3.0', default-features = false}
 
 [dev-dependencies]
+sp-io = { default-features = false, version = '3.0.0' }
 sp-runtime = { default-features = false, version = '3.0.0' }
 
 [features]
 default = ['std']
 std = [
     'codec/std',
-    'frame-support/std',
-    'frame-system/std',
     'sp-std/std',
     'serde',
-    'pallet-assets/std',
-    'deip_serializable_u128/std',
+    'pallet-deip-proposal/std'
 ]

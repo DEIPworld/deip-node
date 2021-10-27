@@ -36,6 +36,7 @@ pub mod traits;
 
 pub mod serializable;
 pub use serializable::{AssetBalance as SerializableAssetBalance, AssetId as SerializableAssetId};
+pub use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 
 #[doc(inline)]
 pub use pallet::*;

@@ -28,13 +28,13 @@ impl<T: Config> Module<T> {
             Error::<T>::InvestingNotActive
         );
 
-        ensure!(sale.asset_id == asset.id, Error::<T>::InvestingWrongAsset);
+        ensure!(sale.asset_id == *asset.id(), Error::<T>::InvestingWrongAsset);
 
-        let is_hard_cap_reached = sale.total_amount.saturating_add(asset.amount) >= sale.hard_cap;
+        let is_hard_cap_reached = sale.total_amount.0.saturating_add(*asset.amount()) >= sale.hard_cap.0;
         let amount_to_contribute = if is_hard_cap_reached {
-            sale.hard_cap.saturating_sub(sale.total_amount)
+            sale.hard_cap.0.saturating_sub(sale.total_amount.0)
         } else {
-            asset.amount
+            *asset.amount()
         };
 
         ensure!(

@@ -187,19 +187,26 @@
   },
   "DeipAsset": {
     "id": "AssetId",
-    "amount": "AssetsBalanceOf"
+    "amount": {
+      "0": "AssetsBalanceOf"
+    }
   },
   "DeipAssetOf": "DeipAsset",
   "SimpleCrowdfunding": {
     "external_id": "InvestmentId",
-    "project_id": "ProjectId",
     "start_time": "Moment",
     "end_time": "Moment",
     "status": "SimpleCrowdfundingStatus",
     "asset_id": "AssetId",
-    "total_amount": "AssetsBalanceOf",
-    "soft_cap": "AssetsBalanceOf",
-    "hard_cap": "AssetsBalanceOf",
+    "total_amount": {
+      "0": "AssetsBalanceOf"
+    },
+    "soft_cap": {
+      "0": "AssetsBalanceOf"
+    },
+    "hard_cap": {
+      "0": "AssetsBalanceOf"
+    },
     "shares": "Vec<DeipAsset>"
   },
   "Investment": {
@@ -219,12 +226,14 @@
     }
   },
   "FundingModelOf": "FundingModel",
-  "AssetsBalanceOf": "u64",
+  "AssetsBalanceOf": "u128",
   "DeipAssetBalanceOf": "AssetsBalanceOf",
   "AssetBalance": {
     "balance": "AssetsBalanceOf",
     "is_frozen": "bool",
-    "is_zombie": "bool"
+    "sufficient": "bool",
+    "extra": {
+    }
   },
   "AssetMetadata": {
     "deposit": "Balance",
@@ -239,21 +248,17 @@
     "freezer": "AccountId",
     "supply": "AssetsBalanceOf",
     "deposit": "Balance",
-    "max_zombies": "u32",
     "min_balance": "AssetsBalanceOf",
-    "zombies": "u32",
+    "is_sufficient": "bool",
     "accounts": "u32",
+    "sufficients": "u32",
+    "approvals": "u32",
     "is_frozen": "bool"
   },
   "DeipProjectIdOf": "H160",
-  "AssetId": {
-    "0": "H160"
-  },
+  "AssetId": "u32",
   "AssetsAssetIdOf": "AssetId",
   "DeipAssetIdOf": "AssetId",
-  "Compact<AssetId>": {
-    "0": "AssetId"
-  },
   "DeipReviewVoteId": "H160",
   "DeipReviewVote": {
     "dao": "AccountId",

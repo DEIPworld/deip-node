@@ -3,6 +3,7 @@
 
 use super::*;
 use codec::Codec;
+use sp_runtime::traits::AtLeast32BitUnsigned;
 
 // Here we declare the runtime API. It is implemented it the `impl` block in
 // runtime amalgamator file (the `runtime/src/lib.rs`)
@@ -12,7 +13,7 @@ sp_api::decl_runtime_apis! {
             AccountId: Codec,
             Moment: Codec,
             AssetId: Codec,
-            AssetBalance: Codec,
+            AssetBalance: Codec + Clone + AtLeast32BitUnsigned,
             Hash: Codec,
     {
         fn get_project(project_id: &ProjectId) -> Option<Project<Hash, AccountId>>;

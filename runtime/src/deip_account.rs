@@ -4,14 +4,11 @@ use frame_support::pallet_prelude::*;
 
 use sp_core::crypto::AccountId32;
 
-// use pallet_deip_dao::dao::DaoId;
-
-// #[cfg(feature = "std")]
-// use serde::{Serialize, Deserialize};
-
+#[cfg(feature = "std")]
+use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode, Ord, PartialOrd)]
-// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum DeipAccountId<Native, Dao=pallet_deip_dao::dao::DaoId> {
     Native(Native),
     Dao(Dao),

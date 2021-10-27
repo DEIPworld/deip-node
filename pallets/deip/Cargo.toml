@@ -29,6 +29,7 @@ sp-io = { default-features = false, version = '3.0.0' }
 serde = { version = "1.0.119", optional = true, features = ["derive"]}
 deip-assets-error = { path = "../../deip_common/deip_assets_error", default-features = false }
 sp-api = { version = '3.0.0', default-features = false}
+deip_serializable_u128 = { path = "../../deip_common/deip_serializable_u128", default-features = false }
 
 [dev-dependencies]
 pallet-balances = { default-features = false, version = '3.0.0' }
@@ -48,5 +49,6 @@ std = [
     'sp-io/std',
     'pallet-timestamp/std',
     'serde',
-    "sp-api/std"
+    "sp-api/std",
+    'deip_serializable_u128/std',
 ]

@@ -7,8 +7,8 @@
 
 use std::sync::Arc;
 
-use appchain_deip_runtime::{opaque::Block, AccountId, Balance, BlockNumber, Hash, Index};
-use sc_client_api::AuxStore;
+use appchain_deip_runtime::{opaque::Block, AccountId, Balance, BlockNumber, Hash, Index, Moment, AssetId, AssetBalance, AssetExtra};
+use sc_client_api::{AuxStore, BlockchainEvents, ExecutorProvider, ProofProvider, StorageProvider, BlockBackend};
 use sc_consensus_babe::{Config, Epoch};
 use sc_consensus_babe_rpc::BabeRpcHandler;
 use sc_consensus_epochs::SharedEpochChanges;
@@ -18,7 +18,7 @@ use sc_finality_grandpa::{
 use sc_finality_grandpa_rpc::GrandpaRpcHandler;
 use sc_rpc::SubscriptionTaskExecutor;
 pub use sc_rpc_api::DenyUnsafe;
-use sp_api::ProvideRuntimeApi;
+use sp_api::{ProvideRuntimeApi, CallApiAt, Metadata};
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use sp_consensus::SelectChain;
@@ -28,6 +28,8 @@ use sp_transaction_pool::TransactionPool;
 
 use beefy_gadget::notification::BeefySignedCommitmentStream;
 use sp_runtime::traits::Block as BlockT;
+
+use jsonrpc_pubsub::manager::SubscriptionManager;
 
 /// Extra dependencies for BEEFY
 pub struct BeefyDeps<B: BlockT> {
@@ -108,11 +110,20 @@ where
 		+ Sync
 		+ Send
 		+ 'static,
+	C: ExecutorProvider<Block>,
+	C: StorageProvider<Block, B>,
+	C: ProofProvider<Block>,
+	C: BlockchainEvents<Block>,
+	C: CallApiAt<Block>,
+	C: BlockBackend<Block>,
 	C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: pallet_mmr_rpc::MmrRuntimeApi<Block, <Block as sp_runtime::traits::Block>::Hash>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BabeApi<Block>,
 	C::Api: BlockBuilder<Block>,
+	C::Api: Metadata<Block>,
+	C::Api: deip_dao_rpc::DeipDaoRuntimeApi<Block, AccountId>,
+	C::Api: deip_rpc::DeipStorageRuntimeApi<Block, AccountId, Moment, AssetId, AssetBalance, Hash>,
 	P: TransactionPool + 'static,
 	SC: SelectChain<Block> + 'static,
 	B: sc_client_api::Backend<Block> + Send + Sync + 'static,
@@ -154,14 +165,14 @@ where
 		shared_authority_set.clone(),
 		shared_voter_state,
 		justification_stream,
-		subscription_executor,
+		subscription_executor.clone(),
 		finality_provider,
 	)));
 
 	io.extend_with(sc_sync_state_rpc::SyncStateRpcApi::to_delegate(
 		sc_sync_state_rpc::SyncStateRpcHandler::new(
 			chain_spec,
-			client,
+			client.clone(),
 			shared_authority_set,
 			shared_epoch_changes,
 			deny_unsafe,
@@ -173,6 +184,48 @@ where
 			beefy.signed_commitment_stream,
 			beefy.subscription_executor,
 		),
+	));
+
+	let subscriptions = SubscriptionManager::new(Arc::new(subscription_executor.clone()));
+	let (state, _) = sc_rpc::state::new_full(client.clone(), subscriptions, deny_unsafe, None);
+
+	io.extend_with(deip_proposal_rpc::DeipProposalRpcApi::<
+		<Block as BlockT>::Hash,
+		AccountId,
+		Moment,
+		deip_proposal_rpc::Call<appchain_deip_runtime::Call>
+	>::to_delegate(deip_proposal_rpc::DeipProposalRpcApiObj::<
+		sc_rpc::state::State<Block, C>,
+		Block,
+	>::new(state)));
+
+	let subscriptions = SubscriptionManager::new(Arc::new(subscription_executor.clone()));
+	let (state, _) = sc_rpc::state::new_full(client.clone(), subscriptions, deny_unsafe, None);
+
+	io.extend_with(deip_assets_rpc::DeipAssetsRpc::<
+		<Block as BlockT>::Hash,
+		AssetId,
+		AssetBalance,
+		AccountId,
+		Balance,
+		AssetExtra,
+	>::to_delegate(deip_assets_rpc::DeipAssetsRpcObj::<
+		sc_rpc::state::State<Block, C>,
+		Block,
+	>::new(state)));
+
+	let subscriptions = SubscriptionManager::new(Arc::new(subscription_executor.clone()));
+	let (state, _) = sc_rpc::state::new_full(client.clone(), subscriptions, deny_unsafe, None);
+
+	io.extend_with(deip_dao_rpc::DeipDaoRpcApi::to_delegate(
+		deip_dao_rpc::DeipDaoRpcApiObj::new(client.clone(), state),
+	));
+
+	let subscriptions = SubscriptionManager::new(Arc::new(subscription_executor));
+	let (state, _) = sc_rpc::state::new_full(client.clone(), subscriptions, deny_unsafe, None);
+
+	io.extend_with(deip_rpc::DeipStorageApi::to_delegate(
+		deip_rpc::DeipStorage::new(client, state),
 	));
 
 	io

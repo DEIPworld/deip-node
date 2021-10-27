@@ -148,9 +148,14 @@ dependencies = [
  "beefy-gadget",
  "beefy-gadget-rpc",
  "beefy-primitives",
+ "deip-assets-rpc",
+ "deip-dao-rpc",
+ "deip-proposal-rpc",
+ "deip-rpc",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "jsonrpc-core",
+ "jsonrpc-pubsub",
  "pallet-deip",
  "pallet-deip-assets",
  "pallet-im-online",
@@ -236,6 +241,7 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "parity-scale-codec",
+ "serde",
  "sp-api",
  "sp-block-builder",
  "sp-consensus-babe",
@@ -1067,6 +1073,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "common-deip-call"
+version = "0.0.0"
+dependencies = [
+ "appchain-deip-runtime",
+ "deip_serializable_u128",
+ "frame-support",
+ "pallet-deip",
+ "pallet-deip-assets",
+ "pallet-deip-dao",
+ "pallet-deip-proposal",
+ "parity-scale-codec",
+ "serde",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "common-deip-rpc"
+version = "0.0.0"
+dependencies = [
+ "frame-support",
+ "jsonrpc-core",
+ "parity-scale-codec",
+ "sc-rpc-api",
+ "serde",
+ "sp-core",
+ "sp-runtime",
+]
+
+[[package]]
 name = "concurrent-queue"
 version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1435,9 +1471,104 @@ name = "deip-assets-error"
 version = "0.1.0"
 
 [[package]]
+name = "deip-assets-rpc"
+version = "3.0.0"
+dependencies = [
+ "common-deip-rpc",
+ "deip_serializable_u128",
+ "frame-support",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "pallet-deip-assets",
+ "parity-scale-codec",
+ "sc-rpc-api",
+ "serde",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "deip-dao-rpc"
+version = "3.0.0"
+dependencies = [
+ "common-deip-rpc",
+ "frame-support",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "pallet-deip-dao",
+ "parity-scale-codec",
+ "sc-rpc-api",
+ "serde",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "deip-proposal-rpc"
+version = "3.0.0"
+dependencies = [
+ "common-deip-call",
+ "common-deip-rpc",
+ "frame-support",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "pallet-deip-proposal",
+ "parity-scale-codec",
+ "sc-rpc-api",
+ "serde",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "deip-rpc"
+version = "1.0.0"
+dependencies = [
+ "common-deip-rpc",
+ "frame-support",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "pallet-deip",
+ "parity-scale-codec",
+ "sc-rpc-api",
+ "serde",
+ "serde_json",
+ "sp-api",
+ "sp-blockchain",
+ "sp-rpc 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-runtime",
+]
+
+[[package]]
 name = "deip-storage-ops"
 version = "0.1.0"
 dependencies = [
+ "sp-std",
+]
+
+[[package]]
+name = "deip_serializable_u128"
+version = "0.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sp-runtime",
  "sp-std",
 ]
 
@@ -4159,6 +4290,7 @@ name = "pallet-deip"
 version = "3.0.0"
 dependencies = [
  "deip-assets-error",
+ "deip_serializable_u128",
  "frame-support",
  "frame-system",
  "pallet-assets",
@@ -4180,6 +4312,7 @@ name = "pallet-deip-assets"
 version = "3.0.0"
 dependencies = [
  "deip-assets-error",
+ "deip_serializable_u128",
  "frame-support",
  "frame-system",
  "pallet-assets",
@@ -4309,7 +4442,7 @@ dependencies = [
  "sp-api",
  "sp-blockchain",
  "sp-core",
- "sp-rpc",
+ "sp-rpc 3.0.0 (git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8)",
  "sp-runtime",
 ]
 
@@ -4499,7 +4632,7 @@ dependencies = [
  "sp-api",
  "sp-blockchain",
  "sp-core",
- "sp-rpc",
+ "sp-rpc 3.0.0 (git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8)",
  "sp-runtime",
 ]
 
@@ -6286,7 +6419,7 @@ dependencies = [
  "sp-core",
  "sp-keystore",
  "sp-offchain",
- "sp-rpc",
+ "sp-rpc 3.0.0 (git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8)",
  "sp-runtime",
  "sp-session",
  "sp-state-machine",
@@ -6314,7 +6447,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sp-core",
- "sp-rpc",
+ "sp-rpc 3.0.0 (git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8)",
  "sp-runtime",
  "sp-tracing",
  "sp-transaction-pool",
@@ -6484,7 +6617,7 @@ dependencies = [
  "sp-block-builder",
  "sp-blockchain",
  "sp-core",
- "sp-rpc",
+ "sp-rpc 3.0.0 (git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8)",
  "sp-runtime",
  "sp-storage",
  "sp-tracing",
@@ -7341,6 +7474,16 @@ version = "3.0.0"
 source = "git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8#74101dc21cfffb4c2d014fcc28edc166d5ca1b16"
 dependencies = [
  "backtrace",
+]
+
+[[package]]
+name = "sp-rpc"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2e5b1ed655d11449073b914b048895f45241e02b3919d1d0187f315435fee18"
+dependencies = [
+ "serde",
+ "sp-core",
 ]
 
 [[package]]

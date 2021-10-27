@@ -2,7 +2,6 @@ use crate::*;
 use crate::pallet::{AssetsBalanceOf, AssetsAssetIdOf};
 
 use sp_std::marker::PhantomData;
-use sp_runtime::traits::UniqueSaturatedInto;
 use codec::{Encode, Decode};
 
 #[cfg(feature = "std")]
@@ -65,48 +64,4 @@ impl<'de, T: Config> Deserialize<'de> for AssetId<T> {
     }
 }
 
-pub struct AssetBalance<T: Config>(pub AssetsBalanceOf<T>);
-
-#[cfg(feature = "std")]
-impl<T: Config> Serialize for AssetBalance<T> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::ser::Serializer,
-    {
-        let v: u128 = self.0.unique_saturated_into();
-        serializer.serialize_u128(v)
-    }
-}
-
-#[cfg(feature = "std")]
-struct AssetBalanceVisitor<T: Config>(PhantomData<T>);
-
-#[cfg(feature = "std")]
-impl<'de, T: Config> Visitor<'de> for AssetBalanceVisitor<T> {
-    type Value = AssetBalance<T>;
-
-    fn expecting(&self, formatter: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
-        formatter.write_str("an unsigned between 0 and u128::MAX")
-    }
-
-    fn visit_u128<E>(self, value: u128) -> Result<Self::Value, E>
-    where
-        E: Error,
-    {
-        match <AssetsBalanceOf<T> as sp_std::convert::TryFrom<u128>>::try_from(value) {
-            Ok(value) => Ok(AssetBalance::<T>(value)),
-            _ => Err(E::custom(format!("AssetBalance out of range: {}", value))),
-        }
-    }
-}
-
-#[cfg(feature = "std")]
-impl<'de, T: Config> Deserialize<'de> for AssetBalance<T> {
-    fn deserialize<D>(deserializer: D) -> Result<AssetBalance<T>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let visitor = AssetBalanceVisitor(PhantomData);
-        deserializer.deserialize_u128(visitor)
-    }
-}
+pub type AssetBalance<T> = deip_serializable_u128::SerializableAtLeast32BitUnsigned<AssetsBalanceOf<T>>;
