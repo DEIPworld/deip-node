@@ -920,9 +920,9 @@ fn simple_crowdfunding_create_should_fail() {
             H160::random(),
             start_time,
             start_time + 1,
-            DeipAsset::new(0u32, 100u32.into()),
-            DeipAsset::new(0u32, 120u32.into()),
-            vec![DeipAsset::new(0u32.into(), 100u32.into()), DeipAsset::new(14u32.into(), 200u32.into())]
+            DeipAsset::new(DeipAssetId(0u32), 100u32.into()),
+            DeipAsset::new(DeipAssetId(0u32), 120u32.into()),
+            vec![DeipAsset::new(DeipAssetId(0u32), 100u32.into()), DeipAsset::new(DeipAssetId(14u32), 200u32.into())]
         ),
         Error::<Test>::InvestmentOpportunityWrongAssetId);
 
@@ -930,8 +930,8 @@ fn simple_crowdfunding_create_should_fail() {
             H160::random(),
             start_time,
             start_time + 1,
-            DeipAsset::new(0u32, 100u32.into()),
-            DeipAsset::new(0u32, 120u32.into()),
+            DeipAsset::new(DeipAssetId(0u32), 100u32.into()),
+            DeipAsset::new(DeipAssetId(0u32), 120u32.into()),
             vec![]
         ),
         Error::<Test>::InvestmentOpportunitySecurityTokenNotSpecified);
@@ -945,7 +945,7 @@ fn simple_crowdfunding_hard_cap_reached() {
     ext.execute_with(|| {
         let (ref project_id, .., ref account_id) = create_ok_project(None);
 
-        let base_asset_id = 3u32;
+        let base_asset_id = DeipAssetId(3u32);
         let base_asset_total = 120_000u64;
         create_issue_asset(ALICE_ACCOUNT_ID, base_asset_id, base_asset_total, None);
 
@@ -953,15 +953,15 @@ fn simple_crowdfunding_hard_cap_reached() {
         let result = call.dispatch_bypass_filter(Origin::signed(ALICE_ACCOUNT_ID));
         assert_ok!(result);
 
-        let usd_id = 0u32;
+        let usd_id = DeipAssetId(0u32);
         let usd_total = 100_000u64;
         create_issue_asset(*account_id, usd_id, usd_total, Some(*project_id));
 
-        let eur_id = 1u32;
+        let eur_id = DeipAssetId(1u32);
         let eur_total = 80_000u64;
         create_issue_asset(*account_id, eur_id, eur_total, Some(*project_id));
 
-        let balance_before = Assets::balance(base_asset_id, *account_id);
+        let balance_before = DeipAssets::account_balance(account_id, &base_asset_id);
 
         let start_time = pallet_timestamp::Pallet::<Test>::get();
         let sale_id = H160::random();
@@ -1007,15 +1007,15 @@ fn simple_crowdfunding_hard_cap_reached() {
             DeipAsset::new(base_asset_id, hard_cap / 2),
         ));
 
-        assert_eq!(Assets::balance(usd_id, BOB_ACCOUNT_ID), usd_to_sale / 2);
-        assert_eq!(Assets::balance(usd_id, ALICE_ACCOUNT_ID), usd_to_sale / 2);
-        assert_eq!(Assets::balance(usd_id, *account_id), Assets::total_supply(usd_id) - usd_to_sale);
+        assert_eq!(DeipAssets::account_balance(&BOB_ACCOUNT_ID, &usd_id), usd_to_sale / 2);
+        assert_eq!(DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &usd_id), usd_to_sale / 2);
+        assert_eq!(DeipAssets::account_balance(account_id, &usd_id), DeipAssets::total_supply(&usd_id) - usd_to_sale);
 
-        assert_eq!(Assets::balance(eur_id, BOB_ACCOUNT_ID), eur_to_sale / 2);
-        assert_eq!(Assets::balance(eur_id, ALICE_ACCOUNT_ID), eur_to_sale / 2);
-        assert_eq!(Assets::balance(eur_id, *account_id), Assets::total_supply(eur_id) - eur_to_sale);
+        assert_eq!(DeipAssets::account_balance(&BOB_ACCOUNT_ID, &eur_id), eur_to_sale / 2);
+        assert_eq!(DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &eur_id), eur_to_sale / 2);
+        assert_eq!(DeipAssets::account_balance(account_id, &eur_id), DeipAssets::total_supply(&eur_id) - eur_to_sale);
 
-        assert_eq!(Assets::balance(base_asset_id, *account_id), hard_cap + balance_before);
+        assert_eq!(DeipAssets::account_balance(account_id, &base_asset_id), hard_cap + balance_before);
     })
 }
 
@@ -1026,7 +1026,7 @@ fn simple_crowdfunding_expired() {
     ext.execute_with(|| {
         let (ref project_id, .., ref account_id) = create_ok_project(None);
 
-        let base_asset_id = 3u32;
+        let base_asset_id = DeipAssetId(3u32);
         let base_asset_total = 120_000u64;
         create_issue_asset(*account_id, base_asset_id, base_asset_total, Some(*project_id));
 
@@ -1038,16 +1038,16 @@ fn simple_crowdfunding_expired() {
         let result = call.dispatch_bypass_filter(Origin::signed(*account_id));
         assert_ok!(result);
 
-        let usd_id = 0u32;
+        let usd_id = DeipAssetId(0u32);
         let usd_total = 100_000u64;
         create_issue_asset(*account_id, usd_id, usd_total, Some(*project_id));
 
-        let eur_id = 1u32;
+        let eur_id = DeipAssetId(1u32);
         let eur_total = 80_000u64;
         create_issue_asset(*account_id, eur_id, eur_total, Some(*project_id));
 
-        let balance_before = Assets::balance(base_asset_id, *account_id);
-        let bob_balance_before = Assets::balance(base_asset_id, BOB_ACCOUNT_ID);
+        let balance_before = DeipAssets::account_balance(account_id, &base_asset_id);
+        let bob_balance_before = DeipAssets::account_balance(&BOB_ACCOUNT_ID, &base_asset_id);
 
         let start_time_in_blocks = 5;
         let start_time = pallet_timestamp::Pallet::<Test>::get() + start_time_in_blocks * BLOCK_TIME;
@@ -1101,7 +1101,7 @@ fn simple_crowdfunding_expired() {
         ));
 
         // make alice zombie
-        let alice_remainder = Assets::balance(base_asset_id, ALICE_ACCOUNT_ID);
+        let alice_remainder = DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &base_asset_id);
         let call = pallet_deip_assets::Call::<Test>::transfer(base_asset_id, BOB_ACCOUNT_ID, alice_remainder);
         let result = call.dispatch_bypass_filter(Origin::signed(ALICE_ACCOUNT_ID));
         assert_ok!(result);
@@ -1132,17 +1132,17 @@ fn simple_crowdfunding_expired() {
             _ => unreachable!(),
         };
 
-        assert_eq!(Assets::balance(base_asset_id, BOB_ACCOUNT_ID), bob_balance_before + alice_remainder);
-        assert_eq!(Assets::balance(base_asset_id, ALICE_ACCOUNT_ID), alice_investing);
-        assert_eq!(Assets::balance(base_asset_id, *account_id), balance_before);
+        assert_eq!(DeipAssets::account_balance(&BOB_ACCOUNT_ID, &base_asset_id), bob_balance_before + alice_remainder);
+        assert_eq!(DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &base_asset_id), alice_investing);
+        assert_eq!(DeipAssets::account_balance(account_id, &base_asset_id), balance_before);
 
-        assert_eq!(Assets::balance(usd_id, BOB_ACCOUNT_ID), 0);
-        assert_eq!(Assets::balance(usd_id, ALICE_ACCOUNT_ID), 0);
-        assert_eq!(Assets::balance(usd_id, *account_id), usd_total);
+        assert_eq!(DeipAssets::account_balance(&BOB_ACCOUNT_ID, &usd_id), 0);
+        assert_eq!(DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &usd_id), 0);
+        assert_eq!(DeipAssets::account_balance(account_id, &usd_id), usd_total);
 
-        assert_eq!(Assets::balance(eur_id, BOB_ACCOUNT_ID), 0);
-        assert_eq!(Assets::balance(eur_id, ALICE_ACCOUNT_ID), 0);
-        assert_eq!(Assets::balance(eur_id, *account_id), eur_total);
+        assert_eq!(DeipAssets::account_balance(&BOB_ACCOUNT_ID, &eur_id), 0);
+        assert_eq!(DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &eur_id), 0);
+        assert_eq!(DeipAssets::account_balance(account_id, &eur_id), eur_total);
     })
 }
 
@@ -1151,7 +1151,7 @@ fn two_simultaneous_crowdfundings_expired() {
     let mut ext = new_test_ext2();
     let state = offchainify(&mut ext, 2);
     ext.execute_with(|| {
-        let base_asset_id = 3u32;
+        let base_asset_id = DeipAssetId(3u32);
         let base_asset_total = 120_000u64;
         create_issue_asset(DEFAULT_ACCOUNT_ID, base_asset_id, base_asset_total, None);
 
@@ -1163,19 +1163,19 @@ fn two_simultaneous_crowdfundings_expired() {
         let result = call.dispatch_bypass_filter(Origin::signed(DEFAULT_ACCOUNT_ID));
         assert_ok!(result);
 
-        let usd_id = 0u32;
+        let usd_id = DeipAssetId(0u32);
         let usd_total = 100_000u64;
         create_issue_asset(ALICE_ACCOUNT_ID, usd_id, usd_total, None);
 
-        let eur_id = 1u32;
+        let eur_id = DeipAssetId(1u32);
         let eur_total = 80_000u64;
         create_issue_asset(BOB_ACCOUNT_ID, eur_id, eur_total, None);
 
-        let bob_usd_balance_before = Assets::balance(usd_id, BOB_ACCOUNT_ID);
-        let bob_eur_balance_before = Assets::balance(eur_id, BOB_ACCOUNT_ID);
+        let bob_usd_balance_before = DeipAssets::account_balance(&BOB_ACCOUNT_ID, &usd_id);
+        let bob_eur_balance_before = DeipAssets::account_balance(&BOB_ACCOUNT_ID, &eur_id);
 
-        let alice_usd_balance_before = Assets::balance(usd_id, ALICE_ACCOUNT_ID);
-        let alice_base_balance_before = Assets::balance(base_asset_id, ALICE_ACCOUNT_ID);
+        let alice_usd_balance_before = DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &usd_id);
+        let alice_base_balance_before = DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &base_asset_id);
 
         let start_time_in_blocks = 5;
         let start_time = pallet_timestamp::Pallet::<Test>::get() + start_time_in_blocks * BLOCK_TIME;
@@ -1274,12 +1274,12 @@ fn two_simultaneous_crowdfundings_expired() {
             _ => unreachable!(),
         };
 
-        assert_eq!(Assets::balance(base_asset_id, ALICE_ACCOUNT_ID), alice_base_balance_before);
+        assert_eq!(DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &base_asset_id), alice_base_balance_before);
 
-        assert_eq!(Assets::balance(usd_id, BOB_ACCOUNT_ID), bob_usd_balance_before);
-        assert_eq!(Assets::balance(usd_id, ALICE_ACCOUNT_ID), alice_usd_balance_before);
+        assert_eq!(DeipAssets::account_balance(&BOB_ACCOUNT_ID, &usd_id), bob_usd_balance_before);
+        assert_eq!(DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &usd_id), alice_usd_balance_before);
 
-        assert_eq!(Assets::balance(eur_id, BOB_ACCOUNT_ID), bob_eur_balance_before);
+        assert_eq!(DeipAssets::account_balance(&BOB_ACCOUNT_ID, &eur_id), bob_eur_balance_before);
     })
 }
 

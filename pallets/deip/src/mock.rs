@@ -7,6 +7,9 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
 };
 
+use codec::{Encode, Decode};
+use serde::{Serialize, Deserialize};
+
 use deip_assets_error::{ReserveError, UnreserveError};
 
 pub const DEFAULT_ACCOUNT_ID: <Test as system::Config>::AccountId = 123;
@@ -22,6 +25,10 @@ type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 type Balance = u128;
 type AccountId = u64;
+type AssetId = u32;
+
+#[derive(Encode, Decode, Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct DeipAssetId(pub AssetId);
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
@@ -90,7 +97,7 @@ impl pallet_balances::Config for Test {
 
 impl pallet_deip::traits::DeipAssetSystem<u64> for Test {
     type Balance = u64;
-    type AssetId = u32;
+    type AssetId = DeipAssetId;
 
     fn try_get_tokenized_project(id: &Self::AssetId) -> Option<super::ProjectId> {
         DeipAssets::try_get_tokenized_project(id)
@@ -180,7 +187,7 @@ parameter_types! {
 impl pallet_assets::Config for Test {
     type Event = Event;
     type Balance = u64;
-    type AssetId = u32;
+    type AssetId = AssetId;
     type Currency = Balances;
     type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
     type AssetDeposit = AssetDeposit;
@@ -209,6 +216,8 @@ impl pallet_deip_assets::traits::DeipProjectsInfo<AccountId> for Test {
 impl pallet_deip_assets::Config for Test {
     type ProjectsInfo = Self;
     type DeipAccountId = Self::AccountId;
+    type AssetsAssetId = AssetId;
+    type AssetId = DeipAssetId;
     type WipePeriod = WipePeriod;
 }
 
