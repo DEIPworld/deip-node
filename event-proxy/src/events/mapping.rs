@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use super::{Deip, DeipAssets, DeipDao, DeipProposal, DomainEventData};
+use super::{Deip, Assets, DeipDao, DeipProposal, DomainEventData};
 
 use node_template_runtime::{Event, Runtime};
 
@@ -21,7 +21,7 @@ use node_template_runtime::{Event, Runtime};
 
 fn match_event<T>(e: &Event) -> DomainEventData<T>
 where
-    T: DeipProposal + Deip + DeipDao + DeipAssets,
+    T: DeipProposal + Deip + DeipDao + Assets,
 {
     match e {
         Event::DeipDao(deip_dao_event) => match_event_deip_dao(deip_dao_event),
@@ -50,7 +50,7 @@ where
 
 fn match_event_deip_dao<T>(e: &pallet_deip_dao::Event<Runtime>) -> DomainEventData<T>
 where
-    T: DeipProposal + Deip + DeipDao + DeipAssets,
+    T: DeipProposal + Deip + DeipDao + Assets,
 {
     use pallet_deip_dao::Event::*;
 
@@ -73,7 +73,7 @@ where
 
 fn match_event_deip_proposal<T>(e: &pallet_deip_proposal::Event<Runtime>) -> DomainEventData<T>
 where
-    T: DeipProposal + Deip + DeipDao + DeipAssets,
+    T: DeipProposal + Deip + DeipDao + Assets,
 {
     use pallet_deip_proposal::Event::*;
 
@@ -106,7 +106,7 @@ fn match_event_deip_assets<T>(
     e: &pallet_deip_assets::pallet_assets::Event<Runtime>,
 ) -> DomainEventData<T>
 where
-    T: DeipProposal + Deip + DeipDao + DeipAssets,
+    T: DeipProposal + Deip + DeipDao + Assets,
 {
     use pallet_deip_assets::pallet_assets::Event::*;
 
@@ -135,10 +135,11 @@ where
             /* deip_assets::OwnerChangedEvent */
             unimplemented!()
         }
-        // ForceTransferred(..) => {
-        //     /* deip_assets::ForceTransferredEvent */
-        //     unimplemented!()
-        // }
+        #[cfg(not(feature = "octopus"))]
+        ForceTransferred(..) => {
+            /* deip_assets::ForceTransferredEvent */
+            unimplemented!()
+        }
         Frozen(..) => {
             /* deip_assets::FrozenEvent */
             unimplemented!()
@@ -163,18 +164,24 @@ where
             /* deip_assets::ForceCreatedEvent */
             unimplemented!()
         }
-        // MaxZombiesChanged(..) => {
-        //     /* deip_assets::MaxZombiesChangedEvent */
-        //     unimplemented!()
-        // }
+        #[cfg(not(feature = "octopus"))]
+        MaxZombiesChanged(..) => {
+            /* deip_assets::MaxZombiesChangedEvent */
+            unimplemented!()
+        }
         MetadataSet(..) => {
             /* deip_assets::MetadataSetEvent */
             unimplemented!()
         }
+        #[cfg(feature = "octopus")]
         MetadataCleared(..) => unimplemented!(),
+        #[cfg(feature = "octopus")]
         ApprovedTransfer(..) => unimplemented!(),
+        #[cfg(feature = "octopus")]
         ApprovalCancelled(..) => unimplemented!(),
+        #[cfg(feature = "octopus")]
         TransferredApproved(..) => unimplemented!(),
+        #[cfg(feature = "octopus")]
         AssetStatusChanged(..) => unimplemented!(),
         
         __Ignore(..) => unreachable!(),
@@ -183,7 +190,7 @@ where
 
 fn match_event_deip<T>(e: &pallet_deip::Event<Runtime>) -> DomainEventData<T>
 where
-    T: DeipProposal + Deip + DeipDao + DeipAssets,
+    T: DeipProposal + Deip + DeipDao + Assets,
 {
     use pallet_deip::RawEvent::*;
 

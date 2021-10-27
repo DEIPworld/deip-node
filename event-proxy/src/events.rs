@@ -11,7 +11,7 @@ use super::frame::{
     deip_proposal::{self, DeipProposal},
     deip::{self, Deip},
     deip_dao::{self, DeipDao},
-    deip_assets::{self, DeipAssets},
+    assets::{self, Assets},
 };
 
 mod mapping;
@@ -81,18 +81,18 @@ pub struct DomainEventMeta<Block> {
 pub type DomainEvent<T> = BaseEvent<DomainEventData<T>, DomainEventMeta<BlockMetadata<T>>>;
 
 impl<T> From<DomainEvent<T>> for SpecializedEvent<T>
-    where T: Deip + DeipProposal + DeipDao + DeipAssets
+    where T: Deip + DeipProposal + DeipDao + Assets
 {
     fn from(source: DomainEvent<T>) -> Self { Self::Domain(source) }
 }
 
 impl<T> From<InfrastructureEvent<T>> for SpecializedEvent<T>
-    where T: Deip + DeipProposal + DeipDao + DeipAssets
+    where T: Deip + DeipProposal + DeipDao + Assets
 {
     fn from(source: InfrastructureEvent<T>) -> Self { Self::Infrastructure(source) }
 }
 
-impl<T: DeipProposal + Deip + DeipDao + DeipAssets> Serialize for DomainEventData<T> {
+impl<T: DeipProposal + Deip + DeipDao + Assets> Serialize for DomainEventData<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
         where S: Serializer
     {
@@ -128,13 +128,14 @@ impl<T: DeipProposal + Deip + DeipDao + DeipAssets> Serialize for DomainEventDat
             DaoCreate(e) => e.serialize(serializer),
             DaoAlterAuthority(e) => e.serialize(serializer),
             DaoMetadataUpdated(e) => e.serialize(serializer),
-            // =============== DeipAssets:
+            // =============== Assets:
             AssetClassCreated(e) => e.serialize(serializer),
             AssetIssued(e) => e.serialize(serializer),
             AssetTransferred(e) => e.serialize(serializer),
             AssetBurned(e) => e.serialize(serializer),
             AssetTeamChanged(e) => e.serialize(serializer),
             AssetOwnerChanged(e) => e.serialize(serializer),
+            #[cfg(not(feature = "octopus"))]
             AssetForceTransferred(e) => e.serialize(serializer),
             AssetAccountFrozen(e) => e.serialize(serializer),
             AssetAccountThawed(e) => e.serialize(serializer),
@@ -142,8 +143,19 @@ impl<T: DeipProposal + Deip + DeipDao + DeipAssets> Serialize for DomainEventDat
             AssetThawed(e) => e.serialize(serializer),
             AssetClassDestroyed(e) => e.serialize(serializer),
             AssetClassForceCreated(e) => e.serialize(serializer),
+            #[cfg(not(feature = "octopus"))]
             AssetMaxZombiesChanged(e) => e.serialize(serializer),
             AssetMetadataSet(e) => e.serialize(serializer),
+            #[cfg(feature = "octopus")]
+            AssetMetadataCleared(e) => e.serialize(serializer),
+            #[cfg(feature = "octopus")]
+            AssetApprovedTransfer(e) => e.serialize(serializer),
+            #[cfg(feature = "octopus")]
+            AssetApprovalCancelled(e) => e.serialize(serializer),
+            #[cfg(feature = "octopus")]
+            AssetTransferredApproved(e) => e.serialize(serializer),
+            #[cfg(feature = "octopus")]
+            AssetStatusChanged(e) => e.serialize(serializer),
         }
     }
 }
@@ -151,7 +163,7 @@ impl<T: DeipProposal + Deip + DeipDao + DeipAssets> Serialize for DomainEventDat
 pub use DomainEventData::*;
 
 #[derive(Debug)]
-pub enum DomainEventData<T: DeipProposal + Deip + DeipDao + DeipAssets> {
+pub enum DomainEventData<T: DeipProposal + Deip + DeipDao + Assets> {
     // DeipProposal:
     ProposalProposed(deip_proposal::ProposedEvent<T>),
     ProposalApproved(deip_proposal::ApprovedEvent<T>),
@@ -183,27 +195,39 @@ pub enum DomainEventData<T: DeipProposal + Deip + DeipDao + DeipAssets> {
     DaoCreate(deip_dao::DaoCreateEvent<T>),
     DaoAlterAuthority(deip_dao::DaoAlterAuthorityEvent<T>),
     DaoMetadataUpdated(deip_dao::DaoMetadataUpdatedEvent<T>),
-    // DeipAssets:
-    AssetClassCreated(deip_assets::CreatedEvent<T>),
-    AssetIssued(deip_assets::IssuedEvent<T>),
-    AssetTransferred(deip_assets::TransferredEvent<T>),
-    AssetBurned(deip_assets::BurnedEvent<T>),
-    AssetTeamChanged(deip_assets::TeamChangedEvent<T>),
-    AssetOwnerChanged(deip_assets::OwnerChangedEvent<T>),
-    AssetForceTransferred(deip_assets::ForceTransferredEvent<T>),
-    AssetAccountFrozen(deip_assets::FrozenEvent<T>),
-    AssetAccountThawed(deip_assets::ThawedEvent<T>),
-    AssetFrozen(deip_assets::AssetFrozenEvent<T>),
-    AssetThawed(deip_assets::AssetThawedEvent<T>),
-    AssetClassDestroyed(deip_assets::DestroyedEvent<T>),
-    AssetClassForceCreated(deip_assets::ForceCreatedEvent<T>),
-    AssetMaxZombiesChanged(deip_assets::MaxZombiesChangedEvent<T>),
-    AssetMetadataSet(deip_assets::MetadataSetEvent<T>),
+    // Assets:
+    AssetClassCreated(assets::CreatedEvent<T>),
+    AssetIssued(assets::IssuedEvent<T>),
+    AssetTransferred(assets::TransferredEvent<T>),
+    AssetBurned(assets::BurnedEvent<T>),
+    AssetTeamChanged(assets::TeamChangedEvent<T>),
+    AssetOwnerChanged(assets::OwnerChangedEvent<T>),
+    #[cfg(not(feature = "octopus"))]
+    AssetForceTransferred(assets::ForceTransferredEvent<T>),
+    AssetAccountFrozen(assets::FrozenEvent<T>),
+    AssetAccountThawed(assets::ThawedEvent<T>),
+    AssetFrozen(assets::AssetFrozenEvent<T>),
+    AssetThawed(assets::AssetThawedEvent<T>),
+    AssetClassDestroyed(assets::DestroyedEvent<T>),
+    AssetClassForceCreated(assets::ForceCreatedEvent<T>),
+    #[cfg(not(feature = "octopus"))]
+    AssetMaxZombiesChanged(assets::MaxZombiesChangedEvent<T>),
+    AssetMetadataSet(assets::MetadataSetEvent<T>),
+    #[cfg(feature = "octopus")]
+    AssetMetadataCleared(assets::MetadataClearedEvent<T>),
+    #[cfg(feature = "octopus")]
+    AssetApprovedTransfer(assets::ApprovedTransferEvent<T>),
+    #[cfg(feature = "octopus")]
+    AssetApprovalCancelled(assets::ApprovalCancelledEvent<T>),
+    #[cfg(feature = "octopus")]
+    AssetTransferredApproved(assets::TransferredApprovedEvent<T>),
+    #[cfg(feature = "octopus")]
+    AssetStatusChanged(assets::AssetStatusChangedEvent<T>),
 }
 
 pub fn known_domain_events
 <
-    T: DeipProposal + Deip + DeipDao + DeipAssets + Debug,
+    T: DeipProposal + Deip + DeipDao + Assets + Debug,
 >
 (
     raw: &(u32, RawEvent),
@@ -446,125 +470,172 @@ pub fn known_domain_events
             data: decode_event_data(raw).map(DaoMetadataUpdated)?,
             meta,
         },
-        // =========== DeipAssets:
+        // =========== Assets:
         (                               
-            deip_assets::CreatedEvent::<T>::MODULE,
-            deip_assets::CreatedEvent::<T>::EVENT
+            assets::CreatedEvent::<T>::MODULE,
+            assets::CreatedEvent::<T>::EVENT
         ) => DomainEvent {
             name: "asset_class_created".to_string(),
             data: decode_event_data(raw).map(AssetClassCreated)?,
             meta,
         },
         (                               
-            deip_assets::IssuedEvent::<T>::MODULE,
-            deip_assets::IssuedEvent::<T>::EVENT
+            assets::IssuedEvent::<T>::MODULE,
+            assets::IssuedEvent::<T>::EVENT
         ) => DomainEvent {
             name: "asset_issued".to_string(),
             data: decode_event_data(raw).map(AssetIssued)?,
             meta,
         },
         (                               
-            deip_assets::TransferredEvent::<T>::MODULE,
-            deip_assets::TransferredEvent::<T>::EVENT
+            assets::TransferredEvent::<T>::MODULE,
+            assets::TransferredEvent::<T>::EVENT
         ) => DomainEvent {
             name: "asset_transferred".to_string(),
             data: decode_event_data(raw).map(AssetTransferred)?,
             meta,
         },
         (                               
-            deip_assets::BurnedEvent::<T>::MODULE,
-            deip_assets::BurnedEvent::<T>::EVENT
+            assets::BurnedEvent::<T>::MODULE,
+            assets::BurnedEvent::<T>::EVENT
         ) => DomainEvent {
             name: "asset_burned".to_string(),
             data: decode_event_data(raw).map(AssetBurned)?,
             meta,
         },
         (                               
-            deip_assets::TeamChangedEvent::<T>::MODULE,
-            deip_assets::TeamChangedEvent::<T>::EVENT
+            assets::TeamChangedEvent::<T>::MODULE,
+            assets::TeamChangedEvent::<T>::EVENT
         ) => DomainEvent {
             name: "asset_team_changed".to_string(),
             data: decode_event_data(raw).map(AssetTeamChanged)?,
             meta,
         },
         (                               
-            deip_assets::OwnerChangedEvent::<T>::MODULE,
-            deip_assets::OwnerChangedEvent::<T>::EVENT
+            assets::OwnerChangedEvent::<T>::MODULE,
+            assets::OwnerChangedEvent::<T>::EVENT
         ) => DomainEvent {
             name: "asset_owner_changed".to_string(),
             data: decode_event_data(raw).map(AssetOwnerChanged)?,
             meta,
         },
+        #[cfg(not(feature = "octopus"))]
         (                               
-            deip_assets::ForceTransferredEvent::<T>::MODULE,
-            deip_assets::ForceTransferredEvent::<T>::EVENT
+            assets::ForceTransferredEvent::<T>::MODULE,
+            assets::ForceTransferredEvent::<T>::EVENT
         ) => DomainEvent {
             name: "asset_force_transferred".to_string(),
             data: decode_event_data(raw).map(AssetForceTransferred)?,
             meta,
         },
         (                               
-            deip_assets::FrozenEvent::<T>::MODULE,
-            deip_assets::FrozenEvent::<T>::EVENT
+            assets::FrozenEvent::<T>::MODULE,
+            assets::FrozenEvent::<T>::EVENT
         ) => DomainEvent {
             name: "asset_account_frozen".to_string(),
             data: decode_event_data(raw).map(AssetAccountFrozen)?,
             meta,
         },
         (                               
-            deip_assets::ThawedEvent::<T>::MODULE,
-            deip_assets::ThawedEvent::<T>::EVENT
+            assets::ThawedEvent::<T>::MODULE,
+            assets::ThawedEvent::<T>::EVENT
         ) => DomainEvent {
             name: "asset_account_thawed".to_string(),
             data: decode_event_data(raw).map(AssetAccountThawed)?,
             meta,
         },
         (                               
-            deip_assets::AssetFrozenEvent::<T>::MODULE,
-            deip_assets::AssetFrozenEvent::<T>::EVENT
+            assets::AssetFrozenEvent::<T>::MODULE,
+            assets::AssetFrozenEvent::<T>::EVENT
         ) => DomainEvent {
             name: "asset_frozen".to_string(),
             data: decode_event_data(raw).map(AssetFrozen)?,
             meta,
         },
         (                               
-            deip_assets::AssetThawedEvent::<T>::MODULE,
-            deip_assets::AssetThawedEvent::<T>::EVENT
+            assets::AssetThawedEvent::<T>::MODULE,
+            assets::AssetThawedEvent::<T>::EVENT
         ) => DomainEvent {
             name: "asset_thawed".to_string(),
             data: decode_event_data(raw).map(AssetThawed)?,
             meta,
         },
         (                               
-            deip_assets::DestroyedEvent::<T>::MODULE,
-            deip_assets::DestroyedEvent::<T>::EVENT
+            assets::DestroyedEvent::<T>::MODULE,
+            assets::DestroyedEvent::<T>::EVENT
         ) => DomainEvent {
             name: "asset_class_destroyed".to_string(),
             data: decode_event_data(raw).map(AssetClassDestroyed)?,
             meta,
         },
         (                               
-            deip_assets::ForceCreatedEvent::<T>::MODULE,
-            deip_assets::ForceCreatedEvent::<T>::EVENT
+            assets::ForceCreatedEvent::<T>::MODULE,
+            assets::ForceCreatedEvent::<T>::EVENT
         ) => DomainEvent {
             name: "asset_class_force_created".to_string(),
             data: decode_event_data(raw).map(AssetClassForceCreated)?,
             meta,
         },
+        #[cfg(not(feature = "octopus"))]
         (                               
-            deip_assets::MaxZombiesChangedEvent::<T>::MODULE,
-            deip_assets::MaxZombiesChangedEvent::<T>::EVENT
+            assets::MaxZombiesChangedEvent::<T>::MODULE,
+            assets::MaxZombiesChangedEvent::<T>::EVENT
         ) => DomainEvent {
             name: "asset_max_zombies_changed".to_string(),
             data: decode_event_data(raw).map(AssetMaxZombiesChanged)?,
             meta,
         },
         (                               
-            deip_assets::MetadataSetEvent::<T>::MODULE,
-            deip_assets::MetadataSetEvent::<T>::EVENT
+            assets::MetadataSetEvent::<T>::MODULE,
+            assets::MetadataSetEvent::<T>::EVENT
         ) => DomainEvent {
             name: "asset_metadata_set".to_string(),
             data: decode_event_data(raw).map(AssetMetadataSet)?,
+            meta,
+        },
+        #[cfg(feature = "octopus")]
+        (                               
+            assets::MetadataClearedEvent::<T>::MODULE,
+            assets::MetadataClearedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_metadata_cleared".to_string(),
+            data: decode_event_data(raw).map(AssetMetadataCleared)?,
+            meta,
+        },
+        #[cfg(feature = "octopus")]
+        (                               
+            assets::ApprovedTransferEvent::<T>::MODULE,
+            assets::ApprovedTransferEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_approved_transfer".to_string(),
+            data: decode_event_data(raw).map(AssetApprovedTransfer)?,
+            meta,
+        },
+        #[cfg(feature = "octopus")]
+        (                               
+            assets::ApprovalCancelledEvent::<T>::MODULE,
+            assets::ApprovalCancelledEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_approval_cancelled".to_string(),
+            data: decode_event_data(raw).map(AssetApprovalCancelled)?,
+            meta,
+        },
+        #[cfg(feature = "octopus")]
+        (                               
+            assets::TransferredApprovedEvent::<T>::MODULE,
+            assets::TransferredApprovedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_transferred_approved".to_string(),
+            data: decode_event_data(raw).map(AssetTransferredApproved)?,
+            meta,
+        },
+        #[cfg(feature = "octopus")]
+        (                               
+            assets::AssetStatusChangedEvent::<T>::MODULE,
+            assets::AssetStatusChangedEvent::<T>::EVENT
+        ) => DomainEvent {
+            name: "asset_status_changed".to_string(),
+            data: decode_event_data(raw).map(AssetStatusChanged)?,
             meta,
         },
         _ => return Ok(None),
