@@ -56,7 +56,7 @@ impl frame::deip_dao::DeipDao for RuntimeT {
 type AssetId = <RealRuntime as pallet_assets::Config>::AssetId;
 type Balance = <RealRuntime as pallet_assets::Config>::Balance;
 
-impl frame::deip_assets::DeipAssets for RuntimeT {
+impl frame::assets::Assets for RuntimeT {
     type AssetId = AssetId;
     type Balance = Balance;
 }

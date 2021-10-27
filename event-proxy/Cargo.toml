@@ -11,8 +11,8 @@ version = '3.0.0'
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-#substrate-subxt = { git = "https://github.com/DEIPworld/substrate-subxt.git", rev = "ef106e3686869371302923f14f3961c89a3ca292", features = ["octopus"] }
-substrate-subxt = { path = "../../substrate-subxt", features = ["octopus"] }
+substrate-subxt = { git = "https://github.com/DEIPworld/substrate-subxt.git", rev = "d780d5383b11d641488fb357d2c639490cdb9656" }
+#substrate-subxt = { path = "../../substrate-subxt" }
 jsonrpsee-ws-client = { version = "0.2.0", default-features = false , features = ["tokio1"] }
 rdkafka = { version = "=0.26.0", default_features = true, features = ["cmake-build"] }
 tokio = { version = "1", features = ["full"] }
@@ -46,7 +46,8 @@ frame-support = "3.0.0"
 [workspace]
 
 [features]
-default = []
+default = ["octopus"]
+octopus = ["substrate-subxt/octopus"]
 
 [patch."https://github.com/paritytech/substrate"]
 frame-support = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
