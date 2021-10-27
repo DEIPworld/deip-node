@@ -1,6 +1,5 @@
 use crate::*;
 
-use codec::HasCompact;
 use deip_assets_error::*;
 use sp_runtime::traits::AtLeast32BitUnsigned;
 
@@ -9,7 +8,7 @@ pub trait DeipAssetSystem<AccountId> {
     type Balance: Member + Parameter + AtLeast32BitUnsigned + Default + Copy;
 
     /// The arithmetic type of asset identifier.
-    type AssetId: Member + Parameter + Default + Copy + HasCompact;
+    type AssetId: Member + Parameter + Default + Copy;
 
     fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId>;
 

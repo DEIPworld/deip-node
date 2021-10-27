@@ -77,6 +77,7 @@ pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::Account
 /// Balance of an account.
 pub type Balance = u128;
 
+pub type DeipAssetId = H160;
 pub type AssetId = u32;
 /// Balance of an UIAs.
 pub type AssetBalance = u128;
@@ -550,6 +551,8 @@ parameter_types! {
 impl pallet_deip_assets::Config for Runtime {
     type ProjectsInfo = Self;
     type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
+    type AssetsAssetId = AssetId;
+    type AssetId = DeipAssetId;
     type WipePeriod = WipePeriod;
 }
 
@@ -650,7 +653,7 @@ impl pallet_deip_dao::Config for Runtime {
 
 impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
     type Balance = AssetBalance;
-    type AssetId = AssetId;
+    type AssetId = DeipAssetId;
 
     fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId> {
         DeipAssets::try_get_tokenized_project(id)
@@ -1043,7 +1046,7 @@ impl_runtime_apis! {
         }
     }
 
-    impl pallet_deip::api::DeipApi<Block, AccountId, Moment, AssetId, AssetBalance, Hash> for Runtime {
+    impl pallet_deip::api::DeipApi<Block, AccountId, Moment, DeipAssetId, AssetBalance, Hash> for Runtime {
         fn get_project(project_id: &ProjectId) -> Option<ProjectOf<crate::Runtime>> {
             Deip::get_project(project_id)
         }
