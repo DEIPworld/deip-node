@@ -4,6 +4,7 @@ members = [
     'node',
     'pallets/*',
     'runtime',
+    'bin/*',
 ]
 [profile.release]
 panic = 'unwind'

@@ -1,0 +1,13 @@
+[blockchain]
+rpc = "ws://deip-blockchain-node:9944/"
+
+[message_broker]
+kafka_bootstrap_servers = "kafka:9092"
+
+[offchain]
+#[offchain.last_known_block]
+## Uncomment this section to be able to set last-known-block 
+## for the dummy offchain-service-client
+#number = 0
+#hash = "0x24e1f2517d77bd828896cdc2d4710edd3d67b1ac26e883130a622ab5ff37fa1e"
+#parent_hash = "0x0000000000000000000000000000000000000000000000000000000000000000"
