@@ -23,7 +23,7 @@ use pallet_octopus_appchain::AuthorityId as OctopusId;
 use sp_consensus_babe::AuthorityId as BabeId;
 
 use pallet_deip::{DomainId, Domain};
-use pallet_deip_assets::SerializableAtLeast32BitUnsigned;
+use pallet_deip_assets::SerializableAssetBalance;
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -248,7 +248,7 @@ fn testnet_genesis(
         },
         deip_assets: DeipAssetsConfig {
             core_asset_admin: root_key,
-            balances: endowed_accounts.iter().cloned().map(|k|(k, SerializableAtLeast32BitUnsigned((1u64 << 60).into()))).collect(),
+            balances: endowed_accounts.iter().cloned().map(|k|(k, SerializableAssetBalance((1u64 << 60).into()))).collect(),
             ..Default::default()
         },
         deip_proposal: DeipProposalConfig {},

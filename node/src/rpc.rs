@@ -7,7 +7,7 @@
 
 use std::sync::Arc;
 
-use appchain_deip_runtime::{opaque::Block, AccountId, Balance, BlockNumber, Hash, Index, Moment, AssetId, AssetBalance, AssetExtra};
+use appchain_deip_runtime::{opaque::Block, AccountId, Balance, BlockNumber, Hash, Index, Moment, AssetId, AssetBalance, AssetExtra, DeipAssetId};
 use sc_client_api::{AuxStore, BlockchainEvents, ExecutorProvider, ProofProvider, StorageProvider, BlockBackend};
 use sc_consensus_babe::{Config, Epoch};
 use sc_consensus_babe_rpc::BabeRpcHandler;
@@ -123,7 +123,7 @@ where
 	C::Api: BlockBuilder<Block>,
 	C::Api: Metadata<Block>,
 	C::Api: deip_dao_rpc::DeipDaoRuntimeApi<Block, AccountId>,
-	C::Api: deip_rpc::DeipStorageRuntimeApi<Block, AccountId, Moment, AssetId, AssetBalance, Hash>,
+	C::Api: deip_rpc::DeipStorageRuntimeApi<Block, AccountId, Moment, DeipAssetId, AssetBalance, Hash>,
 	P: TransactionPool + 'static,
 	SC: SelectChain<Block> + 'static,
 	B: sc_client_api::Backend<Block> + Send + Sync + 'static,

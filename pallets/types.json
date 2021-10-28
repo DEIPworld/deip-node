@@ -186,7 +186,7 @@
     ]
   },
   "DeipAsset": {
-    "id": "AssetId",
+    "id": "DeipAssetIdOf",
     "amount": {
       "0": "AssetsBalanceOf"
     }
@@ -258,7 +258,7 @@
   "DeipProjectIdOf": "H160",
   "AssetId": "u32",
   "AssetsAssetIdOf": "AssetId",
-  "DeipAssetIdOf": "AssetId",
+  "DeipAssetIdOf": "H160",
   "DeipReviewVoteId": "H160",
   "DeipReviewVote": {
     "dao": "AccountId",
