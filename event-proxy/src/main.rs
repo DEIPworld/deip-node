@@ -75,7 +75,9 @@ use clap::value_t_or_exit;
 #[tokio::main]
 async fn main() {
     
-    flexi_logger::Logger::try_with_env().unwrap().start().unwrap();
+    flexi_logger::Logger::try_with_env().unwrap()
+        .format(flexi_logger::opt_format)
+        .start().unwrap();
     
     let args = clap::App::new("event-proxy")
         .arg(clap::Arg::with_name("config")

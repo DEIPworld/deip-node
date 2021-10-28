@@ -1,11 +1,13 @@
 use substrate_subxt::{Runtime, ClientBuilder, system::System};
 
 use super::frame::{DeipProposal, Deip, DeipDao};
+#[cfg(feature = "octopus")]
+use super::frame::{OctopusAppchain, OctopusLpos};
 
 
-pub fn register_types<T: Runtime>(c: ClientBuilder<T>) -> ClientBuilder<T>
+fn _register_types<T: Runtime>(c: ClientBuilder<T>) -> ClientBuilder<T>
     where
-        T: System + DeipProposal + Deip + DeipDao
+        T: System + DeipProposal + Deip + DeipDao,
 {
     c
         // System:
@@ -29,4 +31,27 @@ pub fn register_types<T: Runtime>(c: ClientBuilder<T>) -> ClientBuilder<T>
         .register_type_size::<<T as Deip>::ContractAgreementTerms>("ContractAgreementTerms")
         // DeipDao:
         .register_type_size::<<T as DeipDao>::Dao>("DaoOf<T>")
+}
+
+#[cfg(not(feature = "octopus"))]
+pub fn register_types<T: Runtime>(c: ClientBuilder<T>) -> ClientBuilder<T>
+    where
+        T: System + DeipProposal + Deip + DeipDao,
+{
+    _register_types(c)
+}
+
+#[cfg(feature = "octopus")]
+pub fn register_types<T: Runtime>(c: ClientBuilder<T>) -> ClientBuilder<T>
+    where
+        T: System + DeipProposal + Deip + DeipDao + OctopusAppchain + OctopusLpos,
+{
+    let c = _register_types(c);
+    c
+        // OctopusAppchain:
+        .register_type_size::<<T as OctopusAppchain>::Balance>("BalanceOf<T>")
+        .register_type_size::<<T as OctopusAppchain>::AssetBalance>("AssetBalanceOf<T>")
+        .register_type_size::<<T as OctopusAppchain>::AssetId>("AssetIdOf<T>")
+        // OctopusLpos:
+        .register_type_size::<<T as OctopusAppchain>::AssetId>("EraIndex")
 }

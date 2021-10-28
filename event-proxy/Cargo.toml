@@ -11,7 +11,7 @@ version = '3.0.0'
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-substrate-subxt = { git = "https://github.com/DEIPworld/substrate-subxt.git", rev = "d780d5383b11d641488fb357d2c639490cdb9656" }
+substrate-subxt = { git = "https://github.com/DEIPworld/substrate-subxt.git", rev = "297bf5354de99df1ee34c54901d1c800957f5928" }
 #substrate-subxt = { path = "../../substrate-subxt" }
 jsonrpsee-ws-client = { version = "0.2.0", default-features = false , features = ["tokio1"] }
 rdkafka = { version = "=0.26.0", default_features = true, features = ["cmake-build"] }
@@ -34,6 +34,9 @@ pallet-deip-assets = { path = "../pallets/deip_assets"}
 node-template-runtime = { package = 'appchain-deip-runtime', path = '../runtime'}
 deip-call = { package = "common-deip-call", path = "../deip_common/deip_call" }
 
+pallet-octopus-appchain = { default-features = false, git = "https://github.com/octopus-network/octopus-pallets", branch = "main" }
+pallet-octopus-lpos = { default-features = false, git = "https://github.com/octopus-network/octopus-pallets", branch = "main" }
+
 codec = { package = "parity-scale-codec", version = "2.1", default-features = false, features = ["derive", "full"] }
 hex = "0.4.3"
 
@@ -43,6 +46,12 @@ clap = "2.33.3"
 
 frame-support = "3.0.0"
 
+[dependencies.frame-system]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
 [workspace]
 
 [features]
@@ -51,6 +60,7 @@ octopus = ["substrate-subxt/octopus"]
 
 [patch."https://github.com/paritytech/substrate"]
 frame-support = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-metadata = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 frame-system = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 pallet-session = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 sc-client-api = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
@@ -128,6 +138,7 @@ substrate-build-script-utils = { git = "https://github.com/octopus-network/subst
 
 [patch.crates-io]
 frame-support = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-metadata = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 frame-system = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 pallet-session = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 sc-client-api = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
