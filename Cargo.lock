@@ -1441,6 +1441,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "custom-transaction"
+version = "3.0.0"
+dependencies = [
+ "appchain-deip-runtime",
+ "frame-system",
+ "pallet-balances",
+ "pallet-deip-dao",
+ "pallet-sudo",
+ "pallet-transaction-payment",
+ "parity-scale-codec",
+ "rustc-hex",
+ "sp-core",
+ "sp-keyring 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "data-encoding"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5861,7 +5879,7 @@ dependencies = [
  "serde_json",
  "sp-blockchain",
  "sp-core",
- "sp-keyring",
+ "sp-keyring 3.0.0 (git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8)",
  "sp-keystore",
  "sp-panic-handler",
  "sp-runtime",
@@ -7395,6 +7413,18 @@ dependencies = [
  "sp-wasm-interface",
  "tracing",
  "tracing-core",
+]
+
+[[package]]
+name = "sp-keyring"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b59f2b0e94b2048d4984aa6eb40eef2e4c05d3adf27a083dd3c9b0fce74ef7a"
+dependencies = [
+ "lazy_static",
+ "sp-core",
+ "sp-runtime",
+ "strum",
 ]
 
 [[package]]
