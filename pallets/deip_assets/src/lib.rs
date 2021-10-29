@@ -182,7 +182,7 @@ pub mod pallet {
         StorageDoubleMap<_,
         Identity,
         DeipAssetIdOf<T>,
-        Identity,
+        Blake2_128Concat,
         AssetsAssetIdOf<T>,
         (),
         OptionQuery

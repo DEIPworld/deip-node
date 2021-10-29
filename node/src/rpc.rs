@@ -209,6 +209,7 @@ where
 		AccountId,
 		Balance,
 		AssetExtra,
+		DeipAssetId,
 	>::to_delegate(deip_assets_rpc::DeipAssetsRpcObj::<
 		sc_rpc::state::State<Block, C>,
 		Block,
