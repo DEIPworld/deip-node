@@ -279,7 +279,7 @@ async fn get_block_events(
                 if let Phase::ApplyExtrinsic(i) = phase {
                     let event = match raw {
                         Raw::Event(event) => event,
-                        Raw::Error(err) => return Err(err.into()),
+                        Raw::Error(_) => continue,
                     };
                     events.push((i, event));
                 }
