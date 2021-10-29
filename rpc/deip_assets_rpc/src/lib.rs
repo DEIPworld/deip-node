@@ -53,7 +53,7 @@ where
         &self,
         at: Option<BlockHash>,
         count: u32,
-        start_id: Option<(AssetId, AccountId)>,
+        start_id: Option<(DeipAssetId, AccountId)>,
     ) -> FutureResult<Vec<AssetBalanceWithIds<DeipAssetId, Balance, AccountId, Extra>>>;
 
     #[rpc(name = "assets_getAssetBalanceByOwner")]
@@ -192,17 +192,40 @@ where
         &self,
         at: Option<HashOf<Block>>,
         count: u32,
-        start_id: Option<(AssetId, AccountId)>,
+        start_id: Option<(DeipAssetId, AccountId)>,
     ) -> FutureResult<Vec<AssetBalanceWithIds<DeipAssetId, Balance, AccountId, Extra>>> {
         let prefix = prefix(b"Assets", b"Account");
 
-        let start_key = start_id.map(|(first, second)| {
-            chain_key_hash_double_map(
-                &prefix,
-                &HashedKey::<Blake2_128Concat>::new(&first),
-                &HashedKey::<Blake2_128Concat>::new(&second),
-            )
-        });
+        let start_key = match start_id {
+            None => None,
+            Some((asset, account)) => {
+                let index_hashed = HashedKey::<Identity>::new(&asset);
+                let prefix_key = chain_key_hash_map(&crate::prefix(b"DeipAssets", b"AssetIdByDeipAssetId"), &index_hashed);
+                let mut keys = match self.state
+                    .storage_keys_paged(Some(prefix_key), 1, None, at)
+                    .wait() {
+                        Ok(k) => k,
+                        Err(e) => return Box::new(future::err(to_rpc_error(
+                            Error::ScRpcApiError,
+                            Some(format!("{:?}", e)),
+                        ))),
+                };
+                if keys.is_empty() {
+                    return Box::new(future::ok(vec![]));
+                }
+
+                let index_key = keys.pop().unwrap();
+                let no_prefix = &index_key.0[32..];
+                let key_hashed =
+                    HashedKeyRef::<'_, Blake2_128Concat>::unsafe_from_hashed(&no_prefix[index_hashed.as_ref().len()..]);
+
+                Some(chain_key_hash_double_map(
+                    &prefix,
+                    &key_hashed,
+                    &HashedKey::<Blake2_128Concat>::new(&account),
+                ))
+            }
+        };
 
         let state = &self.state;
         let keys = match state
