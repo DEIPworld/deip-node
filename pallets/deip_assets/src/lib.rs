@@ -182,8 +182,19 @@ pub mod pallet {
         StorageDoubleMap<_,
         Identity,
         DeipAssetIdOf<T>,
-        Identity,
+        Blake2_128Concat,
         AssetsAssetIdOf<T>,
+        (),
+        OptionQuery
+    >;
+
+    #[pallet::storage]
+    pub(super) type DeipAssetIdByAssetId<T: Config> =
+        StorageDoubleMap<_,
+        Blake2_128Concat,
+        AssetsAssetIdOf<T>,
+        Identity,
+        DeipAssetIdOf<T>,
         (),
         OptionQuery
     >;
@@ -586,6 +597,7 @@ pub mod pallet {
 
             NextAssetId::<T>::put(next_asset_id);
             AssetIdByDeipAssetId::<T>::insert(id, asset_id, ());
+            DeipAssetIdByAssetId::<T>::insert(asset_id, id, ());
 
             if let Some(project_id) = project_id {
                 ProjectIdByAssetId::<T>::insert(id, project_id.clone());

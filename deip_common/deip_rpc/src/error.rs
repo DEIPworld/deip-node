@@ -41,6 +41,10 @@ pub enum Error {
     NdaApiGetFailed = 32,
     NdaIdDecodeFailed = 33,
     NdaDecodeFailed = 34,
+    DeipAssetIdDecodeFailed = 35,
+    DeipAssetIdRemainingLengthFailed = 36,
+    DeipAssetIdInverseIndexFailed = 37,
+    AssetIdRemainingLengthFailed = 38,
 }
 
 impl Into<RpcErrorCode> for Error {

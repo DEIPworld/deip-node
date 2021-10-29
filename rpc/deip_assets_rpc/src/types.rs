@@ -51,14 +51,6 @@ pub struct AssetKeyValue<AssetId, Balance, AccountId, DepositBalance> {
 	_m: std::marker::PhantomData<(Balance, AccountId, DepositBalance)>,
 }
 
-impl<AssetId, Balance, AccountId, DepositBalance>
-	AssetKeyValue<AssetId, Balance, AccountId, DepositBalance>
-{
-	pub fn new(id: AssetId) -> Self {
-		Self { id, _m: Default::default() }
-	}
-}
-
 impl<AssetId, Balance, AccountId, DepositBalance> common_rpc::KeyValueInfo
 	for AssetKeyValue<AssetId, Balance, AccountId, DepositBalance>
 where

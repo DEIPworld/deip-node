@@ -68,6 +68,48 @@ impl<'a, Hasher: StorageHasher> HashedKeyRef<'a, Hasher> {
     }
 }
 
+// The trait is designed to map tuple with data and composite key
+// to a tuple with data and a Result containing composite key.
+// Check `get_list_by_keys` and the second implementation for details.
+pub trait CompositeKeyTrait<Key, Hasher> {
+    type KeyType;
+
+    fn decompose(self) -> (Option<StorageData>, Result<Self::KeyType, Vec<u8>>);
+}
+
+// This implementation is for ordinary use when we just retrieve data
+// from the map. Check this file for usage.
+impl<Key, Hasher> CompositeKeyTrait<Key, Hasher> for (Option<StorageData>, StorageKey)
+where
+    Key: Decode,
+    Hasher: StorageHasher + ReversibleStorageHasher,
+{
+    type KeyType = Key;
+
+    fn decompose(self) -> (Option<StorageData>, Result<Self::KeyType, Vec<u8>>) {
+        let key = self.1;
+        let no_prefix = Hasher::reverse(&key.0[32..]);
+        (self.0, Key::decode(&mut &no_prefix[..]).map_err(|_| key.0))
+    }
+}
+
+// This implementation is for case when index-map is used to get the
+// key which is used to retrieve data from the map, but the index key
+// should also be kept.
+impl<Key, Hasher, IndexKey> CompositeKeyTrait<Key, Hasher> for (Option<StorageData>, StorageKey, IndexKey)
+where
+    Key: Decode,
+    Hasher: StorageHasher + ReversibleStorageHasher,
+{
+    type KeyType = (IndexKey, Key);
+
+    fn decompose(self) -> (Option<StorageData>, Result<Self::KeyType, Vec<u8>>) {
+        let (data, key, index) = self;
+        let x = CompositeKeyTrait::<Key, Hasher>::decompose((data, key));
+        (x.0, x.1.map(|k| (index, k)))
+    }
+}
+
 pub fn chain_key_hash_map<T: HashedKeyTrait>(prefix: &[u8], key: &T) -> StorageKey {
     StorageKey(prefix.iter().chain(key.as_ref()).map(|b| *b).collect())
 }
@@ -114,7 +156,7 @@ where
     )
 }
 
-fn get_value<R, State, Hash>(
+pub fn get_value<R, State, Hash>(
     state: &State,
     key: StorageKey,
     at: Option<Hash>,
@@ -147,15 +189,17 @@ pub fn get_list_by_keys<KeyValue, Hasher, State, BlockHash, KeyMap, T>(
     count: u32,
     start_key: Option<StorageKey>,
     key_map: KeyMap,
-) -> FutureResult<Vec<ListResult<KeyValue::Key, KeyValue::Value>>>
+) -> FutureResult<Vec<ListResult<<T::Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType, KeyValue::Value>>>
 where
     KeyValue: KeyValueInfo,
     Hasher: StorageHasher + ReversibleStorageHasher,
     State: sc_rpc_api::state::StateApi<BlockHash>,
     BlockHash: Copy,
     KeyMap: FnMut(StorageKey) -> T,
-    T: futures::future::IntoFuture<Item = (StorageKey, Option<StorageData>), Error = RpcError>,
+    T: futures::future::IntoFuture<Error = RpcError>,
+    T::Item: 'static + Send + CompositeKeyTrait<KeyValue::Key, Hasher>,
     T::Future: 'static + Send,
+    <T::Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType: 'static + Send,
 {
     let keys = match state
         .storage_keys_paged(Some(prefix_key), count, start_key, at)
@@ -217,7 +261,7 @@ where
 
         state
             .storage(key.clone(), at)
-            .map(|v| (key, v))
+            .map(|v| (v, key))
             .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
     };
 
@@ -304,7 +348,7 @@ impl<Hasher: StorageHasher + ReversibleStorageHasher> StorageMap<Hasher> {
         let map = |k: StorageKey| {
             state
                 .storage(k.clone(), at)
-                .map(|v| (k, v))
+                .map(|v| (v, k))
                 .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
         };
 
@@ -320,27 +364,28 @@ impl<Hasher: StorageHasher + ReversibleStorageHasher> StorageMap<Hasher> {
 
     pub fn get_list_by_keys<KeyValue, T>(
         keys: Vec<T>,
-    ) -> FutureResult<Vec<ListResult<KeyValue::Key, KeyValue::Value>>>
+    ) -> FutureResult<Vec<ListResult<<T::Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType, KeyValue::Value>>>
     where
         KeyValue: KeyValueInfo,
-        T: futures::future::IntoFuture<Item = (StorageKey, Option<StorageData>), Error = RpcError>,
+        T: futures::future::IntoFuture<Error = RpcError>,
+        T::Item: 'static + Send + CompositeKeyTrait<KeyValue::Key, Hasher>,
         T::Future: 'static + Send,
+        <T::Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType: 'static + Send,
     {
         let result = Vec::with_capacity(keys.len());
         Box::new(
             stream::futures_ordered(keys.into_iter()).fold(result, |mut result, kv| {
-                let (key, value) = kv;
+                let (value, composite_key) = kv.decompose();
                 let data = match value {
                     None => return future::err(to_rpc_error(Error::NoneForReturnedKey, None)),
                     Some(d) => d,
                 };
 
-                let no_prefix = Hasher::reverse(&key.0[32..]);
-                let key = match KeyValue::Key::decode(&mut &no_prefix[..]) {
-                    Err(_) => {
+                let key = match composite_key {
+                    Err(data) => {
                         return future::err(to_rpc_error(
                             KeyValue::KeyError::get_error(),
-                            Some(format!("{:?}", &key.0)),
+                            Some(format!("{:?}", &data)),
                         ))
                     }
                     Ok(k) => KeyWrapper::from(k),
