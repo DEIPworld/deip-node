@@ -67,7 +67,9 @@ impl Serialize for WrappedCall<Call> {
             | Call::OctopusLpos(_)
             | Call::OctopusUpwardMessages(_)
             | Call::Session(_)
-            | Call::ImOnline(_) => CallObject {
+            | Call::ImOnline(_)
+            | Call::Utility(_)
+            | Call::Multisig(_) => CallObject {
                 module: "unsupported_module",
                 call: "unsupported_call",
                 args: &UnsupportedCallArgs {},
