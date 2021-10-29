@@ -17,7 +17,7 @@ use frame_support::{Blake2_128Concat, ReversibleStorageHasher, StorageHasher, Id
 use common_rpc::{
     chain_key_hash_map, chain_key_hash_double_map, prefix, to_rpc_error, get_list_by_keys,
     Error, FutureResult, HashOf, HashedKey,
-    ListResult, StorageDoubleMap, StorageMap, HashedKeyRef,
+    ListResult, StorageDoubleMap, HashedKeyRef,
 };
 
 mod types;
@@ -45,8 +45,8 @@ where
         &self,
         at: Option<BlockHash>,
         count: u32,
-        start_id: Option<AssetId>,
-    ) -> FutureResult<Vec<ListResult<AssetId, AssetDetails<Balance, AccountId, DepositBalance>>>>;
+        start_id: Option<(DeipAssetId, AssetId)>,
+    ) -> FutureResult<Vec<ListResult<(DeipAssetId, AssetId), AssetDetails<Balance, AccountId, DepositBalance>>>>;
 
     #[rpc(name = "assets_getAssetBalanceList")]
     fn get_asset_balance_list(
@@ -142,17 +142,50 @@ where
         &self,
         at: Option<HashOf<Block>>,
         count: u32,
-        start_id: Option<AssetId>,
-    ) -> FutureResult<Vec<ListResult<AssetId, AssetDetails<Balance, AccountId, DepositBalance>>>>
+        start_id: Option<(DeipAssetId, AssetId)>,
+    ) -> FutureResult<Vec<ListResult<(DeipAssetId, AssetId), AssetDetails<Balance, AccountId, DepositBalance>>>>
     {
-        StorageMap::<Blake2_128Concat>::get_list(
-            &self.state,
-            at,
-            b"Assets",
-            b"Asset",
-            count,
-            start_id.map(types::AssetKeyValue::new),
-        )
+        let index_prefix = prefix(b"DeipAssets", b"AssetIdByDeipAssetId");
+        let start_key = start_id.map(|(index_id, id)|
+            chain_key_hash_double_map(&index_prefix, &HashedKey::<Identity>::new(&index_id), &HashedKey::<Blake2_128Concat>::new(&id)));
+
+        // @{
+        let map = |k: StorageKey| -> FutureResult<(Option<common_rpc::StorageData>, StorageKey, DeipAssetId)> {
+            // below we retrieve key in the other map from the index map key
+            let no_prefix = Identity::reverse(&k.0[32..]);
+            // decode DeipAssetId and save the length of processed bytes
+            // @{
+            let input = &mut &no_prefix[..];
+            let index_key = match DeipAssetId::decode(input) {
+                Ok(k) => k,
+                Err(_) => return Box::new(future::err(to_rpc_error(
+                        Error::DeipAssetIdDecodeFailed,
+                        Some(format!("{:?}", no_prefix)),
+                    ))),
+            };
+
+            let len = match codec::Input::remaining_len(input).ok().flatten() {
+                Some(l) => l,
+                None => return Box::new(future::err(to_rpc_error(
+                        Error::DeipAssetIdRemainingLengthFailed,
+                        Some(format!("{:?}", input)),
+                    ))),
+            };
+            // @}
+
+            let key_hashed =
+                HashedKeyRef::<'_, Blake2_128Concat>::unsafe_from_hashed(&no_prefix[len..]);
+
+            let key = chain_key_hash_map(&prefix(b"Assets", b"Asset"), &key_hashed);
+
+            Box::new(self.state
+                .storage(key.clone(), at)
+                .map(|v| (v, key, index_key))
+                .map_err(Box::new(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))))
+        };
+        // @}
+
+        get_list_by_keys::<types::AssetKeyValue<AssetId, Balance, AccountId, DepositBalance>, Blake2_128Concat, _, _, _, _>(&self.state, at, StorageKey(index_prefix), count, start_key, map)
     }
 
     fn get_asset_balance_list(
