@@ -68,7 +68,7 @@ where
     fn get_asset_balance_list_by_asset(
         &self,
         at: Option<BlockHash>,
-        asset: AssetId,
+        asset: DeipAssetId,
         count: u32,
         start_id: Option<AccountId>,
     ) -> FutureResult<Vec<AssetBalanceWithOwner<Balance, AccountId, Extra>>>;
@@ -323,27 +323,53 @@ where
     fn get_asset_balance_list_by_asset(
         &self,
         at: Option<HashOf<Block>>,
-        asset: AssetId,
+        asset: DeipAssetId,
         count: u32,
         start_id: Option<AccountId>,
     ) -> FutureResult<Vec<AssetBalanceWithOwner<Balance, AccountId, Extra>>> {
+        // work with index
+        // @{
+        let index_hashed = HashedKey::<Identity>::new(&asset);
+        let prefix_key = chain_key_hash_map(&prefix(b"DeipAssets", b"AssetIdByDeipAssetId"), &index_hashed);
+        let mut keys = match self.state
+            .storage_keys_paged(Some(prefix_key), 1, None, at)
+            .wait()
+        {
+            Ok(k) => k,
+            Err(e) => {
+                return Box::new(future::err(to_rpc_error(
+                    Error::ScRpcApiError,
+                    Some(format!("{:?}", e)),
+                )))
+            }
+        };
+        if keys.is_empty() {
+            return Box::new(future::ok(vec![]));
+        }
+
+        let key = keys.pop().unwrap();
+
+        let no_prefix = &key.0[32..];
+        let len = index_hashed.as_ref().len();
+        let asset_encoded = Blake2_128Concat::reverse(&no_prefix[len..]);
+        let asset_encoded_size = asset_encoded.len();
+        let asset_hashed = HashedKeyRef::<'_, Blake2_128Concat>::unsafe_from_hashed(&no_prefix[len..]);
+        // @}
+
         let prefix = prefix(b"Assets", b"Account");
 
-        let asset_encoded = asset.encode();
-        let asset_encoded_size = asset_encoded.len();
-        let asset_hashed = Blake2_128Concat::hash(&asset_encoded);
         let start_key = start_id.map(|account_id| {
             StorageKey(
                 prefix
                     .iter()
-                    .chain(&asset_hashed)
+                    .chain(asset_hashed.as_ref())
                     .chain(&account_id.using_encoded(Blake2_128Concat::hash))
                     .map(|b| *b)
                     .collect(),
             )
         });
 
-        let prefix = prefix.iter().chain(&asset_hashed).map(|b| *b).collect();
+        let prefix = prefix.iter().chain(asset_hashed.as_ref()).map(|b| *b).collect();
 
         let state = &self.state;
         let keys = match state
