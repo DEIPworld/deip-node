@@ -84,6 +84,8 @@ sp-utils = { git = "https://github.com/octopus-network/substrate", branch = "pol
 substrate-prometheus-endpoint = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 frame-benchmarking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 frame-benchmarking-cli = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-multisig = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-utility = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 pallet-assets = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 pallet-balances = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 pallet-staking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
@@ -162,6 +164,8 @@ sp-utils = { git = "https://github.com/octopus-network/substrate", branch = "pol
 substrate-prometheus-endpoint = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 frame-benchmarking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 frame-benchmarking-cli = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-multisig = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-utility = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 pallet-assets = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 pallet-balances = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 pallet-staking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }

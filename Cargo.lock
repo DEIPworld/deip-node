@@ -230,6 +230,7 @@ dependencies = [
  "pallet-grandpa",
  "pallet-im-online",
  "pallet-mmr",
+ "pallet-multisig",
  "pallet-octopus-appchain",
  "pallet-octopus-lpos",
  "pallet-octopus-upward-messages",
@@ -240,6 +241,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-utility",
  "parity-scale-codec",
  "serde",
  "sp-api",
@@ -4465,6 +4467,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-multisig"
+version = "3.0.0"
+source = "git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8#74101dc21cfffb4c2d014fcc28edc166d5ca1b16"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-octopus-appchain"
 version = "3.0.0-pre.0"
 source = "git+https://github.com/octopus-network/octopus-pallets?branch=main#17d2df3a0acbcaf79914d213272a1214a01119df"
@@ -4663,6 +4679,20 @@ dependencies = [
  "parity-scale-codec",
  "sp-api",
  "sp-runtime",
+]
+
+[[package]]
+name = "pallet-utility"
+version = "3.0.0"
+source = "git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8#74101dc21cfffb4c2d014fcc28edc166d5ca1b16"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]

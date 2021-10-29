@@ -113,6 +113,18 @@ version = '3.0.0'
 optional = true
 version = '0.3.1'
 
+[dependencies.pallet-utility]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.pallet-multisig]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
 [dependencies.pallet-babe]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
@@ -247,6 +259,8 @@ std = [
     'frame-support/std',
     'frame-system-rpc-runtime-api/std',
     'frame-system/std',
+    'pallet-multisig/std',
+    'pallet-utility/std',
     'pallet-babe/std',
     'pallet-balances/std',
     'pallet-grandpa/std',

@@ -185,6 +185,14 @@ pub const MILLICENTS: Balance = 1_000_000_000;
 pub const CENTS: Balance = 1_000 * MILLICENTS; // assume this is worth about a cent.
 pub const DOLLARS: Balance = 100 * CENTS;
 
+pub mod currency {
+    use super::{Balance, CENTS};
+
+    pub const fn deposit(items: u32, bytes: u32) -> Balance {
+        items as Balance * 15 * CENTS + (bytes as Balance) * 6 * CENTS
+    }
+}
+
 /// The BABE epoch configuration at genesis.
 pub const BABE_GENESIS_EPOCH_CONFIG: sp_consensus_babe::BabeEpochConfiguration =
 	sp_consensus_babe::BabeEpochConfiguration {
@@ -651,6 +659,30 @@ impl pallet_deip_dao::Config for Runtime {
     type Call = Call;
 }
 
+parameter_types! {
+    // One storage item; key size is 32; value is size 4+4+16+32 bytes = 56 bytes.
+    pub const DepositBase: Balance = currency::deposit(1, 88);
+    // Additional storage item size of 32 bytes.
+    pub const DepositFactor: Balance = currency::deposit(0, 32);
+    pub const MaxSignatories: u16 = 100;
+}
+
+impl pallet_multisig::Config for Runtime {
+    type Event = Event;
+    type Call = Call;
+    type Currency = Balances;
+    type DepositBase = DepositBase;
+    type DepositFactor = DepositFactor;
+    type MaxSignatories = MaxSignatories;
+    type WeightInfo = pallet_multisig::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_utility::Config for Runtime {
+    type Event = Event;
+    type Call = Call;
+    type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
+}
+
 impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
     type Balance = AssetBalance;
     type AssetId = DeipAssetId;
@@ -745,6 +777,8 @@ construct_runtime!(
         DeipAssets: pallet_deip_assets::{Pallet, Storage, Call, Config<T>, ValidateUnsigned},
         DeipProposal: pallet_deip_proposal::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
         DeipDao: pallet_deip_dao::{Pallet, Call, Storage, Event<T>, Config},
+        Multisig: pallet_multisig::{Pallet, Call, Storage, Event<T>},
+        Utility: pallet_utility::{Pallet, Call, Event},
 	}
 );
 

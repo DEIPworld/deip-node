@@ -39,12 +39,12 @@ where
         | Event::OctopusAppchain(..) | Event::OctopusLpos(..) | Event::OctopusUpwardMessages(..) 
 
         | Event::System(_)
-        // | Event::utility(_)
+        | Event::Utility(_)
         | Event::Grandpa(_)
         | Event::Balances(_)
         | Event::Sudo(_)
         // | Event::template(_)
-        /*| Event::multisig(_)*/ => unreachable!(),
+        | Event::Multisig(_) => unreachable!(),
     }
 }
 
