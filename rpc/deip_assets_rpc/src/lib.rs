@@ -15,9 +15,9 @@ use sp_core::storage::StorageKey;
 use frame_support::{Blake2_128Concat, ReversibleStorageHasher, StorageHasher, Identity};
 
 use common_rpc::{
-    chain_key_hash_map, chain_key_hash_double_map, prefix, to_rpc_error, get_list_by_keys,
+    chain_key_hash_map, chain_key_hash_double_map, prefix, to_rpc_error, get_list_by_keys, get_value,
     Error, FutureResult, HashOf, HashedKey,
-    ListResult, StorageDoubleMap, HashedKeyRef,
+    ListResult, HashedKeyRef, HashedKeyTrait,
 };
 
 mod types;
@@ -61,7 +61,7 @@ where
         &self,
         at: Option<BlockHash>,
         owner: AccountId,
-        asset: AssetId,
+        asset: DeipAssetId,
     ) -> FutureResult<Option<AssetBalance<Balance, Extra>>>;
 
     #[rpc(name = "assets_getAssetBalanceListByAsset")]
@@ -287,15 +287,36 @@ where
         &self,
         at: Option<HashOf<Block>>,
         owner: AccountId,
-        asset: AssetId,
+        asset: DeipAssetId,
     ) -> FutureResult<Option<AssetBalance<Balance, Extra>>> {
-        StorageDoubleMap::<Blake2_128Concat, Blake2_128Concat>::get_value(
+        let index_hashed = HashedKey::<Identity>::new(&asset);
+        let prefix_key = chain_key_hash_map(&prefix(b"DeipAssets", b"AssetIdByDeipAssetId"), &index_hashed);
+        let mut keys = match self.state
+            .storage_keys_paged(Some(prefix_key), 1, None, at)
+            .wait()
+        {
+            Ok(k) => k,
+            Err(e) => {
+                return Box::new(future::err(to_rpc_error(
+                    Error::ScRpcApiError,
+                    Some(format!("{:?}", e)),
+                )))
+            }
+        };
+        if keys.is_empty() {
+            return Box::new(future::ok(None));
+        }
+
+        let key = keys.pop().unwrap();
+
+        let no_prefix = &key.0[32..];
+        let key_hashed =
+            HashedKeyRef::<'_, Blake2_128Concat>::unsafe_from_hashed(&no_prefix[index_hashed.as_ref().len()..]);
+
+        get_value(
             &self.state,
+            chain_key_hash_double_map(&prefix(b"Assets", b"Account"), &key_hashed, &HashedKey::<Blake2_128Concat>::new(&owner)),
             at,
-            b"Assets",
-            b"Account",
-            &asset,
-            &owner,
         )
     }
 

@@ -156,7 +156,7 @@ where
     )
 }
 
-fn get_value<R, State, Hash>(
+pub fn get_value<R, State, Hash>(
     state: &State,
     key: StorageKey,
     at: Option<Hash>,
