@@ -4,6 +4,8 @@ use sp_std::prelude::*;
 use frame_support::pallet_prelude::*;
 use frame_support::Hashable;
 
+use deip_transaction_ctx::{TransactionCtxId, TransactionCtxT};
+
 use crate::storage::{StorageOpsT, StorageOps};
 
 use super::{Config, Event, Error, ProposalRepository};
@@ -56,7 +58,9 @@ pub struct DeipProposal<T: Config> {
     pub(super) state: ProposalState,
     /// Proposal author
     pub(super) author: T::AccountId,
-    pub(super) created_at: T::Moment
+    pub(super) created_at: T::Moment,
+    /// Created with context
+    pub created_ctx: TransactionCtxId<T::TransactionCtx>,
 }
 
 /// Proposal state
@@ -181,7 +185,8 @@ impl<T: Config> DeipProposal<T> {
             decisions,
             state: ProposalState::Pending,
             author,
-            created_at
+            created_at,
+            created_ctx: T::TransactionCtx::current().id()
         };
         storage_ops.push_op(StorageOps::DepositEvent(Event::<T>::Proposed {
             author: proposal.author.clone(),

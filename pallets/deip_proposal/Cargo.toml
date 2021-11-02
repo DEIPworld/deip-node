@@ -29,6 +29,7 @@ version = '2.0.0'
 serde = { version = "1.0.123", optional = true, features = ["derive"], default_features = false }
 
 deip-storage-ops = { path = "../../deip_common/deip_storage_ops", default-features = false }
+deip-transaction-ctx = { path = "../../deip_common/deip_transaction_ctx", default-features = false }
 
 [dependencies.sp-io]
 default-features = false
@@ -86,5 +87,6 @@ std = [
     'sp-io/std', 
     'pallet-timestamp/std',
     'serde/std',
-    'deip-storage-ops/std'
+    'deip-storage-ops/std',
+    'deip-transaction-ctx/std'
 ]

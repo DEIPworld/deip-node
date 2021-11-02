@@ -56,6 +56,7 @@ impl Serialize for WrappedCall<Call> {
             }
 
             Call::System(_)
+            | Call::DeipPortal(_)
             | Call::Timestamp(_)
             | Call::Grandpa(_)
             | Call::Balances(_)

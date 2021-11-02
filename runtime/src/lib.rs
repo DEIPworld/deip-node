@@ -647,6 +647,7 @@ parameter_types! {
 }
 
 impl pallet_deip_proposal::pallet::Config for Runtime {
+    type TransactionCtx = pallet_deip_portal::PortalCtxOf<Self>;
     type Event = Event;
     type Call = Call;
     type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
@@ -657,6 +658,7 @@ impl pallet_deip_proposal::pallet::Config for Runtime {
 impl pallet_deip_dao::Config for Runtime {
     type Event = Event;
     type Call = Call;
+    type DaoId = pallet_deip_dao::DaoId;
 }
 
 parameter_types! {
@@ -681,6 +683,13 @@ impl pallet_utility::Config for Runtime {
     type Event = Event;
     type Call = Call;
     type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_deip_portal::Config for Runtime {
+    type PortalId = <Runtime as pallet_deip_dao::Config>::DaoId;
+    type Portal = ();
+    type PortalProvider = ();
+    type Call = Call;
 }
 
 impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
@@ -779,6 +788,7 @@ construct_runtime!(
         DeipDao: pallet_deip_dao::{Pallet, Call, Storage, Event<T>, Config},
         Multisig: pallet_multisig::{Pallet, Call, Storage, Event<T>},
         Utility: pallet_utility::{Pallet, Call, Event},
+        DeipPortal: pallet_deip_portal::{Pallet, Call, Storage, Config},
 	}
 );
 

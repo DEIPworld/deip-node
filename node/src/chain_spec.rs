@@ -6,6 +6,7 @@ use appchain_deip_runtime::{
 	DeipAssetsConfig,
     DeipProposalConfig,
     DeipDaoConfig,
+    DeipPortalConfig,
 };
 use sc_service::ChainType;
 use sp_core::{sr25519, Pair, Public};
@@ -253,5 +254,6 @@ fn testnet_genesis(
         },
         deip_proposal: DeipProposalConfig {},
         deip_dao: DeipDaoConfig {},
+        deip_portal: DeipPortalConfig {},
 	}
 }

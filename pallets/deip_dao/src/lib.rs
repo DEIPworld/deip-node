@@ -68,6 +68,8 @@ pub mod pallet {
              UnfilteredDispatchable<Origin = Self::Origin> +
              frame_support::dispatch::Codec + 
              IsSubType<Call<Self>>;
+        
+        type DaoId: Member + Parameter;
     }
     
     #[doc(hidden)]
@@ -113,6 +115,7 @@ pub mod pallet {
     }
     
     use dao::*;
+    pub use dao::DaoId;
     pub mod dao {
         use sp_std::prelude::*;
         use frame_support::pallet_prelude::*;

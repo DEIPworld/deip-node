@@ -226,6 +226,7 @@ dependencies = [
  "pallet-deip",
  "pallet-deip-assets",
  "pallet-deip-dao",
+ "pallet-deip-portal",
  "pallet-deip-proposal",
  "pallet-grandpa",
  "pallet-im-online",
@@ -1579,6 +1580,17 @@ dependencies = [
 name = "deip-storage-ops"
 version = "0.1.0"
 dependencies = [
+ "sp-std",
+]
+
+[[package]]
+name = "deip-transaction-ctx"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "sp-runtime",
  "sp-std",
 ]
 
@@ -4360,10 +4372,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-deip-portal"
+version = "3.0.0"
+dependencies = [
+ "deip-transaction-ctx",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "serde",
+ "sp-api",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-deip-proposal"
 version = "3.0.0"
 dependencies = [
  "deip-storage-ops",
+ "deip-transaction-ctx",
  "frame-support",
  "frame-system",
  "pallet-timestamp",
