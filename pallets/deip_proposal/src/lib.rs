@@ -47,7 +47,7 @@ const NON_LOCAL: u8 = 99;
 pub mod pallet {
     use frame_system::pallet_prelude::*;
     use frame_system::RawOrigin;
-    use frame_system::offchain::{SubmitTransaction, SendTransactionTypes};
+    use frame_system::offchain::{SendTransactionTypes};
     
     use frame_support::pallet_prelude::*;
     use frame_support::weights::{PostDispatchInfo, GetDispatchInfo};
@@ -68,10 +68,14 @@ pub mod pallet {
         InputProposalBatchItem
     };
     use crate::storage::StorageWrite;
+    
+    use deip_transaction_ctx::{PortalCtxT};
 
     /// Configuration trait
     #[pallet::config]
     pub trait Config: frame_system::Config + pallet_timestamp::Config + SendTransactionTypes<Call<Self>> {
+        /// Context of extrinsic currently being in execution
+        type TransactionCtx: PortalCtxT<Call<Self>>;
         /// Type represents events
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         /// Type represents particular call from batch-transaction 
@@ -119,7 +123,9 @@ pub mod pallet {
                     continue
                 }
                 let call = Call::expire(id);
-                let submit = SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
+                
+                let submit = T::TransactionCtx::submit_transaction(call, obj.created_ctx);
+                
                 if submit.is_err() {
                     debug!("{}", "error on submit unsigned transaction");
                 } else {

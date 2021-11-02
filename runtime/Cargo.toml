@@ -35,6 +35,11 @@ default-features = false
 path = '../deip_common/deip_assets_error'
 version = '0.1.0'
 
+[dependencies.pallet-deip-portal]
+default-features = false
+path = '../pallets/deip_portal'
+version = '3.0.0'
+
 [dependencies.pallet-deip]
 default-features = false
 path = '../pallets/deip'
