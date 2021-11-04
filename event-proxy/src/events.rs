@@ -69,13 +69,14 @@ pub struct BaseEvent<Data, Meta> {
     meta: Meta,
 }
 
-// pub type PortalId = sp_core::H160;
+pub type PortalId = sp_core::H160;
+pub type ExtrinsicIndex = u32;
 
 #[derive(Serialize, Debug)]
 pub struct DomainEventMeta<Block> {
-    index: u32,
+    index: ExtrinsicIndex,
     block: Block,
-    // portal_id: PortalId,
+    portal_id: PortalId,
 }
 
 pub type DomainEvent<T> = BaseEvent<DomainEventData<T>, DomainEventMeta<BlockMetadata<T>>>;
@@ -230,9 +231,9 @@ pub fn known_domain_events
     T: DeipProposal + Deip + DeipDao + Assets + Debug,
 >
 (
-    raw: &(u32, RawEvent),
+    raw: &(ExtrinsicIndex, RawEvent),
     block: &Block<<T as System>::Header, <T as System>::Extrinsic>,
-    // portal_id: &PortalId
+    portal_id: &PortalId
 )
     -> Result<Option<SpecializedEvent<T>>, codec::Error> 
 {
@@ -240,7 +241,7 @@ pub fn known_domain_events
     let meta = DomainEventMeta {
         index: *index,
         block: BlockMetadata::new(block),
-        // portal_id: *portal_id
+        portal_id: *portal_id
     };
     let event = match (raw.module.as_str(), raw.variant.as_str()) {
         // =========== DeipProposal:

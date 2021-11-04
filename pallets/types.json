@@ -1,4 +1,5 @@
 {
+  "PortalId": "DaoId",
   "InputProposalBatch": "Vec<InputProposalBatchItem>",
   "InputProposalBatchItem": {
     "account": "DeipAccountId",
