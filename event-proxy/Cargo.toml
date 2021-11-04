@@ -28,7 +28,7 @@ sp-runtime = "3.0.0"
 
 pallet-deip-proposal = { path = "../pallets/deip_proposal" }
 pallet-deip-dao = { path = "../pallets/deip_dao" }
-#pallet-deip-portal = { path = "../pallets/deip_portal" }
+pallet-deip-portal = { path = "../pallets/deip_portal" }
 pallet-deip = { path = "../pallets/deip"}
 pallet-deip-assets = { path = "../pallets/deip_assets"}
 node-template-runtime = { package = 'appchain-deip-runtime', path = '../runtime'}

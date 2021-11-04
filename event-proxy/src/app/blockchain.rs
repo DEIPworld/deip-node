@@ -5,11 +5,12 @@ use substrate_subxt::{Client};
 use substrate_subxt::system::System;
 use substrate_subxt::{RawEvent, Phase, Raw};
 use substrate_subxt::{EventsDecoder};
+use codec::{Encode, Decode};
 
 use jsonrpsee_ws_client::Subscription;
 
-use sp_core::storage::StorageKey;
-use sp_core::hashing::twox_128;
+use sp_core::storage::{StorageKey};
+use sp_core::hashing::{self, twox_128};
 
 use tokio::sync::mpsc;
 
@@ -166,13 +167,18 @@ for BlockchainActor
                             });
                     },
                 };
+                let portal_info = portal_info::fetch(client, &block.block.header).await.unwrap();
+                
                 let maybe_events = get_block_events(
                     client,
                     client.events_decoder(),
                     hash
                 ).await.map(|ok| {
+                    let portal_info_lookup = portal_info::transpose(&portal_info);
+                    // println!("$$$$ {:?}", portal_info_lookup);
                     let mut list: Vec<_> = ok.into_iter().filter_map(|x| {
-                        known_domain_events::<RuntimeT>(&x, &block.block).transpose()
+                        let portal_id = portal_info_lookup.get(&x.0).map(|x| **x).unwrap_or_default();
+                        known_domain_events::<RuntimeT>(&x, &block.block, &portal_id).transpose()
                     }).collect();
                     list.push(Ok(InfrastructureEvent::block_created(&block.block, list.len() as u32).into()));
                     Some(list)
@@ -190,13 +196,18 @@ for BlockchainActor
                         return BlockchainActorOutput::Ok(BlockchainActorOutputData::GetReplayedBlockEvents(Err(e), replay));
                     },
                 };
+                let portal_info = portal_info::fetch(client, &block.block.header).await.unwrap();
+                
                 let events = get_block_events(
                     client,
                     client.events_decoder(),
                     hash
                 ).await.map(|ok| {
+                    let portal_info_lookup = portal_info::transpose(&portal_info);
+                    // println!("$$$$ {:?}", portal_info_lookup);
                     let mut list: Vec<_> = ok.into_iter().filter_map(|x| {
-                        known_domain_events::<RuntimeT>(&x, &block.block).transpose()
+                        let portal_id = portal_info_lookup.get(&x.0).map(|x| **x).unwrap_or_default();
+                        known_domain_events::<RuntimeT>(&x, &block.block, &portal_id).transpose()
                     }).collect();
                     list.push(Ok(InfrastructureEvent::block_created(&block.block, list.len() as u32).into()));
                     Some(list)
@@ -287,4 +298,45 @@ async fn get_block_events(
         }
     }
     Ok(events)
+}
+
+mod portal_info {
+    use super::*;
+    use std::collections::HashMap;
+    use std::iter::FromIterator;
+    
+    fn twox_64_concat(x: &[u8]) -> Vec<u8> {
+        let mut y = hashing::twox_64(x).to_vec();
+        y.extend_from_slice(x);
+        y
+    }
+    
+    use crate::events::{PortalId, ExtrinsicIndex};
+    
+    pub type ExtrinsicIdList = Vec<ExtrinsicIndex>;
+    pub type PortalInfo = Vec<(PortalId, ExtrinsicIdList)>;
+    
+    pub fn transpose(source: &PortalInfo) -> HashMap<&ExtrinsicIndex, &PortalId> {
+        HashMap::from_iter(source.iter().map(|(x, y)| { y.iter().map(move |z| (z, x)) }).flatten())
+    }
+    
+    pub async fn fetch(
+        client: &Client<RuntimeT>,
+        at: &<RuntimeT as System>::Header,
+    )
+        -> Result<PortalInfo, substrate_subxt::Error>
+    {
+        let mut prefix = twox_128(b"DeipPortal").to_vec();
+        prefix.extend(twox_128(b"PortalTagOfTransaction").to_vec());
+        prefix.extend(at.number.using_encoded(twox_64_concat));
+        let prefix_len = prefix.len();
+        client
+            .storage_pairs(StorageKey(prefix), Some(at.hash())).await?
+            .into_iter()
+            .map(|(key, data)| -> Result<_, _> { Ok((
+                PortalId::decode(&mut &key.0[prefix_len + 16..])?,
+                ExtrinsicIdList::decode(&mut &data.0[..])?
+            )) })
+            .collect()
+    }
 }
