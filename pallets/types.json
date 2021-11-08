@@ -228,7 +228,10 @@
     }
   },
   "FundingModelOf": "FundingModel",
-  "AssetsBalanceOf": "u128",
+  "Balance": "u128",
+  "TAssetBalance": "Balance",
+  "AssetBalanceOf": "Balance",
+  "AssetsBalanceOf": "AssetBalanceOf",
   "DeipAssetBalanceOf": "AssetsBalanceOf",
   "AssetBalance": {
     "balance": "AssetsBalanceOf",
@@ -259,6 +262,7 @@
   },
   "DeipProjectIdOf": "H160",
   "AssetId": "u32",
+  "AssetIdOf": "AssetId",
   "AssetsAssetIdOf": "AssetId",
   "DeipAssetIdOf": "H160",
   "DeipReviewVoteId": "H160",
