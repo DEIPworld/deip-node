@@ -642,8 +642,9 @@ impl pallet_deip::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ProposalTtl: u64 = 7 * DAYS as u64 * MILLISECS_PER_BLOCK;
-    pub const ProposalExpirePeriod: BlockNumber = HOURS;
+    // pub const ProposalTtl: u64 = 7 * DAYS as u64 * MILLISECS_PER_BLOCK;
+    pub const ProposalTtl: Moment = MINUTES as Moment * SECS_PER_BLOCK * MILLISECS_PER_BLOCK;
+    pub const ProposalExpirePeriod: BlockNumber = MINUTES;
 }
 
 impl pallet_deip_proposal::pallet::Config for Runtime {
@@ -690,6 +691,7 @@ impl pallet_deip_portal::Config for Runtime {
     type Portal = ();
     type PortalProvider = ();
     type Call = Call;
+    type UnsignedValidator = Self;
 }
 
 impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
@@ -788,7 +790,7 @@ construct_runtime!(
         DeipDao: pallet_deip_dao::{Pallet, Call, Storage, Event<T>, Config},
         Multisig: pallet_multisig::{Pallet, Call, Storage, Event<T>},
         Utility: pallet_utility::{Pallet, Call, Event},
-        DeipPortal: pallet_deip_portal::{Pallet, Call, Storage, Config},
+        DeipPortal: pallet_deip_portal::{Pallet, Call, Storage, Config, ValidateUnsigned},
 	}
 );
 

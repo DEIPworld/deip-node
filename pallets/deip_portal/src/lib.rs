@@ -88,6 +88,8 @@ pub mod pallet {
              UnfilteredDispatchable<Origin = Self::Origin> +
              frame_support::dispatch::Codec + 
              IsSubType<Call<Self>>;
+        
+        type UnsignedValidator: ValidateUnsigned<Call=<Self as Config>::Call>;
     }
     
     #[doc(hidden)]
@@ -115,6 +117,25 @@ pub mod pallet {
     #[pallet::genesis_build]
     impl<T: Config> GenesisBuild<T> for GenesisConfig {
         fn build(&self) {}
+    }
+    
+    #[pallet::validate_unsigned]
+    impl<T: Config> ValidateUnsigned for Pallet<T> {
+        type Call = Call<T>;
+
+        fn validate_unsigned(
+            source: TransactionSource,
+            call: &Self::Call,
+        )
+            -> TransactionValidity
+        {
+            // Check that we call the right function.
+            if let Call::on_behalf(ref _portal_id, overarching) = call {
+                T::UnsignedValidator::validate_unsigned(source, overarching)
+            } else {
+                InvalidTransaction::Call.into()
+            }
+        }
     }
     
     use deip_transaction_ctx::PortalCtxT;
