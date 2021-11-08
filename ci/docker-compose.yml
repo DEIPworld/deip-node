@@ -31,6 +31,7 @@ services:
     image: "$LOCAL_REPO/$BLOCKCHAIN_NODE_IMG"
     command: |
       $BLOCKCHAIN_NODE_BIN --dev --tmp --ws-external --rpc-external --rpc-methods=Unsafe
+        --offchain-worker=WhenValidating --enable-offchain-indexing=true
         -lpallet_deip_proposal=debug 
         -lpallet_deip_dao=debug 
         -l=txpool=trace,runtime=trace,offchain=trace
