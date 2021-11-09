@@ -30,6 +30,7 @@ serde = { version = "1.0.119", optional = true, features = ["derive"]}
 deip-assets-error = { path = "../../deip_common/deip_assets_error", default-features = false }
 sp-api = { version = '3.0.0', default-features = false}
 deip_serializable_u128 = { path = "../../deip_common/deip_serializable_u128", default-features = false }
+deip-transaction-ctx = { path = "../../deip_common/deip_transaction_ctx", default-features = false }
 
 [dev-dependencies]
 pallet-balances = { default-features = false, version = '3.0.0' }
@@ -51,4 +52,5 @@ std = [
     'serde',
     "sp-api/std",
     'deip_serializable_u128/std',
+    'deip-transaction-ctx/std',
 ]

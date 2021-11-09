@@ -1,9 +1,11 @@
 use frame_system::Pallet as System;
 use frame_support::pallet_prelude::{Parameter, Member};
 use codec::{Encode, Decode};
+#[cfg(feature = "std")]
+use serde::{Serialize, Deserialize};
 
 /// Context of a transaction that executed in
-pub trait TransactionCtxT: Sized {
+pub trait TransactionCtxT: Sized + Clone {
     type BlockNumber: Parameter + Member;
     type ExtrinsicId: Parameter + Member;
     
@@ -16,11 +18,19 @@ pub trait TransactionCtxT: Sized {
 
 /// Id of a context that transaction executed in
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Encode, Decode)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct TransactionCtxId<Ctx: TransactionCtxT + ?Sized> {
     pub block_number: Ctx::BlockNumber,
     pub extrinsic_id: Ctx::ExtrinsicId
 }
+impl<Ctx: TransactionCtxT> Default for TransactionCtxId<Ctx> {
+    fn default() -> Self {
+        unreachable!();
+    }
+}
 
+#[derive(Clone, Default, Eq, PartialEq)]
 pub struct TransactionCtx<T: frame_system::Config>(sp_std::marker::PhantomData<T>);
 impl<T: frame_system::Config> TransactionCtxT
     for TransactionCtx<T>
@@ -49,6 +59,7 @@ impl<T: frame_system::Config> TransactionCtxT
 #[macro_export]
 macro_rules! ctx_t {
     ($name:tt) => {
+#[derive(Clone, Default, Eq, PartialEq)]
 pub struct $name<T: TransactionCtxT>(T);
 
 impl<T> TransactionCtxT for $name<T>

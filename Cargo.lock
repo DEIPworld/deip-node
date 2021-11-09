@@ -1590,6 +1590,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "parity-scale-codec",
+ "serde",
  "sp-runtime",
  "sp-std",
 ]
@@ -4322,6 +4323,7 @@ name = "pallet-deip"
 version = "3.0.0"
 dependencies = [
  "deip-assets-error",
+ "deip-transaction-ctx",
  "deip_serializable_u128",
  "frame-support",
  "frame-system",

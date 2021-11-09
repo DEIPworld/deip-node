@@ -17,9 +17,10 @@ use frame_support::{Blake2_128Concat, Identity, Twox64Concat};
 mod types;
 
 #[rpc]
-pub trait DeipStorageApi<BlockHash, AccountId, Moment, AssetId, AssetBalance, Hash>
+pub trait DeipStorageApi<BlockHash, AccountId, Moment, AssetId, AssetBalance, Hash, TransactionCtx>
 where
     AssetBalance: Clone + AtLeast32BitUnsigned,
+    TransactionCtx: Default
 {
     #[rpc(name = "deip_getProjectList")]
     fn get_project_list(
@@ -138,7 +139,7 @@ where
         &self,
         at: Option<BlockHash>,
         id: InvestmentId,
-    ) -> Result<Option<SimpleCrowdfunding<Moment, AssetId, AssetBalance>>>;
+    ) -> Result<Option<SimpleCrowdfunding<Moment, AssetId, AssetBalance, TransactionCtx>>>;
 
     #[rpc(name = "deip_getInvestmentOpportunityList")]
     fn get_investment_opportunity_list(
@@ -147,7 +148,7 @@ where
         count: u32,
         start_id: Option<InvestmentId>,
     ) -> FutureResult<
-        Vec<ListResult<InvestmentId, SimpleCrowdfunding<Moment, AssetId, AssetBalance>>>,
+        Vec<ListResult<InvestmentId, SimpleCrowdfunding<Moment, AssetId, AssetBalance, TransactionCtx>>>,
     >;
 
     #[rpc(name = "deip_getContractAgreement")]
@@ -229,21 +230,22 @@ impl<C, State, M> DeipStorage<C, State, M> {
     }
 }
 
-impl<C, State, Block, AccountId, Moment, AssetId, AssetBalance, Hash>
-    DeipStorageApi<HashOf<Block>, AccountId, Moment, AssetId, AssetBalance, Hash>
+impl<C, State, Block, AccountId, Moment, AssetId, AssetBalance, Hash, TransactionCtx>
+    DeipStorageApi<HashOf<Block>, AccountId, Moment, AssetId, AssetBalance, Hash, TransactionCtx>
     for DeipStorage<C, State, Block>
 where
     Block: BlockT,
     C: Send + Sync + 'static,
     C: ProvideRuntimeApi<Block>,
     C: HeaderBackend<Block>,
-    C::Api: DeipStorageRuntimeApi<Block, AccountId, Moment, AssetId, AssetBalance, Hash>,
+    C::Api: DeipStorageRuntimeApi<Block, AccountId, Moment, AssetId, AssetBalance, Hash, TransactionCtx>,
     State: sc_rpc_api::state::StateApi<HashOf<Block>>,
     AccountId: 'static + Codec + Send,
     Moment: 'static + Codec + Send,
     AssetId: 'static + Codec + Send,
     AssetBalance: 'static + Codec + Send + Clone + AtLeast32BitUnsigned,
     Hash: 'static + Codec + Send,
+    TransactionCtx: 'static + Codec + Send + Default,
 {
     fn get_project_list(
         &self,
@@ -488,7 +490,7 @@ where
         &self,
         at: Option<HashOf<Block>>,
         id: InvestmentId,
-    ) -> Result<Option<SimpleCrowdfunding<Moment, AssetId, AssetBalance>>> {
+    ) -> Result<Option<SimpleCrowdfunding<Moment, AssetId, AssetBalance, TransactionCtx>>> {
         let api = self.client.runtime_api();
         let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 
@@ -507,7 +509,7 @@ where
         count: u32,
         start_id: Option<InvestmentId>,
     ) -> FutureResult<
-        Vec<ListResult<InvestmentId, SimpleCrowdfunding<Moment, AssetId, AssetBalance>>>,
+        Vec<ListResult<InvestmentId, SimpleCrowdfunding<Moment, AssetId, AssetBalance, TransactionCtx>>>,
     > {
         StorageMap::<Identity>::get_list(
             &self.state,
