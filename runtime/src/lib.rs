@@ -642,9 +642,8 @@ impl pallet_deip::Config for Runtime {
 }
 
 parameter_types! {
-    // pub const ProposalTtl: u64 = 7 * DAYS as u64 * MILLISECS_PER_BLOCK;
-    pub const ProposalTtl: Moment = MINUTES as Moment * SECS_PER_BLOCK * MILLISECS_PER_BLOCK;
-    pub const ProposalExpirePeriod: BlockNumber = MINUTES;
+    pub const ProposalTtl: Moment = 7 * DAYS as Moment * MILLISECS_PER_BLOCK;
+    pub const ProposalExpirePeriod: BlockNumber = HOURS;
 }
 
 impl pallet_deip_proposal::pallet::Config for Runtime {
