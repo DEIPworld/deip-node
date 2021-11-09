@@ -54,7 +54,7 @@ use frame_support::{
     pallet_prelude::*,
 };
 use frame_system::{ self as system, ensure_signed, ensure_none,
-    offchain::{SubmitTransaction, SendTransactionTypes}
+    offchain::{SendTransactionTypes}
 };
 use sp_std::vec::Vec;
 use sp_runtime::{ RuntimeDebug, traits::Member };
@@ -99,6 +99,8 @@ pub use contract::{
     AgreementOf as ContractAgreementOf,
 };
 
+use deip_transaction_ctx::{TransactionCtxId, PortalCtxT};
+
 pub mod traits;
 
 /// A maximum number of Domains. When domains reaches this number, no new domains can be added.
@@ -140,6 +142,9 @@ impl Default for ProjectContentType {
 
 /// Configuration trait. Pallet depends on frame_system and pallet_timestamp. 
 pub trait Config: frame_system::Config + pallet_timestamp::Config + SendTransactionTypes<Call<Self>> {
+    
+    type TransactionCtx: PortalCtxT<Call<Self>>;
+    
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
     
@@ -169,13 +174,19 @@ pub type ReviewOf<T> = Review<HashOf<T>, AccountIdOf<T>>;
 pub type NdaOf<T> = Nda<HashOf<T>, AccountIdOf<T>, MomentOf<T>>;
 pub type NdaAccessRequestOf<T> = NdaAccessRequest<HashOf<T>, AccountIdOf<T>>;
 pub type ProjectContentOf<T> = ProjectContent<HashOf<T>, AccountIdOf<T>>;
-pub type SimpleCrowdfundingOf<T> = SimpleCrowdfunding<MomentOf<T>, DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
+pub type SimpleCrowdfundingOf<T> = SimpleCrowdfunding<
+    MomentOf<T>,
+    DeipAssetIdOf<T>,
+    DeipAssetBalanceOf<T>,
+    TransactionCtxId<TransactionCtxOf<T>>
+>;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 pub type InvestmentOf<T> = Investment<AccountIdOf<T>, DeipAssetBalanceOf<T>, MomentOf<T>>;
 pub type DeipAssetIdOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::AssetId;
 pub type DeipAssetBalanceOf<T> = <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::Balance;
 pub type DeipAssetOf<T> = DeipAsset<DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 type DeipReviewVoteOf<T> = DeipReviewVote<AccountIdOf<T>, MomentOf<T>>;
+type TransactionCtxOf<T> = <T as Config>::TransactionCtx;
 
 /// PPossible project domains
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]

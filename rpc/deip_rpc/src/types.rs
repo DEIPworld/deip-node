@@ -99,12 +99,12 @@ impl GetError for InvestmentOpportunityError {
     }
 }
 
-pub struct InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance> {
+pub struct InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance, TransactionCtx> {
     pub id: super::InvestmentId,
-    _m: std::marker::PhantomData<(Moment, AssetId, AssetBalance)>,
+    _m: std::marker::PhantomData<(Moment, AssetId, AssetBalance, TransactionCtx)>,
 }
 
-impl<Moment, AssetId, AssetBalance> InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance> {
+impl<Moment, AssetId, AssetBalance, TransactionCtx> InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance, TransactionCtx> {
     pub fn new(id: super::InvestmentId) -> Self {
         Self {
             id,
@@ -113,15 +113,16 @@ impl<Moment, AssetId, AssetBalance> InvestmentOpportunityKeyValue<Moment, AssetI
     }
 }
 
-impl<Moment, AssetId, AssetBalance> KeyValueInfo for InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance>
+impl<Moment, AssetId, AssetBalance, TransactionCtx> KeyValueInfo for InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance, TransactionCtx>
 where
     Moment: 'static + Decode + Send,
     AssetId: 'static + Decode + Send,
     AssetBalance: 'static + Decode + Send + Clone + AtLeast32BitUnsigned,
+    TransactionCtx: 'static + Decode + Send,
 {
     type Key = super::InvestmentId;
     type KeyError = InvestmentIdError;
-    type Value = super::SimpleCrowdfunding<Moment, AssetId, AssetBalance>;
+    type Value = super::SimpleCrowdfunding<Moment, AssetId, AssetBalance, TransactionCtx>;
     type ValueError = InvestmentOpportunityError;
 
     fn key(&self) -> &Self::Key {

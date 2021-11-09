@@ -634,7 +634,11 @@ impl pallet_template::Config for Runtime {
 	type Event = Event;
 }
 
+pub type TransactionCtx = pallet_deip_portal::PortalCtxOf<Runtime>;
+pub type TransactionCtxId = pallet_deip_portal::TransactionCtxId<TransactionCtx>;
+
 impl pallet_deip::Config for Runtime {
+    type TransactionCtx = TransactionCtx;
     type Event = Event;
     type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
     type Currency = Balances;
@@ -647,7 +651,7 @@ parameter_types! {
 }
 
 impl pallet_deip_proposal::pallet::Config for Runtime {
-    type TransactionCtx = pallet_deip_portal::PortalCtxOf<Self>;
+    type TransactionCtx = TransactionCtx;
     type Event = Event;
     type Call = Call;
     type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
@@ -1091,7 +1095,17 @@ impl_runtime_apis! {
         }
     }
 
-    impl pallet_deip::api::DeipApi<Block, AccountId, Moment, DeipAssetId, AssetBalance, Hash> for Runtime {
+    impl pallet_deip::api::DeipApi
+    <
+        Block,
+        AccountId,
+        Moment,
+        DeipAssetId,
+        AssetBalance,
+        Hash,
+        pallet_deip_portal::TransactionCtxId<TransactionCtx>
+    >
+    for Runtime {
         fn get_project(project_id: &ProjectId) -> Option<ProjectOf<crate::Runtime>> {
             Deip::get_project(project_id)
         }

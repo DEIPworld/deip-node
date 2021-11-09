@@ -37,6 +37,9 @@ pub use extensions::*;
 #[doc(inline)]
 pub use transaction_ctx::*;
 
+#[doc(hidden)]
+pub use deip_transaction_ctx::*;
+
 #[frame_support::pallet]
 #[doc(hidden)]
 pub mod pallet {
