@@ -276,6 +276,7 @@ std = [
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-transaction-payment/std',
     'pallet-deip/std',
+    'pallet-deip-portal/std',
     'pallet-deip-assets/std',
     'pallet-deip-proposal/std',
     'pallet-deip-dao/std',
