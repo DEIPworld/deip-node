@@ -26,7 +26,7 @@ pub struct TransactionCtxId<Ctx: TransactionCtxT + ?Sized> {
 }
 impl<Ctx: TransactionCtxT> Default for TransactionCtxId<Ctx> {
     fn default() -> Self {
-        unreachable!();
+        Ctx::current().id()
     }
 }
 
@@ -45,7 +45,7 @@ impl<T: frame_system::Config> TransactionCtxT
     }
 
     fn extrinsic_id(&self) -> Self::ExtrinsicId {
-        System::<T>::extrinsic_index().unwrap()
+        System::<T>::extrinsic_index().unwrap_or_default()
     }
 
     fn id(&self) -> TransactionCtxId<Self> {
