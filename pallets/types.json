@@ -1,4 +1,5 @@
 {
+  "UncheckedExtrinsic": "Extrinsic",
   "PortalId": "DaoId",
   "InputProposalBatch": "Vec<InputProposalBatchItem>",
   "InputProposalBatchItem": {

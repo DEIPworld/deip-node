@@ -693,8 +693,17 @@ impl pallet_deip_portal::Config for Runtime {
     type PortalId = <Runtime as pallet_deip_dao::Config>::DaoId;
     type Portal = ();
     type PortalProvider = ();
+    type PortalLookup = Self;
     type Call = Call;
     type UnsignedValidator = Self;
+    type UncheckedExtrinsic = UncheckedExtrinsic;
+}
+impl pallet_deip_portal::PortalLookup<AccountId> for Runtime {
+    type PortalId = <Self as pallet_deip_portal::Config>::PortalId;
+
+    fn lookup(account_id: AccountId) -> Option<Self::PortalId> {
+        DeipDao::lookup_dao(account_id)
+    }
 }
 
 impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {

@@ -3,6 +3,9 @@ use frame_support::pallet_prelude::{Parameter, Member};
 use codec::{Encode, Decode};
 #[cfg(feature = "std")]
 use serde::{Serialize, Deserialize};
+use sp_io::hashing::twox_128;
+use frame_support::Hashable;
+use sp_std::prelude::*;
 
 /// Context of a transaction that executed in
 pub trait TransactionCtxT: Sized + Clone {
@@ -14,6 +17,7 @@ pub trait TransactionCtxT: Sized + Clone {
     fn block_number(&self) -> Self::BlockNumber;
     fn extrinsic_id(&self) -> Self::ExtrinsicId;
     fn id(&self) -> TransactionCtxId<Self>;
+    fn extrinsic_data(&self, decode: bool) -> Vec<u8>;
 }
 
 /// Id of a context that transaction executed in
@@ -54,6 +58,19 @@ impl<T: frame_system::Config> TransactionCtxT
             extrinsic_id: self.extrinsic_id()
         }
     }
+    
+    /// Data of the current extrinsic.
+    fn extrinsic_data(&self, decode: bool) -> Vec<u8> {
+        let mut key = Vec::with_capacity(40);
+        key.extend(twox_128(b"System"));
+        key.extend(twox_128(b"ExtrinsicData"));
+        key.extend(self.extrinsic_id().twox_64_concat());
+        let encoded = sp_io::storage::get(&key[..]).unwrap();
+        if decode {
+            return Vec::<u8>::decode(&mut &encoded[..]).unwrap()
+        }
+        encoded
+    }
 }
 
 #[macro_export]
@@ -85,6 +102,10 @@ impl<T> TransactionCtxT for $name<T>
             block_number, extrinsic_id
         } = self.0.id();
         TransactionCtxId { block_number, extrinsic_id }
+    }
+    
+    fn extrinsic_data(&self, decode: bool) -> Vec<u8> {
+        self.0.extrinsic_data(decode)
     }
 }
     };
