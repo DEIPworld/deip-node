@@ -287,18 +287,18 @@ impl<T: Config> Module<T> {
             if sale.end_time <= now && matches!(sale.status, Status::Active) {
                 if sale.total_amount.0 < sale.soft_cap.0 {
                     let call = Call::expire_crowdfunding(id);
-                    let submit = T::TransactionCtx::submit_transaction(call.into(), sale.created_ctx);
+                    let submit = T::TransactionCtx::submit_postponed(call.into(), sale.created_ctx);
                     
                     debug!("submit expire_crowdfunding: {}", submit.is_ok());
                 } else if sale.total_amount.0 >= sale.soft_cap.0 {
                     let call = Call::finish_crowdfunding(id);
-                    let submit = T::TransactionCtx::submit_transaction(call.into(), sale.created_ctx);
+                    let submit = T::TransactionCtx::submit_postponed(call.into(), sale.created_ctx);
                     debug!("submit finish_crowdfunding: {}", submit.is_ok());
                 }
             } else if sale.end_time > now {
                 if now >= sale.start_time && matches!(sale.status, Status::Inactive) {
                     let call = Call::activate_crowdfunding(id);
-                    let submit = T::TransactionCtx::submit_transaction(call.into(), sale.created_ctx);
+                    let submit = T::TransactionCtx::submit_postponed(call.into(), sale.created_ctx);
                     debug!("submit activate_crowdfunding: {}", submit.is_ok());
                 }
             }

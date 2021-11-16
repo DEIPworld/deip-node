@@ -124,7 +124,7 @@ pub mod pallet {
                 }
                 let call = Call::expire(id);
                 
-                let submit = T::TransactionCtx::submit_transaction(call, obj.created_ctx);
+                let submit = T::TransactionCtx::submit_postponed(call, obj.created_ctx);
                 
                 if submit.is_err() {
                     debug!("{}", "error on submit unsigned transaction");
