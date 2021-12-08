@@ -237,6 +237,24 @@ pub mod pallet {
     pub(super) type NftBalanceMap<T: Config> =
         StorageMap<_, Identity, DeipAssetIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
 
+
+    #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
+    pub(super) struct AssetMetadata<U8> {
+        name: Vec<U8>,
+	      symbol: Vec<U8>,
+	      decimals: U8,
+    }
+
+    #[pallet::storage]
+    pub(super) type AssetMetadataMap<T: Config> = StorageMap<
+        _,
+        Identity,
+        DeipAssetIdOf<T>,
+        AssetMetadata<u8>,
+        OptionQuery,
+    >;
+
+
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
         pub core_asset_admin: AccountIdOf<T>,
@@ -645,6 +663,34 @@ pub mod pallet {
 
             Ok(result)
         }
+
+
+        fn set_metadata_impl(
+            origin: OriginFor<T>,
+            id: DeipAssetIdOf<T>,
+            name: Vec<u8>,
+            symbol: Vec<u8>,
+            decimals: u8,
+        ) -> DispatchResultWithPostInfo {
+
+            let asset_name = name.clone();
+            let asset_symbol = symbol.clone();
+
+            let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id).next().ok_or(Error::<T>::DeipAssetIdExists)?.0;
+            let call = pallet_assets::Call::<T>::set_metadata(asset_id, name, symbol, decimals);
+            let result = call.dispatch_bypass_filter(origin)?;
+
+            AssetMetadataMap::<T>::insert(
+                id.clone(),
+                AssetMetadata {
+                  name: asset_name,
+                  symbol: asset_symbol,
+                  decimals: decimals,
+                },
+            );
+
+            Ok(result)
+        }
     }
 
     #[pallet::call]
@@ -817,9 +863,7 @@ pub mod pallet {
             symbol: Vec<u8>,
             decimals: u8,
         ) -> DispatchResultWithPostInfo {
-            let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id).next().ok_or(Error::<T>::DeipAssetIdExists)?.0;
-            let call = pallet_assets::Call::<T>::set_metadata(asset_id, name, symbol, decimals);
-            call.dispatch_bypass_filter(origin)
+            Self::set_metadata_impl(origin, id, name, symbol, decimals)
         }
 
         #[pallet::weight(10_000)]
