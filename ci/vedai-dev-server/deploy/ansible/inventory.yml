@@ -1,0 +1,13 @@
+all:
+  children:
+    validator_nodes:
+      vars: {}
+      hosts:
+        '3.67.195.250':
+          # dev-vedai-substrate
+          region: eu-central-1
+          user: ubuntu
+        '3.71.87.66':
+          # stage-vedai-substrate
+          region: eu-central-1
+          user: ubuntu

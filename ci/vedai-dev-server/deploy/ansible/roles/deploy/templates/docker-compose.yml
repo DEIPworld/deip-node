@@ -1,0 +1,239 @@
+version: "3"
+
+services:
+
+#  nginx:
+#    image: nginx:1.13.1
+#    container_name: nginx-proxy
+#    restart: always
+#    ports:
+#      - "80:80"
+#      - "443:443"
+#    volumes:
+#      - conf:/etc/nginx/conf.d
+#      - vhost:/etc/nginx/vhost.d
+#      - html:/usr/share/nginx/html
+#      - certs:/etc/nginx/certs
+#    labels:
+#      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy=true"
+#
+#
+#  dockergen:
+#    image: jwilder/docker-gen:0.7.3
+#    container_name: nginx-proxy-gen
+#    restart: always
+#    depends_on:
+#      - nginx
+#    command: -notify-sighup nginx-proxy -watch -wait 5s:30s /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default.conf
+#    volumes:
+#      - conf:/etc/nginx/conf.d
+#      - vhost:/etc/nginx/vhost.d
+#      - html:/usr/share/nginx/html
+#      - certs:/etc/nginx/certs
+#      - /var/run/docker.sock:/tmp/docker.sock:ro
+#      - ./nginx.tmpl:/etc/docker-gen/templates/nginx.tmpl:ro
+#
+#
+#  letsencrypt:
+#    image: jrcs/letsencrypt-nginx-proxy-companion
+#    container_name: nginx-proxy-le
+#    restart: always
+#    depends_on:
+#      - nginx
+#      - dockergen
+#    environment:
+#      NGINX_PROXY_CONTAINER: nginx-proxy
+#      NGINX_DOCKER_GEN_CONTAINER: nginx-proxy-gen
+#    volumes:
+#      - conf:/etc/nginx/conf.d
+#      - vhost:/etc/nginx/vhost.d
+#      - html:/usr/share/nginx/html
+#      - certs:/etc/nginx/certs
+#      - /var/run/docker.sock:/var/run/docker.sock:ro
+#
+#
+#  deip-dev-vedai-witness-node:
+#    image: deipworld/oa-develop-node:latest
+#    container_name: deip-dev-vedai-witness-node
+#    restart: always
+#    depends_on:
+#      - nginx
+#      - dockergen
+#      - letsencrypt
+#    #ports:
+#    #  - "8091:8090"
+#    #  - "2002:2001"
+#    environment:
+#      VIRTUAL_HOST: dev-vedai-witness-node.deip.world
+#      VIRTUAL_PORT: 8090
+#      DEIPD_WITNESS_NAME: initdelegate
+#      DEIPD_PRIVATE_KEY: 5JidFW79ttL9YP3W2Joc5Zer49opYU3fKNeBx9B6cpEH1GiDm5p
+#      #REPLAY_BLOCKCHAIN: 1
+#    volumes:
+#      - witness-node-blockchain:/var/lib/deipd
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '1.00'
+#          memory: 1024M
+#        reservations:
+#          memory: 1024M
+
+  deip-blockchain-node:
+    image: 'deipworld/dev-vedai-substrate-appchain-deip:latest'
+    container_name: deip-dev-vedai-substrate-node
+    restart: always
+    command: |
+      appchain-deip --validator --ws-external --rpc-external --rpc-methods=Unsafe 
+        --chain=dev
+        --base-path=/var/lib/deipd
+        --offchain-worker=WhenValidating --enable-offchain-indexing=true
+        -lpallet_deip_proposal=debug 
+        -lpallet_deip_dao=debug 
+        -l=txpool=trace,runtime=trace,offchain=trace
+    ports:
+      - "9944:9944"
+      - "9933:9933"
+    volumes:
+      - full-node-blockchain:/var/lib/deipd
+#    links:
+#      - deip-dev-vedai-witness-node
+    deploy:
+      resources:
+        limits:
+          cpus: '1.00'
+          memory: 2048M
+        reservations:
+          memory: 1024M
+  
+#  deip-dev-vedai-full-node:
+#    image: deipworld/oa-develop-full-node:latest
+#    container_name: deip-dev-vedai-full-node
+#    restart: always
+#    depends_on:
+#      - nginx
+#      - dockergen
+#      - letsencrypt
+#      - deip-dev-vedai-witness-node
+#    ports:
+#      - "8090:8090"
+#      - "2001:2001"
+#    environment:
+#      VIRTUAL_HOST: dev-vedai-full-node.deip.world
+#      VIRTUAL_PORT: 8090
+#      LETSENCRYPT_HOST: dev-vedai-full-node.deip.world
+#      LETSENCRYPT_EMAIL: yahor.tsaryk@deip.world
+#      DEIPD_SEED_NODES: "deip-dev-vedai-witness-node:2001"
+#      #REPLAY_BLOCKCHAIN: 1
+#    volumes:
+#      - full-node-blockchain:/var/lib/deipd
+#    links:
+#      - deip-dev-vedai-witness-node
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '1.00'
+#          memory: 2048M
+#        reservations:
+#          memory: 1024M
+      
+
+#  deip-dev-vedai-web-server:
+#    image: deipworld/dev-vedai-web-server:latest
+#    container_name: deip-dev-vedai-web-server
+#    restart: always
+#    depends_on:
+#      - nginx
+#      - dockergen
+#      - letsencrypt
+#    ports:
+#      - "9091:80"
+#    environment:
+#      VIRTUAL_HOST: "dev-vedai-web-server.deip.world"
+#      VIRTUAL_PORT: 80
+#      LETSENCRYPT_HOST: "dev-vedai-web-server.deip.world"
+#      LETSENCRYPT_EMAIL: yahor.tsaryk@deip.world
+#      # DEIP variables
+#      NODE_ENV: development
+#      PORT: 80
+#      DEIP_FULL_NODE_URL: https://dev-vedai-full-node.deip.world
+#      CHAIN_ID: f3609192328f5936e49c16c334e95b39fc83d6ce2618d7b05d00b4d509ca0070
+#      DEIP_SERVER_URL: https://dev-vedai-web-server.deip.world
+#      DEIP_CLIENT_HOST: dev-vedai.deip.world
+#      DEIP_MONGO_STORAGE_CONNECTION_URL: mongodb://deip:XTFEaoBKqYr@dev-mongodb.deip.world:27017/deip-vedai-server?authSource=admin
+#      FAUCET_ACCOUNT: '{ "username": "regacc", "wif": "5KR5baFjXvuXVxaJs3epFZyriYARcv7VsVqAP88dDFLHnG7u4ud", "fee": "0.000 TESTS" }'
+#      TENANT: "2222222222222222222222222222222222222222"
+#      TENANT_PRIV_KEY: 5Ke9KmpLDMbKkGsy9jCNNisQnEnkwy5f3gvvBkLLjiAFRwtPYau
+#      TENANT_FILE_STORAGE_TYPE: 2
+#      TENANT_SFTP_HOST: dev-sftp.deip.world
+#      TENANT_SFTP_USER: tenant-f36fca1b
+#      TENANT_SFTP_PASSWORD: deipdev
+#    volumes:
+#      - filestorage:/usr/src/app/files
+#      - logstorage:/usr/src/app/logs
+
+#  deip-dev-vedai-web-client:
+#    image: deipworld/dev-vedai-web-client:latest
+#    container_name: deip-dev-vedai-web-client
+#    restart: always
+#    depends_on:
+#      - nginx
+#      - dockergen
+#      - letsencrypt
+#    environment:
+#      VIRTUAL_HOST: "dev-vedai.deip.world"
+#      LETSENCRYPT_HOST: "dev-vedai.deip.world"
+#      LETSENCRYPT_EMAIL: yahor.tsaryk@deip.world
+#      # DEIP variables
+#      NODE_ENV: production
+#      TENANT: '2222222222222222222222222222222222222222'
+#      DEIP_CLIENT_HOST: dev-vedai.deip.world
+#      DEIP_SERVER_URL: https://dev-vedai-web-server.deip.world
+#      DEIP_FULL_NODE_URL: wss://dev-vedai-full-node.deip.world
+#      CHAIN_ID: f3609192328f5936e49c16c334e95b39fc83d6ce2618d7b05d00b4d509ca0070
+#      ASSET_UNIT: 'TESTS'
+#      DEIP_CHAIN_EXPLORER_URL: https://dev-vedai-explorer.deip.world
+#      IS_TESTNET: 'true'
+#      PROTOCOL: 1
+#
+#
+##  deip-dev-vedai-web-explorer:
+##    image: deipworld/oa-develop-web-explorer:latest
+##    container_name: deip-dev-vedai-web-explorer
+##    restart: always
+##    depends_on:
+##      - nginx
+##      - dockergen
+##      - letsencrypt
+##    environment:
+##      VIRTUAL_HOST: "dev-vedai-explorer.deip.world"
+##      LETSENCRYPT_HOST: "dev-vedai-explorer.deip.world"
+##      LETSENCRYPT_EMAIL: yahor.tsaryk@deip.world
+##      # DEIP variables
+##      NODE_ENV: production
+##      TENANT: '2222222222222222222222222222222222222222'
+##      DEIP_FULL_NODE_URL: wss://dev-vedai-full-node.deip.world
+##      CHAIN_ID: f3609192328f5936e49c16c334e95b39fc83d6ce2618d7b05d00b4d509ca0070
+#      
+volumes:
+#  conf:
+#    external: true
+#  vhost:
+#    external: true
+#  html:
+#    external: true
+#  certs:
+#    external: true
+#  witness-node-blockchain:
+#    external: true
+  full-node-blockchain:
+    external: true
+#  filestorage:
+#    external: true
+#  logstorage: 
+#    external: true
+
+networks:
+  default:
+    external:
+      name: nginx-proxy

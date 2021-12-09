@@ -1,0 +1,4 @@
+- hosts: validator_nodes
+  remote_user: "{{ user }}"
+  roles:
+    - deploy
