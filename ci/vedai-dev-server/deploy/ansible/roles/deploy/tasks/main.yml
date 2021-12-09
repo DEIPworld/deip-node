@@ -1,0 +1,11 @@
+- name: Put compose-file
+  template:
+    src: docker-compose.yml
+    dest: "{{ home }}/docker-compose.yml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: u=rw,g=,o=
+- name: Up
+  command:
+    chdir: "{{ home }}"
+    cmd: "docker-compose up -d deip-blockchain-node"

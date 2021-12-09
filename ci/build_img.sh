@@ -13,7 +13,8 @@ export ARTIFACT="$CTX/$BINARY_NAME"
 
 mkdir -p $CTX && ./build_bin.sh
 
-docker build -f Dockerfile -t "$APP_IMAGE" \
+cp Dockerfile $CTX
+docker build -t "$APP_IMAGE" \
   --build-arg=ARTIFACT=$BINARY_NAME \
   $CTX
 rm -rf $CTX

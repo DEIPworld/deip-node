@@ -27,7 +27,7 @@ workspace_name=$(basename $(realpath "$BUILD_SOURCE"/"$BUILD_WORKDIR"))
 cargo_target_dir=.cargo/"$workspace_name"/target
 build_mode=release
 
-docker run --rm -ti -v "$BUILD_SOURCE":"$build_source" -v "$BUILD_CACHE":"$build_cache" \
+docker run --rm --init -v "$BUILD_SOURCE":"$build_source" -v "$BUILD_CACHE":"$build_cache" \
   --env CARGO_HOME="$build_cache"/.cargo/"$workspace_name"/home \
   --env CARGO_TARGET_DIR="$build_cache/$cargo_target_dir" \
   --env WORKSPACE="$build_source"/"$BUILD_WORKDIR" \
