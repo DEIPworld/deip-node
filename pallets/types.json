@@ -231,7 +231,6 @@
   },
   "FundingModelOf": "FundingModel",
   "Balance": "u128",
-  "TAssetBalance": "Balance",
   "AssetBalanceOf": "Balance",
   "AssetsBalanceOf": "AssetBalanceOf",
   "DeipAssetBalanceOf": "AssetsBalanceOf",
