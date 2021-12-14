@@ -14,10 +14,12 @@
   "AlterAuthority": {
     "_enum": {
       "AddMember": {
-        "member": "AccountId"
+        "member": "AccountId",
+        "preserve_threshold": "bool"
       },
       "RemoveMember": {
-        "member": "AccountId"
+        "member": "AccountId",
+        "preserve_threshold": "bool"
       },
       "ReplaceAuthority": {
         "authority_key": "AccountId",
