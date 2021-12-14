@@ -224,13 +224,20 @@ pub mod pallet {
             }
         }
         impl<AccountId: Ord + Eq + PartialEq> Authority<AccountId> {
-            pub fn add_member(&mut self, member: AccountId) {
+            pub fn add_member(&mut self, member: AccountId, preserve_threshold: bool) {
                 if let Err(pos) = self.signatories.binary_search(&member) {
                     self.signatories.insert(pos, member);
-                    self.threshold += 1;
+                    if !preserve_threshold {
+                        self.threshold += 1;
+                        return
+                    } else {
+                        if self.signatories.len() == 2 {
+                            self.threshold = 1;
+                        }
+                    }
                 }
             }
-            pub fn remove_member(&mut self, member: AccountId) {
+            pub fn remove_member(&mut self, member: AccountId, preserve_threshold: bool) {
                 if self.signatories.len() == 1 { return }
                 if let Ok(pos) = self.signatories.binary_search(&member) {
                     self.signatories.remove(pos);
@@ -238,8 +245,15 @@ pub mod pallet {
                         self.threshold = 0;
                         return
                     }
-                    if self.signatories.len() > 1 && (self.threshold - 1) > 0 {
-                        self.threshold -= 1;
+                    if !preserve_threshold {
+                        if self.signatories.len() > 1 && (self.threshold - 1) > 0 {
+                            self.threshold -= 1;
+                        }
+                        return
+                    } else { 
+                        if self.threshold > self.signatories.len() as u16 {
+                            self.threshold = self.signatories.len() as u16;
+                        } 
                     }
                 }
             }
@@ -311,11 +325,11 @@ pub mod pallet {
                     metadata
                 } = self;
                 match op {
-                    AlterAuthority::AddMember { member } => {
-                        authority.add_member(member);
+                    AlterAuthority::AddMember { member, preserve_threshold } => {
+                        authority.add_member(member, preserve_threshold);
                     },
-                    AlterAuthority::RemoveMember { member } => {
-                        authority.remove_member(member);
+                    AlterAuthority::RemoveMember { member, preserve_threshold } => {
+                        authority.remove_member(member, preserve_threshold);
                     },
                     AlterAuthority::ReplaceAuthority { authority_key: new_authority_key, authority: new_authority } => {
                         authority = new_authority.assert(&new_authority_key)?;
@@ -334,8 +348,8 @@ pub mod pallet {
         #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
         #[cfg_attr(feature = "std", serde(tag = "operation", content = "data"))]
         pub enum AlterAuthority<AccountId> {
-            AddMember { member: AccountId },
-            RemoveMember { member: AccountId},
+            AddMember { member: AccountId, preserve_threshold: bool },
+            RemoveMember { member: AccountId, preserve_threshold: bool },
             ReplaceAuthority { authority_key: AccountId, authority: InputAuthority<AccountId> }
         }
     }
