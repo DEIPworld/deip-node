@@ -690,19 +690,19 @@ impl pallet_utility::Config for Runtime {
 }
 
 impl pallet_deip_portal::Config for Runtime {
+    type TenantLookup = Self;
     type PortalId = <Runtime as pallet_deip_dao::Config>::DaoId;
-    type Portal = ();
-    type PortalProvider = ();
-    type PortalLookup = Self;
+    type Portal = pallet_deip_portal::Portal<Self>;
+
     type Call = Call;
     type UnsignedValidator = Self;
     type UncheckedExtrinsic = UncheckedExtrinsic;
 }
-impl pallet_deip_portal::PortalLookup<AccountId> for Runtime {
-    type PortalId = <Self as pallet_deip_portal::Config>::PortalId;
+impl pallet_deip_portal::TenantLookupT<AccountId> for Runtime {
+    type TenantId = <Self as pallet_deip_portal::Config>::PortalId;
 
-    fn lookup(account_id: AccountId) -> Option<Self::PortalId> {
-        DeipDao::lookup_dao(account_id)
+    fn lookup(key: &AccountId) -> Option<Self::TenantId> {
+        DeipDao::lookup_dao(key)
     }
 }
 

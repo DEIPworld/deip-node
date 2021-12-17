@@ -29,6 +29,7 @@ serde = { version = "1.0.123", optional = true, features = ["derive"]}
 sp-api = { version = '3.0.0', default-features = false}
 sp-io = { default-features = false, version = '3.0.0' }
 deip-transaction-ctx = { path = "../../deip_common/deip_transaction_ctx", default-features = false }
+deip-tenant = { path = "../../deip_common/deip_tenant", default-features = false }
 
 [dev-dependencies]
 sp-runtime = { default-features = false, version = '3.0.0' }
@@ -42,7 +43,7 @@ std = [
     'sp-std/std', 
     'sp-io/std',
     'serde',
-#    'pallet-deip-toolkit/std',
     "sp-api/std",
-    'deip-transaction-ctx/std'
+    'deip-transaction-ctx/std',
+    'deip-tenant/std',
 ]
