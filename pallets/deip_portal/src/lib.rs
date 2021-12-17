@@ -11,6 +11,8 @@
 //!
 //! ### Dispatchable Functions
 //!
+//! * `create` - Create a Portal.
+//! * `update` - Update a Portal.
 //! * `schedule` - Schedule an extrinsic to be executed within Portal context.
 //! * `exec` - Call-wrapper that may be scheduled.
 //!
@@ -25,16 +27,16 @@
 
 #[cfg(test)]
 mod tests;
-mod extensions;
 mod transaction_ctx;
+mod portal;
 
 
 #[doc(inline)]
 pub use pallet::*;
 #[doc(inline)]
-pub use extensions::*;
-#[doc(inline)]
 pub use transaction_ctx::*;
+#[doc(inline)]
+pub use portal::*;
 
 #[doc(hidden)]
 pub use deip_transaction_ctx::*;
@@ -60,32 +62,20 @@ pub mod pallet {
     use frame_support::dispatch::DispatchResult;
     use codec::EncodeLike;
     
-    pub trait PortalProvider {
-        type Portal;
-        fn provide() -> Self::Portal;
-    }
-    impl PortalProvider for () {
-        type Portal = ();
-
-        fn provide() -> Self::Portal {}
-    }
-    
-    pub trait PortalLookup<AccountId> {
-        type PortalId;
-        fn lookup(account_id: AccountId) -> Option<Self::PortalId>;
-    }
+    use super::*;
     
     use frame_system::offchain::SendTransactionTypes;
     use sp_runtime::traits::Extrinsic;
+    use sp_std::fmt::Debug;
 
     /// Configuration trait
     #[pallet::config]
-    pub trait Config: frame_system::Config + SendTransactionTypes<Call<Self>> {
+    pub trait Config: frame_system::Config + SendTransactionTypes<Call<Self>> + PortalModuleT<Self> + Debug {
     
-        type PortalId: Member + Parameter + Default + Copy;
-        type Portal;
-        type PortalProvider: PortalProvider<Portal = Self::Portal>;
-        type PortalLookup: PortalLookup<Self::AccountId, PortalId = Self::PortalId>;
+        type TenantLookup: TenantLookupT<Self::AccountId, TenantId = Self::PortalId> + Debug;
+        
+        type PortalId: Member + Parameter + Copy + Default;
+        type Portal: PortalT<Self> + Member + Parameter;
         
         type Call: Parameter +
              Dispatchable<Origin = Self::Origin, PostInfo = PostDispatchInfo> +
@@ -99,7 +89,8 @@ pub mod pallet {
         
         type UncheckedExtrinsic: Encode + EncodeLike + Decode + Clone
             + sp_std::fmt::Debug + Eq + PartialEq
-            + frame_support::traits::ExtrinsicCall + Extrinsic<Call = <Self as Config>::Call>;
+            + frame_support::traits::ExtrinsicCall
+            + Extrinsic<Call = <Self as Config>::Call>;
     }
     
     #[doc(hidden)]
@@ -121,11 +112,14 @@ pub mod pallet {
     
     #[pallet::error]
     pub enum Error<T> {
+        DelegateMismatch,
         PortalMismatch,
         AlreadyScheduled,
         UnproperCall,
         NotScheduled,
-        SignerIsNotAPortal,
+        OwnerIsNotATenant,
+        PortalAlreadyExist,
+        PortalNotFound,
     }
     
     // #[pallet::event]
@@ -166,6 +160,33 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T>
     {
+        #[pallet::weight(10000)]
+        pub fn create(
+            origin: OriginFor<T>,
+            delegate: PortalDelegate<T>,
+            metadata: PortalMetadata
+        )
+            -> DispatchResultWithPostInfo
+        {
+            // sp_runtime::runtime_logger::RuntimeLogger::init();
+            let owner = ensure_signed(origin)?;
+            T::create_portal(owner, delegate, metadata)?;
+            Ok(Some(0).into())
+        }
+        
+        #[pallet::weight(10000)]
+        pub fn update(
+            origin: OriginFor<T>,
+            update: PortalUpdate<T>
+        )
+            -> DispatchResultWithPostInfo
+        {
+            // sp_runtime::runtime_logger::RuntimeLogger::init();
+            let owner = ensure_signed(origin)?;
+            T::update_portal(owner, update)?;
+            Ok(Some(0).into())
+        }
+        
         #[pallet::weight(0)]
         pub fn schedule(
             origin: OriginFor<T>,
@@ -173,34 +194,33 @@ pub mod pallet {
         )
             -> DispatchResultWithPostInfo
         {
-            sp_runtime::runtime_logger::RuntimeLogger::init();
-            let who = ensure_signed(origin)?;
-            let signer = T::PortalLookup::lookup(who).ok_or(Error::<T>::SignerIsNotAPortal)?;
-            crate::PortalCtxOf::<T>::current().schedule_extrinsic(*xt, signer)?;
+            // sp_runtime::runtime_logger::RuntimeLogger::init();
+            let delegate = ensure_signed(origin)?;
+            crate::PortalCtxOf::<T>::current().schedule_extrinsic(*xt, delegate)?;
             Ok(Some(0).into())
         }
         
         #[pallet::weight(0)]
         pub fn exec(
             origin: OriginFor<T>,
-            portal_id: T::PortalId,
+            portal_id: PortalId<T>,
             call: Box<<T as Config>::Call>,
         )
             -> DispatchResultWithPostInfo
         {
-            sp_runtime::runtime_logger::RuntimeLogger::init();
+            // sp_runtime::runtime_logger::RuntimeLogger::init();
             crate::PortalCtxOf::<T>::current().dispatch_scheduled(portal_id, *call, origin)?
         }
         
         #[pallet::weight(0)]
         pub fn exec_postponed(
             origin: OriginFor<T>,
-            portal_id: T::PortalId,
+            portal_id: PortalId<T>,
             call: Box<<T as Config>::Call>,
         )
             -> DispatchResultWithPostInfo
         {
-            sp_runtime::runtime_logger::RuntimeLogger::init();
+            // sp_runtime::runtime_logger::RuntimeLogger::init();
             ensure_none(origin)?;
             crate::PortalCtxOf::<T>::current().dispatch(portal_id, *call, RawOrigin::None.into())
         }
@@ -234,7 +254,7 @@ pub mod pallet {
     pub(super) type ScheduledTx<T: Config> = StorageMap<_,
         Blake2_128Concat,
         ExtrinsicHash,
-        T::PortalId,
+        PortalId<T>,
     >;
     
     #[pallet::storage]
@@ -242,12 +262,34 @@ pub mod pallet {
         Twox64Concat,
         BlockNumberFor<T>,
         Blake2_128Concat,
-        T::PortalId,
+        PortalId<T>,
         ExtrinsicIdList,
         OptionQuery
     >;
     
+    #[pallet::storage]
+    pub(super) type PortalRepository<T: Config> = StorageMap<_,
+        Blake2_128Concat,
+        PortalId<T>,
+        T::Portal,
+    >;
+    
+    #[pallet::storage]
+    pub(super) type DelegateLookup<T: Config> = StorageMap<_,
+        Blake2_128Concat,
+        PortalId<T>,
+        PortalDelegate<T>,
+    >;
+    
+    #[pallet::storage]
+    pub(super) type OwnerLookup<T: Config> = StorageMap<_,
+        Blake2_128Concat,
+        PortalOwner<T>,
+        PortalId<T>,
+    >;
+    
     use storage_ops::*;
+    use sp_core::H256;
 
     /// Module contains abstractions over pallet storage operations
     pub mod storage_ops {

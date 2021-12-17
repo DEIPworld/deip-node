@@ -8,6 +8,7 @@ pub trait PortalCtxT<LocalCall>: TransactionCtxT {
     type PortalId;
     type Extrinsic;
     type Error;
+    type Delegate;
     
     fn portal_id(ctx: &TransactionCtxId<Self>) -> Self::PortalId;
     
@@ -20,7 +21,7 @@ pub trait PortalCtxT<LocalCall>: TransactionCtxT {
     ) -> DispatchResultWithInfo<D::PostInfo>;
     
     /// Schedule extrinsic to be dispatched within Portal context. 
-    fn schedule_extrinsic(&self, xt: Self::Extrinsic, signer: Self::PortalId) -> Result<(), Self::Error>;
+    fn schedule_extrinsic(&self, xt: Self::Extrinsic, delegate: Self::Delegate) -> Result<(), Self::Error>;
 
     fn submit_scheduled(at: Self::BlockNumber) -> Result<Vec<()>, ()>;
     

@@ -1,3 +1,5 @@
+pub use deip_tenant::*;
+
 use deip_transaction_ctx::{
     TransactionCtxT,
     TransactionCtxId,
@@ -10,7 +12,7 @@ use frame_support::{Hashable, ensure};
 use frame_support::traits::{ExtrinsicCall, IsSubType};
 use frame_support::log::debug;
 
-use crate::{PortalInfo, PortalTagOfTransaction, ScheduledTx, PendingTx};
+use crate::{PortalInfo, PortalTagOfTransaction, ScheduledTx, PendingTx, DelegateLookup, PortalT};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::prelude::*;
 use sp_std::fmt::Debug;
@@ -33,9 +35,11 @@ impl<T, LocalCall> PortalCtxT<LocalCall> for PortalCtxOf<T>
           T::PortalId: Copy + Default + Debug,
           LocalCall: Debug,
 {
-    type PortalId = <T::PortalLookup as crate::PortalLookup<T::AccountId>>::PortalId;
+    // type PortalId = <T::TenantLookup as TenantLookupT<T::AccountId>>::TenantId;
+    type PortalId = T::PortalId;
     type Extrinsic = T::UncheckedExtrinsic;
     type Error = crate::Error<T>;
+    type Delegate = crate::PortalDelegate<T>;
 
     fn portal_id(ctx: &TransactionCtxId<Self>) -> Self::PortalId {
         let portal_info: PortalInfo<Self::PortalId> = PortalTagOfTransaction::<T>::iter_prefix(&ctx.block_number).collect();
@@ -57,9 +61,9 @@ impl<T, LocalCall> PortalCtxT<LocalCall> for PortalCtxOf<T>
         call.dispatch(origin)
     }
 
-    fn schedule_extrinsic(&self, xt: Self::Extrinsic, signer: Self::PortalId) -> Result<(), Self::Error> {
+    fn schedule_extrinsic(&self, xt: Self::Extrinsic, delegate: Self::Delegate) -> Result<(), Self::Error> {
         if let Some(crate::Call::exec(portal_id, _call)) = <T as crate::Config>::Call::is_sub_type(ExtrinsicCall::call(&xt)) {
-            ensure!(signer == *portal_id, PortalMismatch);
+            ensure!(T::Portal::lookup_delegate(portal_id)? == delegate, DelegateMismatch);
             let xt_hash = xt.twox_256();
             ensure!(!ScheduledTx::<T>::contains_key(xt_hash), AlreadyScheduled);
             ScheduledTx::<T>::insert(xt_hash, portal_id);

@@ -1,6 +1,20 @@
 {
+  "PortalUpdate": {
+    "delegate": "Option<PortalDelegate>",
+    "metadata": "Option<PortalMetadata>"
+  },
+  "Portal": {
+    "id": "PortalId",
+    "owner": "PortalOwner",
+    "delegate": "PortalDelegate",
+    "metadata": "PortalMetadata"
+  },
+  "PortalMetadata": "Option<H256>",
+  "PortalDelegate": "AccountId",
+  "PortalOwner": "AccountId",
+  "PortalId": "TenantId",
   "UncheckedExtrinsic": "Extrinsic",
-  "PortalId": "DaoId",
+  "TenantId": "DaoId",
   "InputProposalBatch": "Vec<InputProposalBatchItem>",
   "InputProposalBatchItem": {
     "account": "DeipAccountId",

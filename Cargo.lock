@@ -1584,6 +1584,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "deip-tenant"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "serde",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "deip-transaction-ctx"
 version = "0.1.0"
 dependencies = [
@@ -4378,6 +4391,7 @@ dependencies = [
 name = "pallet-deip-portal"
 version = "3.0.0"
 dependencies = [
+ "deip-tenant",
  "deip-transaction-ctx",
  "frame-support",
  "frame-system",
