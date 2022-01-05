@@ -104,8 +104,9 @@ version = '3.0.0'
 [dependencies.frame-support]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
+rev = "74101dc2"
+# tag = 'monthly-2021-08'
+# version = '3.0.0'
 
 [dependencies.frame-system]
 default-features = false
