@@ -34,9 +34,6 @@ pallet-deip-assets = { path = "../pallets/deip_assets"}
 node-template-runtime = { package = 'appchain-deip-runtime', path = '../runtime'}
 deip-call = { package = "common-deip-call", path = "../deip_common/deip_call" }
 
-pallet-octopus-appchain = { default-features = false, git = "https://github.com/octopus-network/octopus-pallets", branch = "main" }
-pallet-octopus-lpos = { default-features = false, git = "https://github.com/octopus-network/octopus-pallets", branch = "main" }
-
 codec = { package = "parity-scale-codec", version = "2.1", default-features = false, features = ["derive", "full"] }
 hex = "0.4.3"
 
@@ -45,6 +42,16 @@ flexi_logger = "0.18.0"
 clap = "2.33.3"
 
 frame-support = "3.0.0"
+
+[dependencies.pallet-octopus-lpos]
+default-features = false
+git = "https://github.com/octopus-network/octopus-pallets"
+rev = "17d2df3a"
+
+[dependencies.pallet-octopus-appchain]
+default-features = false
+git = "https://github.com/octopus-network/octopus-pallets"
+rev = "17d2df3a"
 
 [dependencies.frame-system]
 default-features = false

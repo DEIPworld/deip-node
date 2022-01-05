@@ -49,9 +49,6 @@ beefy-primitives = { version = "0.1.0", git = "https://github.com/octopus-networ
 beefy-gadget = { version = "0.1.0", git = "https://github.com/octopus-network/grandpa-bridge-gadget", branch = "dev" }
 beefy-gadget-rpc = { version = "0.1.0", git = "https://github.com/octopus-network/grandpa-bridge-gadget", branch = "dev" }
 
-pallet-octopus-appchain = { git = "https://github.com/octopus-network/octopus-pallets", branch = "main" }
-pallet-octopus-lpos = { git = "https://github.com/octopus-network/octopus-pallets", branch = "main" }
-
 pallet-deip = { path = "../pallets/deip", version = "3.0.0"}
 pallet-deip-assets = { path = "../pallets/deip_assets", version = "3.0.0"}
 
@@ -59,6 +56,16 @@ deip-proposal-rpc = { path = "../rpc/deip_proposal_rpc" }
 deip-assets-rpc = { path = "../rpc/deip_assets_rpc" }
 deip-dao-rpc = { path = "../rpc/deip_dao_rpc" }
 deip-rpc = { path = "../rpc/deip_rpc" }
+
+[dependencies.pallet-octopus-lpos]
+default-features = false
+git = "https://github.com/octopus-network/octopus-pallets"
+rev = "17d2df3a"
+
+[dependencies.pallet-octopus-appchain]
+default-features = false
+git = "https://github.com/octopus-network/octopus-pallets"
+rev = "17d2df3a"
 
 [dependencies.frame-benchmarking]
 git = 'https://github.com/paritytech/substrate.git'
