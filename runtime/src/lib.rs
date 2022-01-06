@@ -657,6 +657,7 @@ impl pallet_deip_proposal::pallet::Config for Runtime {
     type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
     type Ttl = ProposalTtl;
     type ExpirePeriod = ProposalExpirePeriod;
+    type WeightInfo = pallet_deip_proposal::CallWeight<Self>;
 }
 
 impl pallet_deip_dao::Config for Runtime {
@@ -1090,6 +1091,7 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, pallet_balances, Balances);
             add_benchmark!(params, batches, pallet_timestamp, Timestamp);
             add_benchmark!(params, batches, pallet_template, TemplateModule);
+            add_benchmark!(params, batches, pallet_deip_proposal, DeipProposal);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)

@@ -120,7 +120,8 @@ fn create_proposal_emits_event() {
                 RawEvent::Proposed {
                     author: _,
                     batch: _,
-                    proposal_id: _
+                    proposal_id: _,
+                    ..
                 }) => {},
             _ => { unreachable!() }
         }

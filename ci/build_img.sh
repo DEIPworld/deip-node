@@ -6,6 +6,7 @@ set -e
 export REVISION=${REVISION?Please specify vcs REVISION}
 export BINARY_NAME=${BINARY_NAME?Please specify BINARY_NAME}
 export BUILD_CACHE=${BUILD_CACHE?Please specify BUILD_CACHE directory}
+export FEATURES=${FEATURES:-}
 APP_IMAGE=${APP_IMAGE?Please specify APP_IMAGE}
 
 CTX="${BUILD_CACHE}/ctx/${BINARY_NAME}_${REVISION}"

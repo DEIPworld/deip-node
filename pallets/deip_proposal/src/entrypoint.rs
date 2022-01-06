@@ -3,7 +3,9 @@
 use crate::proposal::{InputProposalBatch, DeipProposal, ProposalId};
 use crate::storage::StorageWrite;
 
-use super::{Config, Error};
+use super::{Config};
+
+use frame_support::dispatch::DispatchResultWithPostInfo;
 
 /// Create proposal
 pub fn propose<T: Config>(
@@ -11,7 +13,7 @@ pub fn propose<T: Config>(
     batch: InputProposalBatch<T>,
     external_id: Option<ProposalId>,
 )
-    -> Result<(), Error<T>>
+    -> DispatchResultWithPostInfo
 {
     StorageWrite::<T>::new()
         .commit(move |ops| {

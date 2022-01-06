@@ -3,16 +3,21 @@ use sp_std::prelude::*;
 
 use frame_support::pallet_prelude::*;
 use frame_support::Hashable;
+use frame_support::weights::{GetDispatchInfo};
+use frame_support::dispatch::DispatchResultWithPostInfo;
 
 use deip_transaction_ctx::{TransactionCtxId, TransactionCtxT};
 
 use crate::storage::{StorageOpsT, StorageOps};
 
-use super::{Config, Event, Error, ProposalRepository};
+use super::{Config, Event, Error, ProposalRepository, *};
 
 #[cfg(feature = "std")]
 use serde::{Serialize, Deserialize};
 
+
+pub const BATCH_MAX_DEPTH: usize = 2;
+pub const BATCH_MAX_SIZE: usize = 10;
 
 pub type ProposalId = sp_core::H160;
 
@@ -37,6 +42,10 @@ pub type InputProposalBatchItem<T: Config> = BatchItem<
     <T as Config>::Call
 >;
 
+pub fn batch_weight<T: Config>(b: &[InputProposalBatchItem<T>]) -> Weight {
+    b.iter().map(|x| x.call.get_dispatch_info().weight).sum()
+}
+
 /// Batch item generic container
 #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -52,6 +61,8 @@ pub struct DeipProposal<T: Config> {
     pub(super) id: ProposalId,
     /// Batch-transaction items
     pub(super) batch: ProposalBatch<T>,
+    /// Total batch weight
+    pub(super) batch_weight: Weight,
     /// Member decisions mapping
     pub(super) decisions: BTreeMap<T::AccountId, ProposalMemberDecision>,
     /// Proposal state
@@ -126,7 +137,7 @@ impl ProposalMemberDecision {
 impl<T: Config> DeipProposal<T> {
     /// Generate "Timepoint" aka unique proposal ID.
     /// Implemented as hash-value of Timepoint from `pallet_multisig`   
-    fn timepoint() -> ProposalId {
+    pub(crate) fn timepoint() -> ProposalId {
         let timepoint = Timepoint::<T::BlockNumber> {
             height: <frame_system::Pallet<T>>::block_number(),
             index: <frame_system::Pallet::<T>>::extrinsic_index().unwrap_or_default(),
@@ -143,22 +154,28 @@ impl<T: Config> DeipProposal<T> {
         storage_ops: &mut StorageOpsT<T>,
         created_at: T::Moment
     )
-        -> Result<(), Error<T>>
+        -> DispatchResultWithPostInfo
     {
         let id = external_id.unwrap_or_else(Self::timepoint);
         ensure!(
             !ProposalRepository::<T>::contains_key(&id),
             Error::<T>::AlreadyExist
         );
-        match crate::batch_assertions::assert_proposal::<T, _>(&batch, &id, 2) {
+        match crate::batch_assertions::assert_proposal::<T, _>(&batch, &id, BATCH_MAX_DEPTH, BATCH_MAX_SIZE) {
             Some(crate::batch_assertions::ProposalAssertions::DepthLimit) => {
-                return Err(Error::<T>::ReachDepthLimit)
+                return Err(Error::<T>::ReachDepthLimit)?
             },
             Some(crate::batch_assertions::ProposalAssertions::SelfReference) => {
-                return Err(Error::<T>::SelfReferential)
+                return Err(Error::<T>::SelfReferential)?
+            },
+            Some(crate::batch_assertions::ProposalAssertions::SizeLimit) => {
+                return Err(Error::<T>::ReachSizeLimit)?
             },
             None => (),
         }
+        
+        let batch_weight = batch_weight::<T>(batch.as_slice());
+        let batch_size = batch.len();
         
         let batch: ProposalBatch<T> = batch
             .into_iter()
@@ -182,6 +199,7 @@ impl<T: Config> DeipProposal<T> {
         let proposal = Self {
             id,
             batch,
+            batch_weight,
             decisions,
             state: ProposalState::Pending,
             author,
@@ -192,9 +210,10 @@ impl<T: Config> DeipProposal<T> {
             author: proposal.author.clone(),
             batch: proposal.batch.clone(),
             proposal_id: proposal.id,
+            batch_weight
         }));
         storage_ops.push_op(StorageOps::CreateProposal(proposal));
-        Ok(())
+        Ok(Some(WeightInfoOf::<T>::propose(batch_size as u32)).into())
     }
     
     /// 
@@ -202,27 +221,30 @@ impl<T: Config> DeipProposal<T> {
         mut self,
         member: &T::AccountId,
         decision: ProposalMemberDecision,
+        batch_weight: Weight,
         batch_exec: BatchExec,
         storage_ops: &mut StorageOpsT<T>
     )
-        -> Result<Option<BatchExec::Output>, super::Error<T>>
+        -> DispatchResultWithPostInfo
         where
-            BatchExec: FnOnce(ProposalBatch<T>) -> frame_support::dispatch::DispatchResultWithPostInfo
+            BatchExec: FnOnce(ProposalBatch<T>) -> BatchExecResult
     {
         let member_decision = self.decisions.get_mut(member).ok_or(Error::<T>::NotAMember)?;
+        
+        ensure!(self.batch_weight <= batch_weight, Error::<T>::BatchWeightTooLow);
         
         ensure!(matches!(self.state, ProposalState::Pending), Error::<T>::AlreadyResolved);
 
         match member_decision.decide(decision) {
-            Err(_) => return Err(Error::<T>::AlreadyResolved),
-            Ok(None) => Ok(None),
+            Err(_) => Err(Error::<T>::AlreadyResolved)?,
+            Ok(None) => Err(Error::<T>::ImpossibleDecision)?,
             Ok(Some(ProposalMemberDecision::Pending)) => {
                 storage_ops.push_op(StorageOps::DepositEvent(Event::<T>::RevokedApproval {
                     member: member.clone(),
                     proposal_id: self.id
                 }));
                 storage_ops.push_op(StorageOps::UpdateProposal(self));
-                Ok(None)
+                return Ok(Some(WeightInfoOf::<T>::decide_revoke_approval()).into())
             },
             Ok(Some(ProposalMemberDecision::Reject)) => {
                 self.state = ProposalState::Rejected;
@@ -232,13 +254,13 @@ impl<T: Config> DeipProposal<T> {
                     state: self.state
                 }));
                 storage_ops.push_op(StorageOps::DeleteProposal(self));
-                Ok(None)
+                return Ok(Some(WeightInfoOf::<T>::decide_reject()).into())
             },
             Ok(Some(ProposalMemberDecision::Approve)) => {
                 if self.ready_to_exec() {
-                    let batch_exec_result = batch_exec(self.batch.clone());
-                    self.state = if let Err(ref err) = batch_exec_result { 
-                        ProposalState::Failed(err.error.clone())
+                    let (exec_weight, maybe_err) = batch_exec(self.batch.clone());
+                    self.state = if let Some(err) = maybe_err { 
+                        ProposalState::Failed(err)
                     } else {
                         ProposalState::Done
                     };
@@ -248,14 +270,16 @@ impl<T: Config> DeipProposal<T> {
                         state: self.state
                     }));
                     storage_ops.push_op(StorageOps::DeleteProposal(self));
-                    Ok(Some(batch_exec_result))
+                    let weight = WeightInfoOf::<T>::decide_final_approve()
+                        .saturating_add(exec_weight);
+                    return Ok(Some(weight).into())
                 } else {
                     storage_ops.push_op(StorageOps::DepositEvent(Event::<T>::Approved {
                         member: member.clone(),
                         proposal_id: self.id,
                     }));
                     storage_ops.push_op(StorageOps::UpdateProposal(self));
-                    Ok(None)
+                    return Ok(Some(WeightInfoOf::<T>::decide_approve()).into())
                 }
             },
         }
@@ -269,15 +293,23 @@ impl<T: Config> DeipProposal<T> {
         approved && matches!(self.state, ProposalState::Pending)
     }
     
-    pub fn expired(&self, now: T::Moment) -> bool {
+    pub(crate) fn expired(&self, now: T::Moment) -> bool {
         (self.created_at + T::Ttl::get()) <= now 
             && matches!(self.state, ProposalState::Pending)
     }
     
-    pub fn expire(self, now: T::Moment, storage_ops: &mut StorageOpsT<T>) -> Result<(), Error<T>>{
+    pub fn expire(
+        self,
+        now: T::Moment,
+        storage_ops: &mut StorageOpsT<T>
+    )
+        -> DispatchResultWithPostInfo
+    {
         ensure!(self.expired(now), Error::<T>::NotExpired);
-        storage_ops.push_op(StorageOps::DepositEvent(Event::<T>::Expired { proposal_id: self.id }));
+        storage_ops.push_op(StorageOps::DepositEvent(
+            Event::<T>::Expired { proposal_id: self.id }
+        ));
         storage_ops.push_op(StorageOps::DeleteProposal(self));
-        Ok(())
+        Ok((Some(WeightInfoOf::<T>::expire()), Pays::No).into())
     }
 }

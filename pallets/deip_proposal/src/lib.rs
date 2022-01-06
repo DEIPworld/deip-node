@@ -33,9 +33,12 @@ mod batch_item_kind;
 mod storage;
 pub mod entrypoint;
 mod batch_assertions;
+mod benchmarking;
+mod weights;
 
 #[doc(inline)]
 pub use pallet::*;
+pub use weights::*;
 
 /// Re-exports deip_storage_ops.
 pub use deip_storage_ops;
@@ -50,14 +53,12 @@ pub mod pallet {
     use frame_system::offchain::{SendTransactionTypes};
     
     use frame_support::pallet_prelude::*;
-    use frame_support::weights::{PostDispatchInfo, GetDispatchInfo};
+    use frame_support::weights::{PostDispatchInfo, GetDispatchInfo, 
+                                 Weight, DispatchInfo, extract_actual_weight};
     // use frame_support::log::RuntimeLogger;
     use frame_support::log::debug;
     
     use frame_support::traits::{UnfilteredDispatchable, IsSubType};
-    
-    use sp_std::prelude::*;
-    use sp_std::collections::{btree_map::BTreeMap};
     
     use sp_runtime::traits::{Dispatchable, Zero};
     
@@ -70,6 +71,8 @@ pub mod pallet {
     use crate::storage::StorageWrite;
     
     use deip_transaction_ctx::{PortalCtxT};
+    use sp_std::prelude::*;
+    use crate::WeightInfo;
 
     /// Configuration trait
     #[pallet::config]
@@ -83,11 +86,12 @@ pub mod pallet {
              Dispatchable<Origin = Self::Origin, PostInfo = PostDispatchInfo> +
              GetDispatchInfo +
              From<frame_system::pallet::Call<Self>> +
+             From<Call<Self>> +
              UnfilteredDispatchable<Origin = Self::Origin> +
              frame_support::dispatch::Codec + 
              IsSubType<Call<Self>>;
         
-        type DeipAccountId: Into<Self::AccountId> + Parameter + Member;
+        type DeipAccountId: Into<Self::AccountId> + From<Self::AccountId> + Parameter + Member + Default;
         
         /// Pending proposal's time-to-live
         #[pallet::constant]
@@ -96,7 +100,11 @@ pub mod pallet {
         /// Period of check for expired proposals
         #[pallet::constant]
         type ExpirePeriod: Get<Self::BlockNumber>;
+        
+        type WeightInfo: WeightInfo;
     }
+    
+    pub type WeightInfoOf<T> = <T as crate::Config>::WeightInfo;
     
     #[doc(hidden)]
     #[pallet::pallet]
@@ -181,12 +189,18 @@ pub mod pallet {
         NotAMember,
         /// Proposal already resolved (done, failed or rejected)
         AlreadyResolved,
+        /// Decision in not possible in the current state
+        ImpossibleDecision,
         /// Reach depth limit of nested proposals
         ReachDepthLimit,
+        /// Reach size limit of proposal's batch
+        ReachSizeLimit,
         /// Self-referential proposal
         SelfReferential,
         /// Not expired yet
-        NotExpired
+        NotExpired,
+        /// Provided batch weight is lower than expected
+        BatchWeightTooLow,
     }
     
     #[pallet::event]
@@ -197,7 +211,8 @@ pub mod pallet {
         Proposed {
             author: T::AccountId,
             batch: ProposalBatch<T>,
-            proposal_id: ProposalId
+            proposal_id: ProposalId,
+            batch_weight: Weight
         },
         /// Emits when proposal approved by it's member
         Approved {
@@ -233,7 +248,11 @@ pub mod pallet {
     
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        #[pallet::weight(10)]
+        #[pallet::weight((
+            WeightInfoOf::<T>::propose(batch.len() as u32),
+            DispatchClass::Normal,
+            Pays::Yes
+        ))]
         pub fn propose(
             origin: OriginFor<T>,
             batch: Vec<InputProposalBatchItem<T>>,
@@ -242,41 +261,48 @@ pub mod pallet {
             -> DispatchResultWithPostInfo
         {
             let author = ensure_signed(origin)?;
-            
             // frame_support::debug::RuntimeLogger::init();
 
-            crate::entrypoint::propose::<T>(author, batch, external_id)?;
-            
-            Ok(Some(0).into())
+            crate::entrypoint::propose::<T>(author, batch, external_id)
         }
 
-        #[pallet::weight(10)]
+        #[pallet::weight((
+            WeightInfoOf::<T>::decide_reject()
+                .max(WeightInfoOf::<T>::decide_approve())
+                .max(WeightInfoOf::<T>::decide_revoke_approval())
+                .max(WeightInfoOf::<T>::decide_final_approve())
+                .saturating_add(*batch_weight),
+            DispatchClass::Normal,
+            Pays::Yes
+        ))]
         pub fn decide(
             origin: OriginFor<T>,
             proposal_id: ProposalId,
             decision: ProposalMemberDecision,
+            batch_weight: Weight,
         )
             -> DispatchResultWithPostInfo
         {
             let member = ensure_signed(origin)?;
-            let proposal = ProposalRepository::<T>::get(&proposal_id).ok_or(Error::<T>::NotFound)?;
-            let maybe_batch_exec_result: Option<DispatchResultWithPostInfo> =
-                StorageWrite::<T>::new()
-                    .commit(|ops| {
-                        proposal.decide(
-                            &member,
-                            decision,
-                            Self::exec_batch,
-                            ops,
-                        )
-                    })?;
-            if let Some(batch_exec_result) = maybe_batch_exec_result {
-                let _batch_exec_ok = batch_exec_result?;
-            }
-            Ok(Some(0).into())
+            let proposal = ProposalRepository::<T>::get(&proposal_id)
+                .ok_or_else(|| Error::<T>::NotFound)?;
+            
+            StorageWrite::<T>::new().commit(move |ops| {
+                proposal.decide(
+                    &member,
+                    decision,
+                    batch_weight,
+                    |batch| { match Self::exec_batch(batch) { Ok(x) | Err(x) => x, } },
+                    ops,
+                )
+            })
         }
         
-        #[pallet::weight(10_000)]
+        #[pallet::weight((
+            WeightInfoOf::<T>::expire(),
+            DispatchClass::Normal,
+            Pays::No
+        ))]
         pub fn expire(
             origin: OriginFor<T>,
             proposal_id: ProposalId,
@@ -284,31 +310,52 @@ pub mod pallet {
             -> DispatchResultWithPostInfo
         {
             ensure_none(origin)?;
-            
             let proposal = ProposalRepository::<T>::get(proposal_id)
                 .ok_or_else(|| Error::<T>::NotFound)?;
-            
+
             StorageWrite::<T>::new().commit(move |ops| {
                 let now = pallet_timestamp::Pallet::<T>::get();
                 proposal.expire(now, ops)
-            })?;
-            
-            Ok(Some(0).into())
+            })
         }
     }
+    
+    pub(crate) type BatchExecResult = (Weight, Option<DispatchError>);
+    pub(crate) type BatchItemDispatchResult = (DispatchResultWithPostInfo, DispatchInfo);
 
     impl<T: Config> Pallet<T> {
-        /// Execute batch as atomic transaction
+        /// Execute batch as an atomic transaction
         #[frame_support::transactional]
-        fn exec_batch(batch: ProposalBatch<T>) -> DispatchResultWithPostInfo
+        fn exec_batch(batch: ProposalBatch<T>) -> Result<BatchExecResult, BatchExecResult>
         {
-            // frame_support::debug::RuntimeLogger::init();
-            for x in batch {
-                let ProposalBatchItemOf::<T> { account, call } = x;
-                frame_support::log::debug!("{:?}; {:?}", &account, &call);
-                call.dispatch(RawOrigin::Signed(account).into())?;
+            let batch_results = batch.into_iter()
+                .map(Self::dispatch_batch_item)
+                .collect::<Vec<BatchItemDispatchResult>>();
+            let weight = batch_results.iter()
+                .map(|(x, y)| extract_actual_weight(x, y))
+                .sum();
+            let maybe_error = batch_results.into_iter()
+                .map(|(result, _)| {
+                    match result {
+                        Err(err) => Err(err.error),
+                        _ => Ok(()),
+                    }
+                })
+                .collect::<Result<Vec<()>, DispatchError>>();
+            let exec_result = (weight, maybe_error.err());
+            if exec_result.1.is_some() {
+                Err(exec_result)
+            } else {
+                Ok(exec_result)
             }
-            Ok(Some(0).into())
+        }
+
+        fn dispatch_batch_item(item: ProposalBatchItemOf<T>) -> BatchItemDispatchResult
+        {
+            let ProposalBatchItemOf::<T> { account, call } = item;
+            let info = call.get_dispatch_info();
+            let result = call.dispatch(RawOrigin::Signed(account).into());
+            (result, info)
         }
     }
     
@@ -319,30 +366,4 @@ pub mod pallet {
         DeipProposal<T>,
         OptionQuery
     >;
-
-    #[pallet::storage]
-    pub(super) type ProposalIdByAccountId<T: Config> = StorageDoubleMap<_,
-        Blake2_128Concat,
-        T::AccountId,
-        Blake2_128Concat,
-        ProposalId,
-        (),
-        OptionQuery
-    >;
-
-    #[allow(type_alias_bounds)]
-    pub type PendingProposalsMap<T: Config> = BTreeMap<ProposalId, T::AccountId>;
-    
-    #[pallet::storage]
-    #[pallet::getter(fn pending_proposals)]
-    pub(super) type PendingProposals<T: Config> = StorageMap<_,
-        Blake2_128Concat,
-        T::AccountId,
-        PendingProposalsMap<T>,
-        ValueQuery,
-        PendingProposalsMapDefault<T>
-    >;
-    
-    #[pallet::type_value]
-    pub(super) fn PendingProposalsMapDefault<T: Config>() -> PendingProposalsMap<T> { Default::default() }
 }
