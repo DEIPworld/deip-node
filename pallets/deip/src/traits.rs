@@ -16,9 +16,9 @@ pub trait DeipAssetSystem<AccountId> {
 
     fn total_supply(asset: &Self::AssetId) -> Self::Balance;
 
-    fn get_project_nfts(id: &ProjectId) -> Vec<Self::AssetId>;
+    fn get_project_fts(id: &ProjectId) -> Vec<Self::AssetId>;
 
-    fn get_nft_balances(id: &Self::AssetId) -> Option<Vec<AccountId>>;
+    fn get_ft_balances(id: &Self::AssetId) -> Option<Vec<AccountId>>;
 
     fn transactionally_transfer(
         from: &AccountId,

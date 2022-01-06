@@ -4529,7 +4529,7 @@ dependencies = [
 [[package]]
 name = "pallet-octopus-appchain"
 version = "3.0.0-pre.0"
-source = "git+https://github.com/octopus-network/octopus-pallets?branch=main#17d2df3a0acbcaf79914d213272a1214a01119df"
+source = "git+https://github.com/octopus-network/octopus-pallets?rev=17d2df3a#17d2df3a0acbcaf79914d213272a1214a01119df"
 dependencies = [
  "base64 0.13.0",
  "borsh",
@@ -4556,7 +4556,7 @@ dependencies = [
 [[package]]
 name = "pallet-octopus-lpos"
 version = "3.0.0-pre.0"
-source = "git+https://github.com/octopus-network/octopus-pallets?branch=main#17d2df3a0acbcaf79914d213272a1214a01119df"
+source = "git+https://github.com/octopus-network/octopus-pallets?rev=17d2df3a#17d2df3a0acbcaf79914d213272a1214a01119df"
 dependencies = [
  "borsh",
  "frame-support",
@@ -4580,7 +4580,7 @@ dependencies = [
 [[package]]
 name = "pallet-octopus-support"
 version = "3.0.0-pre.0"
-source = "git+https://github.com/octopus-network/octopus-pallets?branch=main#17d2df3a0acbcaf79914d213272a1214a01119df"
+source = "git+https://github.com/octopus-network/octopus-pallets?rev=17d2df3a#17d2df3a0acbcaf79914d213272a1214a01119df"
 dependencies = [
  "borsh",
  "frame-support",
@@ -4592,7 +4592,7 @@ dependencies = [
 [[package]]
 name = "pallet-octopus-upward-messages"
 version = "3.0.0-pre.0"
-source = "git+https://github.com/octopus-network/octopus-pallets?branch=main#17d2df3a0acbcaf79914d213272a1214a01119df"
+source = "git+https://github.com/octopus-network/octopus-pallets?rev=17d2df3a#17d2df3a0acbcaf79914d213272a1214a01119df"
 dependencies = [
  "frame-support",
  "frame-system",
