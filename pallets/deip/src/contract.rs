@@ -106,10 +106,7 @@ impl<T: Config> Module<T> {
 
         for (i, party) in parties.iter().enumerate() {
             for other_party in parties.iter().skip(i + 1) {
-                ensure!(
-                    party != other_party,
-                    Error::<T>::ContractAgreementDuplicateParties
-                );
+                ensure!(party != other_party, Error::<T>::ContractAgreementDuplicateParties);
             }
         }
 
@@ -127,10 +124,7 @@ impl<T: Config> Module<T> {
                 Some(s) => s,
             };
 
-            ensure!(
-                activation_time < e,
-                Error::<T>::ContractAgreementEndTimeMustBeLaterStartTime
-            );
+            ensure!(activation_time < e, Error::<T>::ContractAgreementEndTimeMustBeLaterStartTime);
         }
 
         ensure!(
@@ -139,11 +133,23 @@ impl<T: Config> Module<T> {
         );
         match terms {
             Terms::LicenseAgreement { source, price } => Self::create_project_license(
-                id, creator, parties, hash, activation_time, expiration_time, source, price,
+                id,
+                creator,
+                parties,
+                hash,
+                activation_time,
+                expiration_time,
+                source,
+                price,
             ),
-            Terms::GeneralContractAgreement => {
-                Self::create_general_contract(id, creator, parties, hash, activation_time, expiration_time)
-            }
+            Terms::GeneralContractAgreement => Self::create_general_contract(
+                id,
+                creator,
+                parties,
+                hash,
+                activation_time,
+                expiration_time,
+            ),
         }
     }
 
@@ -157,15 +163,9 @@ impl<T: Config> Module<T> {
         project_id: ProjectId,
         price: DeipAssetOf<T>,
     ) -> DispatchResult {
-        ensure!(
-            price.amount() > &Zero::zero(),
-            Error::<T>::ContractAgreementFeeMustBePositive
-        );
+        ensure!(price.amount() > &Zero::zero(), Error::<T>::ContractAgreementFeeMustBePositive);
 
-        ensure!(
-            parties.len() == 2,
-            Error::<T>::ContractAgreementLicenseTwoPartiesRequired
-        );
+        ensure!(parties.len() == 2, Error::<T>::ContractAgreementLicenseTwoPartiesRequired);
 
         let project =
             ProjectMap::<T>::try_get(project_id).map_err(|_| Error::<T>::NoSuchProject)?;
@@ -333,13 +333,13 @@ impl<T: Config> Module<T> {
 
         let mut total_revenue: DeipAssetBalanceOf<T> = Zero::zero();
         let mut transfer_info = vec![];
-        let beneficiary_tokens = T::AssetSystem::get_project_nfts(project_id);
-        // simple model is used: if there are several (F-)NFT classes then
+        let beneficiary_tokens = T::AssetSystem::get_project_fts(project_id);
+        // simple model is used: if there are several (F-)FT classes then
         // the whole amount is distributed uniformly among the classes
         let token_count: u128 = beneficiary_tokens.len().saturated_into();
         for token in &beneficiary_tokens {
             let token_supply: u128 = T::AssetSystem::total_supply(token).saturated_into();
-            let token_balances = if let Some(balances) = T::AssetSystem::get_nft_balances(token) {
+            let token_balances = if let Some(balances) = T::AssetSystem::get_ft_balances(token) {
                 balances
             } else {
                 continue;
@@ -414,10 +414,9 @@ impl<T: Config> Module<T> {
             GeneralContractStatus::Accepted(_) => {
                 Err(Error::<T>::ContractAgreementAlreadyAccepted.into())
             }
-            GeneralContractStatus::PartiallyAccepted {
-                contract,
-                accepted_by,
-            } => Self::accept_general_contract_impl(party, contract, accepted_by),
+            GeneralContractStatus::PartiallyAccepted { contract, accepted_by } => {
+                Self::accept_general_contract_impl(party, contract, accepted_by)
+            }
         }
     }
 
@@ -426,15 +425,9 @@ impl<T: Config> Module<T> {
         contract: GeneralContract<AccountIdOf<T>, HashOf<T>, MomentOf<T>>,
         mut accepted_by: Vec<AccountIdOf<T>>,
     ) -> DispatchResult {
-        ensure!(
-            !accepted_by.contains(&party),
-            Error::<T>::ContractAgreementAlreadyAcceptedByParty
-        );
+        ensure!(!accepted_by.contains(&party), Error::<T>::ContractAgreementAlreadyAcceptedByParty);
 
-        ensure!(
-            contract.parties.contains(&party),
-            Error::<T>::ContractAgreementPartyIsNotListed
-        );
+        ensure!(contract.parties.contains(&party), Error::<T>::ContractAgreementPartyIsNotListed);
 
         accepted_by.push(party.clone());
         let id = contract.id;
@@ -471,10 +464,7 @@ impl<T: Config> Module<T> {
                 Err(Error::<T>::ContractAgreementAlreadyAccepted.into())
             }
 
-            GeneralContractStatus::PartiallyAccepted {
-                contract,
-                accepted_by,
-            } => {
+            GeneralContractStatus::PartiallyAccepted { contract, accepted_by } => {
                 ensure!(
                     !accepted_by.contains(&party),
                     Error::<T>::ContractAgreementAlreadyAcceptedByParty
