@@ -339,7 +339,7 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            decide(proposal_id, decision) => CallObject {
+            decide(proposal_id, decision, _) => CallObject {
                 module: "deip_proposal",
                 call: "decide",
                 args: &DeipProposalDecideCallArgs { proposal_id, decision },

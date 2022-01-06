@@ -24,10 +24,10 @@ impl<T: Config> BatchItemKindT<T> for BatchItem<T::DeipAccountId, <T as Config>:
 
     fn kind(&self) -> BatchItemKind<'_, Self> {
         match self.call.is_sub_type() {
-            Some(Call::propose(batch, _)) => {
+            Some(Call::propose(batch, ..)) => {
                 BatchItemKind::Propose(batch)
             },
-            Some(Call::decide(proposal_id, _decision)) => {
+            Some(Call::decide(proposal_id, ..)) => {
                 BatchItemKind::Decide(proposal_id)
             },
             _ => BatchItemKind::Other

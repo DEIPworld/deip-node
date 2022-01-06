@@ -80,12 +80,12 @@
     "author": "AccountId"
   },
   "ProposalState": {
-    "_enum": [
-      "Pending",
-      "Rejected",
-      "Done",
-      "Failed(DispatchError)"
-    ]
+    "_enum": {
+      "Pending": {},
+      "Rejected": {},
+      "Done": {},
+      "Failed": { "0": "DispatchError" }
+    }
   },
   "ProposalMemberDecision": {
     "_enum": [

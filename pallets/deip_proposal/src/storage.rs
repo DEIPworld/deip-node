@@ -1,12 +1,10 @@
 /// Module contains abstractions over pallet storage operations
 
-use sp_std::prelude::*;
-
 pub use deip_storage_ops::*;
 
 use crate::proposal::DeipProposal;
 
-use super::{Config, Event, ProposalRepository, Pallet, PendingProposals, ProposalIdByAccountId};
+use super::{Config, Event, ProposalRepository, Pallet};
 
 
 pub type StorageWrite<T> = StorageOpsTransaction<StorageOps<T>>;
@@ -30,37 +28,13 @@ impl<T: Config> StorageOp for StorageOps<T> {
                 <Pallet<T>>::deposit_event(event);
             },
             StorageOps::CreateProposal(proposal) => {
-                let members = proposal.decisions.keys().cloned();
-                for m in members {
-                    PendingProposals::<T>::mutate(m, |x| {
-                        x.insert(proposal.id, proposal.author.clone());
-                    });
-                }
-
-                let id = proposal.id;
-                let author = proposal.author.clone();
-                <ProposalRepository<T>>::insert(id, proposal);
-                ProposalIdByAccountId::<T>::insert(author, id, ());
+                <ProposalRepository<T>>::insert(proposal.id, proposal);
             },
             StorageOps::UpdateProposal(proposal) => {
                 <ProposalRepository<T>>::insert(proposal.id, proposal)
             },
             StorageOps::DeleteProposal(proposal) => {
-                let DeipProposal::<T> {
-                    id: proposal_id,
-                    decisions,
-                    author,
-                    .. 
-                } = proposal;
-                let members = decisions.keys();
-                for m in members {
-                    PendingProposals::<T>::mutate(m, |x| {
-                        x.remove(&proposal_id);
-                    });
-                }
-
-                ProposalIdByAccountId::<T>::remove(author, proposal_id);
-                <ProposalRepository<T>>::remove(proposal_id);
+                <ProposalRepository<T>>::remove(proposal.id);
             },
         }
     }

@@ -24,3 +24,15 @@ impl Into<AccountId32> for DeipAccountId<AccountId32> {
         }
     }
 }
+
+impl From<AccountId32> for DeipAccountId<AccountId32> {
+    fn from(native: AccountId32) -> Self {
+        Self::Native(native)
+    }
+}
+
+impl Default for DeipAccountId<AccountId32> {
+    fn default() -> Self {
+        Self::Native(Default::default())
+    }
+}

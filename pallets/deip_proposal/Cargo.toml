@@ -73,10 +73,18 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'
 version = '3.0.0'
 
+[dependencies.frame-benchmarking]
+default-features = false
+optional = true
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
 [dev-dependencies]
 
 [features]
 default = ['std']
+runtime-benchmarks = ["frame-benchmarking"]
 std = [
     'codec/std',
     'frame-support/std',
@@ -88,5 +96,6 @@ std = [
     'pallet-timestamp/std',
     'serde/std',
     'deip-storage-ops/std',
-    'deip-transaction-ctx/std'
+    'deip-transaction-ctx/std',
+    'frame-benchmarking/std',
 ]
