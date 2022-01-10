@@ -44,15 +44,27 @@ const NON_LOCAL: u8 = 101;
 #[frame_support::pallet]
 #[doc(hidden)]
 pub mod pallet {
-    use frame_support::pallet_prelude::*;
+    use frame_support::pallet_prelude::{
+        ensure, Blake2_128Concat, Decode, DispatchResultWithPostInfo, Encode, Get, Hooks, Identity,
+        InvalidTransaction, MaxEncodedLen, Member, OptionQuery, Parameter, Pays, StorageDoubleMap,
+        StorageMap, StorageValue, TransactionSource, TransactionValidity, ValidTransaction,
+        ValidateUnsigned, ValueQuery,
+    };
+    use frame_support::RuntimeDebug;
     use frame_support::{
         traits::{Currency, ExistenceRequirement, UnfilteredDispatchable, WithdrawReasons},
         transactional,
     };
     use frame_system::offchain::{SendTransactionTypes, SubmitTransaction};
-    use frame_system::{pallet_prelude::*, RawOrigin};
+    use frame_system::{
+        pallet_prelude::{ensure_none, ensure_signed, BlockNumberFor, OriginFor},
+        RawOrigin,
+    };
     use sp_runtime::traits::{CheckedAdd, One, StaticLookup, Zero};
-    use sp_std::{prelude::*, vec};
+    use sp_std::{
+        prelude::{Clone, Vec},
+        vec,
+    };
 
     use codec::HasCompact;
 
@@ -156,7 +168,7 @@ pub mod pallet {
                     Ok(b) => b,
                 };
 
-                if let Err(_) = balances.binary_search_by_key(&account, |a| a) {
+                if balances.binary_search_by_key(&account, |a| a).is_err() {
                     return InvalidTransaction::Stale.into();
                 }
 
@@ -284,7 +296,7 @@ pub mod pallet {
 
             CoreAssetId::<T>::put(self.core_asset_id);
 
-            let result = Pallet::<T>::create_asset_impl(
+            let result = Pallet::<T>::deip_create_asset_impl(
                 RawOrigin::Signed(self.core_asset_admin.clone()).into(),
                 self.core_asset_id,
                 self.core_asset_admin.clone(),
@@ -307,7 +319,7 @@ pub mod pallet {
             );
 
             for (ref who, amount) in &self.balances {
-                let result = Pallet::<T>::issue_asset_impl(
+                let result = Pallet::<T>::deip_issue_asset_impl(
                     RawOrigin::Signed(self.core_asset_admin.clone()).into(),
                     self.core_asset_id,
                     who.clone(),
@@ -367,7 +379,7 @@ pub mod pallet {
             transfers: &[(AssetsBalanceOf<T>, AccountIdOf<T>)],
         ) -> Result<(), ()> {
             for (amount, to) in transfers {
-                let result = Self::transfer_impl(
+                let result = Self::deip_transfer_impl(
                     RawOrigin::Signed(from.clone()).into(),
                     asset,
                     to.clone(),
@@ -382,7 +394,7 @@ pub mod pallet {
         }
 
         #[transactional]
-        pub fn transactionally_reserve(
+        pub fn deip_transactionally_reserve(
             account: &T::AccountId,
             id: DeipInvestmentIdOf<T>,
             shares: &[(DeipAssetIdOf<T>, AssetsBalanceOf<T>)],
@@ -482,7 +494,7 @@ pub mod pallet {
                     continue;
                 }
 
-                let result = Self::transfer_impl(
+                let result = Self::deip_transfer_impl(
                     RawOrigin::Signed(id_account.clone()).into(),
                     *asset_id,
                     info.creator.clone(),
@@ -516,7 +528,7 @@ pub mod pallet {
 
             let id_account = Self::investment_key(&id);
 
-            let result = Self::transfer_impl(
+            let result = Self::deip_transfer_impl(
                 RawOrigin::Signed(id_account.clone()).into(),
                 asset,
                 who.clone(),
@@ -529,7 +541,7 @@ pub mod pallet {
             Ok(())
         }
 
-        pub fn transfer_to_reserved(
+        pub fn deip_transfer_to_reserved(
             who: &T::AccountId,
             id: DeipInvestmentIdOf<T>,
             amount: AssetsBalanceOf<T>,
@@ -559,7 +571,7 @@ pub mod pallet {
         }
 
         // stores `to` in the map of FT-balances if the asset tokenizes some active
-        fn transfer_impl(
+        fn deip_transfer_impl(
             from: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             to: AccountIdOf<T>,
@@ -590,7 +602,7 @@ pub mod pallet {
             Ok(ok)
         }
 
-        fn create_asset_impl(
+        fn deip_create_asset_impl(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             admin: T::AccountId,
@@ -640,7 +652,7 @@ pub mod pallet {
             result
         }
 
-        fn issue_asset_impl(
+        fn deip_issue_asset_impl(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             beneficiary: T::AccountId,
@@ -676,7 +688,7 @@ pub mod pallet {
             Ok(result)
         }
 
-        fn set_metadata_impl(
+        fn deip_set_metadata_impl(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             name: Vec<u8>,
@@ -712,11 +724,11 @@ pub mod pallet {
             min_balance: AssetsBalanceOf<T>,
             project_id: Option<DeipProjectIdOf<T>>,
         ) -> DispatchResultWithPostInfo {
-            Self::create_asset_impl(origin, id, admin.into(), min_balance, project_id)
+            Self::deip_create_asset_impl(origin, id, admin.into(), min_balance, project_id)
         }
 
         #[pallet::weight((10_000, Pays::No))]
-        pub fn destroy(
+        pub fn deip_destroy(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             witness: pallet_assets::DestroyWitness,
@@ -742,11 +754,11 @@ pub mod pallet {
             beneficiary: T::DeipAccountId,
             #[pallet::compact] amount: AssetsBalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            Self::issue_asset_impl(origin, id, beneficiary.into(), amount)
+            Self::deip_issue_asset_impl(origin, id, beneficiary.into(), amount)
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::burn())]
-        pub fn burn(
+        pub fn deip_burn(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             who: T::DeipAccountId,
@@ -774,11 +786,11 @@ pub mod pallet {
             target: T::DeipAccountId,
             #[pallet::compact] amount: AssetsBalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            Self::transfer_impl(origin, id, target.into(), amount)
+            Self::deip_transfer_impl(origin, id, target.into(), amount)
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::freeze())]
-        pub fn freeze(
+        pub fn deip_freeze(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             who: T::DeipAccountId,
@@ -803,7 +815,7 @@ pub mod pallet {
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::thaw())]
-        pub fn thaw(
+        pub fn deip_thaw(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             who: T::DeipAccountId,
@@ -818,7 +830,7 @@ pub mod pallet {
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::freeze_asset())]
-        pub fn freeze_asset(
+        pub fn deip_freeze_asset(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
         ) -> DispatchResultWithPostInfo {
@@ -841,7 +853,7 @@ pub mod pallet {
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::thaw_asset())]
-        pub fn thaw_asset(
+        pub fn deip_thaw_asset(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
         ) -> DispatchResultWithPostInfo {
@@ -854,7 +866,7 @@ pub mod pallet {
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::transfer_ownership())]
-        pub fn transfer_ownership(
+        pub fn deip_transfer_ownership(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             owner: T::DeipAccountId,
@@ -869,7 +881,7 @@ pub mod pallet {
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::set_team())]
-        pub fn set_team(
+        pub fn deip_set_team(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             issuer: T::DeipAccountId,
@@ -900,7 +912,7 @@ pub mod pallet {
             symbol: Vec<u8>,
             decimals: u8,
         ) -> DispatchResultWithPostInfo {
-            Self::set_metadata_impl(origin, id, name, symbol, decimals)
+            Self::deip_set_metadata_impl(origin, id, name, symbol, decimals)
         }
 
         #[pallet::weight(10_000)]
