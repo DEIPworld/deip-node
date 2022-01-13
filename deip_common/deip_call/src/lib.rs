@@ -1,13 +1,20 @@
+mod assets_call_args;
+
 use codec::{Decode, Encode};
 use frame_support::Parameter;
 use node_runtime::{Call, Runtime};
-use serde::{ser::Serializer, Serialize, Deserialize};
-use sp_runtime::traits::{Member, AtLeast32BitUnsigned};
+use serde::{ser::Serializer, Deserialize, Serialize};
+use sp_runtime::{
+    traits::{AtLeast32BitUnsigned, Member},
+    MultiAddress,
+};
 use sp_std::borrow::Borrow;
 
 use pallet_deip_proposal::proposal::{BatchItem, InputProposalBatch};
 
 use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
+
+use crate::assets_call_args::AssetsCreateCallArgs;
 
 #[derive(Clone, Debug, Eq, PartialEq, Decode, Encode, Deserialize)]
 pub struct WrappedCall<Call: Parameter + Member>(pub Call);
@@ -28,10 +35,7 @@ pub fn wrap_input_batch(
 > {
     batch
         .iter()
-        .map(|x| BatchItem {
-            account: x.account.clone(),
-            call: WrappedCall::wrap(&x.call),
-        })
+        .map(|x| BatchItem { account: x.account.clone(), call: WrappedCall::wrap(&x.call) })
         .collect()
 }
 
@@ -43,34 +47,31 @@ impl Serialize for WrappedCall<Call> {
         match &self.0 {
             Call::Deip(deip_call) => Self::serialize_deip_call(deip_call, serializer),
 
-            Call::DeipProposal(deip_proposal_call) => {
-                Self::serialize_deip_proposal_call(deip_proposal_call, serializer)
-            }
+            Call::DeipProposal(deip_proposal_call) =>
+                Self::serialize_deip_proposal_call(deip_proposal_call, serializer),
 
-            Call::DeipDao(deip_dao_call) => {
-                Self::serialize_deip_dao_call(deip_dao_call, serializer)
-            }
+            Call::DeipDao(deip_dao_call) =>
+                Self::serialize_deip_dao_call(deip_dao_call, serializer),
 
-            Call::DeipAssets(deip_assets_call) => {
-                Self::serialize_deip_assets_call(deip_assets_call, serializer)
-            }
+            Call::DeipAssets(deip_assets_call) =>
+                Self::serialize_deip_assets_call(deip_assets_call, serializer),
 
-            Call::System(_)
-            | Call::DeipPortal(_)
-            | Call::Timestamp(_)
-            | Call::Grandpa(_)
-            | Call::Balances(_)
-            | Call::Sudo(_)
-            | Call::TemplateModule(_)
-            | Call::Babe(_)
-            | Call::Authorship(_)
-            | Call::OctopusAppchain(_)
-            | Call::OctopusLpos(_)
-            | Call::OctopusUpwardMessages(_)
-            | Call::Session(_)
-            | Call::ImOnline(_)
-            | Call::Utility(_)
-            | Call::Multisig(_) => CallObject {
+            Call::System(_) |
+            Call::DeipPortal(_) |
+            Call::Timestamp(_) |
+            Call::Grandpa(_) |
+            Call::Balances(_) |
+            Call::Sudo(_) |
+            Call::TemplateModule(_) |
+            Call::Babe(_) |
+            Call::Authorship(_) |
+            Call::OctopusAppchain(_) |
+            Call::OctopusLpos(_) |
+            Call::OctopusUpwardMessages(_) |
+            Call::Session(_) |
+            Call::ImOnline(_) |
+            Call::Utility(_) |
+            Call::Multisig(_) => CallObject {
                 module: "unsupported_module",
                 call: "unsupported_call",
                 args: &UnsupportedCallArgs {},
@@ -104,7 +105,7 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            create_investment_opportunity(external_id, creator, shares, funding_model) => {
+            create_investment_opportunity(external_id, creator, shares, funding_model) =>
                 CallObject {
                     module: "deip",
                     call: "create_investment_opportunity",
@@ -115,8 +116,7 @@ impl WrappedCall<Call> {
                         funding_model,
                     },
                 }
-                .serialize(serializer)
-            }
+                .serialize(serializer),
 
             activate_crowdfunding(sale_id) => CallObject {
                 module: "deip",
@@ -149,11 +149,7 @@ impl WrappedCall<Call> {
             update_project(project_id, description, is_private) => CallObject {
                 module: "deip",
                 call: "update_project",
-                args: &DeipUpdateProjectCallArgs {
-                    project_id,
-                    description,
-                    is_private,
-                },
+                args: &DeipUpdateProjectCallArgs { project_id, description, is_private },
             }
             .serialize(serializer),
 
@@ -268,10 +264,7 @@ impl WrappedCall<Call> {
             upvote_review(review_id, domain_id) => CallObject {
                 module: "deip",
                 call: "upvote_review",
-                args: &DeipUpvoteReviewCallArgs {
-                    review_id,
-                    domain_id,
-                },
+                args: &DeipUpvoteReviewCallArgs { review_id, domain_id },
             }
             .serialize(serializer),
 
@@ -282,22 +275,28 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            create_contract_agreement(id, creator, parties, hash, activation_time, expiration_time, terms) => {
-                CallObject {
-                    module: "deip",
-                    call: "create_contract_agreement",
-                    args: &DeipCreateContractAgreementCallArgs {
-                        id,
-                        creator,
-                        parties,
-                        hash,
-                        activation_time,
-                        expiration_time,
-                        terms,
-                    },
-                }
-                .serialize(serializer)
+            create_contract_agreement(
+                id,
+                creator,
+                parties,
+                hash,
+                activation_time,
+                expiration_time,
+                terms,
+            ) => CallObject {
+                module: "deip",
+                call: "create_contract_agreement",
+                args: &DeipCreateContractAgreementCallArgs {
+                    id,
+                    creator,
+                    parties,
+                    hash,
+                    activation_time,
+                    expiration_time,
+                    terms,
+                },
             }
+            .serialize(serializer),
 
             accept_contract_agreement(id, party) => CallObject {
                 module: "deip",
@@ -330,20 +329,14 @@ impl WrappedCall<Call> {
             propose(batch, external_id) => CallObject {
                 module: "deip_proposal",
                 call: "propose",
-                args: &DeipProposalProposeCallArgs {
-                    batch: &wrap_input_batch(batch),
-                    external_id,
-                },
+                args: &DeipProposalProposeCallArgs { batch: &wrap_input_batch(batch), external_id },
             }
             .serialize(serializer),
 
             decide(proposal_id, decision) => CallObject {
                 module: "deip_proposal",
                 call: "decide",
-                args: &DeipProposalDecideCallArgs {
-                    proposal_id,
-                    decision,
-                },
+                args: &DeipProposalDecideCallArgs { proposal_id, decision },
             }
             .serialize(serializer),
 
@@ -378,28 +371,21 @@ impl WrappedCall<Call> {
             alter_authority(alter_authority_) => CallObject {
                 module: "deip_dao",
                 call: "alter_authority",
-                args: &DeipDaoAlterAuthorityCallArgs {
-                    alter_authority: alter_authority_,
-                },
+                args: &DeipDaoAlterAuthorityCallArgs { alter_authority: alter_authority_ },
             }
             .serialize(serializer),
 
             update_dao(metadata) => CallObject {
                 module: "deip_dao",
                 call: "update_dao",
-                args: &DeipDaoUpdateCallArgs {
-                    metadata: metadata,
-                },
+                args: &DeipDaoUpdateCallArgs { metadata },
             }
             .serialize(serializer),
 
             on_behalf(name, call) => CallObject {
                 module: "deip_dao",
                 call: "on_behalf",
-                args: &DeipDaoOnBehalfCallArgs {
-                    name,
-                    call: &WrappedCall::wrap(call.borrow()),
-                },
+                args: &DeipDaoOnBehalfCallArgs { name, call: &WrappedCall::wrap(call.borrow()) },
             }
             .serialize(serializer),
 
@@ -416,115 +402,107 @@ impl WrappedCall<Call> {
     {
         use pallet_deip_assets::Call::*;
 
+        let module = "deip_assets";
         match deip_assets_call {
+            // pallet_assets::Call::create
+            create(id, src, balance) => {
+                let call = "create";
+                match src {
+                    MultiAddress::Id(src) => AssetsCreateCallArgs::new(*id, src, *balance)
+                        .into_call_object(module, call)
+                        .serialize(serializer),
+                    MultiAddress::Index(src) => AssetsCreateCallArgs::new(*id, src, *balance)
+                        .into_call_object(module, call)
+                        .serialize(serializer),
+                    MultiAddress::Raw(src) => AssetsCreateCallArgs::new(*id, src, *balance)
+                        .into_call_object(module, call)
+                        .serialize(serializer),
+                    MultiAddress::Address32(src) => AssetsCreateCallArgs::new(*id, src, *balance)
+                        .into_call_object(module, call)
+                        .serialize(serializer),
+                    MultiAddress::Address20(src) => AssetsCreateCallArgs::new(*id, src, *balance)
+                        .into_call_object(module, call)
+                        .serialize(serializer),
+                }
+            },
+
             create_asset(id, admin, min_balance, project_id) => CallObject {
-                module: "deip_assets",
+                module,
                 call: "create_asset",
-                args: &DeipAssetsCreateAssetCallArgs::new(
-                    id,
-                    admin,
-                    min_balance,
-                    project_id,
-                ),
+                args: &DeipAssetsCreateAssetCallArgs::new(id, admin, min_balance, project_id),
             }
             .serialize(serializer),
 
-            destroy(id, _witness) => CallObject {
-                module: "deip_assets",
+            deip_destroy(id, _witness) => CallObject {
+                module,
                 call: "destroy",
-                args: &DeipAssetsDestroyCallArgs {
-                    id,
-                    witness: (),
-                },
+                args: &DeipAssetsDestroyCallArgs { id, witness: () },
             }
             .serialize(serializer),
 
             issue_asset(id, beneficiary, amount) => CallObject {
-                module: "deip_assets",
+                module,
                 call: "issue_asset",
-                args: &DeipAssetsIssueAssetCallArgs::new(
-                    id,
-                    beneficiary,
-                    amount,
-                ),
+                args: &DeipAssetsIssueAssetCallArgs::new(id, beneficiary, amount),
             }
             .serialize(serializer),
 
-            burn(id, who, amount) => CallObject {
-                module: "deip_assets",
+            deip_burn(id, who, amount) => CallObject {
+                module,
                 call: "burn",
                 args: &DeipAssetsBurnCallArgs::new(id, who, amount),
             }
             .serialize(serializer),
 
             transfer(id, target, amount) => CallObject {
-                module: "deip_assets",
+                module,
                 call: "transfer",
                 args: &DeipAssetsTransferCallArgs::new(id, target, amount),
             }
             .serialize(serializer),
 
-            freeze(id, who) => CallObject {
-                module: "deip_assets",
-                call: "freeze",
-                args: &DeipAssetsFreezeCallArgs { id, who },
-            }
-            .serialize(serializer),
+            deip_freeze(id, who) =>
+                CallObject { module, call: "freeze", args: &DeipAssetsFreezeCallArgs { id, who } }
+                    .serialize(serializer),
 
-            thaw(id, who) => CallObject {
-                module: "deip_assets",
-                call: "thaw",
-                args: &DeipAssetsThawCallArgs { id, who },
-            }
-            .serialize(serializer),
+            deip_thaw(id, who) =>
+                CallObject { module, call: "thaw", args: &DeipAssetsThawCallArgs { id, who } }
+                    .serialize(serializer),
 
-            freeze_asset(id) => CallObject {
-                module: "deip_assets",
+            deip_freeze_asset(id) => CallObject {
+                module,
                 call: "freeze_asset",
                 args: &DeipAssetsFreezeAssetCallArgs { id },
             }
             .serialize(serializer),
 
-            thaw_asset(id) => CallObject {
-                module: "deip_assets",
-                call: "thaw_asset",
-                args: &DeipAssetsThawAssetCallArgs { id },
-            }
-            .serialize(serializer),
+            deip_thaw_asset(id) =>
+                CallObject { module, call: "thaw_asset", args: &DeipAssetsThawAssetCallArgs { id } }
+                    .serialize(serializer),
 
-            transfer_ownership(id, owner) => CallObject {
-                module: "deip_assets",
+            deip_transfer_ownership(id, owner) => CallObject {
+                module,
                 call: "transfer_ownership",
                 args: &DeipAssetsTransferOwnershipCallArgs { id, owner },
             }
             .serialize(serializer),
 
-            set_team(id, issuer, admin, freezer) => CallObject {
-                module: "deip_assets",
+            deip_set_team(id, issuer, admin, freezer) => CallObject {
+                module,
                 call: "set_team",
-                args: &DeipAssetsSetTeamCallArgs {
-                    id,
-                    issuer,
-                    admin,
-                    freezer,
-                },
+                args: &DeipAssetsSetTeamCallArgs { id, issuer, admin, freezer },
             }
             .serialize(serializer),
 
             set_metadata(id, name, symbol, decimals) => CallObject {
-                module: "deip_assets",
+                module,
                 call: "set_metadata",
-                args: &DeipAssetsSetMetadataCallArgs {
-                    id,
-                    name,
-                    symbol,
-                    decimals,
-                },
+                args: &DeipAssetsSetMetadataCallArgs { id, name, symbol, decimals },
             }
             .serialize(serializer),
 
             wipe_zero_balance(asset, account) => CallObject {
-                module: "deip_assets",
+                module,
                 call: "wipe_zero_balance",
                 args: &DeipAssetsWipeZeroBalanceCallArgs { asset, account },
             }
@@ -597,11 +575,7 @@ struct DeipAssetsTransferCallArgs<A, B, C: Clone + AtLeast32BitUnsigned> {
 
 impl<A, B, C: Clone + AtLeast32BitUnsigned> DeipAssetsTransferCallArgs<A, B, C> {
     fn new(id: A, target: B, amount: &C) -> Self {
-        Self {
-            id,
-            target,
-            amount: SerializableAtLeast32BitUnsigned(amount.clone()),
-        }
+        Self { id, target, amount: SerializableAtLeast32BitUnsigned(amount.clone()) }
     }
 }
 
@@ -614,11 +588,7 @@ struct DeipAssetsBurnCallArgs<A, B, C: Clone + AtLeast32BitUnsigned> {
 
 impl<A, B, C: Clone + AtLeast32BitUnsigned> DeipAssetsBurnCallArgs<A, B, C> {
     fn new(id: A, who: B, amount: &C) -> Self {
-        Self {
-            id,
-            who,
-            amount: SerializableAtLeast32BitUnsigned(amount.clone()),
-        }
+        Self { id, who, amount: SerializableAtLeast32BitUnsigned(amount.clone()) }
     }
 }
 
@@ -631,11 +601,7 @@ struct DeipAssetsIssueAssetCallArgs<A, B, C: Clone + AtLeast32BitUnsigned> {
 
 impl<A, B, C: Clone + AtLeast32BitUnsigned> DeipAssetsIssueAssetCallArgs<A, B, C> {
     fn new(id: A, beneficiary: B, amount: &C) -> Self {
-        Self {
-            id,
-            beneficiary,
-            amount: SerializableAtLeast32BitUnsigned(amount.clone()),
-        }
+        Self { id, beneficiary, amount: SerializableAtLeast32BitUnsigned(amount.clone()) }
     }
 }
 
