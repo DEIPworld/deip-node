@@ -741,6 +741,25 @@ pub mod pallet {
             pallet_assets::Pallet::<T>::destroy(origin, id, witness)
         }
 
+        // #[pallet::weight(AssetsWeightInfoOf::<T>::destroy(0, 0, 0))]
+        // pub fn force_destroy(
+        //     origin: OriginFor<T>,
+        //     id: <T as pallet_assets::Config>::AssetId,
+        //     witness: DestroyWitness,
+        // ) -> DispatchResultWithPostInfo {
+        //     pallet_assets::Pallet::<T>::force_destroy(origin, id, witness)
+        // }
+
+        #[pallet::weight(AssetsWeightInfoOf::<T>::mint())] // @TODO replace with actual coeff
+        pub fn mint(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+            beneficiary: <T::Lookup as StaticLookup>::Source,
+            amount: AssetsBalanceOf<T>,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::mint(origin, id, beneficiary, amount)
+        }
+
         #[pallet::weight(AssetsWeightInfoOf::<T>::create())]
         pub fn create_asset(
             origin: OriginFor<T>,

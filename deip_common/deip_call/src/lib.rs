@@ -14,7 +14,9 @@ use pallet_deip_proposal::proposal::{BatchItem, InputProposalBatch};
 
 use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 
-use crate::assets_call_args::{AssetsCreateCallArgs, AssetsForceCreateCallArgs};
+use crate::assets_call_args::{
+    AssetsCreateCallArgs, AssetsForceCreateCallArgs, AssetsMintCallArgs,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq, Decode, Encode, Deserialize)]
 pub struct WrappedCall<Call: Parameter + Member>(pub Call);
@@ -463,11 +465,39 @@ impl WrappedCall<Call> {
                 }
             },
 
+            // pallet_assets::Call::destroy
             destroy(_id, _witness) => {
                 // let call = "destroy";
                 // let args = AssetsDestroyCallArgs::new(*id, *witness);
                 // CallObject::new(module, call, args).serialize(serializer)
                 todo!("find a way to serialize witness")
+            },
+
+            // pallet_assets::Call::mint
+            mint(id, beneficiary, amount) => {
+                let call = "mint";
+                match beneficiary {
+                    MultiAddress::Id(beneficiary) => {
+                        let args = AssetsMintCallArgs::new(*id, beneficiary, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Index(beneficiary) => {
+                        let args = AssetsMintCallArgs::new(*id, beneficiary, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Raw(beneficiary) => {
+                        let args = AssetsMintCallArgs::new(*id, beneficiary, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address32(beneficiary) => {
+                        let args = AssetsMintCallArgs::new(*id, beneficiary, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address20(beneficiary) => {
+                        let args = AssetsMintCallArgs::new(*id, beneficiary, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                }
             },
 
             create_asset(id, admin, min_balance, project_id) => CallObject {
