@@ -14,7 +14,7 @@ use pallet_deip_proposal::proposal::{BatchItem, InputProposalBatch};
 
 use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 
-use crate::assets_call_args::AssetsCreateCallArgs;
+use crate::assets_call_args::{AssetsCreateCallArgs, AssetsForceCreateCallArgs};
 
 #[derive(Clone, Debug, Eq, PartialEq, Decode, Encode, Deserialize)]
 pub struct WrappedCall<Call: Parameter + Member>(pub Call);
@@ -405,25 +405,69 @@ impl WrappedCall<Call> {
         let module = "deip_assets";
         match deip_assets_call {
             // pallet_assets::Call::create
-            create(id, src, balance) => {
+            create(id, admin, min_balance) => {
                 let call = "create";
-                match src {
-                    MultiAddress::Id(src) => AssetsCreateCallArgs::new(*id, src, *balance)
-                        .into_call_object(module, call)
-                        .serialize(serializer),
-                    MultiAddress::Index(src) => AssetsCreateCallArgs::new(*id, src, *balance)
-                        .into_call_object(module, call)
-                        .serialize(serializer),
-                    MultiAddress::Raw(src) => AssetsCreateCallArgs::new(*id, src, *balance)
-                        .into_call_object(module, call)
-                        .serialize(serializer),
-                    MultiAddress::Address32(src) => AssetsCreateCallArgs::new(*id, src, *balance)
-                        .into_call_object(module, call)
-                        .serialize(serializer),
-                    MultiAddress::Address20(src) => AssetsCreateCallArgs::new(*id, src, *balance)
-                        .into_call_object(module, call)
-                        .serialize(serializer),
+                match admin {
+                    MultiAddress::Id(admin) => {
+                        let args = AssetsCreateCallArgs::new(*id, admin, *min_balance);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Index(admin) => {
+                        let args = AssetsCreateCallArgs::new(*id, admin, *min_balance);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Raw(admin) => {
+                        let args = AssetsCreateCallArgs::new(*id, admin, *min_balance);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address32(admin) => {
+                        let args = AssetsCreateCallArgs::new(*id, admin, *min_balance);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address20(admin) => {
+                        let args = AssetsCreateCallArgs::new(*id, admin, *min_balance);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
                 }
+            },
+
+            // pallet_assets::Call::force_create
+            force_create(id, owner, is_suff, min_balance) => {
+                let call = "force_create";
+                match owner {
+                    MultiAddress::Id(owner) => {
+                        let args =
+                            AssetsForceCreateCallArgs::new(*id, owner, *is_suff, *min_balance);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Index(owner) => {
+                        let args =
+                            AssetsForceCreateCallArgs::new(*id, owner, *is_suff, *min_balance);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Raw(owner) => {
+                        let args =
+                            AssetsForceCreateCallArgs::new(*id, owner, *is_suff, *min_balance);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address32(owner) => {
+                        let args =
+                            AssetsForceCreateCallArgs::new(*id, owner, *is_suff, *min_balance);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address20(owner) => {
+                        let args =
+                            AssetsForceCreateCallArgs::new(*id, owner, *is_suff, *min_balance);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                }
+            },
+
+            destroy(_id, _witness) => {
+                // let call = "destroy";
+                // let args = AssetsDestroyCallArgs::new(*id, *witness);
+                // CallObject::new(module, call, args).serialize(serializer)
+                todo!("find a way to serialize witness")
             },
 
             create_asset(id, admin, min_balance, project_id) => CallObject {
@@ -807,4 +851,10 @@ struct CallObject<A, B, C> {
     module: A,
     call: B,
     args: C,
+}
+
+impl<A, B, C> CallObject<A, B, C> {
+    fn new(module: A, call: B, args: C) -> Self {
+        Self { module, call, args }
+    }
 }
