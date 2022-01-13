@@ -15,7 +15,7 @@ use pallet_deip_proposal::proposal::{BatchItem, InputProposalBatch};
 use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 
 use crate::assets_call_args::{
-    AssetsCreateCallArgs, AssetsForceCreateCallArgs, AssetsMintCallArgs,
+    AssetsBurnCallArgs, AssetsCreateCallArgs, AssetsForceCreateCallArgs, AssetsMintCallArgs,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, Decode, Encode, Deserialize)]
@@ -495,6 +495,33 @@ impl WrappedCall<Call> {
                     },
                     MultiAddress::Address20(beneficiary) => {
                         let args = AssetsMintCallArgs::new(*id, beneficiary, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                }
+            },
+
+            // pallet_assets::Call::burn
+            burn(id, who, amount) => {
+                let call = "burn";
+                match who {
+                    MultiAddress::Id(who) => {
+                        let args = AssetsBurnCallArgs::new(*id, who, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Index(who) => {
+                        let args = AssetsBurnCallArgs::new(*id, who, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Raw(who) => {
+                        let args = AssetsBurnCallArgs::new(*id, who, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address32(who) => {
+                        let args = AssetsBurnCallArgs::new(*id, who, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address20(who) => {
+                        let args = AssetsBurnCallArgs::new(*id, who, *amount);
                         CallObject::new(module, call, args).serialize(serializer)
                     },
                 }
