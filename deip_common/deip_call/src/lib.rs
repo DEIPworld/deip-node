@@ -16,7 +16,8 @@ use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 
 use crate::assets_call_args::{
     AssetsBurnCallArgs, AssetsCreateCallArgs, AssetsForceCreateCallArgs,
-    AssetsForceTransferCallArgs, AssetsFreezeCallArgs, AssetsMintCallArgs, AssetsTransferCallArgs,
+    AssetsForceTransferCallArgs, AssetsFreezeCallArgs, AssetsMintCallArgs, AssetsThawCallArgs,
+    AssetsTransferCallArgs,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, Decode, Encode, Deserialize)]
@@ -605,6 +606,33 @@ impl WrappedCall<Call> {
                     },
                     MultiAddress::Address20(who) => {
                         let args = AssetsFreezeCallArgs::new(*id, who);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                }
+            },
+
+            // pallet_assets::Call::thaw
+            thaw(id, who) => {
+                let call = "thaw";
+                match who {
+                    MultiAddress::Id(who) => {
+                        let args = AssetsThawCallArgs::new(*id, who);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Index(who) => {
+                        let args = AssetsThawCallArgs::new(*id, who);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Raw(who) => {
+                        let args = AssetsThawCallArgs::new(*id, who);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address32(who) => {
+                        let args = AssetsThawCallArgs::new(*id, who);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address20(who) => {
+                        let args = AssetsThawCallArgs::new(*id, who);
                         CallObject::new(module, call, args).serialize(serializer)
                     },
                 }
