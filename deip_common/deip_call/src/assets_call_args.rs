@@ -1,156 +1,146 @@
 use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 use serde::Serialize;
+use sp_runtime::{AccountId32, MultiAddress as SpMultiAddress};
 
 #[derive(Serialize)]
-pub(crate) struct AssetsCreateCallArgs<A: Serialize> {
+pub(crate) struct AssetsCreateCallArgs {
     id: u32,
-    admin: A,
+    admin: MultiAddress<AccountId32, ()>,
     min_balance: SerializableAtLeast32BitUnsigned<u128>,
 }
 
-impl<A: Serialize> AssetsCreateCallArgs<A> {
-    pub(crate) fn new(id: u32, admin: A, min_balance: u128) -> Self {
+impl AssetsCreateCallArgs {
+    pub(crate) fn new(id: u32, admin: &SpMultiAddress<AccountId32, ()>, min_balance: u128) -> Self {
+        let admin = admin.into();
         Self { id, admin, min_balance: SerializableAtLeast32BitUnsigned(min_balance) }
     }
 }
 
 #[derive(Serialize)]
-pub(crate) struct AssetsForceCreateCallArgs<A: Serialize> {
+pub(crate) struct AssetsForceCreateCallArgs {
     id: u32,
-    owner: A,
+    owner: MultiAddress<AccountId32, ()>,
     is_sufficient: bool,
     min_balance: SerializableAtLeast32BitUnsigned<u128>,
 }
 
-impl<A: Serialize> AssetsForceCreateCallArgs<A> {
-    pub(crate) fn new(id: u32, owner: A, is_sufficient: bool, min_balance: u128) -> Self {
+impl AssetsForceCreateCallArgs {
+    pub(crate) fn new(
+        id: u32,
+        owner: &SpMultiAddress<AccountId32, ()>,
+        is_sufficient: bool,
+        min_balance: u128,
+    ) -> Self {
         let min_balance = SerializableAtLeast32BitUnsigned(min_balance);
+        let owner = owner.into();
         Self { id, owner, is_sufficient, min_balance }
     }
 }
 
 #[derive(Serialize)]
-pub(crate) struct AssetsDestroyCallArgs<A>
-where
-    A: Serialize,
-{
+pub(crate) struct AssetsDestroyCallArgs {
     id: u32,
-    witness: A,
+}
+
+impl AssetsDestroyCallArgs {
+    pub(crate) fn new(id: u32) -> Self {
+        Self { id }
+    }
 }
 
 #[derive(Serialize)]
-pub(crate) struct AssetsMintCallArgs<A>
-where
-    A: Serialize,
-{
+pub(crate) struct AssetsMintCallArgs {
     id: u32,
-    beneficiary: A,
+    beneficiary: MultiAddress<AccountId32, ()>,
     amount: SerializableAtLeast32BitUnsigned<u128>,
 }
 
-impl<A> AssetsMintCallArgs<A>
-where
-    A: Serialize,
-{
-    pub(crate) fn new(id: u32, beneficiary: A, amount: u128) -> Self {
+impl AssetsMintCallArgs {
+    pub(crate) fn new(
+        id: u32,
+        beneficiary: &SpMultiAddress<AccountId32, ()>,
+        amount: u128,
+    ) -> Self {
         let amount = SerializableAtLeast32BitUnsigned(amount);
+        let beneficiary = beneficiary.into();
         Self { id, beneficiary, amount }
     }
 }
 
 #[derive(Serialize)]
-pub(crate) struct AssetsBurnCallArgs<A>
-where
-    A: Serialize,
-{
+pub(crate) struct AssetsBurnCallArgs {
     id: u32,
-    who: A,
+    who: MultiAddress<AccountId32, ()>,
     amount: SerializableAtLeast32BitUnsigned<u128>,
 }
 
-impl<A> AssetsBurnCallArgs<A>
-where
-    A: Serialize,
-{
-    pub(crate) fn new(id: u32, who: A, amount: u128) -> Self {
+impl AssetsBurnCallArgs {
+    pub(crate) fn new(id: u32, who: &SpMultiAddress<AccountId32, ()>, amount: u128) -> Self {
         let amount = SerializableAtLeast32BitUnsigned(amount);
+        let who = who.into();
         Self { id, who, amount }
     }
 }
 
 #[derive(Serialize)]
-pub(crate) struct AssetsTransferCallArgs<A>
-where
-    A: Serialize,
-{
+pub(crate) struct AssetsTransferCallArgs {
     id: u32,
-    target: A,
+    target: MultiAddress<AccountId32, ()>,
     amount: SerializableAtLeast32BitUnsigned<u128>,
 }
 
-impl<A> AssetsTransferCallArgs<A>
-where
-    A: Serialize,
-{
-    pub(crate) fn new(id: u32, target: A, amount: u128) -> Self {
+impl AssetsTransferCallArgs {
+    pub(crate) fn new(id: u32, target: &SpMultiAddress<AccountId32, ()>, amount: u128) -> Self {
         let amount = SerializableAtLeast32BitUnsigned(amount);
+        let target = target.into();
         Self { id, target, amount }
     }
 }
 
 #[derive(Serialize)]
-pub(crate) struct AssetsForceTransferCallArgs<A>
-where
-    A: Serialize,
-{
+pub(crate) struct AssetsForceTransferCallArgs {
     id: u32,
-    source: A,
-    // target: B,
+    source: MultiAddress<AccountId32, ()>,
+    dest: MultiAddress<AccountId32, ()>,
     amount: SerializableAtLeast32BitUnsigned<u128>,
 }
 
-impl<A> AssetsForceTransferCallArgs<A>
-where
-    A: Serialize,
-{
-    pub(crate) fn new(id: u32, source: A, amount: u128) -> Self {
+impl AssetsForceTransferCallArgs {
+    pub(crate) fn new(
+        id: u32,
+        source: &SpMultiAddress<AccountId32, ()>,
+        dest: &SpMultiAddress<AccountId32, ()>,
+        amount: u128,
+    ) -> Self {
         let amount = SerializableAtLeast32BitUnsigned(amount);
-        Self { id, source, amount }
+        let source = source.into();
+        let dest = dest.into();
+        Self { id, source, dest, amount }
     }
 }
 
 #[derive(Serialize)]
-pub(crate) struct AssetsFreezeCallArgs<A>
-where
-    A: Serialize,
-{
+pub(crate) struct AssetsFreezeCallArgs {
     id: u32,
-    who: A,
+    who: MultiAddress<AccountId32, ()>,
 }
 
-impl<A> AssetsFreezeCallArgs<A>
-where
-    A: Serialize,
-{
-    pub(crate) fn new(id: u32, who: A) -> Self {
+impl AssetsFreezeCallArgs {
+    pub(crate) fn new(id: u32, who: &SpMultiAddress<AccountId32, ()>) -> Self {
+        let who = who.into();
         Self { id, who }
     }
 }
 
 #[derive(Serialize)]
-pub(crate) struct AssetsThawCallArgs<A>
-where
-    A: Serialize,
-{
+pub(crate) struct AssetsThawCallArgs {
     id: u32,
-    who: A,
+    who: MultiAddress<AccountId32, ()>,
 }
 
-impl<A> AssetsThawCallArgs<A>
-where
-    A: Serialize,
-{
-    pub(crate) fn new(id: u32, who: A) -> Self {
+impl AssetsThawCallArgs {
+    pub(crate) fn new(id: u32, who: &SpMultiAddress<AccountId32, ()>) -> Self {
+        let who = who.into();
         Self { id, who }
     }
 }
@@ -167,40 +157,37 @@ impl AssetsFreezeAssetCallArgs {
 }
 
 #[derive(Serialize)]
-pub(crate) struct AssetsTransferOwnershipCallArgs<A>
-where
-    A: Serialize,
-{
+pub(crate) struct AssetsTransferOwnershipCallArgs {
     id: u32,
-    who: A,
+    who: MultiAddress<AccountId32, ()>,
 }
 
-impl<A> AssetsTransferOwnershipCallArgs<A>
-where
-    A: Serialize,
-{
-    pub(crate) fn new(id: u32, who: A) -> Self {
+impl AssetsTransferOwnershipCallArgs {
+    pub(crate) fn new(id: u32, who: &SpMultiAddress<AccountId32, ()>) -> Self {
+        let who = who.into();
         Self { id, who }
     }
 }
 
 #[derive(Serialize)]
-pub(crate) struct AssetsSetTeamCallArgs<A>
-where
-    A: Serialize,
-{
+pub(crate) struct AssetsSetTeamCallArgs {
     id: u32,
-    issuer: A,
-    // admin: B,
-    // freezer: C,
+    issuer: MultiAddress<AccountId32, ()>,
+    admin: MultiAddress<AccountId32, ()>,
+    freezer: MultiAddress<AccountId32, ()>,
 }
 
-impl<A> AssetsSetTeamCallArgs<A>
-where
-    A: Serialize,
-{
-    pub(crate) fn new(id: u32, issuer: A) -> Self {
-        Self { id, issuer }
+impl AssetsSetTeamCallArgs {
+    pub(crate) fn new(
+        id: u32,
+        issuer: &SpMultiAddress<AccountId32, ()>,
+        admin: &SpMultiAddress<AccountId32, ()>,
+        freezer: &SpMultiAddress<AccountId32, ()>,
+    ) -> Self {
+        let issuer = issuer.into();
+        let admin = admin.into();
+        let freezer = freezer.into();
+        Self { id, issuer, admin, freezer }
     }
 }
 #[derive(Serialize)]
@@ -222,5 +209,36 @@ where
 {
     pub(crate) fn new(id: u32, name: N, symbol: S, decimals: u8) -> Self {
         Self { id, name, symbol, decimals }
+    }
+}
+
+#[derive(Serialize)]
+enum MultiAddress<AccountId, AccountIndex> {
+    /// It's an account ID (pubkey).
+    Id(AccountId),
+    /// It's an account index.
+    Index(AccountIndex),
+    /// It's some arbitrary raw bytes.
+    Raw(Vec<u8>),
+    /// It's a 32 byte representation.
+    Address32([u8; 32]),
+    /// Its a 20 byte representation.
+    Address20([u8; 20]),
+}
+
+impl<AccountId, AccountIndex> From<&SpMultiAddress<AccountId, AccountIndex>>
+    for MultiAddress<AccountId, AccountIndex>
+where
+    AccountId: Clone,
+    AccountIndex: Clone,
+{
+    fn from(src: &SpMultiAddress<AccountId, AccountIndex>) -> Self {
+        match src {
+            SpMultiAddress::Id(v) => MultiAddress::Id(v.clone()),
+            SpMultiAddress::Index(v) => MultiAddress::Index(v.clone()),
+            SpMultiAddress::Raw(v) => MultiAddress::Raw(v.to_owned()),
+            SpMultiAddress::Address32(v) => MultiAddress::Address32(v.to_owned()),
+            SpMultiAddress::Address20(v) => MultiAddress::Address20(v.to_owned()),
+        }
     }
 }

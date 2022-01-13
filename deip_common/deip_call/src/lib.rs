@@ -4,10 +4,7 @@ use codec::{Decode, Encode};
 use frame_support::Parameter;
 use node_runtime::{Call, Runtime};
 use serde::{ser::Serializer, Deserialize, Serialize};
-use sp_runtime::{
-    traits::{AtLeast32BitUnsigned, Member},
-    MultiAddress,
-};
+use sp_runtime::traits::{AtLeast32BitUnsigned, Member};
 use sp_std::borrow::Borrow;
 
 use pallet_deip_proposal::proposal::{BatchItem, InputProposalBatch};
@@ -15,7 +12,7 @@ use pallet_deip_proposal::proposal::{BatchItem, InputProposalBatch};
 use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 
 use crate::assets_call_args::{
-    AssetsBurnCallArgs, AssetsCreateCallArgs, AssetsForceCreateCallArgs,
+    AssetsBurnCallArgs, AssetsCreateCallArgs, AssetsDestroyCallArgs, AssetsForceCreateCallArgs,
     AssetsForceTransferCallArgs, AssetsFreezeAssetCallArgs, AssetsFreezeCallArgs,
     AssetsMintCallArgs, AssetsSetMetadataCallArgs, AssetsSetTeamCallArgs, AssetsThawCallArgs,
     AssetsTransferCallArgs, AssetsTransferOwnershipCallArgs,
@@ -412,231 +409,65 @@ impl WrappedCall<Call> {
             // pallet_assets::Call::create
             create(id, admin, min_balance) => {
                 let call = "create";
-                match admin {
-                    MultiAddress::Id(admin) => {
-                        let args = AssetsCreateCallArgs::new(*id, admin, *min_balance);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Index(admin) => {
-                        let args = AssetsCreateCallArgs::new(*id, admin, *min_balance);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Raw(admin) => {
-                        let args = AssetsCreateCallArgs::new(*id, admin, *min_balance);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address32(admin) => {
-                        let args = AssetsCreateCallArgs::new(*id, admin, *min_balance);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address20(admin) => {
-                        let args = AssetsCreateCallArgs::new(*id, admin, *min_balance);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                }
+                let args = AssetsCreateCallArgs::new(*id, admin, *min_balance);
+                CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::force_create
             force_create(id, owner, is_suff, min_balance) => {
                 let call = "force_create";
-                match owner {
-                    MultiAddress::Id(owner) => {
-                        let args =
-                            AssetsForceCreateCallArgs::new(*id, owner, *is_suff, *min_balance);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Index(owner) => {
-                        let args =
-                            AssetsForceCreateCallArgs::new(*id, owner, *is_suff, *min_balance);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Raw(owner) => {
-                        let args =
-                            AssetsForceCreateCallArgs::new(*id, owner, *is_suff, *min_balance);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address32(owner) => {
-                        let args =
-                            AssetsForceCreateCallArgs::new(*id, owner, *is_suff, *min_balance);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address20(owner) => {
-                        let args =
-                            AssetsForceCreateCallArgs::new(*id, owner, *is_suff, *min_balance);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                }
+                let args = AssetsForceCreateCallArgs::new(*id, owner, *is_suff, *min_balance);
+                CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::destroy
-            destroy(_id, _witness) => {
-                // let call = "destroy";
-                // let args = AssetsDestroyCallArgs::new(*id, *witness);
-                // CallObject::new(module, call, args).serialize(serializer)
-                todo!("find a way to serialize witness")
+            destroy(id, _witness) => {
+                // todo!("find a way to serialize witness")
+                let call = "destroy";
+                let args = AssetsDestroyCallArgs::new(*id);
+                CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::mint
             mint(id, beneficiary, amount) => {
                 let call = "mint";
-                match beneficiary {
-                    MultiAddress::Id(beneficiary) => {
-                        let args = AssetsMintCallArgs::new(*id, beneficiary, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Index(beneficiary) => {
-                        let args = AssetsMintCallArgs::new(*id, beneficiary, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Raw(beneficiary) => {
-                        let args = AssetsMintCallArgs::new(*id, beneficiary, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address32(beneficiary) => {
-                        let args = AssetsMintCallArgs::new(*id, beneficiary, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address20(beneficiary) => {
-                        let args = AssetsMintCallArgs::new(*id, beneficiary, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                }
+                let args = AssetsMintCallArgs::new(*id, beneficiary, *amount);
+                CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::burn
             burn(id, who, amount) => {
                 let call = "burn";
-                match who {
-                    MultiAddress::Id(who) => {
-                        let args = AssetsBurnCallArgs::new(*id, who, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Index(who) => {
-                        let args = AssetsBurnCallArgs::new(*id, who, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Raw(who) => {
-                        let args = AssetsBurnCallArgs::new(*id, who, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address32(who) => {
-                        let args = AssetsBurnCallArgs::new(*id, who, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address20(who) => {
-                        let args = AssetsBurnCallArgs::new(*id, who, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                }
+                let args = AssetsBurnCallArgs::new(*id, who, *amount);
+                CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::transfer
             transfer(id, target, amount) => {
                 let call = "transfer";
-                match target {
-                    MultiAddress::Id(target) => {
-                        let args = AssetsTransferCallArgs::new(*id, target, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Index(target) => {
-                        let args = AssetsTransferCallArgs::new(*id, target, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Raw(target) => {
-                        let args = AssetsTransferCallArgs::new(*id, target, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address32(target) => {
-                        let args = AssetsTransferCallArgs::new(*id, target, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address20(target) => {
-                        let args = AssetsTransferCallArgs::new(*id, target, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                }
+                let args = AssetsTransferCallArgs::new(*id, target, *amount);
+                CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::force_transfer
-            force_transfer(id, source, _dest, amount) => {
+            force_transfer(id, source, dest, amount) => {
                 let call = "force_transfer";
-                match source {
-                    MultiAddress::Id(source) => {
-                        let args = AssetsForceTransferCallArgs::new(*id, source, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Index(source) => {
-                        let args = AssetsForceTransferCallArgs::new(*id, source, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Raw(source) => {
-                        let args = AssetsForceTransferCallArgs::new(*id, source, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address32(source) => {
-                        let args = AssetsForceTransferCallArgs::new(*id, source, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address20(source) => {
-                        let args = AssetsForceTransferCallArgs::new(*id, source, *amount);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                }?;
-                todo!("find a neat way to match MultiAddress");
+                let args = AssetsForceTransferCallArgs::new(*id, source, dest, *amount);
+                CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::freeze
             freeze(id, who) => {
                 let call = "freeze";
-                match who {
-                    MultiAddress::Id(who) => {
-                        let args = AssetsFreezeCallArgs::new(*id, who);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Index(who) => {
-                        let args = AssetsFreezeCallArgs::new(*id, who);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Raw(who) => {
-                        let args = AssetsFreezeCallArgs::new(*id, who);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address32(who) => {
-                        let args = AssetsFreezeCallArgs::new(*id, who);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address20(who) => {
-                        let args = AssetsFreezeCallArgs::new(*id, who);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                }
+                let args = AssetsFreezeCallArgs::new(*id, who);
+                CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::thaw
             thaw(id, who) => {
                 let call = "thaw";
-                match who {
-                    MultiAddress::Id(who) => {
-                        let args = AssetsThawCallArgs::new(*id, who);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Index(who) => {
-                        let args = AssetsThawCallArgs::new(*id, who);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Raw(who) => {
-                        let args = AssetsThawCallArgs::new(*id, who);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address32(who) => {
-                        let args = AssetsThawCallArgs::new(*id, who);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address20(who) => {
-                        let args = AssetsThawCallArgs::new(*id, who);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                }
+                let args = AssetsThawCallArgs::new(*id, who);
+                CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::freeze_asset
@@ -656,56 +487,15 @@ impl WrappedCall<Call> {
             // pallet_assets::Call::transfer_ownership
             transfer_ownership(id, owner) => {
                 let call = "transfer_ownership";
-                match owner {
-                    MultiAddress::Id(owner) => {
-                        let args = AssetsTransferOwnershipCallArgs::new(*id, owner);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Index(owner) => {
-                        let args = AssetsTransferOwnershipCallArgs::new(*id, owner);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Raw(owner) => {
-                        let args = AssetsTransferOwnershipCallArgs::new(*id, owner);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address32(owner) => {
-                        let args = AssetsTransferOwnershipCallArgs::new(*id, owner);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address20(owner) => {
-                        let args = AssetsTransferOwnershipCallArgs::new(*id, owner);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                }
+                let args = AssetsTransferOwnershipCallArgs::new(*id, owner);
+                CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::set_team
-            set_team(id, issuer, _admin, _freezer) => {
+            set_team(id, issuer, admin, freezer) => {
                 let call = "set_team";
-                match issuer {
-                    MultiAddress::Id(issuer) => {
-                        let args = AssetsSetTeamCallArgs::new(*id, issuer);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Index(issuer) => {
-                        let args = AssetsSetTeamCallArgs::new(*id, issuer);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Raw(issuer) => {
-                        let args = AssetsSetTeamCallArgs::new(*id, issuer);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address32(issuer) => {
-                        let args = AssetsSetTeamCallArgs::new(*id, issuer);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                    MultiAddress::Address20(issuer) => {
-                        let args = AssetsSetTeamCallArgs::new(*id, issuer);
-                        CallObject::new(module, call, args).serialize(serializer)
-                    },
-                }?;
-                todo!("find a neat way to match MultiAddress");
+                let args = AssetsSetTeamCallArgs::new(*id, issuer, admin, freezer);
+                CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::set_metadata
