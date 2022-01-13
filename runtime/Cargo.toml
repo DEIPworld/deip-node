@@ -23,7 +23,6 @@ pallet-im-online = { version = "3.0.0", default-features = false, git = "https:/
 pallet-mmr = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git" }
 pallet-session = { version = "3.0.0", features = ["historical"], git = "https://github.com/paritytech/substrate.git", default-features = false }
 sp-staking = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git" }
-
 beefy-primitives = { version = "0.1.0", git = "https://github.com/octopus-network/grandpa-bridge-gadget", branch = "dev", default-features = false }
 pallet-beefy = { version = "0.1.0", git = "https://github.com/octopus-network/grandpa-bridge-gadget", branch = "dev", default-features = false }
 
@@ -70,6 +69,11 @@ version = '3.0.0'
 [dependencies.pallet-deip-dao]
 default-features = false
 path = '../pallets/deip_dao'
+version = '3.0.0'
+
+[dependencies.pallet-deip-vesting]
+default-features = false
+path = '../pallets/deip_vesting'
 version = '3.0.0'
 
 [dependencies.pallet-template]
@@ -269,6 +273,7 @@ runtime-benchmarks = [
     'pallet-timestamp/runtime-benchmarks',
     'sp-runtime/runtime-benchmarks',
     'pallet-deip-proposal/runtime-benchmarks',
+    'pallet-deip-vesting/runtime-benchmarks',
 ]
 std = [
     'codec/std',
@@ -317,4 +322,5 @@ std = [
     'pallet-octopus-appchain/std',
     'pallet-octopus-lpos/std',
     'pallet-octopus-upward-messages/std',
+    'pallet-deip-vesting/std',
 ]

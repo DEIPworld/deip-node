@@ -772,6 +772,19 @@ impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
     }
 }
 
+parameter_types! {
+  pub const MinVestedTransfer: u64 = 1;
+}
+
+impl pallet_deip_vesting::Config for Runtime {
+  type Event = Event;
+  type Currency = Balances;
+  type UnixTime = Timestamp;
+  type MinVestedTransfer = MinVestedTransfer;
+  type U64ToBalance = ConvertInto;
+  type VestingWeightInfo = pallet_deip_vesting::weights::SubstrateWeight<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -806,7 +819,8 @@ construct_runtime!(
         Multisig: pallet_multisig::{Pallet, Call, Storage, Event<T>},
         Utility: pallet_utility::{Pallet, Call, Event},
         DeipPortal: pallet_deip_portal::{Pallet, Call, Storage, Config, ValidateUnsigned},
-    }
+        DeipVesting: pallet_deip_vesting::{Pallet, Call, Storage, Event<T>, Config<T>},
+	}
 );
 
 /// The address format for describing accounts.
