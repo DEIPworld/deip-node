@@ -744,7 +744,7 @@ impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
         shares: &[(Self::AssetId, Self::Balance)],
         asset: Self::AssetId,
     ) -> Result<(), deip_assets_error::ReserveError<Self::AssetId>> {
-        DeipAssets::transactionally_reserve(account, id, shares, asset)
+        DeipAssets::deip_transactionally_reserve(account, id, shares, asset)
     }
 
     fn transactionally_unreserve(
@@ -767,7 +767,7 @@ impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
         id: InvestmentId,
         amount: Self::Balance,
     ) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
-        DeipAssets::transfer_to_reserved(who, id, amount)
+        DeipAssets::deip_transfer_to_reserved(who, id, amount)
     }
 }
 

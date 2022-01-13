@@ -44,19 +44,18 @@ const NON_LOCAL: u8 = 101;
 #[frame_support::pallet]
 #[doc(hidden)]
 pub mod pallet {
-    use frame_support::pallet_prelude::{
-        ensure, Blake2_128Concat, Decode, DispatchResultWithPostInfo, Encode, Get, Hooks, Identity,
-        InvalidTransaction, MaxEncodedLen, Member, OptionQuery, Parameter, Pays, StorageDoubleMap,
-        StorageMap, StorageValue, TransactionSource, TransactionValidity, ValidTransaction,
-        ValidateUnsigned, ValueQuery,
-    };
-    use frame_support::RuntimeDebug;
     use frame_support::{
+        pallet_prelude::{
+            ensure, Blake2_128Concat, Decode, DispatchResult, DispatchResultWithPostInfo, Encode,
+            Get, Hooks, Identity, InvalidTransaction, MaxEncodedLen, Member, OptionQuery,
+            Parameter, Pays, StorageDoubleMap, StorageMap, StorageValue, TransactionSource,
+            TransactionValidity, ValidTransaction, ValidateUnsigned, ValueQuery,
+        },
         traits::{Currency, ExistenceRequirement, UnfilteredDispatchable, WithdrawReasons},
-        transactional,
+        transactional, RuntimeDebug,
     };
-    use frame_system::offchain::{SendTransactionTypes, SubmitTransaction};
     use frame_system::{
+        offchain::{SendTransactionTypes, SubmitTransaction},
         pallet_prelude::{ensure_none, ensure_signed, BlockNumberFor, OriginFor},
         RawOrigin,
     };
@@ -128,17 +127,17 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn offchain_worker(n: T::BlockNumber) {
             if !sp_io::offchain::is_validator() {
-                return;
+                return
             }
 
             if n % T::WipePeriod::get() != Zero::zero() {
-                return;
+                return
             }
 
             for (asset, balances) in FtBalanceMap::<T>::iter() {
                 for balance in balances {
                     if !Self::account_balance(&balance, &asset).is_zero() {
-                        continue;
+                        continue
                     }
 
                     let call = Call::wipe_zero_balance(asset, balance);
@@ -155,12 +154,12 @@ pub mod pallet {
 
         fn validate_unsigned(source: TransactionSource, call: &Self::Call) -> TransactionValidity {
             if !matches!(source, TransactionSource::Local | TransactionSource::InBlock) {
-                return InvalidTransaction::Custom(super::NON_LOCAL).into();
+                return InvalidTransaction::Custom(super::NON_LOCAL).into()
             }
 
             if let Call::wipe_zero_balance(ref asset, ref account) = call {
                 if !Self::account_balance(account, asset).is_zero() {
-                    return InvalidTransaction::Stale.into();
+                    return InvalidTransaction::Stale.into()
                 }
 
                 let balances = match FtBalanceMap::<T>::try_get(*asset) {
@@ -169,7 +168,7 @@ pub mod pallet {
                 };
 
                 if balances.binary_search_by_key(&account, |a| a).is_err() {
-                    return InvalidTransaction::Stale.into();
+                    return InvalidTransaction::Stale.into()
                 }
 
                 ValidTransaction::with_tag_prefix("DeipAssetsOffchainWorker")
@@ -386,7 +385,7 @@ pub mod pallet {
                     *amount,
                 );
                 if result.is_err() {
-                    return Err(());
+                    return Err(())
                 }
             }
 
@@ -427,7 +426,7 @@ pub mod pallet {
                 let call = pallet_assets::Call::<T>::transfer(asset_id, id_source.clone(), *amount);
                 let result = call.dispatch_bypass_filter(RawOrigin::Signed(account.clone()).into());
                 if result.is_err() {
-                    return Err(ReserveError::AssetTransferFailed(*asset));
+                    return Err(ReserveError::AssetTransferFailed(*asset))
                 }
 
                 assets_to_reserve.push(*asset);
@@ -491,7 +490,7 @@ pub mod pallet {
 
                 let amount = Self::account_balance(&id_account, asset_id);
                 if amount.is_zero() {
-                    continue;
+                    continue
                 }
 
                 let result = Self::deip_transfer_impl(
@@ -501,7 +500,7 @@ pub mod pallet {
                     amount,
                 );
                 if result.is_err() {
-                    return Err(UnreserveError::AssetTransferFailed(*asset_id));
+                    return Err(UnreserveError::AssetTransferFailed(*asset_id))
                 }
             }
 
@@ -529,13 +528,13 @@ pub mod pallet {
             let id_account = Self::investment_key(&id);
 
             let result = Self::deip_transfer_impl(
-                RawOrigin::Signed(id_account.clone()).into(),
+                RawOrigin::Signed(id_account).into(),
                 asset,
                 who.clone(),
                 amount,
             );
             if result.is_err() {
-                return Err(UnreserveError::AssetTransferFailed(asset));
+                return Err(UnreserveError::AssetTransferFailed(asset))
             }
 
             Ok(())
@@ -564,7 +563,7 @@ pub mod pallet {
             let call = pallet_assets::Call::<T>::transfer(asset_id, id_source, amount);
             let result = call.dispatch_bypass_filter(RawOrigin::Signed(who.clone()).into());
             if result.is_err() {
-                return Err(UnreserveError::AssetTransferFailed(info.asset_id));
+                return Err(UnreserveError::AssetTransferFailed(info.asset_id))
             }
 
             Ok(())
@@ -585,13 +584,12 @@ pub mod pallet {
             let call = pallet_assets::Call::<T>::transfer(asset_id, target_source, amount);
             let ok = call.dispatch_bypass_filter(from)?;
 
-            if let Some(_) = Self::try_get_tokenized_project(&id) {
+            if Self::try_get_tokenized_project(&id).is_some() {
                 FtBalanceMap::<T>::mutate_exists(id, |maybe| match maybe.as_mut() {
                     None => {
                         // this cannot happen but for any case
                         *maybe = Some(vec![to]);
-                        return;
-                    }
+                    },
                     Some(b) => match b.binary_search_by_key(&&to, |a| a) {
                         Ok(_) => (),
                         Err(i) => b.insert(i, to),
@@ -615,7 +613,7 @@ pub mod pallet {
                     Some(team_id) => {
                         let account = ensure_signed(origin.clone())?;
                         ensure!(team_id == account, Error::<T>::ProjectDoesNotBelongToTeam)
-                    }
+                    },
                 };
             }
 
@@ -632,7 +630,7 @@ pub mod pallet {
             let call = pallet_assets::Call::<T>::create(asset_id, admin_source, min_balance);
             let result = call.dispatch_bypass_filter(origin);
             if result.is_err() {
-                return result;
+                return result
             }
 
             NextAssetId::<T>::put(next_asset_id);
@@ -667,13 +665,13 @@ pub mod pallet {
             let call = pallet_assets::Call::<T>::mint(asset_id, beneficiary_source, amount);
             let result = call.dispatch_bypass_filter(origin)?;
 
-            if let Some(_) = Self::try_get_tokenized_project(&id) {
+            if Self::try_get_tokenized_project(&id).is_some() {
                 FtBalanceMap::<T>::mutate_exists(id, |maybe| {
                     let balances = match maybe.as_mut() {
                         None => {
                             *maybe = Some(vec![beneficiary]);
-                            return;
-                        }
+                            return
+                        },
                         Some(b) => b,
                     };
 
@@ -706,7 +704,7 @@ pub mod pallet {
             let result = call.dispatch_bypass_filter(origin)?;
 
             AssetMetadataMap::<T>::insert(
-                id.clone(),
+                id,
                 AssetMetadata { name: asset_name, symbol: asset_symbol, decimals },
             );
 
@@ -716,6 +714,16 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
+        #[pallet::weight(AssetsWeightInfoOf::<T>::create())]
+        pub fn create(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+            admin: <T::Lookup as StaticLookup>::Source,
+            min_balance: AssetsBalanceOf<T>,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::create(origin, id, admin, min_balance)
+        }
+
         #[pallet::weight(AssetsWeightInfoOf::<T>::create())]
         pub fn create_asset(
             origin: OriginFor<T>,
@@ -933,7 +941,7 @@ pub mod pallet {
                             *maybe = None;
                         }
                         Ok(Some(0).into())
-                    }
+                    },
                 },
             })
         }
