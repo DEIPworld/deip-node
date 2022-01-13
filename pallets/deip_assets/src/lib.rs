@@ -791,6 +791,15 @@ pub mod pallet {
             pallet_assets::Pallet::<T>::force_transfer(origin, id, source, dest, amount)
         }
 
+        #[pallet::weight(AssetsWeightInfoOf::<T>::freeze())]
+        pub fn freeze(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+            who: <T::Lookup as StaticLookup>::Source,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::freeze(origin, id, who)
+        }
+
         #[pallet::weight(AssetsWeightInfoOf::<T>::create())]
         pub fn create_asset(
             origin: OriginFor<T>,
