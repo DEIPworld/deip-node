@@ -15,8 +15,8 @@ use pallet_deip_proposal::proposal::{BatchItem, InputProposalBatch};
 use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 
 use crate::assets_call_args::{
-    AssetsBurnCallArgs, AssetsCreateCallArgs, AssetsForceCreateCallArgs, AssetsMintCallArgs,
-    AssetsTransferCallArgs,
+    AssetsBurnCallArgs, AssetsCreateCallArgs, AssetsForceCreateCallArgs,
+    AssetsForceTransferCallArgs, AssetsMintCallArgs, AssetsTransferCallArgs,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, Decode, Encode, Deserialize)]
@@ -553,6 +553,34 @@ impl WrappedCall<Call> {
                         CallObject::new(module, call, args).serialize(serializer)
                     },
                 }
+            },
+
+            // pallet_assets::Call::force_transfer
+            force_transfer(id, source, _dest, amount) => {
+                let call = "force_transfer";
+                match source {
+                    MultiAddress::Id(source) => {
+                        let args = AssetsForceTransferCallArgs::new(*id, source, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Index(source) => {
+                        let args = AssetsForceTransferCallArgs::new(*id, source, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Raw(source) => {
+                        let args = AssetsForceTransferCallArgs::new(*id, source, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address32(source) => {
+                        let args = AssetsForceTransferCallArgs::new(*id, source, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address20(source) => {
+                        let args = AssetsForceTransferCallArgs::new(*id, source, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                }?;
+                todo!("find efficient way to match MultiAddress");
             },
 
             create_asset(id, admin, min_balance, project_id) => CallObject {

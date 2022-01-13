@@ -97,3 +97,24 @@ where
         Self { id, target, amount }
     }
 }
+
+#[derive(Serialize)]
+pub(crate) struct AssetsForceTransferCallArgs<A>
+where
+    A: Serialize,
+{
+    id: u32,
+    source: A,
+    // target: B,
+    amount: SerializableAtLeast32BitUnsigned<u128>,
+}
+
+impl<A> AssetsForceTransferCallArgs<A>
+where
+    A: Serialize,
+{
+    pub(crate) fn new(id: u32, source: A, amount: u128) -> Self {
+        let amount = SerializableAtLeast32BitUnsigned(amount);
+        Self { id, source, amount }
+    }
+}
