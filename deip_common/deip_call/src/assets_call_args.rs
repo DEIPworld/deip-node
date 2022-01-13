@@ -37,3 +37,23 @@ where
     id: u32,
     witness: A,
 }
+
+#[derive(Serialize)]
+pub(crate) struct AssetsMintCallArgs<A>
+where
+    A: Serialize,
+{
+    id: u32,
+    beneficiary: A,
+    amount: SerializableAtLeast32BitUnsigned<u128>,
+}
+
+impl<A> AssetsMintCallArgs<A>
+where
+    A: Serialize,
+{
+    pub(crate) fn new(id: u32, beneficiary: A, amount: u128) -> Self {
+        let amount = SerializableAtLeast32BitUnsigned(amount);
+        Self { id, beneficiary, amount }
+    }
+}
