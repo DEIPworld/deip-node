@@ -154,3 +154,73 @@ where
         Self { id, who }
     }
 }
+
+#[derive(Serialize)]
+pub(crate) struct AssetsFreezeAssetCallArgs {
+    id: u32,
+}
+
+impl AssetsFreezeAssetCallArgs {
+    pub(crate) fn new(id: u32) -> Self {
+        Self { id }
+    }
+}
+
+#[derive(Serialize)]
+pub(crate) struct AssetsTransferOwnershipCallArgs<A>
+where
+    A: Serialize,
+{
+    id: u32,
+    who: A,
+}
+
+impl<A> AssetsTransferOwnershipCallArgs<A>
+where
+    A: Serialize,
+{
+    pub(crate) fn new(id: u32, who: A) -> Self {
+        Self { id, who }
+    }
+}
+
+#[derive(Serialize)]
+pub(crate) struct AssetsSetTeamCallArgs<A>
+where
+    A: Serialize,
+{
+    id: u32,
+    issuer: A,
+    // admin: B,
+    // freezer: C,
+}
+
+impl<A> AssetsSetTeamCallArgs<A>
+where
+    A: Serialize,
+{
+    pub(crate) fn new(id: u32, issuer: A) -> Self {
+        Self { id, issuer }
+    }
+}
+#[derive(Serialize)]
+pub(crate) struct AssetsSetMetadataCallArgs<N, S>
+where
+    N: Serialize,
+    S: Serialize,
+{
+    id: u32,
+    name: N,
+    symbol: S,
+    decimals: u8,
+}
+
+impl<N, S> AssetsSetMetadataCallArgs<N, S>
+where
+    N: Serialize,
+    S: Serialize,
+{
+    pub(crate) fn new(id: u32, name: N, symbol: S, decimals: u8) -> Self {
+        Self { id, name, symbol, decimals }
+    }
+}
