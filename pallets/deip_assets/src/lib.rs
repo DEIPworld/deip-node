@@ -70,7 +70,7 @@ pub mod pallet {
     #[cfg(feature = "std")]
     use frame_support::traits::GenesisBuild;
 
-    use pallet_assets::WeightInfo;
+    use pallet_assets::{DestroyWitness, WeightInfo};
 
     use super::traits::DeipProjectsInfo;
 
@@ -628,10 +628,7 @@ pub mod pallet {
 
             let admin_source = <T::Lookup as StaticLookup>::unlookup(admin);
             let call = pallet_assets::Call::<T>::create(asset_id, admin_source, min_balance);
-            let result = call.dispatch_bypass_filter(origin);
-            if result.is_err() {
-                return result
-            }
+            let post_dispatch_info = call.dispatch_bypass_filter(origin)?;
 
             NextAssetId::<T>::put(next_asset_id);
             AssetIdByDeipAssetId::<T>::insert(id, asset_id, ());
@@ -647,7 +644,7 @@ pub mod pallet {
                 });
             }
 
-            result
+            Ok(post_dispatch_info)
         }
 
         fn deip_issue_asset_impl(
@@ -722,6 +719,26 @@ pub mod pallet {
             min_balance: AssetsBalanceOf<T>,
         ) -> DispatchResult {
             pallet_assets::Pallet::<T>::create(origin, id, admin, min_balance)
+        }
+
+        #[pallet::weight(AssetsWeightInfoOf::<T>::force_create())]
+        pub fn force_create(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+            owner: <T::Lookup as StaticLookup>::Source,
+            is_sufficient: bool,
+            min_balance: AssetsBalanceOf<T>,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::force_create(origin, id, owner, is_sufficient, min_balance)
+        }
+
+        #[pallet::weight(AssetsWeightInfoOf::<T>::destroy(0, 0, 0))] // @TODO replace with actual coeff
+        pub fn destroy(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+            witness: DestroyWitness,
+        ) -> DispatchResultWithPostInfo {
+            pallet_assets::Pallet::<T>::destroy(origin, id, witness)
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::create())]
