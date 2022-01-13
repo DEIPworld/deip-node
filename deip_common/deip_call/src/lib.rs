@@ -16,8 +16,9 @@ use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 
 use crate::assets_call_args::{
     AssetsBurnCallArgs, AssetsCreateCallArgs, AssetsForceCreateCallArgs,
-    AssetsForceTransferCallArgs, AssetsFreezeCallArgs, AssetsMintCallArgs, AssetsThawCallArgs,
-    AssetsTransferCallArgs,
+    AssetsForceTransferCallArgs, AssetsFreezeAssetCallArgs, AssetsFreezeCallArgs,
+    AssetsMintCallArgs, AssetsSetMetadataCallArgs, AssetsSetTeamCallArgs, AssetsThawCallArgs,
+    AssetsTransferCallArgs, AssetsTransferOwnershipCallArgs,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, Decode, Encode, Deserialize)]
@@ -638,6 +639,82 @@ impl WrappedCall<Call> {
                 }
             },
 
+            // pallet_assets::Call::freeze_asset
+            freeze_asset(id) => {
+                let call = "freeze_asset";
+                let args = AssetsFreezeAssetCallArgs::new(*id);
+                CallObject::new(module, call, args).serialize(serializer)
+            },
+
+            // pallet_assets::Call::thaw_asset
+            thaw_asset(id) => {
+                let call = "thaw_asset";
+                let args = AssetsFreezeAssetCallArgs::new(*id);
+                CallObject::new(module, call, args).serialize(serializer)
+            },
+
+            // pallet_assets::Call::transfer_ownership
+            transfer_ownership(id, owner) => {
+                let call = "transfer_ownership";
+                match owner {
+                    MultiAddress::Id(owner) => {
+                        let args = AssetsTransferOwnershipCallArgs::new(*id, owner);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Index(owner) => {
+                        let args = AssetsTransferOwnershipCallArgs::new(*id, owner);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Raw(owner) => {
+                        let args = AssetsTransferOwnershipCallArgs::new(*id, owner);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address32(owner) => {
+                        let args = AssetsTransferOwnershipCallArgs::new(*id, owner);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address20(owner) => {
+                        let args = AssetsTransferOwnershipCallArgs::new(*id, owner);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                }
+            },
+
+            // pallet_assets::Call::set_team
+            set_team(id, issuer, _admin, _freezer) => {
+                let call = "set_team";
+                match issuer {
+                    MultiAddress::Id(issuer) => {
+                        let args = AssetsSetTeamCallArgs::new(*id, issuer);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Index(issuer) => {
+                        let args = AssetsSetTeamCallArgs::new(*id, issuer);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Raw(issuer) => {
+                        let args = AssetsSetTeamCallArgs::new(*id, issuer);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address32(issuer) => {
+                        let args = AssetsSetTeamCallArgs::new(*id, issuer);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address20(issuer) => {
+                        let args = AssetsSetTeamCallArgs::new(*id, issuer);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                }?;
+                todo!("find a neat way to match MultiAddress");
+            },
+
+            // pallet_assets::Call::set_metadata
+            set_metadata(id, name, symbol, decimals) => {
+                let call = "set_metadata";
+                let args = AssetsSetMetadataCallArgs::new(*id, name, symbol, *decimals);
+                CallObject::new(module, call, args).serialize(serializer)
+            },
+
             create_asset(id, admin, min_balance, project_id) => CallObject {
                 module,
                 call: "create_asset",
@@ -706,7 +783,7 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            set_metadata(id, name, symbol, decimals) => CallObject {
+            deip_set_metadata(id, name, symbol, decimals) => CallObject {
                 module,
                 call: "set_metadata",
                 args: &DeipAssetsSetMetadataCallArgs { id, name, symbol, decimals },
