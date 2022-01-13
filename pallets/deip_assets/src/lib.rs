@@ -770,6 +770,16 @@ pub mod pallet {
             pallet_assets::Pallet::<T>::burn(origin, id, who, amount)
         }
 
+        #[pallet::weight(AssetsWeightInfoOf::<T>::transfer())]
+        pub fn transfer(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+            target: <T::Lookup as StaticLookup>::Source,
+            amount: AssetsBalanceOf<T>,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::transfer(origin, id, target, amount)
+        }
+
         #[pallet::weight(AssetsWeightInfoOf::<T>::create())]
         pub fn create_asset(
             origin: OriginFor<T>,
@@ -834,7 +844,7 @@ pub mod pallet {
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::transfer())]
-        pub fn transfer(
+        pub fn deip_transfer(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             target: T::DeipAccountId,
