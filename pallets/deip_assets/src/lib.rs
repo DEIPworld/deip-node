@@ -780,6 +780,17 @@ pub mod pallet {
             pallet_assets::Pallet::<T>::transfer(origin, id, target, amount)
         }
 
+        #[pallet::weight(AssetsWeightInfoOf::<T>::force_transfer())]
+        pub fn force_transfer(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+            source: <T::Lookup as StaticLookup>::Source,
+            dest: <T::Lookup as StaticLookup>::Source,
+            amount: AssetsBalanceOf<T>,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::force_transfer(origin, id, source, dest, amount)
+        }
+
         #[pallet::weight(AssetsWeightInfoOf::<T>::create())]
         pub fn create_asset(
             origin: OriginFor<T>,
