@@ -16,7 +16,7 @@ use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 
 use crate::assets_call_args::{
     AssetsBurnCallArgs, AssetsCreateCallArgs, AssetsForceCreateCallArgs,
-    AssetsForceTransferCallArgs, AssetsMintCallArgs, AssetsTransferCallArgs,
+    AssetsForceTransferCallArgs, AssetsFreezeCallArgs, AssetsMintCallArgs, AssetsTransferCallArgs,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, Decode, Encode, Deserialize)]
@@ -580,7 +580,34 @@ impl WrappedCall<Call> {
                         CallObject::new(module, call, args).serialize(serializer)
                     },
                 }?;
-                todo!("find efficient way to match MultiAddress");
+                todo!("find a neat way to match MultiAddress");
+            },
+
+            // pallet_assets::Call::freeze
+            freeze(id, who) => {
+                let call = "freeze";
+                match who {
+                    MultiAddress::Id(who) => {
+                        let args = AssetsFreezeCallArgs::new(*id, who);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Index(who) => {
+                        let args = AssetsFreezeCallArgs::new(*id, who);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Raw(who) => {
+                        let args = AssetsFreezeCallArgs::new(*id, who);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address32(who) => {
+                        let args = AssetsFreezeCallArgs::new(*id, who);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address20(who) => {
+                        let args = AssetsFreezeCallArgs::new(*id, who);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                }
             },
 
             create_asset(id, admin, min_balance, project_id) => CallObject {
