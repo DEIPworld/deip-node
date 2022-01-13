@@ -136,3 +136,21 @@ where
         Self { id, who }
     }
 }
+
+#[derive(Serialize)]
+pub(crate) struct AssetsThawCallArgs<A>
+where
+    A: Serialize,
+{
+    id: u32,
+    who: A,
+}
+
+impl<A> AssetsThawCallArgs<A>
+where
+    A: Serialize,
+{
+    pub(crate) fn new(id: u32, who: A) -> Self {
+        Self { id, who }
+    }
+}
