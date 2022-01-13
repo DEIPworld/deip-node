@@ -57,3 +57,23 @@ where
         Self { id, beneficiary, amount }
     }
 }
+
+#[derive(Serialize)]
+pub(crate) struct AssetsBurnCallArgs<A>
+where
+    A: Serialize,
+{
+    id: u32,
+    who: A,
+    amount: SerializableAtLeast32BitUnsigned<u128>,
+}
+
+impl<A> AssetsBurnCallArgs<A>
+where
+    A: Serialize,
+{
+    pub(crate) fn new(id: u32, who: A, amount: u128) -> Self {
+        let amount = SerializableAtLeast32BitUnsigned(amount);
+        Self { id, who, amount }
+    }
+}

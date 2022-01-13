@@ -750,7 +750,7 @@ pub mod pallet {
         //     pallet_assets::Pallet::<T>::force_destroy(origin, id, witness)
         // }
 
-        #[pallet::weight(AssetsWeightInfoOf::<T>::mint())] // @TODO replace with actual coeff
+        #[pallet::weight(AssetsWeightInfoOf::<T>::mint())]
         pub fn mint(
             origin: OriginFor<T>,
             id: <T as pallet_assets::Config>::AssetId,
@@ -758,6 +758,16 @@ pub mod pallet {
             amount: AssetsBalanceOf<T>,
         ) -> DispatchResult {
             pallet_assets::Pallet::<T>::mint(origin, id, beneficiary, amount)
+        }
+
+        #[pallet::weight(AssetsWeightInfoOf::<T>::burn())]
+        pub fn burn(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+            who: <T::Lookup as StaticLookup>::Source,
+            amount: AssetsBalanceOf<T>,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::burn(origin, id, who, amount)
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::create())]
