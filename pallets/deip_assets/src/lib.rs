@@ -809,6 +809,53 @@ pub mod pallet {
             pallet_assets::Pallet::<T>::thaw(origin, id, who)
         }
 
+        #[pallet::weight(AssetsWeightInfoOf::<T>::freeze_asset())]
+        pub fn freeze_asset(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::freeze_asset(origin, id)
+        }
+
+        #[pallet::weight(AssetsWeightInfoOf::<T>::thaw_asset())]
+        pub fn thaw_asset(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::thaw_asset(origin, id)
+        }
+
+        #[pallet::weight(AssetsWeightInfoOf::<T>::transfer_ownership())]
+        pub fn transfer_ownership(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+            owner: <T::Lookup as StaticLookup>::Source,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::transfer_ownership(origin, id, owner)
+        }
+
+        #[pallet::weight(AssetsWeightInfoOf::<T>::set_team())]
+        pub fn set_team(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+            issuer: <T::Lookup as StaticLookup>::Source,
+            admin: <T::Lookup as StaticLookup>::Source,
+            freezer: <T::Lookup as StaticLookup>::Source,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::set_team(origin, id, issuer, admin, freezer)
+        }
+
+        #[pallet::weight(AssetsWeightInfoOf::<T>::set_metadata(name.len() as u32, symbol.len() as u32))]
+        pub fn set_metadata(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+            name: Vec<u8>,
+            symbol: Vec<u8>,
+            decimals: u8,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::set_metadata(origin, id, name, symbol, decimals)
+        }
+
         #[pallet::weight(AssetsWeightInfoOf::<T>::create())]
         pub fn create_asset(
             origin: OriginFor<T>,
@@ -998,7 +1045,7 @@ pub mod pallet {
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::set_metadata(name.len() as u32, symbol.len() as u32))]
-        pub fn set_metadata(
+        pub fn deip_set_metadata(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             name: Vec<u8>,
