@@ -16,6 +16,7 @@ use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 
 use crate::assets_call_args::{
     AssetsBurnCallArgs, AssetsCreateCallArgs, AssetsForceCreateCallArgs, AssetsMintCallArgs,
+    AssetsTransferCallArgs,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, Decode, Encode, Deserialize)]
@@ -527,6 +528,33 @@ impl WrappedCall<Call> {
                 }
             },
 
+            // pallet_assets::Call::transfer
+            transfer(id, target, amount) => {
+                let call = "transfer";
+                match target {
+                    MultiAddress::Id(target) => {
+                        let args = AssetsTransferCallArgs::new(*id, target, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Index(target) => {
+                        let args = AssetsTransferCallArgs::new(*id, target, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Raw(target) => {
+                        let args = AssetsTransferCallArgs::new(*id, target, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address32(target) => {
+                        let args = AssetsTransferCallArgs::new(*id, target, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                    MultiAddress::Address20(target) => {
+                        let args = AssetsTransferCallArgs::new(*id, target, *amount);
+                        CallObject::new(module, call, args).serialize(serializer)
+                    },
+                }
+            },
+
             create_asset(id, admin, min_balance, project_id) => CallObject {
                 module,
                 call: "create_asset",
@@ -555,7 +583,7 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            transfer(id, target, amount) => CallObject {
+            deip_transfer(id, target, amount) => CallObject {
                 module,
                 call: "transfer",
                 args: &DeipAssetsTransferCallArgs::new(id, target, amount),
