@@ -12,10 +12,14 @@ use pallet_deip_proposal::proposal::{BatchItem, InputProposalBatch};
 use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 
 use crate::assets_call_args::{
-    AssetsBurnCallArgs, AssetsCreateCallArgs, AssetsDestroyCallArgs, AssetsForceCreateCallArgs,
+    AssetsApproveTransferCallArgs, AssetsBurnCallArgs, AssetsCancelApprovalCallArgs,
+    AssetsClearMetadataCallArgs, AssetsCreateCallArgs, AssetsDestroyCallArgs,
+    AssetsForceAssetStatusCallArgs, AssetsForceCancelApprovalCallArgs,
+    AssetsForceClearMetadataCallArgs, AssetsForceCreateCallArgs, AssetsForceSetMetadataCallArgs,
     AssetsForceTransferCallArgs, AssetsFreezeAssetCallArgs, AssetsFreezeCallArgs,
     AssetsMintCallArgs, AssetsSetMetadataCallArgs, AssetsSetTeamCallArgs, AssetsThawCallArgs,
-    AssetsTransferCallArgs, AssetsTransferOwnershipCallArgs,
+    AssetsTransferApprovedCallArgs, AssetsTransferCallArgs, AssetsTransferKeepAliveCallArgs,
+    AssetsTransferOwnershipCallArgs,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, Decode, Encode, Deserialize)]
@@ -449,6 +453,13 @@ impl WrappedCall<Call> {
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
+            // pallet_assets::Call::transfer_keep_alive
+            transfer_keep_alive(id, target, amount) => {
+                let call = "transfer_keep_alive";
+                let args = AssetsTransferKeepAliveCallArgs::new(*id, target, *amount);
+                CallObject::new(module, call, args).serialize(serializer)
+            },
+
             // pallet_assets::Call::force_transfer
             force_transfer(id, source, dest, amount) => {
                 let call = "force_transfer";
@@ -505,7 +516,82 @@ impl WrappedCall<Call> {
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
-            create_asset(id, admin, min_balance, project_id) => CallObject {
+            // pallet_assets::Call::clear_metadata
+            clear_metadata(id) => {
+                let call = "clear_metadata";
+                let args = AssetsClearMetadataCallArgs::new(*id);
+                CallObject::new(module, call, args).serialize(serializer)
+            },
+
+            // pallet_assets::Call::force_set_metadata
+            force_set_metadata(id, name, symbol, decimals, is_frozen) => {
+                let call = "force_set_metadata";
+                let args =
+                    AssetsForceSetMetadataCallArgs::new(*id, name, symbol, *decimals, *is_frozen);
+                CallObject::new(module, call, args).serialize(serializer)
+            },
+
+            // pallet_assets::Call::force_clear_metadata
+            force_clear_metadata(id) => {
+                let call = "force_clear_metadata";
+                let args = AssetsForceClearMetadataCallArgs::new(*id);
+                CallObject::new(module, call, args).serialize(serializer)
+            },
+
+            // pallet_assets::Call::force_asset_status
+            force_asset_status(
+                id,
+                owner,
+                issuer,
+                admin,
+                freezer,
+                min_balance,
+                is_sufficient,
+                is_frozen,
+            ) => {
+                let call = "force_asset_status";
+                let args = AssetsForceAssetStatusCallArgs::new(
+                    *id,
+                    owner,
+                    issuer,
+                    admin,
+                    freezer,
+                    *min_balance,
+                    *is_sufficient,
+                    *is_frozen,
+                );
+                CallObject::new(module, call, args).serialize(serializer)
+            },
+
+            // pallet_assets::Call::approve_transfer
+            approve_transfer(id, delegate, amount) => {
+                let call = "approve_transfer";
+                let args = AssetsApproveTransferCallArgs::new(*id, delegate, *amount);
+                CallObject::new(module, call, args).serialize(serializer)
+            },
+
+            // pallet_assets::Call::cancel_approval
+            cancel_approval(id, delegate) => {
+                let call = "cancel_approval";
+                let args = AssetsCancelApprovalCallArgs::new(*id, delegate);
+                CallObject::new(module, call, args).serialize(serializer)
+            },
+
+            // pallet_assets::Call::force_cancel_approval
+            force_cancel_approval(id, owner, delegate) => {
+                let call = "force_cancel_approval";
+                let args = AssetsForceCancelApprovalCallArgs::new(*id, owner, delegate);
+                CallObject::new(module, call, args).serialize(serializer)
+            },
+
+            // pallet_assets::Call::transfer_approved
+            transfer_approved(id, owner, destination, amount) => {
+                let call = "transfer_approved";
+                let args = AssetsTransferApprovedCallArgs::new(*id, owner, destination, *amount);
+                CallObject::new(module, call, args).serialize(serializer)
+            },
+
+            deip_create_asset(id, admin, min_balance, project_id) => CallObject {
                 module,
                 call: "create_asset",
                 args: &DeipAssetsCreateAssetCallArgs::new(id, admin, min_balance, project_id),
@@ -519,7 +605,7 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            issue_asset(id, beneficiary, amount) => CallObject {
+            deip_issue_asset(id, beneficiary, amount) => CallObject {
                 module,
                 call: "issue_asset",
                 args: &DeipAssetsIssueAssetCallArgs::new(id, beneficiary, amount),
@@ -580,7 +666,7 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            wipe_zero_balance(asset, account) => CallObject {
+            deip_wipe_zero_balance(asset, account) => CallObject {
                 module,
                 call: "wipe_zero_balance",
                 args: &DeipAssetsWipeZeroBalanceCallArgs { asset, account },

@@ -140,7 +140,7 @@ pub mod pallet {
                         continue
                     }
 
-                    let call = Call::wipe_zero_balance(asset, balance);
+                    let call = Call::deip_wipe_zero_balance(asset, balance);
                     let _submit =
                         SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
                 }
@@ -157,7 +157,7 @@ pub mod pallet {
                 return InvalidTransaction::Custom(super::NON_LOCAL).into()
             }
 
-            if let Call::wipe_zero_balance(ref asset, ref account) = call {
+            if let Call::deip_wipe_zero_balance(ref asset, ref account) = call {
                 if !Self::account_balance(account, asset).is_zero() {
                     return InvalidTransaction::Stale.into()
                 }
@@ -741,15 +741,6 @@ pub mod pallet {
             pallet_assets::Pallet::<T>::destroy(origin, id, witness)
         }
 
-        // #[pallet::weight(AssetsWeightInfoOf::<T>::destroy(0, 0, 0))]
-        // pub fn force_destroy(
-        //     origin: OriginFor<T>,
-        //     id: <T as pallet_assets::Config>::AssetId,
-        //     witness: DestroyWitness,
-        // ) -> DispatchResultWithPostInfo {
-        //     pallet_assets::Pallet::<T>::force_destroy(origin, id, witness)
-        // }
-
         #[pallet::weight(AssetsWeightInfoOf::<T>::mint())]
         pub fn mint(
             origin: OriginFor<T>,
@@ -778,6 +769,16 @@ pub mod pallet {
             amount: AssetsBalanceOf<T>,
         ) -> DispatchResult {
             pallet_assets::Pallet::<T>::transfer(origin, id, target, amount)
+        }
+
+        #[pallet::weight(AssetsWeightInfoOf::<T>::transfer_keep_alive())]
+        pub fn transfer_keep_alive(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+            target: <T::Lookup as StaticLookup>::Source,
+            amount: AssetsBalanceOf<T>,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::transfer_keep_alive(origin, id, target, amount)
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::force_transfer())]
@@ -856,8 +857,104 @@ pub mod pallet {
             pallet_assets::Pallet::<T>::set_metadata(origin, id, name, symbol, decimals)
         }
 
+        #[pallet::weight(AssetsWeightInfoOf::<T>::clear_metadata())]
+        pub fn clear_metadata(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::clear_metadata(origin, id)
+        }
+
+        #[pallet::weight(AssetsWeightInfoOf::<T>::force_set_metadata(name.len() as u32, symbol.len() as u32))]
+        pub fn force_set_metadata(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+            name: Vec<u8>,
+            symbol: Vec<u8>,
+            decimals: u8,
+            is_frozen: bool,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::force_set_metadata(
+                origin, id, name, symbol, decimals, is_frozen,
+            )
+        }
+
+        #[pallet::weight(AssetsWeightInfoOf::<T>::force_clear_metadata())]
+        pub fn force_clear_metadata(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::force_clear_metadata(origin, id)
+        }
+
+        #[allow(clippy::too_many_arguments)]
+        #[pallet::weight(AssetsWeightInfoOf::<T>::force_asset_status())]
+        pub fn force_asset_status(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+            owner: <T::Lookup as StaticLookup>::Source,
+            issuer: <T::Lookup as StaticLookup>::Source,
+            admin: <T::Lookup as StaticLookup>::Source,
+            freezer: <T::Lookup as StaticLookup>::Source,
+            min_balance: AssetsBalanceOf<T>,
+            is_sufficient: bool,
+            is_frozen: bool,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::force_asset_status(
+                origin,
+                id,
+                owner,
+                issuer,
+                admin,
+                freezer,
+                min_balance,
+                is_sufficient,
+                is_frozen,
+            )
+        }
+
+        #[pallet::weight(AssetsWeightInfoOf::<T>::approve_transfer())]
+        pub fn approve_transfer(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+            delegate: <T::Lookup as StaticLookup>::Source,
+            amount: AssetsBalanceOf<T>,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::approve_transfer(origin, id, delegate, amount)
+        }
+
+        #[pallet::weight(AssetsWeightInfoOf::<T>::cancel_approval())]
+        pub fn cancel_approval(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+            delegate: <T::Lookup as StaticLookup>::Source,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::cancel_approval(origin, id, delegate)
+        }
+
+        #[pallet::weight(AssetsWeightInfoOf::<T>::force_cancel_approval())]
+        pub fn force_cancel_approval(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+            owner: <T::Lookup as StaticLookup>::Source,
+            delegate: <T::Lookup as StaticLookup>::Source,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::force_cancel_approval(origin, id, owner, delegate)
+        }
+
+        #[pallet::weight(AssetsWeightInfoOf::<T>::transfer_approved())]
+        pub fn transfer_approved(
+            origin: OriginFor<T>,
+            id: <T as pallet_assets::Config>::AssetId,
+            owner: <T::Lookup as StaticLookup>::Source,
+            destination: <T::Lookup as StaticLookup>::Source,
+            amount: AssetsBalanceOf<T>,
+        ) -> DispatchResult {
+            pallet_assets::Pallet::<T>::transfer_approved(origin, id, owner, destination, amount)
+        }
+
         #[pallet::weight(AssetsWeightInfoOf::<T>::create())]
-        pub fn create_asset(
+        pub fn deip_create_asset(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             admin: T::DeipAccountId,
@@ -888,7 +985,7 @@ pub mod pallet {
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::mint())]
-        pub fn issue_asset(
+        pub fn deip_issue_asset(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             beneficiary: T::DeipAccountId,
@@ -1056,7 +1153,7 @@ pub mod pallet {
         }
 
         #[pallet::weight(10_000)]
-        pub fn wipe_zero_balance(
+        pub fn deip_wipe_zero_balance(
             origin: OriginFor<T>,
             asset: DeipAssetIdOf<T>,
             account: AccountIdOf<T>,
