@@ -593,82 +593,88 @@ impl WrappedCall<Call> {
 
             deip_create_asset(id, admin, min_balance, project_id) => CallObject {
                 module,
-                call: "create_asset",
+                call: "deip_create_asset",
                 args: &DeipAssetsCreateAssetCallArgs::new(id, admin, min_balance, project_id),
             }
             .serialize(serializer),
 
             deip_destroy(id, _witness) => CallObject {
                 module,
-                call: "destroy",
+                call: "deip_destroy",
                 args: &DeipAssetsDestroyCallArgs { id, witness: () },
             }
             .serialize(serializer),
 
             deip_issue_asset(id, beneficiary, amount) => CallObject {
                 module,
-                call: "issue_asset",
+                call: "deip_issue_asset",
                 args: &DeipAssetsIssueAssetCallArgs::new(id, beneficiary, amount),
             }
             .serialize(serializer),
 
             deip_burn(id, who, amount) => CallObject {
                 module,
-                call: "burn",
+                call: "deip_burn",
                 args: &DeipAssetsBurnCallArgs::new(id, who, amount),
             }
             .serialize(serializer),
 
             deip_transfer(id, target, amount) => CallObject {
                 module,
-                call: "transfer",
+                call: "deip_transfer",
                 args: &DeipAssetsTransferCallArgs::new(id, target, amount),
             }
             .serialize(serializer),
 
-            deip_freeze(id, who) =>
-                CallObject { module, call: "freeze", args: &DeipAssetsFreezeCallArgs { id, who } }
-                    .serialize(serializer),
+            deip_freeze(id, who) => CallObject {
+                module,
+                call: "deip_freeze",
+                args: &DeipAssetsFreezeCallArgs { id, who },
+            }
+            .serialize(serializer),
 
             deip_thaw(id, who) =>
-                CallObject { module, call: "thaw", args: &DeipAssetsThawCallArgs { id, who } }
+                CallObject { module, call: "deip_thaw", args: &DeipAssetsThawCallArgs { id, who } }
                     .serialize(serializer),
 
             deip_freeze_asset(id) => CallObject {
                 module,
-                call: "freeze_asset",
+                call: "deip_freeze_asset",
                 args: &DeipAssetsFreezeAssetCallArgs { id },
             }
             .serialize(serializer),
 
-            deip_thaw_asset(id) =>
-                CallObject { module, call: "thaw_asset", args: &DeipAssetsThawAssetCallArgs { id } }
-                    .serialize(serializer),
+            deip_thaw_asset(id) => CallObject {
+                module,
+                call: "deip_thaw_asset",
+                args: &DeipAssetsThawAssetCallArgs { id },
+            }
+            .serialize(serializer),
 
             deip_transfer_ownership(id, owner) => CallObject {
                 module,
-                call: "transfer_ownership",
+                call: "deip_transfer_ownership",
                 args: &DeipAssetsTransferOwnershipCallArgs { id, owner },
             }
             .serialize(serializer),
 
             deip_set_team(id, issuer, admin, freezer) => CallObject {
                 module,
-                call: "set_team",
+                call: "deip_set_team",
                 args: &DeipAssetsSetTeamCallArgs { id, issuer, admin, freezer },
             }
             .serialize(serializer),
 
             deip_set_metadata(id, name, symbol, decimals) => CallObject {
                 module,
-                call: "set_metadata",
+                call: "deip_set_metadata",
                 args: &DeipAssetsSetMetadataCallArgs { id, name, symbol, decimals },
             }
             .serialize(serializer),
 
             deip_wipe_zero_balance(asset, account) => CallObject {
                 module,
-                call: "wipe_zero_balance",
+                call: "deip_wipe_zero_balance",
                 args: &DeipAssetsWipeZeroBalanceCallArgs { asset, account },
             }
             .serialize(serializer),
