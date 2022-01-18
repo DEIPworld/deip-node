@@ -32,6 +32,7 @@
 // Re-export to use implementation details in dependent crates:
 pub use pallet_assets;
 
+mod impl_fungibles;
 pub mod traits;
 
 pub use deip_serializable_u128::SerializableAtLeast32BitUnsigned as SerializableAssetBalance;
