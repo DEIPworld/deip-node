@@ -6,15 +6,14 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use pallet_grandpa::fg_primitives;
-use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
+use pallet_grandpa::{
+    fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
+};
 use sp_api::impl_runtime_apis;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
-use sp_runtime::traits::{
-    AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, Verify,
-};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
+    traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, Verify},
     transaction_validity::{TransactionSource, TransactionValidity},
     ApplyExtrinsicResult, MultiSignature,
 };
@@ -48,14 +47,15 @@ use frame_system::{
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
 use sp_core::Encode;
-use sp_runtime::generic::Era;
-use sp_runtime::traits::{self, OpaqueKeys, SaturatedConversion, StaticLookup};
-use sp_runtime::transaction_validity::TransactionPriority;
+use sp_runtime::{
+    generic::Era,
+    traits::{self, OpaqueKeys, SaturatedConversion, StaticLookup},
+    transaction_validity::TransactionPriority,
+};
 
 use beefy_primitives::{crypto::AuthorityId as BeefyId, ValidatorSet};
 use frame_support::PalletId;
-use sp_runtime::traits::ConvertInto;
-use sp_runtime::traits::Keccak256;
+use sp_runtime::traits::{ConvertInto, Keccak256};
 
 /// Import the template pallet.
 pub use pallet_template;
@@ -711,23 +711,23 @@ impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
     type AssetId = DeipAssetId;
 
     fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId> {
-        DeipAssets::try_get_tokenized_project(id)
+        Assets::try_get_tokenized_project(id)
     }
 
     fn account_balance(account: &AccountId, asset: &Self::AssetId) -> Self::Balance {
-        DeipAssets::account_balance(account, asset)
+        Assets::account_balance(account, asset)
     }
 
     fn total_supply(asset: &Self::AssetId) -> Self::Balance {
-        DeipAssets::total_supply(asset)
+        Assets::total_supply(asset)
     }
 
     fn get_project_fts(id: &ProjectId) -> Vec<Self::AssetId> {
-        DeipAssets::get_project_fts(id)
+        Assets::get_project_fts(id)
     }
 
     fn get_ft_balances(id: &Self::AssetId) -> Option<Vec<AccountId>> {
-        DeipAssets::get_ft_balances(id)
+        Assets::get_ft_balances(id)
     }
 
     fn transactionally_transfer(
@@ -735,7 +735,7 @@ impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
         asset: Self::AssetId,
         transfers: &[(Self::Balance, AccountId)],
     ) -> Result<(), ()> {
-        DeipAssets::transactionally_transfer(from, asset, transfers)
+        Assets::transactionally_transfer(from, asset, transfers)
     }
 
     fn transactionally_reserve(
@@ -744,13 +744,13 @@ impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
         shares: &[(Self::AssetId, Self::Balance)],
         asset: Self::AssetId,
     ) -> Result<(), deip_assets_error::ReserveError<Self::AssetId>> {
-        DeipAssets::deip_transactionally_reserve(account, id, shares, asset)
+        Assets::deip_transactionally_reserve(account, id, shares, asset)
     }
 
     fn transactionally_unreserve(
         id: InvestmentId,
     ) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
-        DeipAssets::transactionally_unreserve(id)
+        Assets::transactionally_unreserve(id)
     }
 
     fn transfer_from_reserved(
@@ -759,7 +759,7 @@ impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
         asset: Self::AssetId,
         amount: Self::Balance,
     ) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
-        DeipAssets::transfer_from_reserved(id, who, asset, amount)
+        Assets::transfer_from_reserved(id, who, asset, amount)
     }
 
     fn transfer_to_reserved(
@@ -767,7 +767,7 @@ impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
         id: InvestmentId,
         amount: Self::Balance,
     ) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
-        DeipAssets::deip_transfer_to_reserved(who, id, amount)
+        Assets::deip_transfer_to_reserved(who, id, amount)
     }
 }
 
@@ -793,13 +793,13 @@ construct_runtime!(
         ImOnline: pallet_im_online::{Pallet, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
         Historical: pallet_session_historical::{Pallet},
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage},
-        Assets: pallet_assets::{Pallet, Storage, Event<T>},
+        ParityTechAssets: pallet_assets::{Pallet, Storage, Event<T>},
         Mmr: pallet_mmr::{Pallet, Storage},
         Beefy: pallet_beefy::{Pallet, Config<T>},
         // Include the custom logic from the pallet-template in the runtime.
         TemplateModule: pallet_template::{Pallet, Call, Storage, Event<T>},
         Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
-        DeipAssets: pallet_deip_assets::{Pallet, Storage, Call, Config<T>, ValidateUnsigned},
+        Assets: pallet_deip_assets::{Pallet, Storage, Call, Config<T>, ValidateUnsigned},
         DeipProposal: pallet_deip_proposal::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
         DeipDao: pallet_deip_dao::{Pallet, Call, Storage, Event<T>, Config},
         Multisig: pallet_multisig::{Pallet, Call, Storage, Event<T>},
