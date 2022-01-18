@@ -204,7 +204,7 @@ fn testnet_genesis(
     });
 
     initial_authorities.iter().map(|x| &x.0).for_each(|x| {
-        if !endowed_accounts.contains(&x) {
+        if !endowed_accounts.contains(x) {
             endowed_accounts.push(x.clone())
         }
     });
