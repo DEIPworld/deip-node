@@ -32,7 +32,7 @@ where
             match_event_deip_proposal(deip_proposal_event)
         }
 
-        Event::Assets(assets_event) => match_event_deip_assets(assets_event),
+        Event::ParityTechAssets(assets_event) => match_event_deip_assets(assets_event),
         
         Event::Session(..) | Event::ImOnline(..) | Event::TemplateModule(..)
         
