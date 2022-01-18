@@ -59,7 +59,7 @@ impl Serialize for WrappedCall<Call> {
             Call::DeipDao(deip_dao_call) =>
                 Self::serialize_deip_dao_call(deip_dao_call, serializer),
 
-            Call::DeipAssets(deip_assets_call) =>
+            Call::Assets(deip_assets_call) =>
                 Self::serialize_deip_assets_call(deip_assets_call, serializer),
 
             Call::System(_) |
