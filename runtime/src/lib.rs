@@ -596,6 +596,8 @@ impl pallet_uniques::Config for Runtime {
     type WeightInfo = pallet_uniques::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_deip_uniques::Config for Runtime {}
+
 parameter_types! {
     pub const WipePeriod: BlockNumber = DAYS;
 }
@@ -874,6 +876,7 @@ construct_runtime!(
         Utility: pallet_utility::{Pallet, Call, Event},
         Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
         Assets: pallet_deip_assets::{Pallet, Storage, Call, Config<T>, ValidateUnsigned},
+        Uniques: pallet_deip_uniques::{Pallet},
         DeipProposal: pallet_deip_proposal::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
         DeipDao: pallet_deip_dao::{Pallet, Call, Storage, Event<T>, Config},
         DeipPortal: pallet_deip_portal::{Pallet, Call, Storage, Config, ValidateUnsigned},

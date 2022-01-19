@@ -199,6 +199,7 @@ dependencies = [
  "pallet-deip-dao",
  "pallet-deip-portal",
  "pallet-deip-proposal",
+ "pallet-deip-uniques",
  "pallet-deip-vesting",
  "pallet-grandpa",
  "pallet-im-online",
@@ -213,6 +214,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-uniques",
  "pallet-utility",
  "parity-scale-codec",
  "scale-info",
@@ -4321,7 +4323,11 @@ dependencies = [
 name = "pallet-deip-uniques"
 version = "3.0.0"
 dependencies = [
+ "frame-support",
+ "frame-system",
  "pallet-uniques",
+ "parity-scale-codec",
+ "scale-info",
 ]
 
 [[package]]
@@ -4647,6 +4653,7 @@ name = "pallet-uniques"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.13#afb74de23dfe2994e7ce38c0870efb9734e966f7"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "parity-scale-codec",

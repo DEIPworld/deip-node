@@ -41,6 +41,7 @@ pallet-deip-assets = { path = "../pallets/deip_assets", default-features = false
 pallet-deip-dao = { path = "../pallets/deip_dao", default-features = false }
 pallet-deip-portal = { path = "../pallets/deip_portal", default-features = false }
 pallet-deip-proposal = { path = "../pallets/deip_proposal", default-features = false }
+pallet-deip-uniques = { path = "../pallets/deip_uniques", default-features = false }
 pallet-deip-vesting = { path = "../pallets/deip_vesting", default-features = false }
 pallet-grandpa = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-im-online = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
@@ -56,6 +57,7 @@ pallet-sudo = { git = "https://github.com/paritytech/substrate.git", branch = "p
 pallet-timestamp = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-transaction-payment = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-uniques = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-utility = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 scale-info = { version = "1.0", default-features = false, features = ["derive"] }
 serde = { version = "1.0.130", optional = true, features = ["derive"] }
@@ -112,6 +114,7 @@ std = [
     "pallet-timestamp/std",
     "pallet-transaction-payment/std",
     "pallet-transaction-payment-rpc-runtime-api/std",
+    "pallet-uniques/std",
     "pallet-utility/std",
     "scale-info/std",
     "sp-api/std",
@@ -136,5 +139,6 @@ std = [
     "pallet-deip-dao/std",
     "pallet-deip-portal/std",
     "pallet-deip-proposal/std",
+    "pallet-deip-uniques/std",
     "pallet-deip-vesting/std",
 ]
