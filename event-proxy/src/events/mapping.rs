@@ -33,8 +33,10 @@ where
         }
 
         Event::ParityTechAssets(assets_event) => match_event_deip_assets(assets_event),
-        
-        Event::Session(..) | Event::ImOnline(..)
+
+        Event::ParityTechUniques(..)
+
+        | Event::Session(..) | Event::ImOnline(..)
         
         | Event::OctopusAppchain(..) | Event::OctopusLpos(..) | Event::OctopusUpwardMessages(..) 
 
