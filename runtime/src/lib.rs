@@ -75,6 +75,12 @@ pub type AssetId = u32;
 pub type AssetBalance = u128;
 pub type AssetExtra = ();
 
+/// Identifier for the class of asset.
+pub type ClassId = u32; // ??? what is class id right type
+
+/// The type used to identify a unique asset within an asset class.
+pub type InstanceId = u32; // ??? correct type
+
 /// Type used for expressing timestamp.
 pub type Moment = u64;
 
@@ -553,6 +559,44 @@ impl pallet_deip_assets::traits::DeipProjectsInfo<AccountId> for Runtime {
 }
 
 parameter_types! {
+    /// The basic amount of funds that must be reserved for an asset class.
+    pub const ClassDeposit: Balance = 10 * DOLLARS; // ??? correct value
+
+    /// The basic amount of funds that must be reserved for an asset instance.
+    pub const InstanceDeposit: Balance = 10 * DOLLARS; // ??? correct value
+
+    /// The basic amount of funds that must be reserved when adding an attribute to an asset.
+    pub const AttributeDepositBase: Balance = 10 * DOLLARS; // ??? correct value
+
+    /// The additional funds that must be reserved for the number of bytes store in metadata,
+    /// either "normal" metadata or attribute metadata.
+    pub const DepositPerByte: Balance = 10 * DOLLARS; // ??? correct value
+
+    /// The maximum length of an attribute key.
+    pub const KeyLimit: u32 = 50; // ??? correct value
+
+    /// The maximum length of an attribute value.
+    pub const ValueLimit: u32 = 50; // ??? correct value
+}
+
+impl pallet_uniques::Config for Runtime {
+    type Event = Event;
+    type ClassId = ClassId;
+    type InstanceId = InstanceId;
+    type Currency = Balances;
+    type ForceOrigin = EnsureRoot<AccountId>;
+    type ClassDeposit = ClassDeposit;
+    type InstanceDeposit = InstanceDeposit;
+    type MetadataDepositBase = MetadataDepositBase; // ??? is it correct to reuse const from assets
+    type AttributeDepositBase = AttributeDepositBase;
+    type DepositPerByte = DepositPerByte;
+    type StringLimit = StringLimit; // ??? is it correct to reuse const from assets
+    type KeyLimit = KeyLimit;
+    type ValueLimit = ValueLimit;
+    type WeightInfo = pallet_uniques::weights::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
     pub const WipePeriod: BlockNumber = DAYS;
 }
 
@@ -823,6 +867,7 @@ construct_runtime!(
         Historical: pallet_session_historical::{Pallet},
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage},
         ParityTechAssets: pallet_assets::{Pallet, Storage, Event<T>},
+        ParityTechUniques: pallet_uniques::{Pallet, Storage, Call, Event<T>},
         Mmr: pallet_mmr::{Pallet, Storage},
         Beefy: pallet_beefy::{Pallet, Config<T>},
         Multisig: pallet_multisig::{Pallet, Call, Storage, Event<T>},
