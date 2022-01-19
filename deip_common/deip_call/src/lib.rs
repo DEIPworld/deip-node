@@ -62,6 +62,7 @@ impl Serialize for WrappedCall<Call> {
             Call::Assets(deip_assets_call) =>
                 Self::serialize_deip_assets_call(deip_assets_call, serializer),
 
+            Call::ParityTechUniques(_) |
             Call::System(_) |
             Call::DeipPortal(_) |
             Call::Timestamp(_) |
