@@ -31,6 +31,7 @@ pallet-deip-dao = { path = "../pallets/deip_dao" }
 pallet-deip-portal = { path = "../pallets/deip_portal" }
 pallet-deip = { path = "../pallets/deip"}
 pallet-deip-assets = { path = "../pallets/deip_assets"}
+pallet-deip-vesting = { path = "../pallets/deip_vesting"}
 node-template-runtime = { package = 'appchain-deip-runtime', path = '../runtime'}
 deip-call = { package = "common-deip-call", path = "../deip_common/deip_call" }
 
@@ -144,6 +145,7 @@ sp-transaction-pool = { git = "https://github.com/octopus-network/substrate", br
 sp-version = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 substrate-wasm-builder = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 substrate-build-script-utils = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-vesting = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 
 [patch.crates-io]
 frame-support = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
@@ -224,3 +226,4 @@ sp-transaction-pool = { git = "https://github.com/octopus-network/substrate", br
 sp-version = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 substrate-wasm-builder = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 substrate-build-script-utils = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-vesting = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }

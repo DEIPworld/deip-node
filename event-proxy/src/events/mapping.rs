@@ -44,6 +44,7 @@ where
         | Event::Balances(_)
         | Event::Sudo(_)
         // | Event::template(_)
+        | Event::DeipVesting(_)
         | Event::Multisig(_) => unreachable!(),
     }
 }

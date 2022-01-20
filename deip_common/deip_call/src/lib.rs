@@ -77,7 +77,8 @@ impl Serialize for WrappedCall<Call> {
             Call::Session(_) |
             Call::ImOnline(_) |
             Call::Utility(_) |
-            Call::Multisig(_) => CallObject {
+            Call::Multisig(_) |
+            Call::DeipVesting(_) => CallObject {
                 module: "unsupported_module",
                 call: "unsupported_call",
                 args: &UnsupportedCallArgs {},
