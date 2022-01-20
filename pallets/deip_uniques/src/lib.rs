@@ -6,6 +6,9 @@ pub use pallet_uniques;
 
 #[frame_support::pallet]
 pub mod pallet {
+    #[cfg(feature = "std")]
+    use frame_support::traits::GenesisBuild;
+
     #[pallet::config]
     pub trait Config: frame_system::Config {}
 
@@ -13,19 +16,19 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     #[pallet::genesis_config]
-    pub struct GenesisConfig<T: Config> {}
+    pub struct GenesisConfig<T> {
+        pub _marker: std::marker::PhantomData<T>,
+    }
 
     #[pallet::genesis_build]
-    impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
-        fn build(&self) {
-            Self {}
-        }
+    impl<T> GenesisBuild<T> for GenesisConfig<T> {
+        fn build(&self) {}
     }
 
     #[cfg(feature = "std")]
-    impl<T: Config> Default for GenesisConfig<T> {
+    impl<T> Default for GenesisConfig<T> {
         fn default() -> Self {
-            Self {}
+            Self { _marker: std::marker::PhantomData }
         }
     }
 
