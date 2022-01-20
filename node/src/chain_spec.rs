@@ -1,7 +1,7 @@
 use appchain_deip_runtime::{
     AccountId, AssetsConfig, BabeConfig, BalancesConfig, DeipConfig, DeipDaoConfig,
     DeipPortalConfig, DeipProposalConfig, DeipVestingConfig, GenesisConfig, GrandpaConfig,
-    Signature, SudoConfig, SystemConfig, WASM_BINARY,
+    Signature, SudoConfig, SystemConfig, UniquesConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
 use sp_core::{sr25519, Pair, Public};
@@ -241,6 +241,7 @@ fn testnet_genesis(
                 .collect(),
             ..Default::default()
         },
+        uniques: UniquesConfig::default(),
         deip_proposal: DeipProposalConfig {},
         deip_dao: DeipDaoConfig {},
         deip_portal: DeipPortalConfig {},
