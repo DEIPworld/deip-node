@@ -9,8 +9,12 @@ pub mod pallet {
     #[cfg(feature = "std")]
     use frame_support::traits::GenesisBuild;
 
+    use frame_support::{dispatch::DispatchResult, sp_runtime::traits::StaticLookup};
+    use frame_system::pallet_prelude::OriginFor;
+    use pallet_uniques::WeightInfo;
+
     #[pallet::config]
-    pub trait Config: frame_system::Config {}
+    pub trait Config: frame_system::Config + pallet_uniques::Config {}
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);
@@ -33,5 +37,14 @@ pub mod pallet {
     }
 
     #[pallet::call]
-    impl<T: Config> Pallet<T> {}
+    impl<T: Config> Pallet<T> {
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::create())]
+        pub fn create(
+            origin: OriginFor<T>,
+            class: <T as pallet_uniques::Config>::ClassId,
+            admin: <T::Lookup as StaticLookup>::Source,
+        ) -> DispatchResult {
+            pallet_uniques::Pallet::<T>::create(origin, class, admin)
+        }
+    }
 }
