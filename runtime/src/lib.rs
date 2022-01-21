@@ -660,10 +660,16 @@ impl pallet_deip_proposal::pallet::Config for Runtime {
     type WeightInfo = pallet_deip_proposal::CallWeight<Self>;
 }
 
+parameter_types! {
+    pub const DaoMaxSignatories: u16 = 50;
+}
+
 impl pallet_deip_dao::Config for Runtime {
     type Event = Event;
     type Call = Call;
     type DaoId = pallet_deip_dao::DaoId;
+    type DeipDaoWeightInfo = pallet_deip_dao::weights::Weights<Self>;
+    type MaxSignatories = DaoMaxSignatories;
 }
 
 parameter_types! {
@@ -1106,6 +1112,7 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, pallet_timestamp, Timestamp);
             add_benchmark!(params, batches, pallet_template, TemplateModule);
             add_benchmark!(params, batches, pallet_deip_proposal, DeipProposal);
+            add_benchmark!(params, batches, pallet_deip_dao, DeipDao);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)
