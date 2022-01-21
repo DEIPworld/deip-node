@@ -28,6 +28,8 @@
 mod tests;
 
 pub mod api;
+pub mod weights;
+pub mod benchmarking;
 
 #[doc(inline)]
 pub use pallet::*;
@@ -42,7 +44,7 @@ pub mod pallet {
     use frame_support::{Hashable};
     use frame_support::weights::{PostDispatchInfo, GetDispatchInfo};
     
-    use frame_support::traits::{UnfilteredDispatchable, IsSubType};
+    use frame_support::traits::{UnfilteredDispatchable, IsSubType, Get};
     
     use sp_std::prelude::*;
     use sp_std::collections::{btree_map::BTreeMap};
@@ -54,6 +56,8 @@ pub mod pallet {
     use sp_core::H256;
     
     use deip_storage_ops::StorageOpsTransaction;
+    
+    use crate::weights::WeightInfo;
 
     /// Configuration trait
     #[pallet::config]
@@ -70,6 +74,11 @@ pub mod pallet {
              IsSubType<Call<Self>>;
         
         type DaoId: Member + Parameter;
+        
+        type DeipDaoWeightInfo: WeightInfo;
+        /// Max signatories in DAO Authority
+        #[pallet::constant]
+        type MaxSignatories: Get<u16>;
     }
     
     #[doc(hidden)]
@@ -120,6 +129,7 @@ pub mod pallet {
         use sp_std::prelude::*;
         use frame_support::pallet_prelude::*;
         use super::{Config, DaoRepository, Error, DaoLookup};
+        use crate::weights::WeightInfo;
         
         #[cfg(feature = "std")]
         use serde::{Serialize, Deserialize};
@@ -186,8 +196,14 @@ pub mod pallet {
         #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
         #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
         pub struct Authority<AccountId> {
-            signatories: Vec<AccountId>,
-            threshold: u16 
+            pub(crate) signatories: Vec<AccountId>,
+            pub(crate) threshold: u16 
+        }
+        impl<AccountId> From<Authority<AccountId>> for InputAuthority<AccountId> {
+            fn from(s: Authority<AccountId>) -> Self {
+                let Authority { signatories, threshold } = s;
+                InputAuthority { threshold, signatories }
+            }
         }
         #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
         #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -195,12 +211,14 @@ pub mod pallet {
             pub signatories: Vec<AccountId>,
             pub threshold: u16 
         }
+        #[derive(Debug)]
         pub enum AuthorityAssert {
             EmptySignatories,
             /// We expect signatures list with exactly one element for plain account
             PlainAccountExpect,
             ThresholdMismatch,
             KeyMismatch,
+            TooMuchSignatories,
         }
         impl<T: Config> From<AuthorityAssert> for Error<T> {
             fn from(source: AuthorityAssert) -> Self {
@@ -259,12 +277,19 @@ pub mod pallet {
             }
         }
         impl<AccountId: Codec + Default + Clone + Ord + Eq + PartialEq> InputAuthority<AccountId> {
-            pub(crate) fn assert(self, authority_key: &AccountId) -> Result<Authority<AccountId>, AuthorityAssert>
+            pub (crate) fn sort_and_dedup(signatories: &mut Vec<AccountId>) {
+                signatories.sort();
+                signatories.dedup_by(|x, y| x == y);
+            }
+            pub(crate) fn assert<T: Config>(self, authority_key: &AccountId) -> Result<Authority<AccountId>, AuthorityAssert>
             {
                 let Self { mut signatories, threshold } = self;
                 ensure!(!signatories.is_empty(), AuthorityAssert::EmptySignatories);
-                signatories.sort();
-                signatories.dedup_by(|x, y| x == y);
+                Self::sort_and_dedup(&mut signatories);
+                ensure!(
+                    signatories.len() as u16 <= T::MaxSignatories::get(),
+                    AuthorityAssert::TooMuchSignatories
+                );
                 
                 // zero threshold adjusts plain non-multisig account
                 if threshold == 0 {
@@ -284,17 +309,17 @@ pub mod pallet {
         #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
         pub struct Dao<AccountId, Id> {
             /// Authority aka "control" key. Not fixed, may changes in future
-            authority_key: AccountId,
+            pub(crate) authority_key: AccountId,
             /// Details of control key: multi-sig or plain account
-            authority: Authority<AccountId>,
+            pub(crate) authority: Authority<AccountId>,
             /// Unique DAO ID
-            id: Id,
+            pub(crate) id: Id,
             /// Own key of DAO for keeping assets,
             /// to signing of an extrinsics calls dispatched on behalf of DAO etc ..
             /// Must be generated internally when DAO will be created,
             /// nobody knows private half of this key
-            dao_key: AccountId,
-            metadata: Option<H256>
+            pub(crate) dao_key: AccountId,
+            pub(crate) metadata: Option<H256>
         }
         impl<AccountId, Id> Dao<AccountId, Id> {
             pub fn new(
@@ -313,8 +338,9 @@ pub mod pallet {
             pub fn authority(&self) -> &Authority<AccountId>{ &self.authority }
             pub fn id(&self) -> &Id { &self.id }
             pub fn dao_key(&self) -> &AccountId { &self.dao_key }
+            pub fn metadata(&self) -> &Option<H256> { &self.metadata }
             
-            pub fn alter_authoriry(self, op: AlterAuthority<AccountId>) -> Result<Self, AuthorityAssert>
+            pub fn alter_authoriry<T: Config>(self, op: AlterAuthority<AccountId>) -> Result<Self, AuthorityAssert>
                 where
                     AccountId: Codec + Default + Clone + Ord + Eq + PartialEq            {
                 let Self {
@@ -324,18 +350,23 @@ pub mod pallet {
                     dao_key,
                     metadata
                 } = self;
-                match op {
+                let (authority, authority_key) = match op {
                     AlterAuthority::AddMember { member, preserve_threshold } => {
                         authority.add_member(member, preserve_threshold);
+                        let authority_key = authority.authority_key();
+                        (InputAuthority::<AccountId>::from(authority), authority_key)
                     },
                     AlterAuthority::RemoveMember { member, preserve_threshold } => {
                         authority.remove_member(member, preserve_threshold);
+                        let authority_key = authority.authority_key();
+                        (InputAuthority::<AccountId>::from(authority), authority_key)
                     },
-                    AlterAuthority::ReplaceAuthority { authority_key: new_authority_key, authority: new_authority } => {
-                        authority = new_authority.assert(&new_authority_key)?;
+                    AlterAuthority::ReplaceAuthority { authority_key, authority: new_authority } => {
+                        (new_authority, authority_key)
                     },
-                }
-                Ok(Self::new(authority.authority_key(), authority, id, dao_key, metadata))
+                };
+                let authority = authority.assert::<T>(&authority_key)?;
+                Ok(Self::new(authority_key, authority, id, dao_key, metadata))
             }
 
             pub fn update_metadata(mut self, new_metadata: Option<H256>,) -> Self {
@@ -351,6 +382,24 @@ pub mod pallet {
             AddMember { member: AccountId, preserve_threshold: bool },
             RemoveMember { member: AccountId, preserve_threshold: bool },
             ReplaceAuthority { authority_key: AccountId, authority: InputAuthority<AccountId> }
+        }
+    }
+    
+    impl<AccountId> AlterAuthority<AccountId> {
+        pub fn weight<T: Config>(&self) -> Weight {
+            match self {
+                Self::AddMember { preserve_threshold: false, .. } =>
+                    T::DeipDaoWeightInfo::alter_authority_add_member(),
+                Self::AddMember { preserve_threshold: true, .. } =>
+                    T::DeipDaoWeightInfo::alter_authority_add_member_preserve_threshold(),
+                Self::RemoveMember { preserve_threshold: false, .. } =>
+                    T::DeipDaoWeightInfo::alter_authority_remove_member(),
+                Self::RemoveMember { preserve_threshold: true, .. } =>
+                    T::DeipDaoWeightInfo::alter_authority_remove_member_preserve_threshold(),
+                Self::ReplaceAuthority { authority, .. } => {
+                    T::DeipDaoWeightInfo::alter_authority_replace_authority(authority.signatories.len() as u32)
+                },
+            }
         }
     }
     
@@ -370,7 +419,11 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         
-        #[pallet::weight(10_000)]
+        #[pallet::weight((
+            T::DeipDaoWeightInfo::create(authority.signatories.len() as u32),
+            DispatchClass::Normal,
+            Pays::Yes
+        ))]
         pub fn create(
             origin: OriginFor<T>,
             name: DaoId,
@@ -380,7 +433,7 @@ pub mod pallet {
             -> DispatchResultWithPostInfo
         {
             let authority_key = ensure_signed(origin)?;
-            let authority = authority.assert(&authority_key).map_err::<Error<T>, _>(Into::into)?;
+            let authority = authority.assert::<T>(&authority_key).map_err::<Error<T>, _>(Into::into)?;
             ensure!(!DaoRepository::<T>::contains_key(&name), Error::<T>::Exists);
             let dao_key = Self::dao_key(&name);
             let dao = DaoOf::<T>::new(
@@ -398,7 +451,11 @@ pub mod pallet {
             Ok(Some(0).into())
         }
         
-        #[pallet::weight(10_000)]
+        #[pallet::weight((
+            alter_authority.weight::<T>(),
+            DispatchClass::Normal,
+            Pays::Yes
+        ))]
         pub fn alter_authority(
             origin: OriginFor<T>,
             alter_authority: AlterAuthority<T::AccountId>,
@@ -407,7 +464,7 @@ pub mod pallet {
         {
             let who = ensure_signed(origin)?;
             let mut dao = load_dao::<T>(LoadBy::DaoKey { dao_key: &who })?;
-            dao = dao.alter_authoriry(alter_authority).map_err::<Error<T>, _>(Into::into)?;
+            dao = dao.alter_authoriry::<T>(alter_authority).map_err::<Error<T>, _>(Into::into)?;
             StorageOpsTransaction::<StorageOps<T>>::new()
                 .commit(move |ops| {
                     ops.push_op(StorageOps::UpdateDao(dao.clone()));
@@ -416,7 +473,11 @@ pub mod pallet {
             Ok(Some(0).into())
         }
 
-        #[pallet::weight(10_000)]
+        #[pallet::weight((
+            T::DeipDaoWeightInfo::update_dao(),
+            DispatchClass::Normal,
+            Pays::Yes
+        ))]
         pub fn update_dao(
             origin: OriginFor<T>,
             new_metadata: Option<H256>,
@@ -433,7 +494,12 @@ pub mod pallet {
             Ok(None.into())
         }
 
-        #[pallet::weight(10_000)]
+        #[pallet::weight((
+            T::DeipDaoWeightInfo::on_behalf()
+                + call.get_dispatch_info().weight,
+            DispatchClass::Normal,
+            Pays::Yes
+        ))]
         pub fn on_behalf(
             origin: OriginFor<T>,
             name: DaoId,

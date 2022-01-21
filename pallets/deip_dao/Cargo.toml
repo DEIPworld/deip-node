@@ -29,11 +29,20 @@ deip-storage-ops = { path = "../../deip_common/deip_storage_ops", default-featur
 sp-api = { version = '3.0.0', default-features = false}
 sp-io = { default-features = false, version = '3.0.0' }
 
+[dependencies.frame-benchmarking]
+default-features = false
+optional = true
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
 [dev-dependencies]
 sp-runtime = { default-features = false, version = '3.0.0' }
 
 [features]
 default = ['std']
+runtime-benchmarks = ["frame-benchmarking"]
+
 std = [
     'codec/std',
     'frame-support/std',
@@ -41,5 +50,6 @@ std = [
     'sp-std/std', 
     'serde',
     'deip-storage-ops/std',
-    "sp-api/std"
+    "sp-api/std",
+    'frame-benchmarking/std',
 ]
