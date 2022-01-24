@@ -30,6 +30,9 @@ mod tests;
 mod transaction_ctx;
 mod portal;
 
+pub mod weights;
+pub mod benchmarking;
+
 
 #[doc(inline)]
 pub use pallet::*;
@@ -63,6 +66,7 @@ pub mod pallet {
     use codec::EncodeLike;
     
     use super::*;
+    use crate::weights::WeightInfo;
     
     use frame_system::offchain::SendTransactionTypes;
     use sp_runtime::traits::Extrinsic;
@@ -70,7 +74,11 @@ pub mod pallet {
 
     /// Configuration trait
     #[pallet::config]
-    pub trait Config: frame_system::Config + SendTransactionTypes<Call<Self>> + PortalModuleT<Self> + Debug {
+    pub trait Config: frame_system::Config
+        + SendTransactionTypes<Call<Self>>
+        + PortalModuleT<Self, crate::PortalCtxOf<Self>, crate::Call<Self>>
+        + Debug
+    {
     
         type TenantLookup: TenantLookupT<Self::AccountId, TenantId = Self::PortalId> + Debug;
         
@@ -81,6 +89,7 @@ pub mod pallet {
              Dispatchable<Origin = Self::Origin, PostInfo = PostDispatchInfo> +
              GetDispatchInfo +
              From<frame_system::pallet::Call<Self>> +
+             From<crate::Call<Self>> +
              UnfilteredDispatchable<Origin = Self::Origin> +
              frame_support::dispatch::Codec + 
              IsSubType<Call<Self>>;
@@ -91,6 +100,8 @@ pub mod pallet {
             + sp_std::fmt::Debug + Eq + PartialEq
             + frame_support::traits::ExtrinsicCall
             + Extrinsic<Call = <Self as Config>::Call>;
+        
+        type DeipPortalWeightInfo: WeightInfo;
     }
     
     #[doc(hidden)]
@@ -106,7 +117,7 @@ pub mod pallet {
                 debug!("{}", "not a validator");
                 return
             }
-            let _ = crate::PortalCtxOf::<T>::submit_scheduled(n);
+            let _ = T::submit_scheduled_tx(n);
         }
     }
     
@@ -160,7 +171,13 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T>
     {
-        #[pallet::weight(10000)]
+        #[pallet::weight((
+            T::DeipPortalWeightInfo::create()
+                // 1 DB read for the tenant_lookup that noop while benchmarking
+                + T::DbWeight::get().reads(1 as Weight),
+            DispatchClass::Normal,
+            Pays::Yes
+        ))]
         pub fn create(
             origin: OriginFor<T>,
             delegate: PortalDelegate<T>,
@@ -174,7 +191,11 @@ pub mod pallet {
             Ok(Some(0).into())
         }
         
-        #[pallet::weight(10000)]
+        #[pallet::weight((
+            T::DeipPortalWeightInfo::update(),
+            DispatchClass::Normal,
+            Pays::Yes
+        ))]
         pub fn update(
             origin: OriginFor<T>,
             update: PortalUpdate<T>
@@ -187,7 +208,11 @@ pub mod pallet {
             Ok(Some(0).into())
         }
         
-        #[pallet::weight(0)]
+        #[pallet::weight((
+            10_000,
+            DispatchClass::Normal,
+            Pays::Yes
+        ))]
         pub fn schedule(
             origin: OriginFor<T>,
             xt: Box<T::UncheckedExtrinsic>,
@@ -196,11 +221,15 @@ pub mod pallet {
         {
             // sp_runtime::runtime_logger::RuntimeLogger::init();
             let delegate = ensure_signed(origin)?;
-            crate::PortalCtxOf::<T>::current().schedule_extrinsic(*xt, delegate)?;
+            T::schedule_tx(*xt, delegate)?;
             Ok(Some(0).into())
         }
         
-        #[pallet::weight(0)]
+        #[pallet::weight((
+            10_000,
+            DispatchClass::Normal,
+            Pays::Yes
+        ))]
         pub fn exec(
             origin: OriginFor<T>,
             portal_id: PortalId<T>,
@@ -209,10 +238,14 @@ pub mod pallet {
             -> DispatchResultWithPostInfo
         {
             // sp_runtime::runtime_logger::RuntimeLogger::init();
-            crate::PortalCtxOf::<T>::current().dispatch_scheduled(portal_id, *call, origin)?
+            T::dispatch_scheduled_tx(portal_id, *call, origin)?
         }
         
-        #[pallet::weight(0)]
+        #[pallet::weight((
+            10_000,
+            DispatchClass::Normal,
+            Pays::Yes
+        ))]
         pub fn exec_postponed(
             origin: OriginFor<T>,
             portal_id: PortalId<T>,
@@ -222,7 +255,7 @@ pub mod pallet {
         {
             // sp_runtime::runtime_logger::RuntimeLogger::init();
             ensure_none(origin)?;
-            crate::PortalCtxOf::<T>::current().dispatch(portal_id, *call, RawOrigin::None.into())
+            T::exec_postponed_tx(portal_id, *call, RawOrigin::None.into())
         }
     }
     

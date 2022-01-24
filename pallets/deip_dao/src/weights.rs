@@ -44,7 +44,7 @@ pub trait WeightInfo {
     fn on_behalf() -> Weight;
 }
 
-/// Weight functions for pallet_deip_proposal.
+/// Weight functions for pallet_deip_dao.
 pub struct Weights<T>(PhantomData<T>);
 
 impl<T: frame_system::Config> WeightInfo for Weights<T> {

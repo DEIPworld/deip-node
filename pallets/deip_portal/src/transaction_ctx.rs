@@ -35,7 +35,6 @@ impl<T, LocalCall> PortalCtxT<LocalCall> for PortalCtxOf<T>
           T::PortalId: Copy + Default + Debug,
           LocalCall: Debug,
 {
-    // type PortalId = <T::TenantLookup as TenantLookupT<T::AccountId>>::TenantId;
     type PortalId = T::PortalId;
     type Extrinsic = T::UncheckedExtrinsic;
     type Error = crate::Error<T>;

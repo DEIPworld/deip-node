@@ -269,6 +269,7 @@ runtime-benchmarks = [
     'pallet-deip-proposal/runtime-benchmarks',
     'pallet-deip-vesting/runtime-benchmarks',
     'pallet-deip-dao/runtime-benchmarks',
+    'pallet-deip-portal/runtime-benchmarks',
 ]
 std = [
     'codec/std',
