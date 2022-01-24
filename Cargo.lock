@@ -9435,16 +9435,16 @@ version = "3.0.0"
 source = "git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8#74101dc21cfffb4c2d014fcc28edc166d5ca1b16"
 
 [[patch.unused]]
+name = "pallet-vesting"
+version = "3.0.0"
+source = "git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8#74101dc21cfffb4c2d014fcc28edc166d5ca1b16"
+
+[[patch.unused]]
 name = "pallet-staking"
 version = "3.0.0"
 source = "git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8#74101dc21cfffb4c2d014fcc28edc166d5ca1b16"
 
 [[patch.unused]]
 name = "pallet-staking-reward-curve"
-version = "3.0.0"
-source = "git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8#74101dc21cfffb4c2d014fcc28edc166d5ca1b16"
-
-[[patch.unused]]
-name = "pallet-vesting"
 version = "3.0.0"
 source = "git+https://github.com/octopus-network/substrate?branch=polkadot-v0.9.8#74101dc21cfffb4c2d014fcc28edc166d5ca1b16"
