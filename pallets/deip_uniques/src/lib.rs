@@ -6,6 +6,7 @@ pub use pallet_uniques;
 
 #[frame_support::pallet]
 pub mod pallet {
+    use deip_projects_info::DeipProjectsInfo;
     #[cfg(feature = "std")]
     use frame_support::traits::GenesisBuild;
 
@@ -16,12 +17,14 @@ pub mod pallet {
         sp_runtime::traits::{CheckedAdd, One, StaticLookup},
         BoundedVec, Identity, Parameter,
     };
-    use frame_system::pallet_prelude::OriginFor;
+    use frame_system::{ensure_signed, pallet_prelude::OriginFor};
     use pallet_uniques::{DestroyWitness, WeightInfo};
 
     // Helper types.
     type DeipNftClassIdOf<T> = <T as Config>::NftClassId;
-    type DeipProjectIdOf<T> = <T as Config>::ProjectId;
+    type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+    type DeipProjectIdOf<T> =
+        <<T as Config>::ProjectsInfo as DeipProjectsInfo<AccountIdOf<T>>>::ProjectId;
 
     #[pallet::config]
     pub trait Config:
@@ -31,13 +34,16 @@ pub mod pallet {
         type NftClassId: Parameter + Copy;
 
         /// Deip account id.
-        type AccountId: Parameter;
+        type DeipAccountId: Parameter;
 
         /// Deip project id.
         type ProjectId: Parameter;
 
         /// Type of `pallet_uniques::Config::ClassId`.
         type UniquesNftClassId: Parameter + CheckedAdd + Default + One + Copy;
+
+        /// Additional project info.
+        type ProjectsInfo: DeipProjectsInfo<Self::AccountId>;
     }
 
     #[pallet::pallet]
@@ -82,6 +88,8 @@ pub mod pallet {
     pub enum Error<T> {
         DeipNftClassIdExists,
         NftClassIdOverflow,
+        ProjectDoesNotExist,
+        ProjectDoesNotBelongToTeam,
     }
 
     #[pallet::call]
@@ -331,12 +339,17 @@ pub mod pallet {
         pub fn deip_create_nft(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
-            admin: <T as frame_system::Config>::AccountId,
+            admin: T::AccountId,
             project_id: Option<DeipProjectIdOf<T>>,
         ) -> DispatchResultWithPostInfo {
             // If project id is provided ensure that admin is in team.
             if let Some(project_id) = project_id.as_ref() {
-                todo!()
+                if let Some(team_id) = T::ProjectsInfo::try_get_project_team(project_id) {
+                    let account = ensure_signed(origin.clone())?;
+                    ensure!(team_id == account, Error::<T>::ProjectDoesNotBelongToTeam)
+                } else {
+                    return Err(Error::<T>::ProjectDoesNotExist.into())
+                }
             }
 
             // Check if NFT with this deip id exist.
@@ -364,7 +377,13 @@ pub mod pallet {
 
             // IF project id is provided add id to projects map.
             if let Some(project_id) = project_id {
-                todo!()
+                // ProjectIdByAssetId::<T>::insert(id, project_id.clone());
+                // AssetIdByProjectId::<T>::mutate_exists(project_id, |tokens| {
+                //     match tokens.as_mut() {
+                //         None => *tokens = Some(vec![id]),
+                //         Some(c) => c.push(id),
+                //     };
+                // });
             }
 
             Ok(post_dispatch_info)

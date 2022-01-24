@@ -552,7 +552,7 @@ impl pallet_assets::Config for Runtime {
     type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
 }
 
-impl pallet_deip_assets::traits::DeipProjectsInfo<AccountId> for Runtime {
+impl deip_projects_info::DeipProjectsInfo<AccountId> for Runtime {
     type ProjectId = pallet_deip::ProjectId;
     type InvestmentId = pallet_deip::InvestmentId;
 
@@ -613,9 +613,10 @@ impl pallet_uniques::Config for Runtime {
 
 impl pallet_deip_uniques::Config for Runtime {
     type NftClassId = DeipNftClassId;
-    type AccountId = deip_account::DeipAccountId<<Self as frame_system::Config>::AccountId>;
+    type DeipAccountId = deip_account::DeipAccountId<<Self as frame_system::Config>::AccountId>;
     type ProjectId = pallet_deip::ProjectId;
     type UniquesNftClassId = <Self as pallet_uniques::Config>::ClassId;
+    type ProjectsInfo = Self;
 }
 
 impl pallet_beefy::Config for Runtime {
