@@ -3,23 +3,19 @@
 use super::*;
 
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, whitelisted_caller};
-use frame_system::{Pallet as System, RawOrigin};
+use frame_system::{RawOrigin};
 use pallet_timestamp::Pallet as Timestamp;
 use sp_runtime::traits::Bounded;
 
 use super::Pallet as Vesting;
 
-use codec::{Decode, Encode};
 use frame_support::{
-    ensure,
-    pallet_prelude::*,
     traits::{
-        Currency, ExistenceRequirement, Get, LockIdentifier, LockableCurrency, UnixTime,
+        Currency, Get, LockableCurrency,
         WithdrawReasons,
     },
 };
-use frame_system::{ensure_signed, pallet_prelude::*};
-use sp_runtime::traits::{AtLeast32BitUnsigned, Convert, SaturatedConversion, StaticLookup, Zero};
+use sp_runtime::traits::{StaticLookup, Zero};
 use sp_std::prelude::*;
 
 const SEED: u32 = 0;
