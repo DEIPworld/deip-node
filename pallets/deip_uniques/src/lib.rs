@@ -10,17 +10,38 @@ pub mod pallet {
     use frame_support::traits::GenesisBuild;
 
     use frame_support::{
-        dispatch::{DispatchResult, Vec},
-        sp_runtime::traits::StaticLookup,
-        BoundedVec,
+        dispatch::{DispatchResult, DispatchResultWithPostInfo, UnfilteredDispatchable, Vec},
+        ensure,
+        pallet_prelude::{OptionQuery, StorageMap, StorageValue, ValueQuery},
+        sp_runtime::traits::{CheckedAdd, One, StaticLookup},
+        BoundedVec, Identity, Parameter,
     };
     use frame_system::pallet_prelude::OriginFor;
     use pallet_uniques::{DestroyWitness, WeightInfo};
 
+    // Helper types.
+    type DeipNftClassIdOf<T> = <T as Config>::NftClassId;
+    type DeipProjectIdOf<T> = <T as Config>::ProjectId;
+
     #[pallet::config]
-    pub trait Config: frame_system::Config + pallet_uniques::Config {}
+    pub trait Config:
+        frame_system::Config + pallet_uniques::Config<ClassId = Self::UniquesNftClassId>
+    {
+        /// Deip class id.
+        type NftClassId: Parameter + Copy;
+
+        /// Deip account id.
+        type AccountId: Parameter;
+
+        /// Deip project id.
+        type ProjectId: Parameter;
+
+        /// Type of `pallet_uniques::Config::ClassId`.
+        type UniquesNftClassId: Parameter + CheckedAdd + Default + One + Copy;
+    }
 
     #[pallet::pallet]
+    #[pallet::generate_store(pub(super) trait Store)]
     pub struct Pallet<T>(_);
 
     #[pallet::genesis_config]
@@ -29,8 +50,10 @@ pub mod pallet {
     }
 
     #[pallet::genesis_build]
-    impl<T> GenesisBuild<T> for GenesisConfig<T> {
-        fn build(&self) {}
+    impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+        fn build(&self) {
+            NextNftClassId::<T>::put(<T as pallet_uniques::Config>::ClassId::default());
+        }
     }
 
     #[cfg(feature = "std")]
@@ -38,6 +61,27 @@ pub mod pallet {
         fn default() -> Self {
             Self { _marker: std::marker::PhantomData }
         }
+    }
+
+    /// Storage for matching Deip class id and origin `pallet_uniques` class id.
+    #[pallet::storage]
+    pub type NftClassIdByDeipNftClassId<T: Config> = StorageMap<
+        _,
+        Identity,
+        DeipNftClassIdOf<T>,
+        <T as pallet_uniques::Config>::ClassId,
+        OptionQuery,
+    >;
+
+    /// Storage for next NFT origin class id.
+    #[pallet::storage]
+    pub(super) type NextNftClassId<T> =
+        StorageValue<_, <T as Config>::UniquesNftClassId, ValueQuery>;
+
+    #[pallet::error]
+    pub enum Error<T> {
+        DeipNftClassIdExists,
+        NftClassIdOverflow,
     }
 
     #[pallet::call]
@@ -63,12 +107,12 @@ pub mod pallet {
         }
 
         /// Destroy a class of fungible assets.
-        #[pallet::weight(pallet_uniques::Call::<T>::destroy(*class, *witness).get_dispatch_info().weight)]
+        #[pallet::weight(pallet_uniques::Call::<T>::destroy{class: *class, witness: *witness}.get_dispatch_info().weight)]
         pub fn destroy(
             origin: OriginFor<T>,
             class: T::ClassId,
             witness: DestroyWitness,
-        ) -> DispatchResult {
+        ) -> DispatchResultWithPostInfo {
             pallet_uniques::Pallet::<T>::destroy(origin, class, witness)
         }
 
@@ -281,6 +325,49 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::clear_class_metadata())]
         pub fn clear_class_metadata(origin: OriginFor<T>, class: T::ClassId) -> DispatchResult {
             pallet_uniques::Pallet::<T>::clear_class_metadata(origin, class)
+        }
+
+        #[pallet::weight(T::WeightInfo::create())]
+        pub fn deip_create_nft(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            admin: <T as frame_system::Config>::AccountId,
+            project_id: Option<DeipProjectIdOf<T>>,
+        ) -> DispatchResultWithPostInfo {
+            // If project id is provided ensure that admin is in team.
+            if let Some(project_id) = project_id.as_ref() {
+                todo!()
+            }
+
+            // Check if NFT with this deip id exist.
+            ensure!(
+                !NftClassIdByDeipNftClassId::<T>::contains_key(class),
+                Error::<T>::DeipNftClassIdExists
+            );
+
+            // Get next origin class id.
+            let new_class_id = NextNftClassId::<T>::get();
+
+            // Dispatch call to origin uniques pallet.
+            let admin_source = <T::Lookup as StaticLookup>::unlookup(admin);
+            let call =
+                pallet_uniques::Call::<T>::create { class: new_class_id, admin: admin_source };
+            let post_dispatch_info = call.dispatch_bypass_filter(origin)?;
+
+            // Save next class id.
+            let next_class_id =
+                new_class_id.checked_add(&One::one()).ok_or(Error::<T>::NftClassIdOverflow)?;
+            NextNftClassId::<T>::put(next_class_id);
+
+            // Insert id to map.
+            NftClassIdByDeipNftClassId::<T>::insert(class, new_class_id);
+
+            // IF project id is provided add id to projects map.
+            if let Some(project_id) = project_id {
+                todo!()
+            }
+
+            Ok(post_dispatch_info)
         }
     }
 }

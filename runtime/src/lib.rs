@@ -75,8 +75,11 @@ pub type AssetId = u32;
 pub type AssetBalance = u128;
 pub type AssetExtra = ();
 
-/// Identifier for the class of asset.
-pub type ClassId = u32; // ??? what is class id right type
+/// Identifier for the class of the NFT asset.
+pub type NftClassId = u32; // ??? what is class id right type
+
+/// Deip indentifier for the class of the NFT asset.
+pub type DeipNftClassId = H160;
 
 /// The type used to identify a unique asset within an asset class.
 pub type InstanceId = u32; // ??? correct type
@@ -559,6 +562,18 @@ impl pallet_deip_assets::traits::DeipProjectsInfo<AccountId> for Runtime {
 }
 
 parameter_types! {
+    pub const WipePeriod: BlockNumber = DAYS;
+}
+
+impl pallet_deip_assets::Config for Runtime {
+    type ProjectsInfo = Self;
+    type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
+    type AssetsAssetId = AssetId;
+    type AssetId = DeipAssetId;
+    type WipePeriod = WipePeriod;
+}
+
+parameter_types! {
     /// The basic amount of funds that must be reserved for an asset class.
     pub const ClassDeposit: Balance = 10 * DOLLARS; // ??? correct value
 
@@ -581,7 +596,7 @@ parameter_types! {
 
 impl pallet_uniques::Config for Runtime {
     type Event = Event;
-    type ClassId = ClassId;
+    type ClassId = NftClassId;
     type InstanceId = InstanceId;
     type Currency = Balances;
     type ForceOrigin = EnsureRoot<AccountId>;
@@ -596,18 +611,11 @@ impl pallet_uniques::Config for Runtime {
     type WeightInfo = pallet_uniques::weights::SubstrateWeight<Runtime>;
 }
 
-impl pallet_deip_uniques::Config for Runtime {}
-
-parameter_types! {
-    pub const WipePeriod: BlockNumber = DAYS;
-}
-
-impl pallet_deip_assets::Config for Runtime {
-    type ProjectsInfo = Self;
-    type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
-    type AssetsAssetId = AssetId;
-    type AssetId = DeipAssetId;
-    type WipePeriod = WipePeriod;
+impl pallet_deip_uniques::Config for Runtime {
+    type NftClassId = DeipNftClassId;
+    type AccountId = deip_account::DeipAccountId<<Self as frame_system::Config>::AccountId>;
+    type ProjectId = pallet_deip::ProjectId;
+    type UniquesNftClassId = <Self as pallet_uniques::Config>::ClassId;
 }
 
 impl pallet_beefy::Config for Runtime {
