@@ -68,7 +68,6 @@ impl Serialize for WrappedCall<Call> {
             Call::Grandpa(_) |
             Call::Balances(_) |
             Call::Sudo(_) |
-            Call::TemplateModule(_) |
             Call::Babe(_) |
             Call::Authorship(_) |
             Call::OctopusAppchain(_) |
