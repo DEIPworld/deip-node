@@ -4378,6 +4378,7 @@ version = "3.0.0"
 dependencies = [
  "deip-tenant",
  "deip-transaction-ctx",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "parity-scale-codec",

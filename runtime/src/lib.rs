@@ -696,6 +696,7 @@ impl pallet_deip_portal::Config for Runtime {
     type Call = Call;
     type UnsignedValidator = Self;
     type UncheckedExtrinsic = UncheckedExtrinsic;
+    type DeipPortalWeightInfo = pallet_deip_portal::weights::Weights<Self>;
 }
 impl pallet_deip_portal::TenantLookupT<AccountId> for Runtime {
     type TenantId = <Self as pallet_deip_portal::Config>::PortalId;
@@ -816,7 +817,7 @@ construct_runtime!(
         Utility: pallet_utility::{Pallet, Call, Event},
         DeipPortal: pallet_deip_portal::{Pallet, Call, Storage, Config, ValidateUnsigned},
         DeipVesting: pallet_deip_vesting::{Pallet, Call, Storage, Event<T>, Config<T>},
-	}
+    }
 );
 
 /// The address format for describing accounts.
@@ -1011,6 +1012,7 @@ impl_runtime_apis! {
                 key_owner_proof,
             )
         }
+
     }
 
     impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
@@ -1102,6 +1104,7 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, pallet_timestamp, Timestamp);
             add_benchmark!(params, batches, pallet_deip_proposal, DeipProposal);
             add_benchmark!(params, batches, pallet_deip_dao, DeipDao);
+            add_benchmark!(params, batches, pallet_deip_portal, DeipPortal);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)
