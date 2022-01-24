@@ -57,9 +57,6 @@ use beefy_primitives::{crypto::AuthorityId as BeefyId, ValidatorSet};
 use frame_support::PalletId;
 use sp_runtime::traits::{ConvertInto, Keccak256};
 
-/// Import the template pallet.
-pub use pallet_template;
-
 use pallet_deip::*;
 
 pub mod deip_account;
@@ -629,11 +626,6 @@ impl pallet_sudo::Config for Runtime {
     type Call = Call;
 }
 
-/// Configure the pallet-template in pallets/template.
-impl pallet_template::Config for Runtime {
-    type Event = Event;
-}
-
 pub type TransactionCtx = pallet_deip_portal::PortalCtxOf<Runtime>;
 pub type TransactionCtxId = pallet_deip_portal::TransactionCtxId<TransactionCtx>;
 
@@ -816,8 +808,6 @@ construct_runtime!(
         ParityTechAssets: pallet_assets::{Pallet, Storage, Event<T>},
         Mmr: pallet_mmr::{Pallet, Storage},
         Beefy: pallet_beefy::{Pallet, Config<T>},
-        // Include the custom logic from the pallet-template in the runtime.
-        TemplateModule: pallet_template::{Pallet, Call, Storage, Event<T>},
         Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
         Assets: pallet_deip_assets::{Pallet, Storage, Call, Config<T>, ValidateUnsigned},
         DeipProposal: pallet_deip_proposal::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
@@ -1110,7 +1100,6 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
             add_benchmark!(params, batches, pallet_balances, Balances);
             add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-            add_benchmark!(params, batches, pallet_template, TemplateModule);
             add_benchmark!(params, batches, pallet_deip_proposal, DeipProposal);
             add_benchmark!(params, batches, pallet_deip_dao, DeipDao);
 
