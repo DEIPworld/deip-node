@@ -14,6 +14,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 blake2 = { version = "0.9.1", default-features = false }
 codec = { default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.0.0" }
+scale-info = { version = "1.0", default-features = false, features = ["derive"] }
 
 frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
 
@@ -24,7 +25,6 @@ pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch 
 pallet-sudo = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-timestamp = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-transaction-payment = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-scale-info = { version = "1.0", default-features = false, features = ["derive"] }
 sp-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
@@ -34,7 +34,9 @@ sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkad
 [features]
 default = ["std"]
 std = [
+    "blake2/std",
     "codec/std",
+    "scale-info/std",
     "frame-support/std",
     "frame-system/std",
     "pallet-assets/std",
@@ -47,5 +49,6 @@ std = [
     "sp-io/std",
     "sp-runtime/std",
     "sp-std/std",
+    "frame-benchmarking/std",
 ]
 runtime-benchmarks = ["frame-benchmarking"]

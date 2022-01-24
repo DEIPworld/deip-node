@@ -180,6 +180,7 @@ dependencies = [
  "beefy-primitives",
  "borsh",
  "deip-assets-error",
+ "deip-projects-info",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -1427,6 +1428,15 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+]
+
+[[package]]
+name = "deip-projects-info"
+version = "3.0.0"
+dependencies = [
+ "frame-support",
+ "scale-info",
+ "sp-std",
 ]
 
 [[package]]
@@ -4239,6 +4249,7 @@ name = "pallet-deip-assets"
 version = "3.0.0"
 dependencies = [
  "deip-assets-error",
+ "deip-projects-info",
  "deip_serializable_u128",
  "frame-support",
  "frame-system",
@@ -4323,6 +4334,7 @@ dependencies = [
 name = "pallet-deip-uniques"
 version = "3.0.0"
 dependencies = [
+ "deip-projects-info",
  "frame-support",
  "frame-system",
  "pallet-uniques",

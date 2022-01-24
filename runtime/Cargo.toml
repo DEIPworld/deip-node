@@ -21,6 +21,7 @@ borsh = { version = "=0.9.1", default-features = false }
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
 
 deip-assets-error = { path = "../deip_common/deip_assets_error", default-features = false }
+deip-projects-info = { path = "../deip_common/deip_projects_info", default-features = false }
 
 frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
 frame-executive = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
@@ -95,6 +96,7 @@ std = [
     "getrandom/std",
     "serde",
     "beefy-primitives/std",
+    "deip-projects-info/std",
     "frame-executive/std",
     "frame-support/std",
     "frame-system/std",

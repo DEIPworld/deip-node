@@ -33,7 +33,6 @@
 pub use pallet_assets;
 
 mod impl_fungibles;
-pub mod traits;
 
 pub use deip_serializable_u128::SerializableAtLeast32BitUnsigned as SerializableAssetBalance;
 
@@ -74,7 +73,7 @@ pub mod pallet {
 
     use pallet_assets::{DestroyWitness, WeightInfo};
 
-    use super::traits::DeipProjectsInfo;
+    use deip_projects_info::DeipProjectsInfo;
 
     type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
     type DeipProjectIdOf<T> =
@@ -112,7 +111,8 @@ pub mod pallet {
             + Default
             + Copy
             + serde::Serialize
-            + serde::de::DeserializeOwned;
+            + serde::de::DeserializeOwned
+            + TypeInfo;
 
         /// Period of check for accounts with zero FTs
         #[pallet::constant]

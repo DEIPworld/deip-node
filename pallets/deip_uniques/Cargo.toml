@@ -5,7 +5,7 @@ edition = "2018"
 homepage = "https://deip.world/"
 license = "Apache-2.0"
 name = "pallet-deip-uniques"
-repository = "https://github.com/DEIPworld/deip-polkadot"
+repository = "https://github.com/DEIPworld/deip-canary-network"
 version = "3.0.0"
 
 [dependencies]
@@ -16,6 +16,8 @@ frame-support = { git = "https://github.com/paritytech/substrate.git", branch = 
 frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-uniques = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 
+deip-projects-info = { path = "../../deip_common/deip_projects_info", default-features = false }
+
 [features]
 default = ["std"]
 std = [
@@ -24,4 +26,5 @@ std = [
     "frame-support/std",
     "frame-system/std",
     "pallet-uniques/std",
+    "deip-projects-info/std",
 ]
