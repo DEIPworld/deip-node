@@ -19,7 +19,9 @@ pub mod pallet {
         BoundedVec, Identity, Parameter,
     };
     use frame_system::{ensure_signed, pallet_prelude::OriginFor};
-    use pallet_uniques::{Call as UniquesCall, DestroyWitness, WeightInfo};
+    use pallet_uniques::{
+        Call as UniquesCall, DestroyWitness, Pallet as UniquesPallet, WeightInfo,
+    };
 
     // Helper types.
     type DeipNftClassIdOf<T> = <T as Config>::NftClassId;
@@ -111,7 +113,7 @@ pub mod pallet {
             class: <T as pallet_uniques::Config>::ClassId,
             admin: <T::Lookup as StaticLookup>::Source,
         ) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::create(origin, class, admin)
+            UniquesPallet::<T>::create(origin, class, admin)
         }
 
         #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::force_create())]
@@ -121,7 +123,7 @@ pub mod pallet {
             owner: <T::Lookup as StaticLookup>::Source,
             free_holding: bool,
         ) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::force_create(origin, class, owner, free_holding)
+            UniquesPallet::<T>::force_create(origin, class, owner, free_holding)
         }
 
         /// Destroy a class of fungible assets.
@@ -131,7 +133,7 @@ pub mod pallet {
             class: T::ClassId,
             witness: DestroyWitness,
         ) -> DispatchResultWithPostInfo {
-            pallet_uniques::Pallet::<T>::destroy(origin, class, witness)
+            UniquesPallet::<T>::destroy(origin, class, witness)
         }
 
         /// Mint an asset instance of a particular class.
@@ -142,7 +144,7 @@ pub mod pallet {
             instance: T::InstanceId,
             owner: <T::Lookup as StaticLookup>::Source,
         ) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::mint(origin, class, instance, owner)
+            UniquesPallet::<T>::mint(origin, class, instance, owner)
         }
 
         /// Destroy a single asset instance.
@@ -153,7 +155,7 @@ pub mod pallet {
             instance: T::InstanceId,
             check_owner: Option<<T::Lookup as StaticLookup>::Source>,
         ) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::burn(origin, class, instance, check_owner)
+            UniquesPallet::<T>::burn(origin, class, instance, check_owner)
         }
 
         /// Move an asset from the sender account to another.
@@ -164,7 +166,7 @@ pub mod pallet {
             instance: T::InstanceId,
             dest: <T::Lookup as StaticLookup>::Source,
         ) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::transfer(origin, class, instance, dest)
+            UniquesPallet::<T>::transfer(origin, class, instance, dest)
         }
 
         /// Reevaluate the deposits on some assets.
@@ -174,7 +176,7 @@ pub mod pallet {
             class: T::ClassId,
             instances: Vec<T::InstanceId>,
         ) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::redeposit(origin, class, instances)
+            UniquesPallet::<T>::redeposit(origin, class, instances)
         }
 
         /// Disallow further unprivileged transfer of an asset instance.
@@ -184,7 +186,7 @@ pub mod pallet {
             class: T::ClassId,
             instance: T::InstanceId,
         ) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::freeze(origin, class, instance)
+            UniquesPallet::<T>::freeze(origin, class, instance)
         }
 
         /// Re-allow unprivileged transfer of an asset instance.
@@ -194,19 +196,19 @@ pub mod pallet {
             class: T::ClassId,
             instance: T::InstanceId,
         ) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::thaw(origin, class, instance)
+            UniquesPallet::<T>::thaw(origin, class, instance)
         }
 
         /// Disallow further unprivileged transfers for a whole asset class.
         #[pallet::weight(T::WeightInfo::freeze_class())]
         pub fn freeze_class(origin: OriginFor<T>, class: T::ClassId) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::freeze_class(origin, class)
+            UniquesPallet::<T>::freeze_class(origin, class)
         }
 
         /// Re-allow unprivileged transfers for a whole asset class.
         #[pallet::weight(T::WeightInfo::thaw_class())]
         pub fn thaw_class(origin: OriginFor<T>, class: T::ClassId) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::thaw_class(origin, class)
+            UniquesPallet::<T>::thaw_class(origin, class)
         }
 
         /// Change the Owner of an asset class.
@@ -216,7 +218,7 @@ pub mod pallet {
             class: T::ClassId,
             owner: <T::Lookup as StaticLookup>::Source,
         ) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::transfer_ownership(origin, class, owner)
+            UniquesPallet::<T>::transfer_ownership(origin, class, owner)
         }
 
         /// Change the Issuer, Admin and Freezer of an asset class.
@@ -228,7 +230,7 @@ pub mod pallet {
             admin: <T::Lookup as StaticLookup>::Source,
             freezer: <T::Lookup as StaticLookup>::Source,
         ) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::set_team(origin, class, issuer, admin, freezer)
+            UniquesPallet::<T>::set_team(origin, class, issuer, admin, freezer)
         }
 
         /// Approve an instance to be transferred by a delegated third-party account.
@@ -239,7 +241,7 @@ pub mod pallet {
             instance: T::InstanceId,
             delegate: <T::Lookup as StaticLookup>::Source,
         ) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::approve_transfer(origin, class, instance, delegate)
+            UniquesPallet::<T>::approve_transfer(origin, class, instance, delegate)
         }
 
         /// Cancel the prior approval for the transfer of an asset by a delegate.
@@ -250,12 +252,7 @@ pub mod pallet {
             instance: T::InstanceId,
             maybe_check_delegate: Option<<T::Lookup as StaticLookup>::Source>,
         ) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::cancel_approval(
-                origin,
-                class,
-                instance,
-                maybe_check_delegate,
-            )
+            UniquesPallet::<T>::cancel_approval(origin, class, instance, maybe_check_delegate)
         }
 
         /// Alter the attributes of a given asset.
@@ -271,7 +268,7 @@ pub mod pallet {
             free_holding: bool,
             is_frozen: bool,
         ) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::force_asset_status(
+            UniquesPallet::<T>::force_asset_status(
                 origin,
                 class,
                 owner,
@@ -292,7 +289,7 @@ pub mod pallet {
             key: BoundedVec<u8, T::KeyLimit>,
             value: BoundedVec<u8, T::ValueLimit>,
         ) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::set_attribute(origin, class, maybe_instance, key, value)
+            UniquesPallet::<T>::set_attribute(origin, class, maybe_instance, key, value)
         }
 
         /// Set an attribute for an asset class or instance.
@@ -303,7 +300,7 @@ pub mod pallet {
             maybe_instance: Option<T::InstanceId>,
             key: BoundedVec<u8, T::KeyLimit>,
         ) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::clear_attribute(origin, class, maybe_instance, key)
+            UniquesPallet::<T>::clear_attribute(origin, class, maybe_instance, key)
         }
 
         /// Set the metadata for an asset instance.
@@ -315,7 +312,7 @@ pub mod pallet {
             data: BoundedVec<u8, T::StringLimit>,
             is_frozen: bool,
         ) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::set_metadata(origin, class, instance, data, is_frozen)
+            UniquesPallet::<T>::set_metadata(origin, class, instance, data, is_frozen)
         }
 
         /// Clear the metadata for an asset instance.
@@ -325,7 +322,7 @@ pub mod pallet {
             class: T::ClassId,
             instance: T::InstanceId,
         ) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::clear_metadata(origin, class, instance)
+            UniquesPallet::<T>::clear_metadata(origin, class, instance)
         }
 
         /// Set the metadata for an asset class.
@@ -336,13 +333,13 @@ pub mod pallet {
             data: BoundedVec<u8, T::StringLimit>,
             is_frozen: bool,
         ) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::set_class_metadata(origin, class, data, is_frozen)
+            UniquesPallet::<T>::set_class_metadata(origin, class, data, is_frozen)
         }
 
         /// Clear the metadata for an asset class.
         #[pallet::weight(T::WeightInfo::clear_class_metadata())]
         pub fn clear_class_metadata(origin: OriginFor<T>, class: T::ClassId) -> DispatchResult {
-            pallet_uniques::Pallet::<T>::clear_class_metadata(origin, class)
+            UniquesPallet::<T>::clear_class_metadata(origin, class)
         }
 
         #[pallet::weight(T::WeightInfo::create())]
@@ -504,7 +501,7 @@ pub mod pallet {
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
             // ??? Is check for class belonging to the project need.
             // ??? Because from docs: class: The class of the asset to be !frozen!.
-            pallet_uniques::Pallet::<T>::redeposit(origin, origin_class_id, instances)
+            UniquesPallet::<T>::redeposit(origin, origin_class_id, instances)
         }
 
         #[pallet::weight(T::WeightInfo::freeze())]
@@ -622,6 +619,86 @@ pub mod pallet {
             call.dispatch_bypass_filter(origin)
         }
 
+        /// Approve an instance to be transferred by a delegated third-party account.
+        #[pallet::weight(T::WeightInfo::approve_transfer())]
+        pub fn deip_approve_transfer(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            instance: T::InstanceId,
+            delegate: T::DeipAccountId,
+        ) -> DispatchResult {
+            let class = Self::deip_to_origin_class_id(class)?;
+            let delegate = <T::Lookup as StaticLookup>::unlookup(delegate.into());
+            // ??? @TODO update inner storages.
+            UniquesPallet::<T>::approve_transfer(origin, class, instance, delegate)
+        }
+
+        #[pallet::weight(T::WeightInfo::cancel_approval())]
+        pub fn deip_cancel_approval(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            instance: T::InstanceId,
+            maybe_check_delegate: Option<T::DeipAccountId>,
+        ) -> DispatchResult {
+            let class = Self::deip_to_origin_class_id(class)?;
+            let maybe_check_delegate =
+                maybe_check_delegate.map(|d| <T::Lookup as StaticLookup>::unlookup(d.into()));
+            // ??? @TODO update inner storages.
+            UniquesPallet::<T>::cancel_approval(origin, class, instance, maybe_check_delegate)
+        }
+
+        #[pallet::weight(T::WeightInfo::force_asset_status())]
+        #[allow(clippy::too_many_arguments)]
+        pub fn deip_force_asset_status(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            owner: T::DeipAccountId,
+            issuer: T::DeipAccountId,
+            admin: T::DeipAccountId,
+            freezer: T::DeipAccountId,
+            free_holding: bool,
+            is_frozen: bool,
+        ) -> DispatchResult {
+            let class = Self::deip_to_origin_class_id(class)?;
+            let owner = <T::Lookup as StaticLookup>::unlookup(owner.into());
+            let issuer = <T::Lookup as StaticLookup>::unlookup(issuer.into());
+            let admin = <T::Lookup as StaticLookup>::unlookup(admin.into());
+            let freezer = <T::Lookup as StaticLookup>::unlookup(freezer.into());
+            UniquesPallet::<T>::force_asset_status(
+                origin,
+                class,
+                owner,
+                issuer,
+                admin,
+                freezer,
+                free_holding,
+                is_frozen,
+            )
+        }
+
+        #[pallet::weight(T::WeightInfo::set_attribute())]
+        pub fn deip_set_attribute(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            maybe_instance: Option<T::InstanceId>,
+            key: BoundedVec<u8, T::KeyLimit>,
+            value: BoundedVec<u8, T::ValueLimit>,
+        ) -> DispatchResult {
+            let class = Self::deip_to_origin_class_id(class)?;
+            UniquesPallet::<T>::set_attribute(origin, class, maybe_instance, key, value)
+        }
+
+        #[pallet::weight(T::WeightInfo::clear_attribute())]
+        pub fn deip_clear_attribute(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            maybe_instance: Option<T::InstanceId>,
+            key: BoundedVec<u8, T::KeyLimit>,
+        ) -> DispatchResult {
+            let class = Self::deip_to_origin_class_id(class)?;
+            UniquesPallet::<T>::clear_attribute(origin, class, maybe_instance, key)
+        }
+
         #[pallet::weight(T::WeightInfo::set_metadata())]
         pub fn deip_set_metadata(
             origin: OriginFor<T>,
@@ -647,6 +724,38 @@ pub mod pallet {
             // );
 
             Ok(result)
+        }
+
+        #[pallet::weight(T::WeightInfo::clear_metadata())]
+        pub fn deip_clear_metadata(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            instance: T::InstanceId,
+        ) -> DispatchResult {
+            let class = Self::deip_to_origin_class_id(class)?;
+            UniquesPallet::<T>::clear_metadata(origin, class, instance)
+        }
+
+        /// Set the metadata for an asset class.
+        #[pallet::weight(T::WeightInfo::set_class_metadata())]
+        pub fn deip_set_class_metadata(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            data: BoundedVec<u8, T::StringLimit>,
+            is_frozen: bool,
+        ) -> DispatchResult {
+            let class = Self::deip_to_origin_class_id(class)?;
+            UniquesPallet::<T>::set_class_metadata(origin, class, data, is_frozen)
+        }
+
+        /// Clear the metadata for an asset class.
+        #[pallet::weight(T::WeightInfo::clear_class_metadata())]
+        pub fn deip_clear_class_metadata(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+        ) -> DispatchResult {
+            let class = Self::deip_to_origin_class_id(class)?;
+            UniquesPallet::<T>::clear_class_metadata(origin, class)
         }
     }
 
