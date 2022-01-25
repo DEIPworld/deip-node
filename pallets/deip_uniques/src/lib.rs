@@ -495,6 +495,18 @@ pub mod pallet {
             Ok(ok)
         }
 
+        #[pallet::weight(T::WeightInfo::redeposit(instances.len() as u32))]
+        pub fn deip_redeposit(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            instances: Vec<T::InstanceId>,
+        ) -> DispatchResult {
+            let origin_class_id = Self::deip_to_origin_class_id(class)?;
+            // ??? Is check for class belonging to the project need.
+            // ??? Because from docs: class: The class of the asset to be !frozen!.
+            pallet_uniques::Pallet::<T>::redeposit(origin, origin_class_id, instances)
+        }
+
         #[pallet::weight(T::WeightInfo::freeze())]
         pub fn deip_freeze(
             origin: OriginFor<T>,
