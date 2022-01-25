@@ -549,20 +549,18 @@ pub mod pallet {
             call.dispatch_bypass_filter(origin)
         }
 
-        // #[pallet::weight(T::WeightInfo::thaw())]
-        // pub fn deip_thaw(
-        //     origin: OriginFor<T>,
-        //     class: DeipNftClassIdOf<T>,
-        //     who: T::DeipAccountId,
-        // ) -> DispatchResultWithPostInfo {
-        //     let who_source = <T::Lookup as StaticLookup>::unlookup(who.into());
-        //     let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
-        //         .next()
-        //         .ok_or(Error::<T>::DeipAssetIdExists)?
-        //         .0;
-        //     let call = pallet_uniques::Call::<T>::thaw(asset_id, who_source);
-        //     call.dispatch_bypass_filter(origin)
-        // }
+        #[pallet::weight(T::WeightInfo::thaw())]
+        pub fn deip_thaw(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            instance: T::InstanceId,
+        ) -> DispatchResultWithPostInfo {
+            let origin_class_id = Self::deip_to_origin_class_id(class)?;
+
+            // Dispatch call to origin pallet.
+            let call = pallet_uniques::Call::<T>::thaw(origin_class_id, instance);
+            call.dispatch_bypass_filter(origin)
+        }
 
         // #[pallet::weight(T::WeightInfo::freeze_asset())]
         // pub fn deip_freeze_asset(
