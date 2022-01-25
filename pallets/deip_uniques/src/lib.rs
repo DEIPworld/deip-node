@@ -99,6 +99,7 @@ pub mod pallet {
         ProjectDoesNotBelongToTeam,
         ProjectSecurityTokenCannotBeDestroyed,
         ProjectSecurityTokenCannotBeBurned,
+        ProjectSecurityTokenCannotBeFrozen,
     }
 
     #[pallet::call]
@@ -410,9 +411,7 @@ pub mod pallet {
                 Error::<T>::ProjectSecurityTokenCannotBeDestroyed
             );
 
-            // Convert DeipNftClassId to origin class id.
-            let origin_class_id = NftClassIdByDeipNftClassId::<T>::get(class)
-                .ok_or(Error::<T>::DeipNftClassIdDoesNotExist)?;
+            let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
             // Dispatch destroy call to origin pallet.
             let call = pallet_uniques::Call::<T>::destroy { class: origin_class_id, witness };
@@ -429,9 +428,7 @@ pub mod pallet {
             // Convert target to source.
             let owner_source = <T::Lookup as StaticLookup>::unlookup(owner.into());
 
-            // Convert DeipNftClassId to origin class id.
-            let origin_class_id = NftClassIdByDeipNftClassId::<T>::get(class)
-                .ok_or(Error::<T>::DeipNftClassIdDoesNotExist)?;
+            let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
             // Dispatch destroy call to origin pallet.
             let call = pallet_uniques::Call::<T>::mint {
@@ -476,9 +473,7 @@ pub mod pallet {
                 Error::<T>::ProjectSecurityTokenCannotBeBurned
             );
 
-            // Convert DeipNftClassId to origin class id.
-            let origin_class_id = NftClassIdByDeipNftClassId::<T>::get(class)
-                .ok_or(Error::<T>::DeipNftClassIdDoesNotExist)?;
+            let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
             // Convert target to source.
             let check_owner_source =
@@ -503,9 +498,7 @@ pub mod pallet {
             // Convert target to source.
             let dest_source = <T::Lookup as StaticLookup>::unlookup(dest.into());
 
-            // Convert DeipNftClassId to origin class id.
-            let origin_class_id = NftClassIdByDeipNftClassId::<T>::get(class)
-                .ok_or(Error::<T>::DeipNftClassIdDoesNotExist)?;
+            let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
             // Dispatch call to origin pallet.
             let call = pallet_uniques::Call::<T>::transfer {
@@ -532,30 +525,29 @@ pub mod pallet {
             Ok(ok)
         }
 
-        // #[pallet::weight(T::WeightInfo::freeze())]
-        // pub fn deip_freeze(
-        //     origin: OriginFor<T>,
-        //     class: DeipNftClassIdOf<T>,
-        //     who: T::DeipAccountId,
-        // ) -> DispatchResultWithPostInfo {
-        //     ensure!(
-        //         !ProjectIdByAssetId::<T>::contains_key(id),
-        //         Error::<T>::ProjectSecurityTokenAccountCannotBeFreezed
-        //     );
+        #[pallet::weight(T::WeightInfo::freeze())]
+        pub fn deip_freeze(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            instance: T::InstanceId,
+        ) -> DispatchResultWithPostInfo {
+            // If id belongs to project, refuse to freeze.
+            ensure!(
+                !ProjectIdByNftClassId::<T>::contains_key(class),
+                Error::<T>::ProjectSecurityTokenCannotBeFrozen
+            );
 
-        //     ensure!(
-        //         !InvestmentByAssetId::<T>::contains_key(id),
-        //         Error::<T>::ReservedAssetAccountCannotBeFreezed
-        //     );
+            // ensure!(
+            //     !InvestmentByAssetId::<T>::contains_key(id),
+            //     Error::<T>::ReservedAssetAccountCannotBeFreezed
+            // );
 
-        //     let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
-        //         .next()
-        //         .ok_or(Error::<T>::DeipAssetIdExists)?
-        //         .0;
-        //     let who_source = <T::Lookup as StaticLookup>::unlookup(who.into());
-        //     let call = pallet_uniques::Call::<T>::freeze(asset_id, who_source);
-        //     call.dispatch_bypass_filter(origin)
-        // }
+            let origin_class_id = Self::deip_to_origin_class_id(class)?;
+
+            // Dispatch call to origin pallet.
+            let call = pallet_uniques::Call::<T>::freeze(origin_class_id, instance);
+            call.dispatch_bypass_filter(origin)
+        }
 
         // #[pallet::weight(T::WeightInfo::thaw())]
         // pub fn deip_thaw(
@@ -657,5 +649,15 @@ pub mod pallet {
         // ) -> DispatchResultWithPostInfo {
         //     Self::deip_set_metadata_impl(origin, id, name, symbol, decimals)
         // }
+    }
+
+    impl<T: Config> Pallet<T> {
+        /// Convert DeipNftClassId to origin class id.
+        fn deip_to_origin_class_id(
+            class: DeipNftClassIdOf<T>,
+        ) -> Result<T::UniquesNftClassId, Error<T>> {
+            NftClassIdByDeipNftClassId::<T>::get(class)
+                .ok_or(Error::<T>::DeipNftClassIdDoesNotExist)
+        }
     }
 }
