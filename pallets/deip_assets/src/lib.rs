@@ -197,7 +197,8 @@ pub mod pallet {
         FtBalanceNotFound,
         AssetIdOverflow,
         DeipAssetIdExists,
-        DeipAssetDoesNotExist,
+        /// Asset with DeipAssetId wasn't created.
+        DeipAssetIdDoesNotExist,
     }
 
     #[pallet::storage]
@@ -580,7 +581,7 @@ pub mod pallet {
             let target_source = <T::Lookup as StaticLookup>::unlookup(to.clone());
             let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
                 .next()
-                .ok_or(Error::<T>::DeipAssetIdExists)?
+                .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
             let call = pallet_assets::Call::<T>::transfer(asset_id, target_source, amount);
             let ok = call.dispatch_bypass_filter(from)?;
@@ -658,7 +659,7 @@ pub mod pallet {
 
             let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
                 .next()
-                .ok_or(Error::<T>::DeipAssetIdExists)?
+                .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
             let call = pallet_assets::Call::<T>::mint(asset_id, beneficiary_source, amount);
             let result = call.dispatch_bypass_filter(origin)?;
@@ -696,7 +697,7 @@ pub mod pallet {
 
             let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
                 .next()
-                .ok_or(Error::<T>::DeipAssetIdExists)?
+                .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
             let call = pallet_assets::Call::<T>::set_metadata(asset_id, name, symbol, decimals);
             let result = call.dispatch_bypass_filter(origin)?;
@@ -978,7 +979,7 @@ pub mod pallet {
 
             let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
                 .next()
-                .ok_or(Error::<T>::DeipAssetIdExists)?
+                .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
 
             let call = pallet_assets::Call::<T>::destroy(asset_id, witness);
@@ -1009,7 +1010,7 @@ pub mod pallet {
 
             let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
                 .next()
-                .ok_or(Error::<T>::DeipAssetIdExists)?
+                .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
 
             let who_source = <T::Lookup as StaticLookup>::unlookup(who.into());
@@ -1045,7 +1046,7 @@ pub mod pallet {
 
             let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
                 .next()
-                .ok_or(Error::<T>::DeipAssetIdExists)?
+                .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
             let who_source = <T::Lookup as StaticLookup>::unlookup(who.into());
             let call = pallet_assets::Call::<T>::freeze(asset_id, who_source);
@@ -1061,7 +1062,7 @@ pub mod pallet {
             let who_source = <T::Lookup as StaticLookup>::unlookup(who.into());
             let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
                 .next()
-                .ok_or(Error::<T>::DeipAssetIdExists)?
+                .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
             let call = pallet_assets::Call::<T>::thaw(asset_id, who_source);
             call.dispatch_bypass_filter(origin)
@@ -1084,7 +1085,7 @@ pub mod pallet {
 
             let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
                 .next()
-                .ok_or(Error::<T>::DeipAssetIdExists)?
+                .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
             let call = pallet_assets::Call::<T>::freeze_asset(asset_id);
             call.dispatch_bypass_filter(origin)
@@ -1097,7 +1098,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
                 .next()
-                .ok_or(Error::<T>::DeipAssetIdExists)?
+                .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
             let call = pallet_assets::Call::<T>::thaw_asset(asset_id);
             call.dispatch_bypass_filter(origin)
@@ -1112,7 +1113,7 @@ pub mod pallet {
             let owner_source = <T::Lookup as StaticLookup>::unlookup(owner.into());
             let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
                 .next()
-                .ok_or(Error::<T>::DeipAssetIdExists)?
+                .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
             let call = pallet_assets::Call::<T>::transfer_ownership(asset_id, owner_source);
             call.dispatch_bypass_filter(origin)
@@ -1131,7 +1132,7 @@ pub mod pallet {
             let freezer_source = <T::Lookup as StaticLookup>::unlookup(freezer.into());
             let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
                 .next()
-                .ok_or(Error::<T>::DeipAssetIdExists)?
+                .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
             let call = pallet_assets::Call::<T>::set_team(
                 asset_id,
