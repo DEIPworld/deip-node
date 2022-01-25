@@ -562,28 +562,28 @@ pub mod pallet {
             call.dispatch_bypass_filter(origin)
         }
 
-        // #[pallet::weight(T::WeightInfo::freeze_asset())]
-        // pub fn deip_freeze_asset(
-        //     origin: OriginFor<T>,
-        //     class: DeipNftClassIdOf<T>,
-        // ) -> DispatchResultWithPostInfo {
-        //     ensure!(
-        //         !ProjectIdByAssetId::<T>::contains_key(id),
-        //         Error::<T>::ProjectSecurityTokenCannotBeFreezed
-        //     );
+        #[pallet::weight(T::WeightInfo::freeze_class())]
+        pub fn deip_freeze_class(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+        ) -> DispatchResultWithPostInfo {
+            // If id belongs to project, refuse to freeze.
+            ensure!(
+                !ProjectIdByNftClassId::<T>::contains_key(class),
+                Error::<T>::ProjectSecurityTokenCannotBeFrozen
+            );
 
-        //     ensure!(
-        //         !InvestmentByAssetId::<T>::contains_key(id),
-        //         Error::<T>::ReservedAssetCannotBeFreezed
-        //     );
+            // ensure!(
+            //     !InvestmentByAssetId::<T>::contains_key(id),
+            //     Error::<T>::ReservedAssetCannotBeFreezed
+            // );
 
-        //     let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
-        //         .next()
-        //         .ok_or(Error::<T>::DeipAssetIdExists)?
-        //         .0;
-        //     let call = pallet_uniques::Call::<T>::freeze_asset(asset_id);
-        //     call.dispatch_bypass_filter(origin)
-        // }
+            let origin_class_id = Self::deip_to_origin_class_id(class)?;
+
+            // Dispatch call to origin pallet.
+            let call = pallet_uniques::Call::<T>::freeze_class(origin_class_id);
+            call.dispatch_bypass_filter(origin)
+        }
 
         // #[pallet::weight(T::WeightInfo::thaw_asset())]
         // pub fn deip_thaw_asset(
