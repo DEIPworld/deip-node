@@ -418,22 +418,52 @@ pub mod pallet {
             call.dispatch_bypass_filter(origin)
         }
 
-        // #[pallet::weight(AssetsWeightInfoOf::<T>::mint())]
-        // pub fn deip_issue_asset(
-        //     origin: OriginFor<T>,
-        //     class: DeipNftClassIdOf<T>,
-        //     beneficiary: T::DeipAccountId,
-        //     #[pallet::compact] amount: AssetsBalanceOf<T>,
-        // ) -> DispatchResultWithPostInfo {
-        //     Self::deip_issue_asset_impl(origin, id, beneficiary.into(), amount)
-        // }
+        #[pallet::weight(T::WeightInfo::mint())]
+        pub fn deip_mint(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            instance: T::InstanceId,
+            owner: T::AccountId,
+        ) -> DispatchResultWithPostInfo {
+            // Convert target to source.
+            let owner_source = <T::Lookup as StaticLookup>::unlookup(owner.clone());
 
-        // #[pallet::weight(AssetsWeightInfoOf::<T>::burn())]
+            // Convert DeipNftClassId to origin class id.
+            let origin_class_id = NftClassIdByDeipNftClassId::<T>::get(class)
+                .ok_or(Error::<T>::DeipNftClassIdDoesNotExist)?;
+
+            // Dispatch destroy call to origin pallet.
+            let call = pallet_uniques::Call::<T>::mint(origin_class_id, instance, owner_source);
+            let result = call.dispatch_bypass_filter(origin)?;
+
+            // If project id exists for class id.
+            if ProjectIdByNftClassId::<T>::contains_key(class) {
+                // FtBalanceMap::<T>::mutate_exists(id, |maybe| {
+                //     let balances = match maybe.as_mut() {
+                //         None => {
+                //             *maybe = Some(vec![owner]);
+                //             return
+                //         },
+                //         Some(b) => b,
+                //     };
+
+                //     let account = owner;
+                //     match balances.binary_search_by_key(&&account, |a| a) {
+                //         Ok(_) => (),
+                //         Err(i) => balances.insert(i, account),
+                //     };
+                // });
+            }
+
+            Ok(result)
+        }
+
+        // #[pallet::weight(T::WeightInfo::burn())]
         // pub fn deip_burn(
         //     origin: OriginFor<T>,
         //     class: DeipNftClassIdOf<T>,
         //     who: T::DeipAccountId,
-        //     #[pallet::compact] amount: AssetsBalanceOf<T>,
+        //     amount: AssetsBalanceOf<T>,
         // ) -> DispatchResultWithPostInfo {
         //     ensure!(
         //         !ProjectIdByAssetId::<T>::contains_key(id),
@@ -450,17 +480,17 @@ pub mod pallet {
         //     call.dispatch_bypass_filter(origin)
         // }
 
-        // #[pallet::weight(AssetsWeightInfoOf::<T>::transfer())]
+        // #[pallet::weight(T::WeightInfo::transfer())]
         // pub fn deip_transfer(
         //     origin: OriginFor<T>,
         //     class: DeipNftClassIdOf<T>,
         //     target: T::DeipAccountId,
-        //     #[pallet::compact] amount: AssetsBalanceOf<T>,
+        //     amount: AssetsBalanceOf<T>,
         // ) -> DispatchResultWithPostInfo {
         //     Self::deip_transfer_impl(origin, id, target.into(), amount)
         // }
 
-        // #[pallet::weight(AssetsWeightInfoOf::<T>::freeze())]
+        // #[pallet::weight(T::WeightInfo::freeze())]
         // pub fn deip_freeze(
         //     origin: OriginFor<T>,
         //     class: DeipNftClassIdOf<T>,
@@ -485,7 +515,7 @@ pub mod pallet {
         //     call.dispatch_bypass_filter(origin)
         // }
 
-        // #[pallet::weight(AssetsWeightInfoOf::<T>::thaw())]
+        // #[pallet::weight(T::WeightInfo::thaw())]
         // pub fn deip_thaw(
         //     origin: OriginFor<T>,
         //     class: DeipNftClassIdOf<T>,
@@ -500,7 +530,7 @@ pub mod pallet {
         //     call.dispatch_bypass_filter(origin)
         // }
 
-        // #[pallet::weight(AssetsWeightInfoOf::<T>::freeze_asset())]
+        // #[pallet::weight(T::WeightInfo::freeze_asset())]
         // pub fn deip_freeze_asset(
         //     origin: OriginFor<T>,
         //     class: DeipNftClassIdOf<T>,
@@ -523,7 +553,7 @@ pub mod pallet {
         //     call.dispatch_bypass_filter(origin)
         // }
 
-        // #[pallet::weight(AssetsWeightInfoOf::<T>::thaw_asset())]
+        // #[pallet::weight(T::WeightInfo::thaw_asset())]
         // pub fn deip_thaw_asset(
         //     origin: OriginFor<T>,
         //     class: DeipNftClassIdOf<T>,
@@ -536,7 +566,7 @@ pub mod pallet {
         //     call.dispatch_bypass_filter(origin)
         // }
 
-        // #[pallet::weight(AssetsWeightInfoOf::<T>::transfer_ownership())]
+        // #[pallet::weight(T::WeightInfo::transfer_ownership())]
         // pub fn deip_transfer_ownership(
         //     origin: OriginFor<T>,
         //     class: DeipNftClassIdOf<T>,
@@ -551,7 +581,7 @@ pub mod pallet {
         //     call.dispatch_bypass_filter(origin)
         // }
 
-        // #[pallet::weight(AssetsWeightInfoOf::<T>::set_team())]
+        // #[pallet::weight(T::WeightInfo::set_team())]
         // pub fn deip_set_team(
         //     origin: OriginFor<T>,
         //     class: DeipNftClassIdOf<T>,
@@ -575,7 +605,7 @@ pub mod pallet {
         //     call.dispatch_bypass_filter(origin)
         // }
 
-        // #[pallet::weight(AssetsWeightInfoOf::<T>::set_metadata(name.len() as u32, symbol.len() as u32))]
+        // #[pallet::weight(T::WeightInfo::set_metadata(name.len() as u32, symbol.len() as u32))]
         // pub fn deip_set_metadata(
         //     origin: OriginFor<T>,
         //     class: DeipNftClassIdOf<T>,
