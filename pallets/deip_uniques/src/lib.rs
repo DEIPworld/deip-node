@@ -585,18 +585,17 @@ pub mod pallet {
             call.dispatch_bypass_filter(origin)
         }
 
-        // #[pallet::weight(T::WeightInfo::thaw_asset())]
-        // pub fn deip_thaw_asset(
-        //     origin: OriginFor<T>,
-        //     class: DeipNftClassIdOf<T>,
-        // ) -> DispatchResultWithPostInfo {
-        //     let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
-        //         .next()
-        //         .ok_or(Error::<T>::DeipAssetIdExists)?
-        //         .0;
-        //     let call = pallet_uniques::Call::<T>::thaw_asset(asset_id);
-        //     call.dispatch_bypass_filter(origin)
-        // }
+        #[pallet::weight(T::WeightInfo::thaw_class())]
+        pub fn deip_thaw_class(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+        ) -> DispatchResultWithPostInfo {
+            let origin_class_id = Self::deip_to_origin_class_id(class)?;
+
+            // Dispatch call to origin pallet.
+            let call = pallet_uniques::Call::<T>::thaw_class(origin_class_id);
+            call.dispatch_bypass_filter(origin)
+        }
 
         // #[pallet::weight(T::WeightInfo::transfer_ownership())]
         // pub fn deip_transfer_ownership(
