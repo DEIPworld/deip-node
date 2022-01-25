@@ -35,7 +35,7 @@ pub mod pallet {
         type NftClassId: Parameter + Copy;
 
         /// Deip account id.
-        type DeipAccountId: Parameter;
+        type DeipAccountId: Into<Self::AccountId> + Parameter;
 
         /// Deip project id.
         type ProjectId: Parameter;
@@ -98,6 +98,7 @@ pub mod pallet {
         ProjectDoesNotExist,
         ProjectDoesNotBelongToTeam,
         ProjectSecurityTokenCannotBeDestroyed,
+        ProjectSecurityTokenCannotBeBurned,
     }
 
     #[pallet::call]
@@ -347,7 +348,7 @@ pub mod pallet {
         pub fn deip_create_nft(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
-            admin: T::AccountId,
+            admin: T::DeipAccountId,
             project_id: Option<DeipProjectIdOf<T>>,
         ) -> DispatchResultWithPostInfo {
             // If project id is provided ensure that admin is in team.
@@ -370,7 +371,7 @@ pub mod pallet {
             let new_class_id = NextNftClassId::<T>::get();
 
             // Dispatch call to origin uniques pallet.
-            let admin_source = <T::Lookup as StaticLookup>::unlookup(admin);
+            let admin_source = <T::Lookup as StaticLookup>::unlookup(admin.into());
             let call =
                 pallet_uniques::Call::<T>::create { class: new_class_id, admin: admin_source };
             let post_dispatch_info = call.dispatch_bypass_filter(origin)?;
@@ -423,17 +424,21 @@ pub mod pallet {
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
             instance: T::InstanceId,
-            owner: T::AccountId,
+            owner: T::DeipAccountId,
         ) -> DispatchResultWithPostInfo {
             // Convert target to source.
-            let owner_source = <T::Lookup as StaticLookup>::unlookup(owner.clone());
+            let owner_source = <T::Lookup as StaticLookup>::unlookup(owner.into());
 
             // Convert DeipNftClassId to origin class id.
             let origin_class_id = NftClassIdByDeipNftClassId::<T>::get(class)
                 .ok_or(Error::<T>::DeipNftClassIdDoesNotExist)?;
 
             // Dispatch destroy call to origin pallet.
-            let call = pallet_uniques::Call::<T>::mint(origin_class_id, instance, owner_source);
+            let call = pallet_uniques::Call::<T>::mint {
+                class: origin_class_id,
+                instance,
+                owner: owner_source,
+            };
             let result = call.dispatch_bypass_filter(origin)?;
 
             // If project id exists for class id.
@@ -458,27 +463,35 @@ pub mod pallet {
             Ok(result)
         }
 
-        // #[pallet::weight(T::WeightInfo::burn())]
-        // pub fn deip_burn(
-        //     origin: OriginFor<T>,
-        //     class: DeipNftClassIdOf<T>,
-        //     who: T::DeipAccountId,
-        //     amount: AssetsBalanceOf<T>,
-        // ) -> DispatchResultWithPostInfo {
-        //     ensure!(
-        //         !ProjectIdByAssetId::<T>::contains_key(id),
-        //         Error::<T>::ProjectSecurityTokenCannotBeBurned
-        //     );
+        #[pallet::weight(T::WeightInfo::burn())]
+        pub fn deip_burn(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            instance: T::InstanceId,
+            check_owner: Option<T::DeipAccountId>,
+        ) -> DispatchResultWithPostInfo {
+            // If id belongs to project, refuse to burn.
+            ensure!(
+                !ProjectIdByNftClassId::<T>::contains_key(class),
+                Error::<T>::ProjectSecurityTokenCannotBeBurned
+            );
 
-        //     let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
-        //         .next()
-        //         .ok_or(Error::<T>::DeipAssetIdExists)?
-        //         .0;
+            // Convert DeipNftClassId to origin class id.
+            let origin_class_id = NftClassIdByDeipNftClassId::<T>::get(class)
+                .ok_or(Error::<T>::DeipNftClassIdDoesNotExist)?;
 
-        //     let who_source = <T::Lookup as StaticLookup>::unlookup(who.into());
-        //     let call = pallet_uniques::Call::<T>::burn(asset_id, who_source, amount);
-        //     call.dispatch_bypass_filter(origin)
-        // }
+            // Convert target to source.
+            let check_owner_source =
+                check_owner.map(|owner| <T::Lookup as StaticLookup>::unlookup(owner.into()));
+
+            // Dispatch destroy call to origin pallet.
+            let call = pallet_uniques::Call::<T>::burn {
+                class: origin_class_id,
+                instance,
+                check_owner: check_owner_source,
+            };
+            call.dispatch_bypass_filter(origin)
+        }
 
         // #[pallet::weight(T::WeightInfo::transfer())]
         // pub fn deip_transfer(
