@@ -19,7 +19,7 @@ pub mod pallet {
         BoundedVec, Identity, Parameter,
     };
     use frame_system::{ensure_signed, pallet_prelude::OriginFor};
-    use pallet_uniques::{DestroyWitness, WeightInfo};
+    use pallet_uniques::{Call as UniquesCall, DestroyWitness, WeightInfo};
 
     // Helper types.
     type DeipNftClassIdOf<T> = <T as Config>::NftClassId;
@@ -545,7 +545,7 @@ pub mod pallet {
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
             // Dispatch call to origin pallet.
-            let call = pallet_uniques::Call::<T>::freeze(origin_class_id, instance);
+            let call = UniquesCall::<T>::freeze { class: origin_class_id, instance };
             call.dispatch_bypass_filter(origin)
         }
 
@@ -558,7 +558,7 @@ pub mod pallet {
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
             // Dispatch call to origin pallet.
-            let call = pallet_uniques::Call::<T>::thaw(origin_class_id, instance);
+            let call = UniquesCall::<T>::thaw { class: origin_class_id, instance };
             call.dispatch_bypass_filter(origin)
         }
 
@@ -581,7 +581,7 @@ pub mod pallet {
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
             // Dispatch call to origin pallet.
-            let call = pallet_uniques::Call::<T>::freeze_class(origin_class_id);
+            let call = UniquesCall::<T>::freeze_class { class: origin_class_id };
             call.dispatch_bypass_filter(origin)
         }
 
@@ -593,7 +593,7 @@ pub mod pallet {
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
             // Dispatch call to origin pallet.
-            let call = pallet_uniques::Call::<T>::thaw_class(origin_class_id);
+            let call = UniquesCall::<T>::thaw_class { class: origin_class_id };
             call.dispatch_bypass_filter(origin)
         }
 
@@ -609,7 +609,10 @@ pub mod pallet {
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
             // Dispatch call to origin pallet.
-            let call = pallet_uniques::Call::<T>::transfer_ownership(origin_class_id, owner_source);
+            let call = UniquesCall::<T>::transfer_ownership {
+                class: origin_class_id,
+                owner: owner_source,
+            };
             call.dispatch_bypass_filter(origin)
         }
 
@@ -628,12 +631,12 @@ pub mod pallet {
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
             // Dispatch call to origin pallet.
-            let call = pallet_uniques::Call::<T>::set_team(
-                origin_class_id,
-                issuer_source,
-                admin_source,
-                freezer_source,
-            );
+            let call = UniquesCall::<T>::set_team {
+                class: origin_class_id,
+                issuer: issuer_source,
+                admin: admin_source,
+                freezer: freezer_source,
+            };
             call.dispatch_bypass_filter(origin)
         }
 
@@ -648,8 +651,12 @@ pub mod pallet {
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
             // Dispatch call to origin pallet.
-            let call =
-                pallet_uniques::Call::<T>::set_metadata(origin_class_id, instance, data, is_frozen);
+            let call = UniquesCall::<T>::set_metadata {
+                class: origin_class_id,
+                instance,
+                data,
+                is_frozen,
+            };
             let result = call.dispatch_bypass_filter(origin)?;
 
             // AssetMetadataMap::<T>::insert(
