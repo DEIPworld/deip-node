@@ -34,7 +34,7 @@ where
 
         Event::ParityTechAssets(assets_event) => match_event_deip_assets(assets_event),
         
-        Event::Session(..) | Event::ImOnline(..) | Event::TemplateModule(..)
+        Event::Session(..) | Event::ImOnline(..)
         
         | Event::OctopusAppchain(..) | Event::OctopusLpos(..) | Event::OctopusUpwardMessages(..) 
 
