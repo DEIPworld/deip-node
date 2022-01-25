@@ -346,57 +346,27 @@ pub mod pallet {
         }
 
         #[pallet::weight(T::WeightInfo::create())]
-        pub fn deip_create_nft(
+        pub fn deip_create(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
             admin: T::DeipAccountId,
             project_id: Option<DeipProjectIdOf<T>>,
         ) -> DispatchResultWithPostInfo {
-            // If project id is provided ensure that admin is in team.
-            if let Some(project_id) = project_id.as_ref() {
-                if let Some(team_id) = T::ProjectsInfo::try_get_project_team(project_id) {
-                    let account = ensure_signed(origin.clone())?;
-                    ensure!(team_id == account, Error::<T>::ProjectDoesNotBelongToTeam)
-                } else {
-                    return Err(Error::<T>::ProjectDoesNotExist.into())
-                }
-            }
+            let call = |class, admin| UniquesCall::<T>::create { class, admin };
+            Self::create_or_force(origin, class, admin, project_id, call)
+        }
 
-            // Check if NFT with this deip id exist.
-            ensure!(
-                !NftClassIdByDeipNftClassId::<T>::contains_key(class),
-                Error::<T>::DeipNftClassIdExists
-            );
-
-            // Get next origin class id.
-            let new_class_id = NextNftClassId::<T>::get();
-
-            // Dispatch call to origin uniques pallet.
-            let admin_source = <T::Lookup as StaticLookup>::unlookup(admin.into());
+        #[pallet::weight(T::WeightInfo::force_create())]
+        pub fn deip_force_create(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            admin: T::DeipAccountId,
+            project_id: Option<DeipProjectIdOf<T>>,
+            free_holding: bool,
+        ) -> DispatchResultWithPostInfo {
             let call =
-                pallet_uniques::Call::<T>::create { class: new_class_id, admin: admin_source };
-            let post_dispatch_info = call.dispatch_bypass_filter(origin)?;
-
-            // Save next class id.
-            let next_class_id =
-                new_class_id.checked_add(&One::one()).ok_or(Error::<T>::NftClassIdOverflow)?;
-            NextNftClassId::<T>::put(next_class_id);
-
-            // Insert id to map.
-            NftClassIdByDeipNftClassId::<T>::insert(class, new_class_id);
-
-            // IF project id is provided add id to projects map.
-            if let Some(project_id) = project_id {
-                ProjectIdByNftClassId::<T>::insert(class, project_id);
-                // AssetIdByProjectId::<T>::mutate_exists(project_id, |tokens| {
-                //     match tokens.as_mut() {
-                //         None => *tokens = Some(vec![id]),
-                //         Some(c) => c.push(id),
-                //     };
-                // });
-            }
-
-            Ok(post_dispatch_info)
+                |class, admin| UniquesCall::<T>::force_create { class, owner: admin, free_holding };
+            Self::create_or_force(origin, class, admin, project_id, call)
         }
 
         #[pallet::weight((10_000, Pays::No))] // ??? @TODO benchmark
@@ -675,6 +645,62 @@ pub mod pallet {
         ) -> Result<T::UniquesNftClassId, Error<T>> {
             NftClassIdByDeipNftClassId::<T>::get(class)
                 .ok_or(Error::<T>::DeipNftClassIdDoesNotExist)
+        }
+
+        fn create_or_force(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            admin: T::DeipAccountId,
+            project_id: Option<DeipProjectIdOf<T>>,
+            call: impl FnOnce(
+                T::UniquesNftClassId,
+                <T::Lookup as StaticLookup>::Source,
+            ) -> UniquesCall<T>,
+        ) -> DispatchResultWithPostInfo {
+            // If project id is provided ensure that admin is in team.
+            if let Some(project_id) = project_id.as_ref() {
+                if let Some(team_id) = T::ProjectsInfo::try_get_project_team(project_id) {
+                    let account = ensure_signed(origin.clone())?;
+                    ensure!(team_id == account, Error::<T>::ProjectDoesNotBelongToTeam)
+                } else {
+                    return Err(Error::<T>::ProjectDoesNotExist.into())
+                }
+            }
+
+            // Check if NFT with this deip id exist.
+            ensure!(
+                !NftClassIdByDeipNftClassId::<T>::contains_key(class),
+                Error::<T>::DeipNftClassIdExists
+            );
+
+            // Get next origin class id.
+            let new_class_id = NextNftClassId::<T>::get();
+
+            // Dispatch call to origin uniques pallet.
+            let admin_source = <T::Lookup as StaticLookup>::unlookup(admin.into());
+            let call = call(new_class_id, admin_source);
+            let post_dispatch_info = call.dispatch_bypass_filter(origin)?;
+
+            // Save next class id.
+            let next_class_id =
+                new_class_id.checked_add(&One::one()).ok_or(Error::<T>::NftClassIdOverflow)?;
+            NextNftClassId::<T>::put(next_class_id);
+
+            // Insert id to map.
+            NftClassIdByDeipNftClassId::<T>::insert(class, new_class_id);
+
+            // IF project id is provided add id to projects map.
+            if let Some(project_id) = project_id {
+                ProjectIdByNftClassId::<T>::insert(class, project_id);
+                // AssetIdByProjectId::<T>::mutate_exists(project_id, |tokens| {
+                //     match tokens.as_mut() {
+                //         None => *tokens = Some(vec![id]),
+                //         Some(c) => c.push(id),
+                //     };
+                // });
+            }
+
+            Ok(post_dispatch_info)
         }
     }
 }
