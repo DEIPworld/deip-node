@@ -493,15 +493,44 @@ pub mod pallet {
             call.dispatch_bypass_filter(origin)
         }
 
-        // #[pallet::weight(T::WeightInfo::transfer())]
-        // pub fn deip_transfer(
-        //     origin: OriginFor<T>,
-        //     class: DeipNftClassIdOf<T>,
-        //     target: T::DeipAccountId,
-        //     amount: AssetsBalanceOf<T>,
-        // ) -> DispatchResultWithPostInfo {
-        //     Self::deip_transfer_impl(origin, id, target.into(), amount)
-        // }
+        #[pallet::weight(T::WeightInfo::transfer())]
+        pub fn deip_transfer(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            instance: T::InstanceId,
+            dest: T::DeipAccountId,
+        ) -> DispatchResultWithPostInfo {
+            // Convert target to source.
+            let dest_source = <T::Lookup as StaticLookup>::unlookup(dest.into());
+
+            // Convert DeipNftClassId to origin class id.
+            let origin_class_id = NftClassIdByDeipNftClassId::<T>::get(class)
+                .ok_or(Error::<T>::DeipNftClassIdDoesNotExist)?;
+
+            // Dispatch call to origin pallet.
+            let call = pallet_uniques::Call::<T>::transfer {
+                class: origin_class_id,
+                instance,
+                dest: dest_source,
+            };
+            let ok = call.dispatch_bypass_filter(origin)?;
+
+            // If project id exists for class id.
+            if ProjectIdByNftClassId::<T>::contains_key(class) {
+                // FtBalanceMap::<T>::mutate_exists(id, |maybe| match maybe.as_mut() {
+                //     None => {
+                //         // this cannot happen but for any case
+                //         *maybe = Some(vec![to]);
+                //     },
+                //     Some(b) => match b.binary_search_by_key(&&to, |a| a) {
+                //         Ok(_) => (),
+                //         Err(i) => b.insert(i, to),
+                //     },
+                // });
+            }
+
+            Ok(ok)
+        }
 
         // #[pallet::weight(T::WeightInfo::freeze())]
         // pub fn deip_freeze(
