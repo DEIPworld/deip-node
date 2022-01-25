@@ -15,6 +15,7 @@ pub mod pallet {
         ensure,
         pallet_prelude::{OptionQuery, StorageMap, StorageValue, ValueQuery},
         sp_runtime::traits::{CheckedAdd, One, StaticLookup},
+        weights::Pays,
         BoundedVec, Identity, Parameter,
     };
     use frame_system::{ensure_signed, pallet_prelude::OriginFor};
@@ -84,12 +85,19 @@ pub mod pallet {
     pub(super) type NextNftClassId<T> =
         StorageValue<_, <T as Config>::UniquesNftClassId, ValueQuery>;
 
+    /// Storage with projects ids.
+    #[pallet::storage]
+    pub(super) type ProjectIdByNftClassId<T> =
+        StorageMap<_, Identity, DeipNftClassIdOf<T>, DeipProjectIdOf<T>, OptionQuery>;
+
     #[pallet::error]
     pub enum Error<T> {
         DeipNftClassIdExists,
+        DeipNftClassIdDoesNotExist,
         NftClassIdOverflow,
         ProjectDoesNotExist,
         ProjectDoesNotBelongToTeam,
+        ProjectSecurityTokenCannotBeDestroyed,
     }
 
     #[pallet::call]
@@ -377,7 +385,7 @@ pub mod pallet {
 
             // IF project id is provided add id to projects map.
             if let Some(project_id) = project_id {
-                // ProjectIdByAssetId::<T>::insert(id, project_id.clone());
+                ProjectIdByNftClassId::<T>::insert(class, project_id);
                 // AssetIdByProjectId::<T>::mutate_exists(project_id, |tokens| {
                 //     match tokens.as_mut() {
                 //         None => *tokens = Some(vec![id]),
@@ -388,5 +396,194 @@ pub mod pallet {
 
             Ok(post_dispatch_info)
         }
+
+        #[pallet::weight((10_000, Pays::No))] // ??? @TODO benchmark
+        pub fn deip_destroy(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            witness: DestroyWitness,
+        ) -> DispatchResultWithPostInfo {
+            // If id belongs to project, refuse to destroy.
+            ensure!(
+                !ProjectIdByNftClassId::<T>::contains_key(class),
+                Error::<T>::ProjectSecurityTokenCannotBeDestroyed
+            );
+
+            // Convert DeipNftClassId to origin class id.
+            let origin_class_id = NftClassIdByDeipNftClassId::<T>::get(class)
+                .ok_or(Error::<T>::DeipNftClassIdDoesNotExist)?;
+
+            // Dispatch destroy call to origin pallet.
+            let call = pallet_uniques::Call::<T>::destroy { class: origin_class_id, witness };
+            call.dispatch_bypass_filter(origin)
+        }
+
+        // #[pallet::weight(AssetsWeightInfoOf::<T>::mint())]
+        // pub fn deip_issue_asset(
+        //     origin: OriginFor<T>,
+        //     class: DeipNftClassIdOf<T>,
+        //     beneficiary: T::DeipAccountId,
+        //     #[pallet::compact] amount: AssetsBalanceOf<T>,
+        // ) -> DispatchResultWithPostInfo {
+        //     Self::deip_issue_asset_impl(origin, id, beneficiary.into(), amount)
+        // }
+
+        // #[pallet::weight(AssetsWeightInfoOf::<T>::burn())]
+        // pub fn deip_burn(
+        //     origin: OriginFor<T>,
+        //     class: DeipNftClassIdOf<T>,
+        //     who: T::DeipAccountId,
+        //     #[pallet::compact] amount: AssetsBalanceOf<T>,
+        // ) -> DispatchResultWithPostInfo {
+        //     ensure!(
+        //         !ProjectIdByAssetId::<T>::contains_key(id),
+        //         Error::<T>::ProjectSecurityTokenCannotBeBurned
+        //     );
+
+        //     let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
+        //         .next()
+        //         .ok_or(Error::<T>::DeipAssetIdExists)?
+        //         .0;
+
+        //     let who_source = <T::Lookup as StaticLookup>::unlookup(who.into());
+        //     let call = pallet_uniques::Call::<T>::burn(asset_id, who_source, amount);
+        //     call.dispatch_bypass_filter(origin)
+        // }
+
+        // #[pallet::weight(AssetsWeightInfoOf::<T>::transfer())]
+        // pub fn deip_transfer(
+        //     origin: OriginFor<T>,
+        //     class: DeipNftClassIdOf<T>,
+        //     target: T::DeipAccountId,
+        //     #[pallet::compact] amount: AssetsBalanceOf<T>,
+        // ) -> DispatchResultWithPostInfo {
+        //     Self::deip_transfer_impl(origin, id, target.into(), amount)
+        // }
+
+        // #[pallet::weight(AssetsWeightInfoOf::<T>::freeze())]
+        // pub fn deip_freeze(
+        //     origin: OriginFor<T>,
+        //     class: DeipNftClassIdOf<T>,
+        //     who: T::DeipAccountId,
+        // ) -> DispatchResultWithPostInfo {
+        //     ensure!(
+        //         !ProjectIdByAssetId::<T>::contains_key(id),
+        //         Error::<T>::ProjectSecurityTokenAccountCannotBeFreezed
+        //     );
+
+        //     ensure!(
+        //         !InvestmentByAssetId::<T>::contains_key(id),
+        //         Error::<T>::ReservedAssetAccountCannotBeFreezed
+        //     );
+
+        //     let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
+        //         .next()
+        //         .ok_or(Error::<T>::DeipAssetIdExists)?
+        //         .0;
+        //     let who_source = <T::Lookup as StaticLookup>::unlookup(who.into());
+        //     let call = pallet_uniques::Call::<T>::freeze(asset_id, who_source);
+        //     call.dispatch_bypass_filter(origin)
+        // }
+
+        // #[pallet::weight(AssetsWeightInfoOf::<T>::thaw())]
+        // pub fn deip_thaw(
+        //     origin: OriginFor<T>,
+        //     class: DeipNftClassIdOf<T>,
+        //     who: T::DeipAccountId,
+        // ) -> DispatchResultWithPostInfo {
+        //     let who_source = <T::Lookup as StaticLookup>::unlookup(who.into());
+        //     let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
+        //         .next()
+        //         .ok_or(Error::<T>::DeipAssetIdExists)?
+        //         .0;
+        //     let call = pallet_uniques::Call::<T>::thaw(asset_id, who_source);
+        //     call.dispatch_bypass_filter(origin)
+        // }
+
+        // #[pallet::weight(AssetsWeightInfoOf::<T>::freeze_asset())]
+        // pub fn deip_freeze_asset(
+        //     origin: OriginFor<T>,
+        //     class: DeipNftClassIdOf<T>,
+        // ) -> DispatchResultWithPostInfo {
+        //     ensure!(
+        //         !ProjectIdByAssetId::<T>::contains_key(id),
+        //         Error::<T>::ProjectSecurityTokenCannotBeFreezed
+        //     );
+
+        //     ensure!(
+        //         !InvestmentByAssetId::<T>::contains_key(id),
+        //         Error::<T>::ReservedAssetCannotBeFreezed
+        //     );
+
+        //     let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
+        //         .next()
+        //         .ok_or(Error::<T>::DeipAssetIdExists)?
+        //         .0;
+        //     let call = pallet_uniques::Call::<T>::freeze_asset(asset_id);
+        //     call.dispatch_bypass_filter(origin)
+        // }
+
+        // #[pallet::weight(AssetsWeightInfoOf::<T>::thaw_asset())]
+        // pub fn deip_thaw_asset(
+        //     origin: OriginFor<T>,
+        //     class: DeipNftClassIdOf<T>,
+        // ) -> DispatchResultWithPostInfo {
+        //     let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
+        //         .next()
+        //         .ok_or(Error::<T>::DeipAssetIdExists)?
+        //         .0;
+        //     let call = pallet_uniques::Call::<T>::thaw_asset(asset_id);
+        //     call.dispatch_bypass_filter(origin)
+        // }
+
+        // #[pallet::weight(AssetsWeightInfoOf::<T>::transfer_ownership())]
+        // pub fn deip_transfer_ownership(
+        //     origin: OriginFor<T>,
+        //     class: DeipNftClassIdOf<T>,
+        //     owner: T::DeipAccountId,
+        // ) -> DispatchResultWithPostInfo {
+        //     let owner_source = <T::Lookup as StaticLookup>::unlookup(owner.into());
+        //     let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
+        //         .next()
+        //         .ok_or(Error::<T>::DeipAssetIdExists)?
+        //         .0;
+        //     let call = pallet_uniques::Call::<T>::transfer_ownership(asset_id, owner_source);
+        //     call.dispatch_bypass_filter(origin)
+        // }
+
+        // #[pallet::weight(AssetsWeightInfoOf::<T>::set_team())]
+        // pub fn deip_set_team(
+        //     origin: OriginFor<T>,
+        //     class: DeipNftClassIdOf<T>,
+        //     issuer: T::DeipAccountId,
+        //     admin: T::DeipAccountId,
+        //     freezer: T::DeipAccountId,
+        // ) -> DispatchResultWithPostInfo {
+        //     let issuer_source = <T::Lookup as StaticLookup>::unlookup(issuer.into());
+        //     let admin_source = <T::Lookup as StaticLookup>::unlookup(admin.into());
+        //     let freezer_source = <T::Lookup as StaticLookup>::unlookup(freezer.into());
+        //     let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
+        //         .next()
+        //         .ok_or(Error::<T>::DeipAssetIdExists)?
+        //         .0;
+        //     let call = pallet_uniques::Call::<T>::set_team(
+        //         asset_id,
+        //         issuer_source,
+        //         admin_source,
+        //         freezer_source,
+        //     );
+        //     call.dispatch_bypass_filter(origin)
+        // }
+
+        // #[pallet::weight(AssetsWeightInfoOf::<T>::set_metadata(name.len() as u32, symbol.len() as u32))]
+        // pub fn deip_set_metadata(
+        //     origin: OriginFor<T>,
+        //     class: DeipNftClassIdOf<T>,
+        //     name: Vec<u8>,
+        //     symbol: Vec<u8>,
+        //     decimals: u8,
+        // ) -> DispatchResultWithPostInfo {
+        //     Self::deip_set_metadata_impl(origin, id, name, symbol, decimals)
+        // }
     }
 }
