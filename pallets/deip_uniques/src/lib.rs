@@ -597,55 +597,68 @@ pub mod pallet {
             call.dispatch_bypass_filter(origin)
         }
 
-        // #[pallet::weight(T::WeightInfo::transfer_ownership())]
-        // pub fn deip_transfer_ownership(
-        //     origin: OriginFor<T>,
-        //     class: DeipNftClassIdOf<T>,
-        //     owner: T::DeipAccountId,
-        // ) -> DispatchResultWithPostInfo {
-        //     let owner_source = <T::Lookup as StaticLookup>::unlookup(owner.into());
-        //     let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
-        //         .next()
-        //         .ok_or(Error::<T>::DeipAssetIdExists)?
-        //         .0;
-        //     let call = pallet_uniques::Call::<T>::transfer_ownership(asset_id, owner_source);
-        //     call.dispatch_bypass_filter(origin)
-        // }
+        #[pallet::weight(T::WeightInfo::transfer_ownership())]
+        pub fn deip_transfer_ownership(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            owner: T::DeipAccountId,
+        ) -> DispatchResultWithPostInfo {
+            // Convert target to source.
+            let owner_source = <T::Lookup as StaticLookup>::unlookup(owner.into());
 
-        // #[pallet::weight(T::WeightInfo::set_team())]
-        // pub fn deip_set_team(
-        //     origin: OriginFor<T>,
-        //     class: DeipNftClassIdOf<T>,
-        //     issuer: T::DeipAccountId,
-        //     admin: T::DeipAccountId,
-        //     freezer: T::DeipAccountId,
-        // ) -> DispatchResultWithPostInfo {
-        //     let issuer_source = <T::Lookup as StaticLookup>::unlookup(issuer.into());
-        //     let admin_source = <T::Lookup as StaticLookup>::unlookup(admin.into());
-        //     let freezer_source = <T::Lookup as StaticLookup>::unlookup(freezer.into());
-        //     let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
-        //         .next()
-        //         .ok_or(Error::<T>::DeipAssetIdExists)?
-        //         .0;
-        //     let call = pallet_uniques::Call::<T>::set_team(
-        //         asset_id,
-        //         issuer_source,
-        //         admin_source,
-        //         freezer_source,
-        //     );
-        //     call.dispatch_bypass_filter(origin)
-        // }
+            let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
-        // #[pallet::weight(T::WeightInfo::set_metadata(name.len() as u32, symbol.len() as u32))]
-        // pub fn deip_set_metadata(
-        //     origin: OriginFor<T>,
-        //     class: DeipNftClassIdOf<T>,
-        //     name: Vec<u8>,
-        //     symbol: Vec<u8>,
-        //     decimals: u8,
-        // ) -> DispatchResultWithPostInfo {
-        //     Self::deip_set_metadata_impl(origin, id, name, symbol, decimals)
-        // }
+            // Dispatch call to origin pallet.
+            let call = pallet_uniques::Call::<T>::transfer_ownership(origin_class_id, owner_source);
+            call.dispatch_bypass_filter(origin)
+        }
+
+        #[pallet::weight(T::WeightInfo::set_team())]
+        pub fn deip_set_team(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            issuer: T::DeipAccountId,
+            admin: T::DeipAccountId,
+            freezer: T::DeipAccountId,
+        ) -> DispatchResultWithPostInfo {
+            let issuer_source = <T::Lookup as StaticLookup>::unlookup(issuer.into());
+            let admin_source = <T::Lookup as StaticLookup>::unlookup(admin.into());
+            let freezer_source = <T::Lookup as StaticLookup>::unlookup(freezer.into());
+
+            let origin_class_id = Self::deip_to_origin_class_id(class)?;
+
+            // Dispatch call to origin pallet.
+            let call = pallet_uniques::Call::<T>::set_team(
+                origin_class_id,
+                issuer_source,
+                admin_source,
+                freezer_source,
+            );
+            call.dispatch_bypass_filter(origin)
+        }
+
+        #[pallet::weight(T::WeightInfo::set_metadata())]
+        pub fn deip_set_metadata(
+            origin: OriginFor<T>,
+            class: DeipNftClassIdOf<T>,
+            instance: T::InstanceId,
+            data: BoundedVec<u8, T::StringLimit>,
+            is_frozen: bool,
+        ) -> DispatchResultWithPostInfo {
+            let origin_class_id = Self::deip_to_origin_class_id(class)?;
+
+            // Dispatch call to origin pallet.
+            let call =
+                pallet_uniques::Call::<T>::set_metadata(origin_class_id, instance, data, is_frozen);
+            let result = call.dispatch_bypass_filter(origin)?;
+
+            // AssetMetadataMap::<T>::insert(
+            //     id,
+            //     AssetMetadata { name: asset_name, symbol: asset_symbol, decimals },
+            // );
+
+            Ok(result)
+        }
     }
 
     impl<T: Config> Pallet<T> {
