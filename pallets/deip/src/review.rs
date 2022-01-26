@@ -18,19 +18,19 @@ pub struct Vote<AccountId, Moment> {
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Review<Hash, AccountId> {
     /// Reference for external world and uniques control
-    external_id: Id,
+    pub(crate) external_id: Id,
     /// Reference to the Team
-    author: AccountId,
+    pub(crate) author: AccountId,
     /// Hash of content
-    content: Hash,
+    pub(crate) content: Hash,
     /// List of Domains aka tags Project matches
-    domains: Vec<DomainId>,
+    pub(crate) domains: Vec<DomainId>,
     /// Model number by which the evaluation is carried out
-    assessment_model: u32,
+    pub(crate) assessment_model: u32,
     /// percent in "50.00 %" format
-    weight: Vec<u8>,
+    pub(crate) weight: Vec<u8>,
     /// Reference to Project Content
-    project_content_external_id: ProjectContentId,
+    pub(crate) project_content_external_id: ProjectContentId,
 }
 
 impl<T: Config> Module<T> {
