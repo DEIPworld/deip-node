@@ -95,6 +95,10 @@ use deip_transaction_ctx::{PortalCtxT, TransactionCtxId};
 
 pub mod traits;
 
+pub mod benchmarking;
+pub mod weights;
+pub use weights::{WeightInfo, Weights};
+
 /// A maximum number of Domains. When domains reaches this number, no new domains can be added.
 pub const MAX_DOMAINS: u32 = 100;
 
@@ -141,12 +145,16 @@ pub trait Config:
 
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
-
-    type DeipAccountId: Into<Self::AccountId> + Parameter + Member;
+    
+    type DeipAccountId: Into<Self::AccountId> + From<Self::AccountId> + Parameter + Member + Default;
 
     type Currency: ReservableCurrency<Self::AccountId>;
 
     type AssetSystem: traits::DeipAssetSystem<Self::AccountId>;
+    
+    type DeipWeightInfo: WeightInfo;
+    
+    type MaxNdaParties: Get<u16>;
 }
 
 /// Unique Project ID reference
@@ -383,7 +391,7 @@ decl_error! {
         // ==== Domains ====
 
         /// Cannot add another domain because the limit is already reached
-        DomianLimitReached,
+        DomainLimitReached,
         /// Cannot add domain because this domain is already a exists
         DomainAlreadyExists,
 
@@ -409,6 +417,7 @@ decl_error! {
         TeamOfAllProjectsMustSpecifiedAsParty,
         /// Nda access request already finalized
         NdaAccessRequestAlreadyFinalized,
+        TooMuchNdaParties,
 
         /// Cannot add a review because a review with this ID already exists
         ReviewAlreadyExists,
@@ -449,7 +458,6 @@ decl_error! {
         InvestingWrongAsset,
 
         ContractAgreementNoParties,
-        ContractAgreementDuplicateParties,
         ContractAgreementStartTimeMustBeLaterOrEqualCurrentMoment,
         ContractAgreementEndTimeMustBeLaterStartTime,
         ContractAgreementAlreadyExists,
@@ -533,7 +541,10 @@ decl_module! {
         /// The origin for this call must be _Signed_.
         ///
         /// - `project`: [Project](./struct.Project.html) to be created.
-        #[weight = 10_000]
+        #[weight = {
+            let d = domains.len() as u32;
+            T::DeipWeightInfo::create_project(d)
+        }]
         fn create_project(origin,
             is_private: bool,
             external_id: ProjectId,
@@ -627,8 +638,10 @@ decl_module! {
         ///
         /// - `project_id`: [Project]((./struct.Project.html)) identifier (external_id) to be updated
         /// - `description`: Optional. Hash of description
-        /// - `is_private`: Optional.  Determine visible project or not
-        #[weight = 10_000]
+        /// - `is_private`: Optional.  Determine visible project or not 
+        #[weight = {
+            T::DeipWeightInfo::update_project()
+        }]
         fn update_project(origin, project_id: ProjectId, description: Option<T::Hash>, is_private: Option<bool>) -> DispatchResult {
             // Check that the extrinsic was signed and get the signer.
             // This function will return an error if the extrinsic is not signed.
@@ -663,7 +676,11 @@ decl_module! {
         /// The origin for this call must be _Signed_.
         ///
         /// - `content`: [Content](./struct.ProjectContent.html) to be created
-        #[weight = 10_000]
+        #[weight = {
+            let _a = authors.len() as u32;
+            let r = references.as_ref().map(|x| x.len()).unwrap_or(0) as u32;
+            T::DeipWeightInfo::create_project_content(_a, r)
+        }]
         fn create_project_content(origin,
             external_id: ProjectContentId,
             project_external_id: ProjectId,
@@ -718,8 +735,11 @@ decl_module! {
         /// - `maybe_start_date`: Optional. Unix Timestamp. Entry into force of the contract
         /// - `parties`: List of involved Parties
         /// - `projects`: List of involved Projects
-        #[weight = 10_000]
-        fn create_project_nda(origin,
+        #[weight = {
+            let p = parties.len() as u32;
+            T::DeipWeightInfo::create_project_nda(p)
+        }]
+        fn create_project_nda(origin,  
             external_id: NdaId,
             end_date: T::Moment,
             contract_hash: T::Hash,
@@ -733,6 +753,9 @@ decl_module! {
             let timestamp = pallet_timestamp::Pallet::<T>::get();
 
             ensure!(end_date > timestamp, Error::<T>::NdaEndDateMustBeLaterCurrentMoment);
+            
+            ensure!(projects.len() <= T::MaxNdaParties::get() as usize, Error::<T>::TooMuchNdaParties);
+            ensure!(parties.len() <= T::MaxNdaParties::get() as usize, Error::<T>::TooMuchNdaParties);
 
             if let Some(start_date) = maybe_start_date {
                 ensure!(start_date >= timestamp, Error::<T>::NdaStartDateMustBeLaterOrEqualCurrentMoment);
@@ -785,7 +808,9 @@ decl_module! {
         /// - `nda_external_id`: Reference to NDA
         /// - `encrypted_payload_hash`: Payload witch need to be decrypted
         /// - `encrypted_payload_iv`: IV of encrypted payload
-        #[weight = 10_000]
+        #[weight = {
+            T::DeipWeightInfo::create_nda_content_access_request()
+        }]
         fn create_nda_content_access_request(
             origin,
             external_id: NdaAccessRequestId,
@@ -835,8 +860,10 @@ decl_module! {
         ///
         /// - `external_id`: Reference for external world and uniques control
         /// - `encrypted_payload_encryption_key`: Ecrypted key witch can decrypt payload
-        /// - `proof_of_encrypted_payload_encryption_key`: Proof that requester has access to the encrypted data with his key
-        #[weight = 10_000]
+        /// - `proof_of_encrypted_payload_encryption_key`: Proof that requester has access to the encrypted data with his key 
+        #[weight = {
+            T::DeipWeightInfo::fulfill_nda_content_access_request()
+        }]
         fn fulfill_nda_content_access_request(
             origin,
             external_id: NdaAccessRequestId,
@@ -868,9 +895,11 @@ decl_module! {
         ///
         /// The origin for this call must be _Signed_.
         ///
-        /// - `external_id`: Reference for external world and uniques control
-         #[weight = 10_000]
-         fn reject_nda_content_access_request(
+        /// - `external_id`: Reference for external world and uniques control 
+        #[weight = {
+            T::DeipWeightInfo::reject_nda_content_access_request()
+        }]
+        fn reject_nda_content_access_request(
              origin,
              external_id: NdaAccessRequestId,
          ) {
@@ -898,7 +927,10 @@ decl_module! {
         /// The origin for this call must be _Signed_.
         ///
         /// - `review`: [Review](./struct.Review.html) to be created
-        #[weight = 10_000]
+        #[weight = {
+            let d = domains.len() as u32;
+            T::DeipWeightInfo::create_review(d)
+        }]
         fn create_review(origin,
             external_id: ReviewId,
             author: T::DeipAccountId,
@@ -915,7 +947,9 @@ decl_module! {
         /// Allows DAO to vote for a review.
         ///
         /// The origin for this call must be _Signed_.
-        #[weight = 10_000]
+        #[weight = {
+            T::DeipWeightInfo::upvote_review()
+        }]
         fn upvote_review(origin,
             review_id: ReviewId,
             domain_id: DomainId,
@@ -929,12 +963,14 @@ decl_module! {
         /// The origin for this call must be _Signed_.
         ///
         /// - `project`: [Domain](./struct.Domain.html) to be created.
-        #[weight = 10_000]
+        #[weight = {
+            T::DeipWeightInfo::add_domain()
+        }]
         fn add_domain(origin, domain: Domain) {
             let account = ensure_signed(origin)?;
 
             let domain_count = DomainCount::get();
-            ensure!(domain_count < MAX_DOMAINS, Error::<T>::DomianLimitReached);
+            ensure!(domain_count < MAX_DOMAINS, Error::<T>::DomainLimitReached);
 
             let external_id = domain.external_id;
 
@@ -962,7 +998,10 @@ decl_module! {
         /// - `hash` - hash of contract agreement offchain metadata
         /// - `activation_time`/`expiration_time`
         /// - `terms` - specifies type of the contract agreement. For details see [`ContractAgreementTerms`].
-        #[weight = 10_000]
+        #[weight = {
+            T::DeipWeightInfo::create_contract_agreement_project_license()
+                .max(T::DeipWeightInfo::create_contract_agreement_general_contract())
+        }]
         fn create_contract_agreement(origin,
             id: ContractAgreementId,
             creator: T::DeipAccountId,
@@ -971,8 +1010,9 @@ decl_module! {
             activation_time: Option<MomentOf<T>>,
             expiration_time: Option<MomentOf<T>>,
             terms: ContractAgreementTermsOf<T>,
-        ) -> DispatchResult {
+        ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
+            let parties = parties.into_iter().map(Into::into).collect();
             Self::create_contract_agreement_impl(account, id, creator.into(), parties, hash, activation_time, expiration_time, terms)
         }
 
@@ -981,11 +1021,16 @@ decl_module! {
         /// The origin for this call must be _Signed_.
         /// - `id` - identifies the contract to accept. Check [`ContractAgreementTerms`] for
         ///     supported types
-        #[weight = 10_000]
+        #[weight = {
+            T::DeipWeightInfo::accept_contract_agreement_project_license_unsigned()
+                // .max(T::DeipWeightInfo::accept_contract_agreement_project_license_signed_by_licenser())
+                .max(T::DeipWeightInfo::accept_contract_agreement_general_contract_partially_accepted())
+                .max(T::DeipWeightInfo::accept_contract_agreement_general_contract_finalized())
+        }]
         fn accept_contract_agreement(origin,
             id: ContractAgreementId,
             party: T::DeipAccountId,
-        ) -> DispatchResult {
+        ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
             Self::accept_contract_agreement_impl(account, id, party.into())
         }

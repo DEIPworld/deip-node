@@ -4228,6 +4228,7 @@ dependencies = [
  "deip-assets-error",
  "deip-transaction-ctx",
  "deip_serializable_u128",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-assets",
