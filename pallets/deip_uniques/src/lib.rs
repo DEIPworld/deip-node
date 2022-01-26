@@ -37,7 +37,7 @@ pub mod pallet {
         type NftClassId: Parameter + Copy;
 
         /// Deip account id.
-        type DeipAccountId: Into<Self::AccountId> + Parameter;
+        type DeipAccountId: Into<Self::AccountId> + Parameter + Clone;
 
         /// Deip project id.
         type ProjectId: Parameter;
@@ -91,6 +91,11 @@ pub mod pallet {
     #[pallet::storage]
     pub(super) type ProjectIdByNftClassId<T> =
         StorageMap<_, Identity, DeipNftClassIdOf<T>, DeipProjectIdOf<T>, OptionQuery>;
+
+    /// Storage with assets classes ant accounts which hold corresponding asset.
+    #[pallet::storage]
+    pub(super) type NftBalanceMap<T: Config> =
+        StorageMap<_, Identity, DeipNftClassIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
 
     #[pallet::error]
     pub enum Error<T> {
@@ -393,7 +398,7 @@ pub mod pallet {
             owner: T::DeipAccountId,
         ) -> DispatchResultWithPostInfo {
             // Convert target to source.
-            let owner_source = <T::Lookup as StaticLookup>::unlookup(owner.into());
+            let owner_source = <T::Lookup as StaticLookup>::unlookup(owner.clone().into());
 
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
@@ -407,21 +412,18 @@ pub mod pallet {
 
             // If project id exists for class id.
             if ProjectIdByNftClassId::<T>::contains_key(class) {
-                // FtBalanceMap::<T>::mutate_exists(id, |maybe| {
-                //     let balances = match maybe.as_mut() {
-                //         None => {
-                //             *maybe = Some(vec![owner]);
-                //             return
-                //         },
-                //         Some(b) => b,
-                //     };
-
-                //     let account = owner;
-                //     match balances.binary_search_by_key(&&account, |a| a) {
-                //         Ok(_) => (),
-                //         Err(i) => balances.insert(i, account),
-                //     };
-                // });
+                // Check balance map for the class id.
+                NftBalanceMap::<T>::mutate_exists(class, |maybe| {
+                    let account = owner.into();
+                    if let Some(balances) = maybe.as_mut() {
+                        // If vec for this class doesn't contain asset, add account to map.
+                        if let Err(i) = balances.binary_search(&account) {
+                            balances.insert(i, account);
+                        }
+                    } else {
+                        *maybe = Some(vec![account]);
+                    }
+                });
             }
 
             Ok(result)
@@ -463,7 +465,7 @@ pub mod pallet {
             dest: T::DeipAccountId,
         ) -> DispatchResultWithPostInfo {
             // Convert target to source.
-            let dest_source = <T::Lookup as StaticLookup>::unlookup(dest.into());
+            let dest_source = <T::Lookup as StaticLookup>::unlookup(dest.clone().into());
 
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
@@ -477,16 +479,19 @@ pub mod pallet {
 
             // If project id exists for class id.
             if ProjectIdByNftClassId::<T>::contains_key(class) {
-                // FtBalanceMap::<T>::mutate_exists(id, |maybe| match maybe.as_mut() {
-                //     None => {
-                //         // this cannot happen but for any case
-                //         *maybe = Some(vec![to]);
-                //     },
-                //     Some(b) => match b.binary_search_by_key(&&to, |a| a) {
-                //         Ok(_) => (),
-                //         Err(i) => b.insert(i, to),
-                //     },
-                // });
+                NftBalanceMap::<T>::mutate_exists(class, |maybe| {
+                    let account = dest.into();
+                    if let Some(balances) = maybe.as_mut() {
+                        if let Err(i) = balances.binary_search(&account) {
+                            balances.insert(i, account);
+                        }
+                        todo!("remove class id from source account");
+                    } else {
+                        // This shouldn't happen but for any case.
+                        // If this happend, it means that asset was minted and NftBalanceMap wasn't updated.
+                        *maybe = Some(vec![account]);
+                    }
+                });
             }
 
             Ok(ok)
