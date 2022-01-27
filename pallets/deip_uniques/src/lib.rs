@@ -15,6 +15,7 @@ pub mod pallet {
         ensure,
         pallet_prelude::{OptionQuery, StorageMap, StorageValue, ValueQuery},
         sp_runtime::traits::{CheckedAdd, One, StaticLookup},
+        traits::Get,
         weights::Pays,
         BoundedVec, Identity, Parameter,
     };
@@ -25,7 +26,7 @@ pub mod pallet {
     use sp_std::vec;
 
     // Helper types.
-    type DeipNftClassIdOf<T> = <T as Config>::NftClassId;
+    type DeipNftClassIdOf<T> = <T as Config>::DeipNftClassId;
     type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
     type DeipProjectIdOf<T> =
         <<T as Config>::ProjectsInfo as DeipProjectsInfo<AccountIdOf<T>>>::ProjectId;
@@ -35,7 +36,7 @@ pub mod pallet {
         frame_system::Config + pallet_uniques::Config<ClassId = Self::UniquesNftClassId>
     {
         /// Deip class id.
-        type NftClassId: Parameter + Copy;
+        type DeipNftClassId: Parameter + Copy;
 
         /// Deip account id.
         type DeipAccountId: Into<Self::AccountId> + Parameter + Clone;
@@ -44,10 +45,13 @@ pub mod pallet {
         type ProjectId: Parameter;
 
         /// Type of `pallet_uniques::Config::ClassId`.
-        type UniquesNftClassId: Parameter + CheckedAdd + Default + One + Copy;
+        type UniquesNftClassId: Parameter + CheckedAdd + Default + One + Copy + PartialOrd;
 
         /// Additional project info.
         type ProjectsInfo: DeipProjectsInfo<Self::AccountId>;
+
+        /// Max class id available for asset creation via origin `pallet_uniques::Call`.
+        type MaxOriginClassId: Get<Self::ClassId>;
     }
 
     #[pallet::pallet]
@@ -62,7 +66,11 @@ pub mod pallet {
     #[pallet::genesis_build]
     impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
         fn build(&self) {
-            NextNftClassId::<T>::put(<T as pallet_uniques::Config>::ClassId::default());
+            NextNftClassId::<T>::put(
+                T::MaxOriginClassId::get()
+                    .checked_add(&One::one())
+                    .expect("max origin class id set to max type value"),
+            );
         }
     }
 
@@ -119,6 +127,8 @@ pub mod pallet {
             class: <T as pallet_uniques::Config>::ClassId,
             admin: <T::Lookup as StaticLookup>::Source,
         ) -> DispatchResult {
+            ensure!(class <= T::MaxOriginClassId::get(), pallet_uniques::Error::<T>::InUse);
+
             UniquesPallet::<T>::create(origin, class, admin)
         }
 
@@ -129,6 +139,7 @@ pub mod pallet {
             owner: <T::Lookup as StaticLookup>::Source,
             free_holding: bool,
         ) -> DispatchResult {
+            ensure!(class <= T::MaxOriginClassId::get(), pallet_uniques::Error::<T>::InUse);
             UniquesPallet::<T>::force_create(origin, class, owner, free_holding)
         }
 
@@ -821,6 +832,7 @@ pub mod pallet {
             // IF project id is provided add id to projects map.
             if let Some(project_id) = project_id {
                 ProjectIdByNftClassId::<T>::insert(class, project_id);
+                // ??? @TODO
                 // AssetIdByProjectId::<T>::mutate_exists(project_id, |tokens| {
                 //     match tokens.as_mut() {
                 //         None => *tokens = Some(vec![id]),
