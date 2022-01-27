@@ -592,6 +592,9 @@ parameter_types! {
 
     /// The maximum length of an attribute value.
     pub const ValueLimit: u32 = 50; // ??? correct value
+
+    /// Greater class ids will be reserved for `deip_*` calls.
+    pub const MaxOriginClassId: NftClassId = NftClassId::MAX / 2;
 }
 
 impl pallet_uniques::Config for Runtime {
@@ -612,11 +615,12 @@ impl pallet_uniques::Config for Runtime {
 }
 
 impl pallet_deip_uniques::Config for Runtime {
-    type NftClassId = DeipNftClassId;
+    type DeipNftClassId = DeipNftClassId;
     type DeipAccountId = deip_account::DeipAccountId<<Self as frame_system::Config>::AccountId>;
     type ProjectId = pallet_deip::ProjectId;
     type UniquesNftClassId = <Self as pallet_uniques::Config>::ClassId;
     type ProjectsInfo = Self;
+    type MaxOriginClassId = MaxOriginClassId;
 }
 
 impl pallet_beefy::Config for Runtime {
