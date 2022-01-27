@@ -22,6 +22,7 @@ pub mod pallet {
     use pallet_uniques::{
         Call as UniquesCall, DestroyWitness, Pallet as UniquesPallet, WeightInfo,
     };
+    use sp_std::vec;
 
     // Helper types.
     type DeipNftClassIdOf<T> = <T as Config>::NftClassId;
@@ -485,7 +486,7 @@ pub mod pallet {
                         if let Err(i) = balances.binary_search(&account) {
                             balances.insert(i, account);
                         }
-                        todo!("remove class id from source account");
+                        // ??? @TODO remove class id from source account
                     } else {
                         // This shouldn't happen but for any case.
                         // If this happend, it means that asset was minted and NftBalanceMap wasn't updated.
@@ -521,6 +522,7 @@ pub mod pallet {
                 Error::<T>::ProjectSecurityTokenCannotBeFrozen
             );
 
+            // @TODO
             // ensure!(
             //     !InvestmentByAssetId::<T>::contains_key(id),
             //     Error::<T>::ReservedAssetAccountCannotBeFreezed
@@ -557,6 +559,7 @@ pub mod pallet {
                 Error::<T>::ProjectSecurityTokenCannotBeFrozen
             );
 
+            // @TODO
             // ensure!(
             //     !InvestmentByAssetId::<T>::contains_key(id),
             //     Error::<T>::ReservedAssetCannotBeFreezed
