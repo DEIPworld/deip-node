@@ -1,32 +1,32 @@
 [package]
-authors = ['DEIP world <https://github.com/DEIPworld>']
-description = 'FRAME pallet defined DEIP porjects'
-edition = '2018'
-homepage = 'https://deip.world/'
-license = 'Apache-2.0'
-name = 'pallet-deip'
-repository = 'https://github.com/DEIPworld/deip-polkadot'
-version = '3.0.0'
+authors = ["DEIP world <https://github.com/DEIPworld>"]
+description = "FRAME pallet defined DEIP porjects"
+edition = "2018"
+homepage = "https://deip.world/"
+license = "Apache-2.0"
+name = "pallet-deip"
+repository = "https://github.com/DEIPworld/deip-polkadot"
+version = "3.0.0"
 
 [package.metadata.docs.rs]
-targets = ['x86_64-unknown-linux-gnu']
+targets = ["x86_64-unknown-linux-gnu"]
 
 # alias "parity-scale-code" to "codec"
 [dependencies.codec]
 default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '2.0.0'
+features = ["derive"]
+package = "parity-scale-codec"
+version = "2.0.0"
 
 [dependencies]
 scale-info = { version = "1.0", default-features = false, features = ["derive"] }
 serde = { version = "1.0.130", optional = true, features = ["derive"] }
 
+frame-election-provider-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+frame-executive = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-frame-executive = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 frame-system-rpc-runtime-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-frame-election-provider-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-babe = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-grandpa = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-multisig = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
@@ -42,6 +42,7 @@ sp-consensus-babe = { git = "https://github.com/paritytech/substrate.git", branc
 sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-inherents = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-npos-elections = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-offchain = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-session = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
@@ -60,18 +61,38 @@ pallet-deip-assets = { path = "../deip_assets", default-features = false }
 parking_lot = "0.11.1"
 
 [features]
-default = ['std']
+default = ["std"]
 std = [
-    'codec/std',
-    'frame-support/std',
-    'frame-system/std',
-    'sp-std/std',
-    'sp-runtime/std',
-    'sp-core/std',
-    'sp-io/std',
-    'pallet-timestamp/std',
-    'serde',
+    "codec/std",
+    "serde",
+    "scale-info/std",
+    "frame-election-provider-support/std",
+    "frame-executive/std",
+    "frame-support/std",
+    "frame-system/std",
+    "frame-system-rpc-runtime-api/std",
+    "pallet-babe/std",
+    "pallet-grandpa/std",
+    "pallet-multisig/std",
+    "pallet-randomness-collective-flip/std",
+    "pallet-sudo/std",
+    "pallet-timestamp/std",
+    "pallet-transaction-payment/std",
+    "pallet-transaction-payment-rpc-runtime-api/std",
+    "pallet-utility/std",
     "sp-api/std",
-    'deip_serializable_u128/std',
-    'deip-transaction-ctx/std',
+    "sp-block-builder/std",
+    "sp-consensus-babe/std",
+    "sp-core/std",
+    "sp-inherents/std",
+    "sp-io/std",
+    "sp-npos-elections/std",
+    "sp-offchain/std",
+    "sp-runtime/std",
+    "sp-session/std",
+    "sp-std/std",
+    "sp-transaction-pool/std",
+    "sp-version/std",
+    "deip_serializable_u128/std",
+    "deip-transaction-ctx/std",
 ]
