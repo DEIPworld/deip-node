@@ -36,7 +36,7 @@ pub mod pallet {
         <T as frame_system::Config>::AccountId,
     >>::MaxLocks;
 
-    #[derive(Encode, Decode, Copy, Clone, PartialEq, Eq, RuntimeDebug)]
+    #[derive(Encode, Decode, Copy, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
     pub struct VestingPlan<Balance> {
         /// Starting time for unlocking(vesting).
         pub start_time: u64,
@@ -88,13 +88,12 @@ pub mod pallet {
                     (vesting_duration / self.interval).saturating_add(1)
                 };
 
-                let unlocked_amount = self
-                    .total_amount
-                    .saturating_sub(self.initial_amount)
-                    .saturating_mul(U64ToBalance::convert(
-                        current_time_millis.saturating_sub(vesting_start_time) / self.interval,
-                    ))
-                    / U64ToBalance::convert(total_interval_counts);
+                let unlocked_amount =
+                    self.total_amount.saturating_sub(self.initial_amount).saturating_mul(
+                        U64ToBalance::convert(
+                            current_time_millis.saturating_sub(vesting_start_time) / self.interval,
+                        ),
+                    ) / U64ToBalance::convert(total_interval_counts);
                 self.total_amount
                     .saturating_sub(self.initial_amount)
                     .saturating_sub(unlocked_amount)
@@ -132,24 +131,13 @@ pub mod pallet {
 
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
-        pub vesting: Vec<(
-            T::AccountId,
-            u64,
-            u64,
-            u64,
-            u64,
-            BalanceOf<T>,
-            BalanceOf<T>,
-            bool,
-        )>,
+        pub vesting: Vec<(T::AccountId, u64, u64, u64, u64, BalanceOf<T>, BalanceOf<T>, bool)>,
     }
 
     #[cfg(feature = "std")]
     impl<T: Config> Default for GenesisConfig<T> {
         fn default() -> Self {
-            GenesisConfig {
-                vesting: Default::default(),
-            }
+            GenesisConfig { vesting: Default::default() }
         }
     }
 
@@ -168,10 +156,7 @@ pub mod pallet {
             ) in self.vesting.iter()
             {
                 let balance = T::Currency::free_balance(who);
-                assert!(
-                    balance >= total_amount,
-                    "Currencies must be init'd before vesting"
-                );
+                assert!(balance >= total_amount, "Currencies must be init'd before vesting");
 
                 VestingPlans::<T>::insert(
                     who,
@@ -193,7 +178,7 @@ pub mod pallet {
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
-    #[pallet::metadata(T::AccountId = "AccountId", BalanceOf<T> = "Balance")]
+    // #[pallet::metadata(T::AccountId = "AccountId", BalanceOf<T> = "Balance")]
     pub enum Event<T: Config> {
         VestingUpdated(T::AccountId, BalanceOf<T>),
         VestingCompleted(T::AccountId),
@@ -219,25 +204,13 @@ pub mod pallet {
             plan: VestingPlan<BalanceOf<T>>,
         ) -> DispatchResult {
             let transactor = ensure_signed(origin)?;
-            ensure!(
-                plan.total_amount >= T::MinVestedTransfer::get(),
-                Error::<T>::AmountLow
-            );
+            ensure!(plan.total_amount >= T::MinVestedTransfer::get(), Error::<T>::AmountLow);
             ensure!(plan.interval != 0, Error::<T>::InvalidVestingPlan);
-            ensure!(
-                plan.total_duration >= plan.cliff_duration,
-                Error::<T>::InvalidVestingPlan
-            );
-            ensure!(
-                plan.total_amount >= plan.initial_amount,
-                Error::<T>::InvalidVestingPlan
-            );
+            ensure!(plan.total_duration >= plan.cliff_duration, Error::<T>::InvalidVestingPlan);
+            ensure!(plan.total_amount >= plan.initial_amount, Error::<T>::InvalidVestingPlan);
 
             let who = T::Lookup::lookup(target)?;
-            ensure!(
-                !VestingPlans::<T>::contains_key(&who),
-                Error::<T>::ExistingVestingPlan
-            );
+            ensure!(!VestingPlans::<T>::contains_key(&who), Error::<T>::ExistingVestingPlan);
 
             T::Currency::transfer(
                 &transactor,

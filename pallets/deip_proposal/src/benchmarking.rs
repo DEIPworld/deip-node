@@ -1,41 +1,32 @@
 #![cfg(feature = "runtime-benchmarks")]
 
-use super::{*, proposal::*};
-use frame_system::{RawOrigin, EventRecord};
-use frame_system::Config as Sys;
-use frame_support::{ensure, traits::Get};
-use frame_benchmarking::{benchmarks, account, whitelisted_caller};
-use sp_std::prelude::*;
+use super::{proposal::*, *};
 use core::convert::TryInto;
+use frame_benchmarking::{account, benchmarks, whitelisted_caller};
+use frame_support::{ensure, traits::Get};
+use frame_system::{Config as Sys, EventRecord, RawOrigin};
+use sp_std::prelude::*;
 
-use crate::proposal::BATCH_MAX_SIZE;
-use crate::Pallet as Proposal;
+use crate::{proposal::BATCH_MAX_SIZE, Pallet as Proposal};
 use frame_support::weights::Weight;
 
 const SEED: u32 = 0;
 
 fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
-	let events = frame_system::Pallet::<T>::events();
-	let system_event: <T as frame_system::Config>::Event = generic_event.into();
-	// compare to the last event record
-	let EventRecord { event, .. } = &events[events.len() - 1];
-	assert_eq!(event, &system_event);
+    let events = frame_system::Pallet::<T>::events();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    // compare to the last event record
+    let EventRecord { event, .. } = &events[events.len() - 1];
+    assert_eq!(event, &system_event);
 }
 
 type Author<T> = <T as Sys>::AccountId;
 type Member<T> = <T as Sys>::AccountId;
 
-fn pre_decide<T: Config>(
-    batch: Vec<InputProposalBatchItem<T>>
-)
-    -> (Author<T>, ProposalId)
-{
+fn pre_decide<T: Config>(batch: Vec<InputProposalBatchItem<T>>) -> (Author<T>, ProposalId) {
     let author: Author<T> = whitelisted_caller();
     let proposal_id = DeipProposal::<T>::timepoint();
-    Proposal::<T>::propose(
-        RawOrigin::Signed(author.clone()).into(),
-        batch,
-        Some(proposal_id))
+    Proposal::<T>::propose(RawOrigin::Signed(author.clone()).into(), batch, Some(proposal_id))
         .unwrap();
     (author, proposal_id)
 }
@@ -47,17 +38,17 @@ fn init_batch<T: Config>(c: usize) -> (Vec<InputProposalBatchItem<T>>, Weight) {
     while nested.len() < c {
         nested.push(InputProposalBatchItem::<T> {
             account: init_member::<T>(nested.len() as u32).into(),
-            call: frame_system::Call::<T>::remark(vec![]).into(),
+            call: frame_system::Call::<T>::remark { remark: vec![] }.into(),
         });
     }
     let mut batch = vec![InputProposalBatchItem::<T> {
         account: init_member::<T>(0).into(),
-        call: Call::<T>::propose(nested, None).into(),
+        call: Call::<T>::propose { batch: nested, external_id: None }.into(),
     }];
     while batch.len() < c {
         batch.push(InputProposalBatchItem::<T> {
             account: init_member::<T>(batch.len() as u32).into(),
-            call: frame_system::Call::<T>::remark(vec![]).into()
+            call: frame_system::Call::<T>::remark { remark: vec![] }.into(),
         });
     }
     let batch_weight = batch_weight::<T>(batch.as_slice());
@@ -71,13 +62,11 @@ fn init_member<T: Config>(index: u32) -> T::AccountId {
     member
 }
 
-fn pre_decide_final_approval<T: Config>()
-    -> (Member<T>, ProposalId, Weight)
-{
+fn pre_decide_final_approval<T: Config>() -> (Member<T>, ProposalId, Weight) {
     let member = init_member::<T>(0);
     let batch = vec![InputProposalBatchItem::<T> {
         account: member.clone().into(),
-        call: frame_system::Call::<T>::remark(vec![]).into(),
+        call: frame_system::Call::<T>::remark { remark: vec![] }.into(),
     }];
     let batch_weight = batch_weight::<T>(batch.as_slice());
     let (_author, proposal_id) = pre_decide::<T>(batch);
@@ -87,17 +76,17 @@ fn pre_decide_final_approval<T: Config>()
 benchmarks! {
     propose {
         let c in 0 .. BATCH_MAX_SIZE.try_into().unwrap();
-        
+
         let caller: T::AccountId = whitelisted_caller();
         let (batch, _) = init_batch::<T>(c as usize);
-        
+
         let proposal_id = DeipProposal::<T>::timepoint();
         let external_id: Option<ProposalId> = Some(proposal_id);
     }: _(RawOrigin::Signed(caller), batch, external_id)
     verify {
         ensure!(ProposalRepository::<T>::contains_key(proposal_id), "proposal not created")
     }
-    
+
     decide_reject {
         let (batch, batch_weight) = init_batch::<T>(BATCH_MAX_SIZE);
         let (_author, proposal_id) = pre_decide::<T>(batch);
@@ -111,7 +100,7 @@ benchmarks! {
             state: ProposalState::Rejected
         }.into())
     }
-    
+
     decide_approve {
         let (batch, batch_weight) = init_batch::<T>(BATCH_MAX_SIZE);
         let (_author, proposal_id) = pre_decide::<T>(batch);
@@ -124,7 +113,7 @@ benchmarks! {
             proposal_id,
         }.into())
     }
-    
+
     decide_revoke_approval {
         let (batch, batch_weight) = init_batch::<T>(BATCH_MAX_SIZE);
         let (_author, proposal_id) = pre_decide::<T>(batch);
@@ -143,7 +132,7 @@ benchmarks! {
             proposal_id,
         }.into())
     }
-    
+
     decide_final_approve {
         let (member, proposal_id, batch_weight) = pre_decide_final_approval::<T>();
         let decision = ProposalMemberDecision::Approve;
@@ -155,7 +144,7 @@ benchmarks! {
             state: ProposalState::Done
         }.into())
     }
-    
+
     expire {
         let (batch, _batch_weight) = init_batch::<T>(BATCH_MAX_SIZE);
         let (_author, proposal_id) = pre_decide::<T>(batch);

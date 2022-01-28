@@ -1,47 +1,48 @@
 [package]
-authors = ['DEIP world <https://github.com/DEIPworld>']
-description = 'Utility for an experiments on building custom format transactions'
-edition = '2018'
-homepage = 'https://deip.world/'
-license = 'Apache-2.0'
-name = 'custom-transaction'
-repository = 'https://github.com/DEIPworld/deip-polkadot'
-version = '3.0.0'
+authors = ["DEIP world <https://github.com/DEIPworld>"]
+description = "Utility for an experiments on building custom format transactions"
+edition = "2018"
+homepage = "https://deip.world/"
+license = "Apache-2.0"
+name = "custom-transaction"
+repository = "https://github.com/DEIPworld/deip-polkadot"
+version = "3.0.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 # alias "parity-scale-code" to "codec"
 [dependencies.codec]
 default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '2.0.0'
+features = ["derive"]
+package = "parity-scale-codec"
+version = "2.0.0"
 
 [dependencies]
-sp-runtime = { default-features = false, version = '3.0.0' }
-sp-keyring = { default-features = false, version = '3.0.0' }
-frame-system = { default-features = false, version = '3.0.0' }
-node-template-runtime = { package = "appchain-deip-runtime", default-features = false, path = '../../runtime' }
-pallet-deip-dao = { default-features = false, version = '3.0.0', path = '../../pallets/deip_dao' }
-#pallet-deip-portal = { default-features = false, version = '3.0.0', path = '../../pallets/deip_portal' }
-sp-core = { default-features = false, version = '3.0.0' }
 rustc-hex = "2.1.0"
-pallet-transaction-payment = { default-features = false, version = '3.0.0' }
-pallet-sudo = { default-features = false, version = '3.0.0' }
-pallet-balances = { default-features = false, version = '3.0.0' }
-sp-std = { default-features = false, version = '3.0.0' }
+
+frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-transaction-payment = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-sudo = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-keyring = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+
+node-template-runtime = { package = "appchain-deip-runtime", default-features = false, path = "../../runtime" }
+pallet-deip-dao = { default-features = false, path = "../../pallets/deip_dao" }
 
 [features]
-default = ['std']
+default = ["std"]
 std = [
-    'codec/std',
-    'sp-runtime/std',
-    'frame-system/std',
-    'node-template-runtime/std',
-    'pallet-deip-dao/std',
-    'sp-core/std',
-    'rustc-hex/std',
-    'pallet-transaction-payment/std',
-    'pallet-sudo/std',
-    'pallet-balances/std',
+    "codec/std",
+    "sp-runtime/std",
+    "frame-system/std",
+    "node-template-runtime/std",
+    "pallet-deip-dao/std",
+    "sp-core/std",
+    "rustc-hex/std",
+    "pallet-transaction-payment/std",
+    "pallet-sudo/std",
+    "pallet-balances/std",
 ]

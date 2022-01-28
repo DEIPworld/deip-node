@@ -4,7 +4,7 @@ use crate::traits::DeipAssetSystem;
 use sp_runtime::traits::Saturating;
 use sp_std::vec;
 
-#[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Contribution<AccountId, Balance, Moment> {
@@ -30,7 +30,8 @@ impl<T: Config> Module<T> {
 
         ensure!(sale.asset_id == *asset.id(), Error::<T>::InvestingWrongAsset);
 
-        let is_hard_cap_reached = sale.total_amount.0.saturating_add(*asset.amount()) >= sale.hard_cap.0;
+        let is_hard_cap_reached =
+            sale.total_amount.0.saturating_add(*asset.amount()) >= sale.hard_cap.0;
         let amount_to_contribute = if is_hard_cap_reached {
             sale.hard_cap.0.saturating_sub(sale.total_amount.0)
         } else {
@@ -53,14 +54,14 @@ impl<T: Config> Module<T> {
                     *contributions = Some(vec![(
                         account.clone(),
                         Contribution {
-                            sale_id: sale_id,
+                            sale_id,
                             owner: account.clone(),
                             amount: amount_to_contribute,
                             time: pallet_timestamp::Pallet::<T>::get(),
                         },
                     )]);
-                    return;
-                }
+                    return
+                },
                 Some(c) => c,
             };
 
@@ -74,18 +75,18 @@ impl<T: Config> Module<T> {
                         (
                             account.clone(),
                             Contribution {
-                                sale_id: sale_id,
+                                sale_id,
                                 owner: account.clone(),
                                 amount: amount_to_contribute,
                                 time: pallet_timestamp::Pallet::<T>::get(),
                             },
                         ),
                     );
-                }
+                },
                 Ok(i) => {
                     mut_contributions[i].1.amount =
                         amount_to_contribute.saturating_add(mut_contributions[i].1.amount);
-                }
+                },
             };
         });
 

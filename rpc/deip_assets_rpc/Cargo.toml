@@ -23,6 +23,7 @@ package = 'common-deip-rpc'
 path = "../../deip_common/deip_rpc"
 
 [dependencies]
+sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sc-rpc-api = '0.9.0'
 serde = { version = "1.0.123", optional = true, features = ["derive"]}
 pallet-deip-assets = { path = "../../pallets/deip_assets", default-features = false }
@@ -33,36 +34,6 @@ jsonrpc-core = "15.0"
 jsonrpc-core-client = "15.0"
 jsonrpc-derive = "15.0"
 sp-blockchain = { version = '3.0', default-features = false}
-
-[dependencies.frame-support]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sp-std]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sp-runtime]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sp-core]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sp-api]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
 
 [dev-dependencies]
 sp-io = { default-features = false, version = '3.0.0' }
