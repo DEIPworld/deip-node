@@ -60,6 +60,7 @@ pub mod pallet {
         pallet_prelude::{ensure_none, ensure_signed, BlockNumberFor, OriginFor},
         RawOrigin,
     };
+    use scale_info::TypeInfo;
     use sp_runtime::traits::{CheckedAdd, One, StaticLookup, Zero};
     use sp_std::{
         prelude::{Clone, Vec},
@@ -136,12 +137,12 @@ pub mod pallet {
             }
 
             for (asset, balances) in FtBalanceMap::<T>::iter() {
-                for balance in balances {
-                    if !Self::account_balance(&balance, &asset).is_zero() {
+                for account in balances {
+                    if !Self::account_balance(&account, &asset).is_zero() {
                         continue
                     }
 
-                    let call = Call::deip_wipe_zero_balance(asset, balance);
+                    let call = Call::deip_wipe_zero_balance { asset, account };
                     let _submit =
                         SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
                 }
@@ -158,7 +159,7 @@ pub mod pallet {
                 return InvalidTransaction::Custom(super::NON_LOCAL).into()
             }
 
-            if let Call::deip_wipe_zero_balance(ref asset, ref account) = call {
+            if let Call::deip_wipe_zero_balance { asset, account } = &call {
                 if !Self::account_balance(account, asset).is_zero() {
                     return InvalidTransaction::Stale.into()
                 }
@@ -241,7 +242,7 @@ pub mod pallet {
     pub(super) type InvestmentByAssetId<T: Config> =
         StorageMap<_, Identity, DeipAssetIdOf<T>, Vec<DeipInvestmentIdOf<T>>, OptionQuery>;
 
-    #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
+    #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq, TypeInfo)]
     pub(super) struct Investment<AccountId, AssetId> {
         creator: AccountId,
         assets: Vec<AssetId>,
@@ -261,7 +262,7 @@ pub mod pallet {
     pub(super) type FtBalanceMap<T: Config> =
         StorageMap<_, Identity, DeipAssetIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
 
-    #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
+    #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq, TypeInfo)]
     pub(super) struct AssetMetadata<U8> {
         name: Vec<U8>,
         symbol: Vec<U8>,
@@ -425,7 +426,11 @@ pub mod pallet {
                     .next()
                     .ok_or(ReserveError::AssetTransferFailed(*asset))?
                     .0;
-                let call = pallet_assets::Call::<T>::transfer(asset_id, id_source.clone(), *amount);
+                let call = pallet_assets::Call::<T>::transfer {
+                    id: asset_id,
+                    target: id_source.clone(),
+                    amount: *amount,
+                };
                 let result = call.dispatch_bypass_filter(RawOrigin::Signed(account.clone()).into());
                 if result.is_err() {
                     return Err(ReserveError::AssetTransferFailed(*asset))
@@ -562,7 +567,8 @@ pub mod pallet {
             let id_account = Self::investment_key(&id);
             let id_source = <T::Lookup as StaticLookup>::unlookup(id_account);
 
-            let call = pallet_assets::Call::<T>::transfer(asset_id, id_source, amount);
+            let call =
+                pallet_assets::Call::<T>::transfer { id: asset_id, target: id_source, amount };
             let result = call.dispatch_bypass_filter(RawOrigin::Signed(who.clone()).into());
             if result.is_err() {
                 return Err(UnreserveError::AssetTransferFailed(info.asset_id))
@@ -583,7 +589,8 @@ pub mod pallet {
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
-            let call = pallet_assets::Call::<T>::transfer(asset_id, target_source, amount);
+            let call =
+                pallet_assets::Call::<T>::transfer { id: asset_id, target: target_source, amount };
             let ok = call.dispatch_bypass_filter(from)?;
 
             if Self::try_get_tokenized_project(&id).is_some() {
@@ -629,7 +636,8 @@ pub mod pallet {
                 asset_id.checked_add(&One::one()).ok_or(Error::<T>::AssetIdOverflow)?;
 
             let admin_source = <T::Lookup as StaticLookup>::unlookup(admin);
-            let call = pallet_assets::Call::<T>::create(asset_id, admin_source, min_balance);
+            let call =
+                pallet_assets::Call::<T>::create { id: asset_id, admin: admin_source, min_balance };
             let post_dispatch_info = call.dispatch_bypass_filter(origin)?;
 
             NextAssetId::<T>::put(next_asset_id);
@@ -661,7 +669,11 @@ pub mod pallet {
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
-            let call = pallet_assets::Call::<T>::mint(asset_id, beneficiary_source, amount);
+            let call = pallet_assets::Call::<T>::mint {
+                id: asset_id,
+                beneficiary: beneficiary_source,
+                amount,
+            };
             let result = call.dispatch_bypass_filter(origin)?;
 
             if Self::try_get_tokenized_project(&id).is_some() {
@@ -699,7 +711,8 @@ pub mod pallet {
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
-            let call = pallet_assets::Call::<T>::set_metadata(asset_id, name, symbol, decimals);
+            let call =
+                pallet_assets::Call::<T>::set_metadata { id: asset_id, name, symbol, decimals };
             let result = call.dispatch_bypass_filter(origin)?;
 
             AssetMetadataMap::<T>::insert(
@@ -982,7 +995,7 @@ pub mod pallet {
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
 
-            let call = pallet_assets::Call::<T>::destroy(asset_id, witness);
+            let call = pallet_assets::Call::<T>::destroy { id: asset_id, witness };
             call.dispatch_bypass_filter(origin)
         }
 
@@ -1014,7 +1027,7 @@ pub mod pallet {
                 .0;
 
             let who_source = <T::Lookup as StaticLookup>::unlookup(who.into());
-            let call = pallet_assets::Call::<T>::burn(asset_id, who_source, amount);
+            let call = pallet_assets::Call::<T>::burn { id: asset_id, who: who_source, amount };
             call.dispatch_bypass_filter(origin)
         }
 
@@ -1049,7 +1062,7 @@ pub mod pallet {
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
             let who_source = <T::Lookup as StaticLookup>::unlookup(who.into());
-            let call = pallet_assets::Call::<T>::freeze(asset_id, who_source);
+            let call = pallet_assets::Call::<T>::freeze { id: asset_id, who: who_source };
             call.dispatch_bypass_filter(origin)
         }
 
@@ -1064,7 +1077,7 @@ pub mod pallet {
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
-            let call = pallet_assets::Call::<T>::thaw(asset_id, who_source);
+            let call = pallet_assets::Call::<T>::thaw { id: asset_id, who: who_source };
             call.dispatch_bypass_filter(origin)
         }
 
@@ -1087,7 +1100,7 @@ pub mod pallet {
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
-            let call = pallet_assets::Call::<T>::freeze_asset(asset_id);
+            let call = pallet_assets::Call::<T>::freeze_asset { id: asset_id };
             call.dispatch_bypass_filter(origin)
         }
 
@@ -1100,7 +1113,7 @@ pub mod pallet {
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
-            let call = pallet_assets::Call::<T>::thaw_asset(asset_id);
+            let call = pallet_assets::Call::<T>::thaw_asset { id: asset_id };
             call.dispatch_bypass_filter(origin)
         }
 
@@ -1115,7 +1128,8 @@ pub mod pallet {
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
-            let call = pallet_assets::Call::<T>::transfer_ownership(asset_id, owner_source);
+            let call =
+                pallet_assets::Call::<T>::transfer_ownership { id: asset_id, owner: owner_source };
             call.dispatch_bypass_filter(origin)
         }
 
@@ -1134,12 +1148,12 @@ pub mod pallet {
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
-            let call = pallet_assets::Call::<T>::set_team(
-                asset_id,
-                issuer_source,
-                admin_source,
-                freezer_source,
-            );
+            let call = pallet_assets::Call::<T>::set_team {
+                id: asset_id,
+                issuer: issuer_source,
+                admin: admin_source,
+                freezer: freezer_source,
+            };
             call.dispatch_bypass_filter(origin)
         }
 

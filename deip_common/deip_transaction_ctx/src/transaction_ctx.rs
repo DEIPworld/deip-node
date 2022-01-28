@@ -1,19 +1,21 @@
+use codec::{Decode, Encode};
+use frame_support::{
+    pallet_prelude::{Member, Parameter, TypeInfo},
+    Hashable,
+};
 use frame_system::Pallet as System;
-use frame_support::pallet_prelude::{Parameter, Member};
-use codec::{Encode, Decode};
 #[cfg(feature = "std")]
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use sp_io::hashing::twox_128;
-use frame_support::Hashable;
 use sp_std::prelude::*;
 
 /// Context of a transaction that executed in
 pub trait TransactionCtxT: Sized + Clone {
     type BlockNumber: Parameter + Member;
     type ExtrinsicId: Parameter + Member;
-    
+
     fn current() -> Self;
-    
+
     fn block_number(&self) -> Self::BlockNumber;
     fn extrinsic_id(&self) -> Self::ExtrinsicId;
     fn id(&self) -> TransactionCtxId<Self>;
@@ -21,12 +23,12 @@ pub trait TransactionCtxT: Sized + Clone {
 }
 
 /// Id of a context that transaction executed in
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Encode, Decode)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Encode, Decode, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct TransactionCtxId<Ctx: TransactionCtxT + ?Sized> {
+pub struct TransactionCtxId<Ctx: TransactionCtxT> {
     pub block_number: Ctx::BlockNumber,
-    pub extrinsic_id: Ctx::ExtrinsicId
+    pub extrinsic_id: Ctx::ExtrinsicId,
 }
 impl<Ctx: TransactionCtxT> Default for TransactionCtxId<Ctx> {
     fn default() -> Self {
@@ -34,16 +36,17 @@ impl<Ctx: TransactionCtxT> Default for TransactionCtxId<Ctx> {
     }
 }
 
-#[derive(Clone, Default, Eq, PartialEq)]
-pub struct TransactionCtx<T: frame_system::Config>(sp_std::marker::PhantomData<T>);
-impl<T: frame_system::Config> TransactionCtxT
-    for TransactionCtx<T>
-{
+#[derive(Clone, Default, Eq, PartialEq, TypeInfo)]
+pub struct TransactionCtx<T: frame_system::Config + TypeInfo>(sp_std::marker::PhantomData<T>);
+
+impl<T: frame_system::Config + TypeInfo> TransactionCtxT for TransactionCtx<T> {
     type BlockNumber = T::BlockNumber;
     type ExtrinsicId = u32;
 
-    fn current() -> Self { Self(Default::default()) }
-    
+    fn current() -> Self {
+        Self(Default::default())
+    }
+
     fn block_number(&self) -> Self::BlockNumber {
         System::<T>::block_number()
     }
@@ -53,12 +56,9 @@ impl<T: frame_system::Config> TransactionCtxT
     }
 
     fn id(&self) -> TransactionCtxId<Self> {
-        TransactionCtxId {
-            block_number: self.block_number(),
-            extrinsic_id: self.extrinsic_id()
-        }
+        TransactionCtxId { block_number: self.block_number(), extrinsic_id: self.extrinsic_id() }
     }
-    
+
     /// Data of the current extrinsic.
     fn extrinsic_data(&self, decode: bool) -> Vec<u8> {
         let mut key = Vec::with_capacity(40);
@@ -76,37 +76,36 @@ impl<T: frame_system::Config> TransactionCtxT
 #[macro_export]
 macro_rules! ctx_t {
     ($name:tt) => {
-#[derive(Clone, Default, Eq, PartialEq)]
-pub struct $name<T: TransactionCtxT>(T);
+        #[derive(Clone, Default, Eq, PartialEq, scale_info::TypeInfo)]
+        pub struct $name<T: TransactionCtxT>(T);
 
-impl<T> TransactionCtxT for $name<T>
-    where T: TransactionCtxT
-{
-    type BlockNumber = T::BlockNumber;
-    type ExtrinsicId = T::ExtrinsicId;
+        impl<T> TransactionCtxT for $name<T>
+        where
+            T: TransactionCtxT,
+        {
+            type BlockNumber = T::BlockNumber;
+            type ExtrinsicId = T::ExtrinsicId;
 
-    fn current() -> Self {
-        Self(T::current())
-    }
+            fn current() -> Self {
+                Self(T::current())
+            }
 
-    fn block_number(&self) -> Self::BlockNumber {
-        self.0.block_number()
-    }
+            fn block_number(&self) -> Self::BlockNumber {
+                self.0.block_number()
+            }
 
-    fn extrinsic_id(&self) -> Self::ExtrinsicId {
-        self.0.extrinsic_id()
-    }
+            fn extrinsic_id(&self) -> Self::ExtrinsicId {
+                self.0.extrinsic_id()
+            }
 
-    fn id(&self) -> TransactionCtxId<Self> {
-        let TransactionCtxId {
-            block_number, extrinsic_id
-        } = self.0.id();
-        TransactionCtxId { block_number, extrinsic_id }
-    }
-    
-    fn extrinsic_data(&self, decode: bool) -> Vec<u8> {
-        self.0.extrinsic_data(decode)
-    }
-}
+            fn id(&self) -> TransactionCtxId<Self> {
+                let TransactionCtxId { block_number, extrinsic_id } = self.0.id();
+                TransactionCtxId { block_number, extrinsic_id }
+            }
+
+            fn extrinsic_data(&self, decode: bool) -> Vec<u8> {
+                self.0.extrinsic_data(decode)
+            }
+        }
     };
 }

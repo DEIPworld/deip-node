@@ -1,94 +1,54 @@
 [package]
-authors = ['DEIP world <https://github.com/DEIPworld>']
-description = 'FRAME pallet defined generic Proposal developed by DEIP'
-edition = '2018'
-homepage = 'https://deip.world/'
-license = 'Apache-2.0'
-name = 'pallet-deip-proposal'
-repository = 'https://github.com/DEIPworld/deip-polkadot'
-version = '3.0.0'
+authors = ["DEIP world <https://github.com/DEIPworld>"]
+description = "FRAME pallet defined generic Proposal developed by DEIP"
+edition = "2018"
+homepage = "https://deip.world/"
+license = "Apache-2.0"
+name = "pallet-deip-proposal"
+repository = "https://github.com/DEIPworld/deip-polkadot"
+version = "3.0.0"
 
 [package.metadata.docs.rs]
-targets = ['x86_64-unknown-linux-gnu']
+targets = ["x86_64-unknown-linux-gnu"]
 
 # alias "parity-scale-code" to "codec"
 [dependencies.codec]
 default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '2.0.0'
+features = ["derive"]
+package = "parity-scale-codec"
+version = "2.0.0"
 
 [dependencies]
+scale-info = { version = "1.0", default-features = false, features = ["derive"] }
 serde = { version = "1.0.123", optional = true, features = ["derive"], default_features = false }
+
+frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
+
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-timestamp = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 
 deip-storage-ops = { path = "../../deip_common/deip_storage_ops", default-features = false }
 deip-transaction-ctx = { path = "../../deip_common/deip_transaction_ctx", default-features = false }
 
-[dependencies.sp-io]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sp-std]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sp-runtime]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sp-core]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.frame-support]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.frame-system]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.pallet-timestamp]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.frame-benchmarking]
-default-features = false
-optional = true
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dev-dependencies]
-
 [features]
-default = ['std']
+default = ["std"]
 runtime-benchmarks = ["frame-benchmarking"]
 std = [
-    'codec/std',
-    'frame-support/std',
-    'frame-system/std',
-    'sp-std/std', 
-    'sp-runtime/std',
-    'sp-core/std', 
-    'sp-io/std', 
-    'pallet-timestamp/std',
-    'serde/std',
-    'deip-storage-ops/std',
-    'deip-transaction-ctx/std',
-    'frame-benchmarking/std',
+    "codec/std",
+    "frame-support/std",
+    "frame-system/std",
+    "sp-std/std", 
+    "sp-runtime/std",
+    "sp-core/std", 
+    "sp-io/std", 
+    "pallet-timestamp/std",
+    "serde/std",
+    "deip-storage-ops/std",
+    "deip-transaction-ctx/std",
+    "frame-benchmarking/std",
 ]

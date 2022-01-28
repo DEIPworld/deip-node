@@ -3,7 +3,7 @@ use sp_runtime::traits::AtLeast32BitUnsigned;
 
 use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Asset<AssetId, AssetBalance: Clone + AtLeast32BitUnsigned> {

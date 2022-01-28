@@ -1,9 +1,13 @@
-use jsonrpc_core::{
-    futures::future::{self, Future},
-    futures::{self, stream, Stream},
+use jsonrpc_core::futures::{
+    self,
+    future::{self, Future},
+    stream, Stream,
 };
 
-pub use sp_core::{hashing::twox_128_into, storage::StorageData, storage::StorageKey};
+pub use sp_core::{
+    hashing::twox_128_into,
+    storage::{StorageData, StorageKey},
+};
 
 use frame_support::{ReversibleStorageHasher, StorageHasher};
 
@@ -21,14 +25,8 @@ pub fn prefix(pallet: &[u8], storage: &[u8]) -> Vec<u8> {
     let mut prefix = Vec::new();
     prefix.resize(32, 0u8);
 
-    twox_128_into(
-        pallet,
-        <&mut [u8; 16]>::try_from(&mut prefix[..16]).unwrap(),
-    );
-    twox_128_into(
-        storage,
-        <&mut [u8; 16]>::try_from(&mut prefix[16..]).unwrap(),
-    );
+    twox_128_into(pallet, <&mut [u8; 16]>::try_from(&mut prefix[..16]).unwrap());
+    twox_128_into(storage, <&mut [u8; 16]>::try_from(&mut prefix[16..]).unwrap());
 
     prefix
 }
@@ -52,7 +50,7 @@ impl<Hasher: StorageHasher> HashedKey<Hasher> {
 
 impl<Hasher: StorageHasher> HashedKeyTrait for HashedKey<Hasher> {
     fn as_ref(&self) -> &[u8] {
-        return self.0.as_ref();
+        return self.0.as_ref()
     }
 }
 
@@ -96,7 +94,8 @@ where
 // This implementation is for case when index-map is used to get the
 // key which is used to retrieve data from the map, but the index key
 // should also be kept.
-impl<Key, Hasher, IndexKey> CompositeKeyTrait<Key, Hasher> for (Option<StorageData>, StorageKey, IndexKey)
+impl<Key, Hasher, IndexKey> CompositeKeyTrait<Key, Hasher>
+    for (Option<StorageData>, StorageKey, IndexKey)
 where
     Key: Decode,
     Hasher: StorageHasher + ReversibleStorageHasher,
@@ -166,20 +165,18 @@ where
     State: sc_rpc_api::state::StateApi<Hash>,
     Hash: Copy,
 {
-    Box::new(
-        state
-            .storage(key, at)
-            .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
-            .and_then(|d| match d {
-                None => future::ok(None),
-                Some(data) => match R::decode(&mut &data.0[..]) {
-                    Err(_) => {
-                        future::err(to_rpc_error(R::get_error(), Some(format!("{:?}", data))))
-                    }
-                    Ok(decoded) => future::ok(Some(decoded)),
-                },
-            }),
-    )
+    // let x = state
+    //     .storage(key, at)
+    //     .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
+    //     .and_then(|d| match d {
+    //         None => future::ok(None),
+    //         Some(data) => match R::decode(&mut &data.0[..]) {
+    //             Err(_) => future::err(to_rpc_error(R::get_error(), Some(format!("{:?}", data)))),
+    //             Ok(decoded) => future::ok(Some(decoded)),
+    //         },
+    //     });
+    // Box::new(x)
+    todo!()
 }
 
 pub fn get_list_by_keys<KeyValue, Hasher, State, BlockHash, KeyMap, T>(
@@ -189,7 +186,11 @@ pub fn get_list_by_keys<KeyValue, Hasher, State, BlockHash, KeyMap, T>(
     count: u32,
     start_key: Option<StorageKey>,
     key_map: KeyMap,
-) -> FutureResult<Vec<ListResult<<T::Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType, KeyValue::Value>>>
+) -> FutureResult<
+    Vec<
+        ListResult<<T::Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType, KeyValue::Value>,
+    >,
+>
 where
     KeyValue: KeyValueInfo,
     Hasher: StorageHasher + ReversibleStorageHasher,
@@ -201,25 +202,22 @@ where
     T::Future: 'static + Send,
     <T::Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType: 'static + Send,
 {
-    let keys = match state
-        .storage_keys_paged(Some(prefix_key), count, start_key, at)
-        .wait()
-    {
-        Ok(k) => k,
-        Err(e) => {
-            return Box::new(future::err(to_rpc_error(
-                Error::ScRpcApiError,
-                Some(format!("{:?}", e)),
-            )))
-        }
-    };
-    if keys.is_empty() {
-        return Box::new(future::ok(vec![]));
-    }
+    // let keys = match state.storage_keys_paged(Some(prefix_key), count, start_key, at).wait() {
+    //     Ok(k) => k,
+    //     Err(e) =>
+    //         return Box::new(future::err(to_rpc_error(
+    //             Error::ScRpcApiError,
+    //             Some(format!("{:?}", e)),
+    //         ))),
+    // };
+    // if keys.is_empty() {
+    //     return Box::new(future::ok(vec![]))
+    // }
 
-    let key_futures: Vec<_> = keys.into_iter().map(key_map).collect();
+    // let key_futures: Vec<_> = keys.into_iter().map(key_map).collect();
 
-    StorageMap::<Hasher>::get_list_by_keys::<KeyValue, _>(key_futures)
+    // StorageMap::<Hasher>::get_list_by_keys::<KeyValue, _>(key_futures)
+    todo!()
 }
 
 /// The function gets list of keys from the first map (i.e. index) and
@@ -229,7 +227,6 @@ where
 /// used for the first key in the second map.
 ///
 /// The index map has to be StorageDoubleMap.
-///
 pub fn get_list_by_index<IndexKeyHasher, Hasher, State, BlockHash, Key, KeyValue>(
     state: &State,
     at: Option<BlockHash>,
@@ -248,36 +245,37 @@ where
     IndexKeyHasher: StorageHasher + ReversibleStorageHasher,
     Hasher: StorageHasher + ReversibleStorageHasher,
 {
-    let key_encoded = key.encode();
-    let key_encoded_size = key_encoded.len();
+    // let key_encoded = key.encode();
+    // let key_encoded_size = key_encoded.len();
 
-    let map = |k: StorageKey| {
-        // below we retrieve key in the other map from the index map key
-        let no_prefix = IndexKeyHasher::reverse(&k.0[32..]);
-        let key_hashed =
-            HashedKeyRef::<'_, Hasher>::unsafe_from_hashed(&no_prefix[key_encoded_size..]);
+    // let map = |k: StorageKey| {
+    //     // below we retrieve key in the other map from the index map key
+    //     let no_prefix = IndexKeyHasher::reverse(&k.0[32..]);
+    //     let key_hashed =
+    //         HashedKeyRef::<'_, Hasher>::unsafe_from_hashed(&no_prefix[key_encoded_size..]);
 
-        let key = chain_key_hash_map(&prefix(pallet, storage), &key_hashed);
+    //     let key = chain_key_hash_map(&prefix(pallet, storage), &key_hashed);
 
-        state
-            .storage(key.clone(), at)
-            .map(|v| (v, key))
-            .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
-    };
+    //     state
+    //         .storage(key.clone(), at)
+    //         .map(|v| (v, key))
+    //         .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
+    // };
 
-    let prefix = prefix(pallet, index);
-    let key = HashedKey::<IndexKeyHasher>::unsafe_from_encoded(&key_encoded);
-    let start_key = start_key
-        .map(|id| chain_key_hash_double_map(&prefix, &key, &HashedKey::<Hasher>::new(&id.key())));
+    // let prefix = prefix(pallet, index);
+    // let key = HashedKey::<IndexKeyHasher>::unsafe_from_encoded(&key_encoded);
+    // let start_key = start_key
+    //     .map(|id| chain_key_hash_double_map(&prefix, &key, &HashedKey::<Hasher>::new(&id.key())));
 
-    get_list_by_keys::<KeyValue, Hasher, _, _, _, _>(
-        state,
-        at,
-        chain_key_hash_map(&prefix, &key),
-        count,
-        start_key,
-        map,
-    )
+    // get_list_by_keys::<KeyValue, Hasher, _, _, _, _>(
+    //     state,
+    //     at,
+    //     chain_key_hash_map(&prefix, &key),
+    //     count,
+    //     start_key,
+    //     map,
+    // )
+    todo!()
 }
 
 pub struct StorageMap<Hasher>(std::marker::PhantomData<Hasher>);
@@ -341,30 +339,38 @@ impl<Hasher: StorageHasher + ReversibleStorageHasher> StorageMap<Hasher> {
         State: sc_rpc_api::state::StateApi<BlockHash>,
         BlockHash: Copy,
     {
-        let prefix = prefix(pallet, map);
-        let start_key =
-            start_id.map(|id| chain_key_hash_map(&prefix, &HashedKey::<Hasher>::new(id.key())));
+        // let prefix = prefix(pallet, map);
+        // let start_key =
+        //     start_id.map(|id| chain_key_hash_map(&prefix, &HashedKey::<Hasher>::new(id.key())));
 
-        let map = |k: StorageKey| {
-            state
-                .storage(k.clone(), at)
-                .map(|v| (v, k))
-                .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
-        };
+        // let map = |k: StorageKey| {
+        //     state
+        //         .storage(k.clone(), at)
+        //         .map(|v| (v, k))
+        //         .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
+        // };
 
-        get_list_by_keys::<KeyValue, Hasher, _, _, _, _>(
-            state,
-            at,
-            StorageKey(prefix),
-            count,
-            start_key,
-            map,
-        )
+        // get_list_by_keys::<KeyValue, Hasher, _, _, _, _>(
+        //     state,
+        //     at,
+        //     StorageKey(prefix),
+        //     count,
+        //     start_key,
+        //     map,
+        // )
+        todo!()
     }
 
     pub fn get_list_by_keys<KeyValue, T>(
         keys: Vec<T>,
-    ) -> FutureResult<Vec<ListResult<<T::Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType, KeyValue::Value>>>
+    ) -> FutureResult<
+        Vec<
+            ListResult<
+                <T::Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType,
+                KeyValue::Value,
+            >,
+        >,
+    >
     where
         KeyValue: KeyValueInfo,
         T: futures::future::IntoFuture<Error = RpcError>,
@@ -373,36 +379,33 @@ impl<Hasher: StorageHasher + ReversibleStorageHasher> StorageMap<Hasher> {
         <T::Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType: 'static + Send,
     {
         let result = Vec::with_capacity(keys.len());
-        Box::new(
-            stream::futures_ordered(keys.into_iter()).fold(result, |mut result, kv| {
-                let (value, composite_key) = kv.decompose();
-                let data = match value {
-                    None => return future::err(to_rpc_error(Error::NoneForReturnedKey, None)),
-                    Some(d) => d,
-                };
+        Box::new(stream::futures_ordered(keys.into_iter()).fold(result, |mut result, kv| {
+            let (value, composite_key) = kv.decompose();
+            let data = match value {
+                None => return future::err(to_rpc_error(Error::NoneForReturnedKey, None)),
+                Some(d) => d,
+            };
 
-                let key = match composite_key {
-                    Err(data) => {
-                        return future::err(to_rpc_error(
-                            KeyValue::KeyError::get_error(),
-                            Some(format!("{:?}", &data)),
-                        ))
-                    }
-                    Ok(k) => KeyWrapper::from(k),
-                };
-
-                match KeyValue::Value::decode(&mut &data.0[..]) {
-                    Err(_) => future::err(to_rpc_error(
-                        KeyValue::ValueError::get_error(),
-                        Some(format!("{:?}", data)),
+            let key = match composite_key {
+                Err(data) =>
+                    return future::err(to_rpc_error(
+                        KeyValue::KeyError::get_error(),
+                        Some(format!("{:?}", &data)),
                     )),
-                    Ok(value) => {
-                        result.push(ListResult { key, value });
-                        future::ok(result)
-                    }
-                }
-            }),
-        )
+                Ok(k) => KeyWrapper::from(k),
+            };
+
+            match KeyValue::Value::decode(&mut &data.0[..]) {
+                Err(_) => future::err(to_rpc_error(
+                    KeyValue::ValueError::get_error(),
+                    Some(format!("{:?}", data)),
+                )),
+                Ok(value) => {
+                    result.push(ListResult { key, value });
+                    future::ok(result)
+                },
+            }
+        }))
     }
 }
 
