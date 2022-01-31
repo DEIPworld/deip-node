@@ -26,7 +26,6 @@ path = "../../deip_common/deip_rpc"
 [dependencies]
 sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sc-rpc-api = '0.9.0'
-serde = { version = "1.0.123", optional = true, features = ["derive"]}
 pallet-deip-dao = { path = "../../pallets/deip_dao", default-features = false }
 
 # RPC deps:
@@ -43,7 +42,7 @@ default = ['std']
 std = [
     'codec/std',
     'sp-std/std',
-    'serde',
     'pallet-deip-dao/std',
     "sp-core/std",
+    "sp-io/std",
 ]

@@ -87,7 +87,7 @@ pub mod pallet {
         type TenantLookup: TenantLookupT<Self::AccountId, TenantId = Self::PortalId> + Debug;
 
         type PortalId: Member + Parameter + Copy + Default;
-        type Portal: PortalT<Self> + Member + Parameter;
+        type Portal: PortalT<Self> + Member + Parameter + TypeInfo;
 
         type Call: Parameter
             + Dispatchable<Origin = Self::Origin, PostInfo = PostDispatchInfo>
