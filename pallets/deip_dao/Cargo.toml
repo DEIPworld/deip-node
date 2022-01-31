@@ -55,4 +55,5 @@ std = [
     "deip-storage-ops/std",
     "sp-api/std",
     "frame-benchmarking/std",
+    "sp-core/std",
 ]

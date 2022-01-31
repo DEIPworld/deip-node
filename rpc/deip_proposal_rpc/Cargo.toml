@@ -51,5 +51,7 @@ std = [
     "sp-std/std",
     "serde",
     "pallet-deip-proposal/std",
-    "frame-support/std"
+    "frame-support/std",
+    "sp-api/std",
+    "sp-core/std",
 ]

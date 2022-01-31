@@ -25,4 +25,5 @@ version = '2.0.0'
 default = ["std"]
 std = [
     "frame-support/std",
+    "sp-core/std",
 ]
