@@ -15,7 +15,7 @@ pub type PortalOwner<T> = <T as frame_system::Config>::AccountId;
 pub type PortalDelegate<T> = <T as frame_system::Config>::AccountId;
 pub type PortalMetadata = Option<sp_core::H256>;
 
-#[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, Encode, Decode, TypeInfo)]
 // #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct Portal<T: crate::Config> {
     id: PortalId<T>,

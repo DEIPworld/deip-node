@@ -29,7 +29,6 @@ pallet-sudo = { git = "https://github.com/paritytech/substrate.git", branch = "p
 pallet-transaction-payment = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-sp-keyring = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }

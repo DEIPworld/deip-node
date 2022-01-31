@@ -29,7 +29,7 @@ frame-support = { default-features = false, version = "3.0.0" }
 sc-rpc-api = "0.9.0"
 sp-std = { default-features = false, version = "3.0.0" }
 sp-runtime = { version = "3.0.0", default-features = false }
-serde = { version = "1.0.123", optional = true, features = ["derive"]}
+serde = { version = "1.0.130", features = ["derive"], optional = true }
 pallet-deip-proposal = { path = "../../pallets/deip_proposal", default-features = false }
 common-deip-call = { path = "../../deip_common/deip_call", default-features = false }
 
@@ -54,4 +54,5 @@ std = [
     "frame-support/std",
     "sp-api/std",
     "sp-core/std",
+    "sp-io/std",
 ]
