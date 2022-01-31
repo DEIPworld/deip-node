@@ -44,5 +44,6 @@ std = [
     'codec/std',
     'sp-std/std',
     'serde',
-    'pallet-deip-dao/std'
+    'pallet-deip-dao/std',
+    "sp-core/std",
 ]

@@ -58,4 +58,5 @@ std = [
     'deip-transaction-ctx/std',
     'deip-tenant/std',
     'frame-benchmarking/std',
+    "sp-core/std",
 ]

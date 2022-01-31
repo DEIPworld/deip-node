@@ -42,6 +42,8 @@ std = [
     'sp-std/std',
     'sp-runtime/std',
     'frame-support/std',
-    'frame-system/std'
+    'frame-system/std',
+    "sp-api/std",
+    "sp-core/std",
 ]
 runtime-benchmarks = ["frame-benchmarking"]
