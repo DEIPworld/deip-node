@@ -27,11 +27,7 @@ use frame_system::{
     EnsureRoot,
 };
 pub use pallet_balances::Call as BalancesCall;
-use pallet_deip::{
-    ContractAgreementId, ContractAgreementOf, Domain, DomainId, InvestmentId, NdaId, NdaOf,
-    ProjectContentId, ProjectContentOf, ProjectId, ProjectOf, ReviewId, ReviewOf,
-    SimpleCrowdfundingOf, H160,
-};
+use pallet_deip::{InvestmentId, ProjectId, H160};
 use pallet_grandpa::{
     fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
@@ -110,9 +106,9 @@ pub mod opaque {
     impl_opaque_keys! {
         pub struct SessionKeys {
             pub babe: Babe,
-            // pub grandpa: Grandpa,
+            pub grandpa: Grandpa,
             pub im_online: ImOnline,
-            // pub beefy: Beefy,
+            pub beefy: Beefy,
             pub octopus: OctopusAppchain,
         }
     }
@@ -1134,53 +1130,53 @@ impl_runtime_apis! {
         }
     }
 
-    // impl pallet_deip_dao::api::DeipDaoRuntimeApi<Block, AccountId> for Runtime {
-    //     fn get(name: pallet_deip_dao::dao::DaoId) -> pallet_deip_dao::api::GetResult<AccountId> {
-    //         DeipDao::rpc_get(name)
-    //     }
+    impl pallet_deip_dao::api::DeipDaoRuntimeApi<Block, AccountId> for Runtime {
+        fn get(name: pallet_deip_dao::dao::DaoId) -> pallet_deip_dao::api::GetResult<AccountId> {
+            DeipDao::rpc_get(name)
+        }
 
-    //     fn get_multi(names: Vec<pallet_deip_dao::dao::DaoId>) -> pallet_deip_dao::api::GetMultiResult<AccountId> {
-    //         DeipDao::rpc_get_multi(names)
-    //     }
-    // }
+        fn get_multi(names: Vec<pallet_deip_dao::dao::DaoId>) -> pallet_deip_dao::api::GetMultiResult<AccountId> {
+            DeipDao::rpc_get_multi(names)
+        }
+    }
 
-    // impl pallet_deip::api::DeipApi
-    // <
-    //     Block,
-    //     AccountId,
-    //     Moment,
-    //     DeipAssetId,
-    //     AssetBalance,
-    //     Hash,
-    //     pallet_deip_portal::TransactionCtxId<TransactionCtx>
-    // >
-    // for Runtime {
-    //     fn get_project(project_id: &ProjectId) -> Option<ProjectOf<crate::Runtime>> {
-    //         Deip::get_project(project_id)
-    //     }
+    impl pallet_deip::api::DeipApi
+    <
+        Block,
+        AccountId,
+        Moment,
+        DeipAssetId,
+        AssetBalance,
+        Hash,
+        pallet_deip_portal::TransactionCtxId<TransactionCtx>
+    >
+    for Runtime {
+        fn get_project(project_id: &ProjectId) -> Option<pallet_deip::ProjectOf<crate::Runtime>> {
+            Deip::get_project(project_id)
+        }
 
-    //     fn get_project_content(id: &ProjectContentId) -> Option<ProjectContentOf<crate::Runtime>> {
-    //         Deip::get_project_content(id)
-    //     }
+        fn get_project_content(id: &pallet_deip::ProjectContentId) -> Option<pallet_deip::ProjectContentOf<crate::Runtime>> {
+            Deip::get_project_content(id)
+        }
 
-    //     fn get_domain(domain_id: &DomainId) -> Option<Domain> {
-    //         Deip::get_domain(domain_id)
-    //     }
+        fn get_domain(domain_id: &pallet_deip::DomainId) -> Option<pallet_deip::Domain> {
+            Deip::get_domain(domain_id)
+        }
 
-    //     fn get_nda(nda_id: &NdaId) -> Option<NdaOf<crate::Runtime>> {
-    //         Deip::get_nda(nda_id)
-    //     }
+        fn get_nda(nda_id: &pallet_deip::NdaId) -> Option<pallet_deip::NdaOf<crate::Runtime>> {
+            Deip::get_nda(nda_id)
+        }
 
-    //     fn get_review(id: &ReviewId) -> Option<ReviewOf<crate::Runtime>> {
-    //         Deip::get_review(id)
-    //     }
+        fn get_review(id: &pallet_deip::ReviewId) -> Option<pallet_deip::ReviewOf<crate::Runtime>> {
+            Deip::get_review(id)
+        }
 
-    //     fn get_investment_opportunity(id: &InvestmentId) -> Option<SimpleCrowdfundingOf<crate::Runtime>> {
-    //         Deip::get_investment_opportunity(id)
-    //     }
+        fn get_investment_opportunity(id: &InvestmentId) -> Option<pallet_deip::SimpleCrowdfundingOf<crate::Runtime>> {
+            Deip::get_investment_opportunity(id)
+        }
 
-    //     fn get_contract_agreement(id: &ContractAgreementId) -> Option<ContractAgreementOf<crate::Runtime>> {
-    //         Deip::get_contract_agreement(id)
-    //     }
-    // }
+        fn get_contract_agreement(id: &pallet_deip::ContractAgreementId) -> Option<pallet_deip::ContractAgreementOf<crate::Runtime>> {
+            Deip::get_contract_agreement(id)
+        }
+    }
 }

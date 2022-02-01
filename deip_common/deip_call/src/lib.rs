@@ -98,20 +98,21 @@ impl WrappedCall<Call> {
         use pallet_deip::Call::*;
 
         match deip_call {
-            create_project(is_private, external_id, team_id, description, domains) => CallObject {
-                module: "deip",
-                call: "create_project",
-                args: &DeipCreateProjectCallArgs {
-                    is_private,
-                    external_id,
-                    team_id,
-                    description,
-                    domains,
-                },
-            }
-            .serialize(serializer),
+            create_project { is_private, external_id, team_id, description, domains } =>
+                CallObject {
+                    module: "deip",
+                    call: "create_project",
+                    args: &DeipCreateProjectCallArgs {
+                        is_private,
+                        external_id,
+                        team_id,
+                        description,
+                        domains,
+                    },
+                }
+                .serialize(serializer),
 
-            create_investment_opportunity(external_id, creator, shares, funding_model) =>
+            create_investment_opportunity { external_id, creator, shares, funding_model } =>
                 CallObject {
                     module: "deip",
                     call: "create_investment_opportunity",
@@ -124,42 +125,42 @@ impl WrappedCall<Call> {
                 }
                 .serialize(serializer),
 
-            activate_crowdfunding(sale_id) => CallObject {
+            activate_crowdfunding { sale_id } => CallObject {
                 module: "deip",
                 call: "activate_crowdfunding",
                 args: &DeipActivateCrowdfundingCallArgs { sale_id },
             }
             .serialize(serializer),
 
-            expire_crowdfunding(sale_id) => CallObject {
+            expire_crowdfunding { sale_id } => CallObject {
                 module: "deip",
                 call: "expire_crowdfunding",
                 args: &DeipExpireCrowdfundingCallArgs { sale_id },
             }
             .serialize(serializer),
 
-            finish_crowdfunding(sale_id) => CallObject {
+            finish_crowdfunding { sale_id } => CallObject {
                 module: "deip",
                 call: "finish_crowdfunding",
                 args: &DeipFinishCrowdfundingCallArgs { sale_id },
             }
             .serialize(serializer),
 
-            invest(id, amount) => CallObject {
+            invest { id, asset } => CallObject {
                 module: "deip",
                 call: "invest",
-                args: &DeipInvestCallArgs { id, amount },
+                args: &DeipInvestCallArgs { id, amount: asset },
             }
             .serialize(serializer),
 
-            update_project(project_id, description, is_private) => CallObject {
+            update_project { project_id, description, is_private } => CallObject {
                 module: "deip",
                 call: "update_project",
                 args: &DeipUpdateProjectCallArgs { project_id, description, is_private },
             }
             .serialize(serializer),
 
-            create_project_content(
+            create_project_content {
                 external_id,
                 project_external_id,
                 team_id,
@@ -168,7 +169,7 @@ impl WrappedCall<Call> {
                 content,
                 authors,
                 references,
-            ) => CallObject {
+            } => CallObject {
                 module: "deip",
                 call: "create_project_content",
                 args: &DeipCreateProjectContentCallArgs {
@@ -184,14 +185,14 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            create_project_nda(
+            create_project_nda {
                 external_id,
                 end_date,
                 contract_hash,
                 maybe_start_date,
                 parties,
                 projects,
-            ) => CallObject {
+            } => CallObject {
                 module: "deip",
                 call: "create_project_nda",
                 args: &DeipCreateProjectNdaCallArgs {
@@ -205,12 +206,12 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            create_nda_content_access_request(
+            create_nda_content_access_request {
                 external_id,
                 nda_external_id,
                 encrypted_payload_hash,
                 encrypted_payload_iv,
-            ) => CallObject {
+            } => CallObject {
                 module: "deip",
                 call: "create_nda_content_access_request",
                 args: &DeipCreateProjectNdaAccessRequestCallArgs {
@@ -222,11 +223,11 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            fulfill_nda_content_access_request(
+            fulfill_nda_content_access_request {
                 external_id,
                 encrypted_payload_encryption_key,
                 proof_of_encrypted_payload_encryption_key,
-            ) => CallObject {
+            } => CallObject {
                 module: "deip",
                 call: "fulfill_nda_content_access_request",
                 args: &DeipFulfillNdaAccessRequestCallArgs {
@@ -237,14 +238,14 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            reject_nda_content_access_request(external_id) => CallObject {
+            reject_nda_content_access_request { external_id } => CallObject {
                 module: "deip",
                 call: "reject_nda_content_access_request",
                 args: &DeipRejectNdaAccessRequestCallArgs { external_id },
             }
             .serialize(serializer),
 
-            create_review(
+            create_review {
                 external_id,
                 author,
                 content,
@@ -252,7 +253,7 @@ impl WrappedCall<Call> {
                 assessment_model,
                 weight,
                 project_content_external_id,
-            ) => CallObject {
+            } => CallObject {
                 module: "deip",
                 call: "create_review",
                 args: &DeipCreateReviewCallArgs {
@@ -267,21 +268,21 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            upvote_review(review_id, domain_id) => CallObject {
+            upvote_review { review_id, domain_id } => CallObject {
                 module: "deip",
                 call: "upvote_review",
                 args: &DeipUpvoteReviewCallArgs { review_id, domain_id },
             }
             .serialize(serializer),
 
-            add_domain(domain) => CallObject {
+            add_domain { domain } => CallObject {
                 module: "deip",
                 call: "add_domain",
                 args: &DeipAddDomainCallArgs { domain },
             }
             .serialize(serializer),
 
-            create_contract_agreement(
+            create_contract_agreement {
                 id,
                 creator,
                 parties,
@@ -289,7 +290,7 @@ impl WrappedCall<Call> {
                 activation_time,
                 expiration_time,
                 terms,
-            ) => CallObject {
+            } => CallObject {
                 module: "deip",
                 call: "create_contract_agreement",
                 args: &DeipCreateContractAgreementCallArgs {
@@ -304,14 +305,14 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            accept_contract_agreement(id, party) => CallObject {
+            accept_contract_agreement { id, party } => CallObject {
                 module: "deip",
                 call: "accept_contract_agreement",
                 args: &DeipAcceptContractAgreementCallArgs { id, party },
             }
             .serialize(serializer),
 
-            reject_contract_agreement(id, party) => CallObject {
+            reject_contract_agreement { id, party } => CallObject {
                 module: "deip",
                 call: "reject_contract_agreement",
                 args: &DeipRejectContractAgreementCallArgs { id, party },
@@ -332,21 +333,21 @@ impl WrappedCall<Call> {
         use pallet_deip_proposal::Call::*;
 
         match deip_proposal_call {
-            propose(batch, external_id) => CallObject {
+            propose { batch, external_id } => CallObject {
                 module: "deip_proposal",
                 call: "propose",
                 args: &DeipProposalProposeCallArgs { batch: &wrap_input_batch(batch), external_id },
             }
             .serialize(serializer),
 
-            decide(proposal_id, decision, _) => CallObject {
+            decide { proposal_id, decision, batch_weight } => CallObject {
                 module: "deip_proposal",
                 call: "decide",
                 args: &DeipProposalDecideCallArgs { proposal_id, decision },
             }
             .serialize(serializer),
 
-            expire(proposal_id) => CallObject {
+            expire { proposal_id } => CallObject {
                 module: "deip_proposal",
                 call: "expire",
                 args: &DeipProposalExpireCallArgs { proposal_id },
@@ -367,28 +368,28 @@ impl WrappedCall<Call> {
         use pallet_deip_dao::Call::*;
 
         match deip_dao_call {
-            create(name, authority, metadata) => CallObject {
+            create { name, authority, metadata } => CallObject {
                 module: "deip_dao",
                 call: "create",
                 args: &DeipDaoCreateCallArgs { name, authority, metadata },
             }
             .serialize(serializer),
 
-            alter_authority(alter_authority_) => CallObject {
+            alter_authority { authority } => CallObject {
                 module: "deip_dao",
                 call: "alter_authority",
-                args: &DeipDaoAlterAuthorityCallArgs { alter_authority: alter_authority_ },
+                args: &DeipDaoAlterAuthorityCallArgs { alter_authority: authority },
             }
             .serialize(serializer),
 
-            update_dao(metadata) => CallObject {
+            update_dao { new_metadata } => CallObject {
                 module: "deip_dao",
                 call: "update_dao",
-                args: &DeipDaoUpdateCallArgs { metadata },
+                args: &DeipDaoUpdateCallArgs { metadata: new_metadata },
             }
             .serialize(serializer),
 
-            on_behalf(name, call) => CallObject {
+            on_behalf { name, call } => CallObject {
                 module: "deip_dao",
                 call: "on_behalf",
                 args: &DeipDaoOnBehalfCallArgs { name, call: &WrappedCall::wrap(call.borrow()) },
@@ -411,21 +412,21 @@ impl WrappedCall<Call> {
         let module = "deip_assets";
         match deip_assets_call {
             // pallet_assets::Call::create
-            create(id, admin, min_balance) => {
+            create { id, admin, min_balance } => {
                 let call = "create";
                 let args = AssetsCreateCallArgs::new(*id, admin, *min_balance);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::force_create
-            force_create(id, owner, is_suff, min_balance) => {
+            force_create { id, owner, is_sufficient, min_balance } => {
                 let call = "force_create";
-                let args = AssetsForceCreateCallArgs::new(*id, owner, *is_suff, *min_balance);
+                let args = AssetsForceCreateCallArgs::new(*id, owner, *is_sufficient, *min_balance);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::destroy
-            destroy(id, _witness) => {
+            destroy { id, witness } => {
                 // todo!("find a way to serialize witness")
                 let call = "destroy";
                 let args = AssetsDestroyCallArgs::new(*id);
@@ -433,98 +434,98 @@ impl WrappedCall<Call> {
             },
 
             // pallet_assets::Call::mint
-            mint(id, beneficiary, amount) => {
+            mint { id, beneficiary, amount } => {
                 let call = "mint";
                 let args = AssetsMintCallArgs::new(*id, beneficiary, *amount);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::burn
-            burn(id, who, amount) => {
+            burn { id, who, amount } => {
                 let call = "burn";
                 let args = AssetsBurnCallArgs::new(*id, who, *amount);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::transfer
-            transfer(id, target, amount) => {
+            transfer { id, target, amount } => {
                 let call = "transfer";
                 let args = AssetsTransferCallArgs::new(*id, target, *amount);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::transfer_keep_alive
-            transfer_keep_alive(id, target, amount) => {
+            transfer_keep_alive { id, target, amount } => {
                 let call = "transfer_keep_alive";
                 let args = AssetsTransferKeepAliveCallArgs::new(*id, target, *amount);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::force_transfer
-            force_transfer(id, source, dest, amount) => {
+            force_transfer { id, source, dest, amount } => {
                 let call = "force_transfer";
                 let args = AssetsForceTransferCallArgs::new(*id, source, dest, *amount);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::freeze
-            freeze(id, who) => {
+            freeze { id, who } => {
                 let call = "freeze";
                 let args = AssetsFreezeCallArgs::new(*id, who);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::thaw
-            thaw(id, who) => {
+            thaw { id, who } => {
                 let call = "thaw";
                 let args = AssetsThawCallArgs::new(*id, who);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::freeze_asset
-            freeze_asset(id) => {
+            freeze_asset { id } => {
                 let call = "freeze_asset";
                 let args = AssetsFreezeAssetCallArgs::new(*id);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::thaw_asset
-            thaw_asset(id) => {
+            thaw_asset { id } => {
                 let call = "thaw_asset";
                 let args = AssetsFreezeAssetCallArgs::new(*id);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::transfer_ownership
-            transfer_ownership(id, owner) => {
+            transfer_ownership { id, owner } => {
                 let call = "transfer_ownership";
                 let args = AssetsTransferOwnershipCallArgs::new(*id, owner);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::set_team
-            set_team(id, issuer, admin, freezer) => {
+            set_team { id, issuer, admin, freezer } => {
                 let call = "set_team";
                 let args = AssetsSetTeamCallArgs::new(*id, issuer, admin, freezer);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::set_metadata
-            set_metadata(id, name, symbol, decimals) => {
+            set_metadata { id, name, symbol, decimals } => {
                 let call = "set_metadata";
                 let args = AssetsSetMetadataCallArgs::new(*id, name, symbol, *decimals);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::clear_metadata
-            clear_metadata(id) => {
+            clear_metadata { id } => {
                 let call = "clear_metadata";
                 let args = AssetsClearMetadataCallArgs::new(*id);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::force_set_metadata
-            force_set_metadata(id, name, symbol, decimals, is_frozen) => {
+            force_set_metadata { id, name, symbol, decimals, is_frozen } => {
                 let call = "force_set_metadata";
                 let args =
                     AssetsForceSetMetadataCallArgs::new(*id, name, symbol, *decimals, *is_frozen);
@@ -532,14 +533,14 @@ impl WrappedCall<Call> {
             },
 
             // pallet_assets::Call::force_clear_metadata
-            force_clear_metadata(id) => {
+            force_clear_metadata { id } => {
                 let call = "force_clear_metadata";
                 let args = AssetsForceClearMetadataCallArgs::new(*id);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::force_asset_status
-            force_asset_status(
+            force_asset_status {
                 id,
                 owner,
                 issuer,
@@ -548,7 +549,7 @@ impl WrappedCall<Call> {
                 min_balance,
                 is_sufficient,
                 is_frozen,
-            ) => {
+            } => {
                 let call = "force_asset_status";
                 let args = AssetsForceAssetStatusCallArgs::new(
                     *id,
@@ -564,115 +565,115 @@ impl WrappedCall<Call> {
             },
 
             // pallet_assets::Call::approve_transfer
-            approve_transfer(id, delegate, amount) => {
+            approve_transfer { id, delegate, amount } => {
                 let call = "approve_transfer";
                 let args = AssetsApproveTransferCallArgs::new(*id, delegate, *amount);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::cancel_approval
-            cancel_approval(id, delegate) => {
+            cancel_approval { id, delegate } => {
                 let call = "cancel_approval";
                 let args = AssetsCancelApprovalCallArgs::new(*id, delegate);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::force_cancel_approval
-            force_cancel_approval(id, owner, delegate) => {
+            force_cancel_approval { id, owner, delegate } => {
                 let call = "force_cancel_approval";
                 let args = AssetsForceCancelApprovalCallArgs::new(*id, owner, delegate);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
             // pallet_assets::Call::transfer_approved
-            transfer_approved(id, owner, destination, amount) => {
+            transfer_approved { id, owner, destination, amount } => {
                 let call = "transfer_approved";
                 let args = AssetsTransferApprovedCallArgs::new(*id, owner, destination, *amount);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
-            deip_create_asset(id, admin, min_balance, project_id) => CallObject {
+            deip_create_asset { id, admin, min_balance, project_id } => CallObject {
                 module,
                 call: "deip_create_asset",
                 args: &DeipAssetsCreateAssetCallArgs::new(id, admin, min_balance, project_id),
             }
             .serialize(serializer),
 
-            deip_destroy(id, _witness) => CallObject {
+            deip_destroy { id, witness } => CallObject {
                 module,
                 call: "deip_destroy",
                 args: &DeipAssetsDestroyCallArgs { id, witness: () },
             }
             .serialize(serializer),
 
-            deip_issue_asset(id, beneficiary, amount) => CallObject {
+            deip_issue_asset { id, beneficiary, amount } => CallObject {
                 module,
                 call: "deip_issue_asset",
                 args: &DeipAssetsIssueAssetCallArgs::new(id, beneficiary, amount),
             }
             .serialize(serializer),
 
-            deip_burn(id, who, amount) => CallObject {
+            deip_burn { id, who, amount } => CallObject {
                 module,
                 call: "deip_burn",
                 args: &DeipAssetsBurnCallArgs::new(id, who, amount),
             }
             .serialize(serializer),
 
-            deip_transfer(id, target, amount) => CallObject {
+            deip_transfer { id, target, amount } => CallObject {
                 module,
                 call: "deip_transfer",
                 args: &DeipAssetsTransferCallArgs::new(id, target, amount),
             }
             .serialize(serializer),
 
-            deip_freeze(id, who) => CallObject {
+            deip_freeze { id, who } => CallObject {
                 module,
                 call: "deip_freeze",
                 args: &DeipAssetsFreezeCallArgs { id, who },
             }
             .serialize(serializer),
 
-            deip_thaw(id, who) =>
+            deip_thaw { id, who } =>
                 CallObject { module, call: "deip_thaw", args: &DeipAssetsThawCallArgs { id, who } }
                     .serialize(serializer),
 
-            deip_freeze_asset(id) => CallObject {
+            deip_freeze_asset { id } => CallObject {
                 module,
                 call: "deip_freeze_asset",
                 args: &DeipAssetsFreezeAssetCallArgs { id },
             }
             .serialize(serializer),
 
-            deip_thaw_asset(id) => CallObject {
+            deip_thaw_asset { id } => CallObject {
                 module,
                 call: "deip_thaw_asset",
                 args: &DeipAssetsThawAssetCallArgs { id },
             }
             .serialize(serializer),
 
-            deip_transfer_ownership(id, owner) => CallObject {
+            deip_transfer_ownership { id, owner } => CallObject {
                 module,
                 call: "deip_transfer_ownership",
                 args: &DeipAssetsTransferOwnershipCallArgs { id, owner },
             }
             .serialize(serializer),
 
-            deip_set_team(id, issuer, admin, freezer) => CallObject {
+            deip_set_team { id, issuer, admin, freezer } => CallObject {
                 module,
                 call: "deip_set_team",
                 args: &DeipAssetsSetTeamCallArgs { id, issuer, admin, freezer },
             }
             .serialize(serializer),
 
-            deip_set_metadata(id, name, symbol, decimals) => CallObject {
+            deip_set_metadata { id, name, symbol, decimals } => CallObject {
                 module,
                 call: "deip_set_metadata",
                 args: &DeipAssetsSetMetadataCallArgs { id, name, symbol, decimals },
             }
             .serialize(serializer),
 
-            deip_wipe_zero_balance(asset, account) => CallObject {
+            deip_wipe_zero_balance { asset, account } => CallObject {
                 module,
                 call: "deip_wipe_zero_balance",
                 args: &DeipAssetsWipeZeroBalanceCallArgs { asset, account },

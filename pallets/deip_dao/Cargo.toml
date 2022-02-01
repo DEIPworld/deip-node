@@ -26,10 +26,10 @@ frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", bran
 
 frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-sudo = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-transaction-payment = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
@@ -38,8 +38,6 @@ sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkad
 
 deip-storage-ops = { path = "../../deip_common/deip_storage_ops", default-features = false }
 
-[dev-dependencies]
-sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 
 [features]
 default = ["std"]
@@ -47,12 +45,19 @@ runtime-benchmarks = ["frame-benchmarking"]
 
 std = [
     "codec/std",
+    "scale-info/std",
+    "serde",
     "frame-support/std",
     "frame-system/std",
-    "sp-std/std", 
-    "serde",
-    "deip-storage-ops/std",
+    "pallet-assets/std",
+    "pallet-balances/std",
+    "pallet-sudo/std",
+    "pallet-transaction-payment/std",
     "sp-api/std",
-    "frame-benchmarking/std",
     "sp-core/std",
+    "sp-std/std", 
+    "sp-io/std",
+    "sp-runtime/std",
+    "deip-storage-ops/std",
+    "frame-benchmarking/std",
 ]

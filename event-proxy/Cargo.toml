@@ -13,18 +13,19 @@ version = '3.0.0'
 [dependencies]
 substrate-subxt = { git = "https://github.com/DEIPworld/substrate-subxt.git", rev = "297bf5354de99df1ee34c54901d1c800957f5928" }
 #substrate-subxt = { path = "../../substrate-subxt" }
-jsonrpsee-ws-client = { version = "0.2.0", default-features = false , features = ["tokio1"] }
+jsonrpsee-ws-client = { version = "0.2.0", default-features = false, features = ["tokio1"] }
 rdkafka = { version = "=0.26.0", default_features = true, features = ["cmake-build"] }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = "1.0.64"
-async-trait = "0.1.51"
-futures = "0.3.16"
+async-trait = "0.1.52"
+futures = "0.3.19"
 toml = "=0.5.8"
 
-sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-sp-std = "3.0.0"
-sp-runtime = "3.0.0"
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 
 pallet-deip-proposal = { path = "../pallets/deip_proposal" }
 pallet-deip-dao = { path = "../pallets/deip_dao" }
@@ -33,16 +34,15 @@ pallet-deip = { path = "../pallets/deip"}
 pallet-deip-assets = { path = "../pallets/deip_assets"}
 pallet-deip-vesting = { path = "../pallets/deip_vesting"}
 node-template-runtime = { package = 'appchain-deip-runtime', path = '../runtime'}
-deip-call = { package = "common-deip-call", path = "../deip_common/deip_call", default-features = false }
+deip-call = { package = "common-deip-call", path = "../deip_common/deip_call" }
 
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive", "full"] }
 hex = "0.4.3"
 
 log = "0.4.14"
-flexi_logger = "0.18.0"
-clap = "2.33.3"
+flexi_logger = "0.22"
+clap = "3.0"
 
-frame-support = "3.0.0"
 
 [workspace]
 

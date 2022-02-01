@@ -1,8 +1,7 @@
 use jsonrpc_core::Result as RpcResult;
 use jsonrpc_derive::rpc;
 
-use std::sync::Arc;
-use std::vec::Vec;
+use std::{sync::Arc, vec::Vec};
 
 use codec::Codec;
 
@@ -12,12 +11,14 @@ use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 
 pub use pallet_deip_dao::api::DeipDaoRuntimeApi;
-use pallet_deip_dao::api::{GetMultiResult, GetResult};
-use pallet_deip_dao::dao::{Dao, DaoId};
+use pallet_deip_dao::{
+    api::{GetMultiResult, GetResult},
+    dao::{Dao, DaoId},
+};
 
 use frame_support::Blake2_128Concat;
 
-use common_rpc::{FutureResult, HashOf, ListResult, StorageMap};
+use common_rpc::{BoxFutureResult, HashOf, ListResult, StorageMap};
 
 mod types;
 
@@ -39,7 +40,7 @@ pub trait DeipDaoRpcApi<BlockHash, AccountId> {
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<DaoId>,
-    ) -> FutureResult<Vec<ListResult<DaoId, Dao<AccountId, DaoId>>>>;
+    ) -> BoxFutureResult<Vec<ListResult<DaoId, Dao<AccountId, DaoId>>>>;
 }
 
 pub struct DeipDaoRpcApiObj<C, State, Block> {
@@ -50,11 +51,7 @@ pub struct DeipDaoRpcApiObj<C, State, Block> {
 
 impl<C, State, Block> DeipDaoRpcApiObj<C, State, Block> {
     pub fn new(client: Arc<C>, state: State) -> Self {
-        Self {
-            client,
-            state,
-            _marker: Default::default(),
-        }
+        Self { client, state, _marker: Default::default() }
     }
 }
 
@@ -105,7 +102,7 @@ where
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<DaoId>,
-    ) -> FutureResult<Vec<ListResult<DaoId, Dao<AccountId, DaoId>>>> {
+    ) -> BoxFutureResult<Vec<ListResult<DaoId, Dao<AccountId, DaoId>>>> {
         StorageMap::<Blake2_128Concat>::get_list(
             &self.state,
             at,

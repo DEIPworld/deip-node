@@ -24,6 +24,7 @@ path = "../runtime"
 
 [dependencies]
 jsonrpc-core = "18.0.0"
+jsonrpc-pubsub = "18.0.0"
 structopt = "0.3.25"
 
 frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
@@ -73,7 +74,13 @@ sp-transaction-storage-proof = { git = "https://github.com/paritytech/substrate.
 beefy-gadget-rpc = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 sp-authorship = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 
-pallet-octopus-appchain = { git = "https://github.com/octopus-network/octopus-pallets.git", branch = "release-v0.9.13", default-features = false }
+pallet-octopus-appchain = { git = "https://github.com/octopus-network/octopus-pallets.git", branch = "release-v0.9.13" }
+
+pallet-deip-assets = { path = "../pallets/deip_assets" }
+deip-assets-rpc = { path = "../rpc/deip_assets_rpc" }
+deip-dao-rpc = { path = "../rpc/deip_dao_rpc" }
+deip-proposal-rpc = { path = "../rpc/deip_proposal_rpc" }
+deip-rpc = { path = "../rpc/deip_rpc" }
 
 [features]
 default = []
