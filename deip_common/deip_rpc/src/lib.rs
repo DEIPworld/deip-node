@@ -166,7 +166,7 @@ where
     State: sc_rpc_api::state::StateApi<Hash>,
     Hash: Copy,
 {
-    let x = state
+    let fut = state
         .storage(key, at)
         .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
         .and_then(|d| match d {
@@ -176,7 +176,7 @@ where
                 Ok(decoded) => future::ok(Some(decoded)),
             },
         });
-    x.boxed()
+    fut.boxed()
 }
 
 pub fn get_list_by_keys<KeyValue, Hasher, State, BlockHash, KeyMap, T, Item>(
