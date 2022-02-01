@@ -13,16 +13,16 @@ sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkad
 
 [dependencies.codec]
 default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '2.0.0'
+features = ["derive"]
+package = "parity-scale-codec"
+version = "2.0.0"
 
 [features]
-default = ['std']
+default = ["std"]
 std = [
-    'codec/std',
-    'serde',
+    "codec/std",
+    "serde",
     "scale-info/std",
-    'sp-runtime/std',
-    'sp-std/std',
+    "sp-runtime/std",
+    "sp-std/std",
 ]

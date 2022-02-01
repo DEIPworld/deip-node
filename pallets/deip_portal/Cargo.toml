@@ -1,15 +1,15 @@
 [package]
-authors = ['DEIP world <https://github.com/DEIPworld>']
-description = 'FRAME pallet defines DEIP Portal module'
-edition = '2018'
-homepage = 'https://deip.world/'
-license = 'Apache-2.0'
-name = 'pallet-deip-portal'
-repository = 'https://github.com/DEIPworld/deip-polkadot'
-version = '3.0.0'
+authors = ["DEIP world <https://github.com/DEIPworld>"]
+description = "FRAME pallet defines DEIP Portal module"
+edition = "2018"
+homepage = "https://deip.world/"
+license = "Apache-2.0"
+name = "pallet-deip-portal"
+repository = "https://github.com/DEIPworld/deip-polkadot"
+version = "3.0.0"
 
 [package.metadata.docs.rs]
-targets = ['x86_64-unknown-linux-gnu']
+targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 deip-tenant = { path = "../../deip_common/deip_tenant", default-features = false }
@@ -35,26 +35,26 @@ sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkad
 # alias "parity-scale-code" to "codec"
 [dependencies.codec]
 default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '2.0.0'
+features = ["derive"]
+package = "parity-scale-codec"
+version = "2.0.0"
 
 [dev-dependencies]
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 
 [features]
-default = ['std']
+default = ["std"]
 runtime-benchmarks = ["frame-benchmarking"]
 std = [
-    'codec/std',
-    'frame-support/std',
-    'frame-system/std',
-    'sp-std/std', 
-    'sp-io/std',
-    'serde',
+    "codec/std",
+    "frame-support/std",
+    "frame-system/std",
+    "sp-std/std", 
+    "sp-io/std",
+    "serde",
     "sp-api/std",
-    'deip-transaction-ctx/std',
-    'deip-tenant/std',
-    'frame-benchmarking/std',
+    "deip-transaction-ctx/std",
+    "deip-tenant/std",
+    "frame-benchmarking/std",
     "sp-core/std",
 ]
