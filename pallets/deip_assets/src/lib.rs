@@ -136,8 +136,8 @@ pub mod pallet {
                 return
             }
 
-            for (asset, balances) in FtBalanceMap::<T>::iter() {
-                for account in balances {
+            for (asset, accounts) in FtBalanceMap::<T>::iter() {
+                for account in accounts {
                     if !Self::account_balance(&account, &asset).is_zero() {
                         continue
                     }
