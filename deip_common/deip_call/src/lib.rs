@@ -340,7 +340,7 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            decide { proposal_id, decision, batch_weight } => CallObject {
+            decide { proposal_id, decision, batch_weight: _ } => CallObject {
                 module: "deip_proposal",
                 call: "decide",
                 args: &DeipProposalDecideCallArgs { proposal_id, decision },
@@ -426,7 +426,7 @@ impl WrappedCall<Call> {
             },
 
             // pallet_assets::Call::destroy
-            destroy { id, witness } => {
+            destroy { id, witness: _ } => {
                 // todo!("find a way to serialize witness")
                 let call = "destroy";
                 let args = AssetsDestroyCallArgs::new(*id);
@@ -599,7 +599,7 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            deip_destroy { id, witness } => CallObject {
+            deip_destroy { id, witness: _ } => CallObject {
                 module,
                 call: "deip_destroy",
                 args: &DeipAssetsDestroyCallArgs { id, witness: () },
