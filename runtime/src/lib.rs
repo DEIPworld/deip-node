@@ -341,6 +341,7 @@ impl pallet_balances::Config for Runtime {
 
 parameter_types! {
     pub const TransactionByteFee: Balance = 10 * MILLICENTS;
+    pub const OperationalFeeMultiplier: u8 = 5;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
@@ -348,7 +349,7 @@ impl pallet_transaction_payment::Config for Runtime {
     type TransactionByteFee = TransactionByteFee;
     type WeightToFee = IdentityFee<Balance>;
     type FeeMultiplierUpdate = ();
-    type OperationalFeeMultiplier = (); // @TODO replace with actual
+    type OperationalFeeMultiplier = OperationalFeeMultiplier;
 }
 
 parameter_types! {
@@ -593,7 +594,7 @@ impl pallet_octopus_appchain::Config for Runtime {
     type LposInterface = OctopusLpos;
     type UpwardMessagesInterface = OctopusUpwardMessages;
     type Currency = Balances;
-    type Assets = ParityTechAssets; // @TODO replace with deip assets
+    type Assets = Assets; // @TODO replace with deip assets
     type AssetBalance = AssetBalance;
     type AssetId = AssetId;
     type AssetIdByName = OctopusAppchain;
@@ -698,7 +699,7 @@ impl pallet_utility::Config for Runtime {
     type Event = Event;
     type Call = Call;
     type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
-    type PalletsOrigin = OriginCaller; // @TODO replace with actual
+    type PalletsOrigin = OriginCaller;
 }
 
 impl pallet_deip_portal::Config for Runtime {

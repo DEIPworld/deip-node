@@ -1,11 +1,7 @@
 use jsonrpc_core::{
-    futures::{
-        self,
-        future::{self, Future, FutureExt},
-        stream, Stream,
-    },
+    futures::future::{self, Future, FutureExt},
     futures_executor::block_on,
-    futures_util::{stream::FuturesOrdered, StreamExt, TryFutureExt, TryStreamExt},
+    futures_util::{stream::FuturesOrdered, TryFutureExt, TryStreamExt},
     BoxFuture,
 };
 
