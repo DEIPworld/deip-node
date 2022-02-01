@@ -453,17 +453,17 @@ pub mod pallet {
         }
 
         #[pallet::weight((
-            alter_authority.weight::<T>(),
+            authority.weight::<T>(),
             DispatchClass::Normal,
             Pays::Yes
         ))]
         pub fn alter_authority(
             origin: OriginFor<T>,
-            alter_authority: AlterAuthority<T::AccountId>,
+            authority: AlterAuthority<T::AccountId>,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let mut dao = load_dao::<T>(LoadBy::DaoKey { dao_key: &who })?;
-            dao = dao.alter_authoriry::<T>(alter_authority).map_err::<Error<T>, _>(Into::into)?;
+            dao = dao.alter_authoriry::<T>(authority).map_err::<Error<T>, _>(Into::into)?;
             StorageOpsTransaction::<StorageOps<T>>::new().commit(move |ops| {
                 ops.push_op(StorageOps::UpdateDao(dao.clone()));
                 ops.push_op(StorageOps::DepositEvent(Event::<T>::DaoAlterAuthority(dao)));

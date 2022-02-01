@@ -15,17 +15,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use codec::{Encode, Decode};
+use codec::{Decode, Encode};
+use scale_info::TypeInfo;
 // use crate::{Config, BlockHash};
-use crate::{Config};
+use crate::Config;
 use sp_runtime::{
-    generic::Era,
-    traits::{SignedExtension},
-    transaction_validity::{TransactionValidityError},
+    generic::Era, traits::SignedExtension, transaction_validity::TransactionValidityError,
 };
 
 /// Check for transaction mortality.
-#[derive(Encode, Decode, Clone, Eq, PartialEq)]
+#[derive(Encode, Decode, Clone, Eq, PartialEq, TypeInfo)]
 pub struct CheckMortality<T: Config + Send + Sync>(Era, std::marker::PhantomData<T>);
 
 impl<T: Config + Send + Sync> CheckMortality<T> {
@@ -47,7 +46,7 @@ impl<T: Config + Send + Sync> std::fmt::Debug for CheckMortality<T> {
     }
 }
 
-impl<T: Config + Send + Sync> SignedExtension for CheckMortality<T> {
+impl<T: Config + Send + Sync + TypeInfo> SignedExtension for CheckMortality<T> {
     type AccountId = T::AccountId;
     type Call = T::Call;
     type AdditionalSigned = super::Hash;

@@ -5,11 +5,14 @@ pub use pallet_deip::api::DeipApi as DeipStorageRuntimeApi;
 use pallet_deip::*;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
-use sp_runtime::{generic::BlockId, traits::{Block as BlockT, AtLeast32BitUnsigned}};
+use sp_runtime::{
+    generic::BlockId,
+    traits::{AtLeast32BitUnsigned, Block as BlockT},
+};
 use std::sync::Arc;
 
 use common_rpc::{
-    get_list_by_index, to_rpc_error, Error, FutureResult, HashOf, ListResult, StorageMap,
+    get_list_by_index, to_rpc_error, BoxFutureResult, Error, HashOf, ListResult, StorageMap,
 };
 
 use frame_support::{Blake2_128Concat, Identity, Twox64Concat};
@@ -20,7 +23,7 @@ mod types;
 pub trait DeipStorageApi<BlockHash, AccountId, Moment, AssetId, AssetBalance, Hash, TransactionCtx>
 where
     AssetBalance: Clone + AtLeast32BitUnsigned,
-    TransactionCtx: Default
+    TransactionCtx: Default,
 {
     #[rpc(name = "deip_getProjectList")]
     fn get_project_list(
@@ -28,7 +31,7 @@ where
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<ProjectId>,
-    ) -> FutureResult<Vec<ListResult<ProjectId, Project<Hash, AccountId>>>>;
+    ) -> BoxFutureResult<Vec<ListResult<ProjectId, Project<Hash, AccountId>>>>;
 
     #[rpc(name = "deip_getProject")]
     fn get_project(
@@ -44,7 +47,7 @@ where
         team_id: AccountId,
         count: u32,
         start_id: Option<ProjectId>,
-    ) -> FutureResult<Vec<ListResult<ProjectId, Project<Hash, AccountId>>>>;
+    ) -> BoxFutureResult<Vec<ListResult<ProjectId, Project<Hash, AccountId>>>>;
 
     #[rpc(name = "deip_getProjectContentList")]
     fn get_project_content_list(
@@ -52,7 +55,7 @@ where
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<ProjectContentId>,
-    ) -> FutureResult<Vec<ListResult<ProjectContentId, ProjectContent<Hash, AccountId>>>>;
+    ) -> BoxFutureResult<Vec<ListResult<ProjectContentId, ProjectContent<Hash, AccountId>>>>;
 
     #[rpc(name = "deip_getProjectContentListByProject")]
     fn get_project_content_list_by_project(
@@ -61,7 +64,7 @@ where
         project_id: ProjectId,
         count: u32,
         start_id: Option<ProjectContentId>,
-    ) -> FutureResult<Vec<ListResult<ProjectContentId, ProjectContent<Hash, AccountId>>>>;
+    ) -> BoxFutureResult<Vec<ListResult<ProjectContentId, ProjectContent<Hash, AccountId>>>>;
 
     #[rpc(name = "deip_getProjectContent")]
     fn get_project_content(
@@ -76,7 +79,7 @@ where
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<DomainId>,
-    ) -> FutureResult<Vec<ListResult<DomainId, Domain>>>;
+    ) -> BoxFutureResult<Vec<ListResult<DomainId, Domain>>>;
 
     #[rpc(name = "deip_getDomain")]
     fn get_domain(&self, at: Option<BlockHash>, domain_id: DomainId) -> Result<Option<Domain>>;
@@ -87,10 +90,14 @@ where
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<NdaId>,
-    ) -> FutureResult<Vec<ListResult<NdaId, Nda<Hash, AccountId, Moment>>>>;
+    ) -> BoxFutureResult<Vec<ListResult<NdaId, Nda<Hash, AccountId, Moment>>>>;
 
     #[rpc(name = "deip_getNda")]
-    fn get_nda(&self, at: Option<BlockHash>, nda_id: NdaId) -> Result<Option<Nda<Hash, AccountId, Moment>>>;
+    fn get_nda(
+        &self,
+        at: Option<BlockHash>,
+        nda_id: NdaId,
+    ) -> Result<Option<Nda<Hash, AccountId, Moment>>>;
 
     #[rpc(name = "deip_getReviewList")]
     fn get_review_list(
@@ -98,7 +105,7 @@ where
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<ReviewId>,
-    ) -> FutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>>;
+    ) -> BoxFutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>>;
 
     #[rpc(name = "deip_getReviewListByProject")]
     fn get_review_list_by_project(
@@ -107,7 +114,7 @@ where
         project_id: ProjectId,
         count: u32,
         start_id: Option<ReviewId>,
-    ) -> FutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>>;
+    ) -> BoxFutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>>;
 
     #[rpc(name = "deip_getReviewListByProjectContent")]
     fn get_review_list_by_project_content(
@@ -116,7 +123,7 @@ where
         key: ProjectContentId,
         count: u32,
         start_id: Option<ReviewId>,
-    ) -> FutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>>;
+    ) -> BoxFutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>>;
 
     #[rpc(name = "deip_getReviewListByReviewer")]
     fn get_review_list_by_reviewer(
@@ -125,7 +132,7 @@ where
         key: AccountId,
         count: u32,
         start_id: Option<ReviewId>,
-    ) -> FutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>>;
+    ) -> BoxFutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>>;
 
     #[rpc(name = "deip_getReview")]
     fn get_review(
@@ -147,8 +154,13 @@ where
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<InvestmentId>,
-    ) -> FutureResult<
-        Vec<ListResult<InvestmentId, SimpleCrowdfunding<Moment, AssetId, AssetBalance, TransactionCtx>>>,
+    ) -> BoxFutureResult<
+        Vec<
+            ListResult<
+                InvestmentId,
+                SimpleCrowdfunding<Moment, AssetId, AssetBalance, TransactionCtx>,
+            >,
+        >,
     >;
 
     #[rpc(name = "deip_getContractAgreement")]
@@ -166,7 +178,7 @@ where
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<ContractAgreementId>,
-    ) -> FutureResult<
+    ) -> BoxFutureResult<
         Vec<
             ListResult<
                 ContractAgreementId,
@@ -182,7 +194,7 @@ where
         key: ContractAgreementIndexTerms,
         count: u32,
         start_id: Option<ContractAgreementId>,
-    ) -> FutureResult<
+    ) -> BoxFutureResult<
         Vec<
             ListResult<
                 ContractAgreementId,
@@ -198,7 +210,9 @@ where
         key: ReviewId,
         count: u32,
         start_id: Option<(ReviewId, AccountId, DomainId)>,
-    ) -> FutureResult<Vec<ListResult<(ReviewId, AccountId, DomainId), DeipReviewVote<AccountId, Moment>>>>;
+    ) -> BoxFutureResult<
+        Vec<ListResult<(ReviewId, AccountId, DomainId), DeipReviewVote<AccountId, Moment>>>,
+    >;
 
     #[rpc(name = "deip_getReviewUpvoteListByUpvoter")]
     fn get_review_upvote_list_by_upvoter(
@@ -207,7 +221,9 @@ where
         key: AccountId,
         count: u32,
         start_id: Option<(ReviewId, AccountId, DomainId)>,
-    ) -> FutureResult<Vec<ListResult<(ReviewId, AccountId, DomainId), DeipReviewVote<AccountId, Moment>>>>;
+    ) -> BoxFutureResult<
+        Vec<ListResult<(ReviewId, AccountId, DomainId), DeipReviewVote<AccountId, Moment>>>,
+    >;
 }
 
 /// A struct that implements the `DeipStorage`.
@@ -222,11 +238,7 @@ pub struct DeipStorage<C, State, M> {
 impl<C, State, M> DeipStorage<C, State, M> {
     /// Create new `DeipStorage` instance with the given reference to the client.
     pub fn new(client: Arc<C>, state: State) -> Self {
-        Self {
-            client,
-            state,
-            _marker: Default::default(),
-        }
+        Self { client, state, _marker: Default::default() }
     }
 }
 
@@ -238,7 +250,15 @@ where
     C: Send + Sync + 'static,
     C: ProvideRuntimeApi<Block>,
     C: HeaderBackend<Block>,
-    C::Api: DeipStorageRuntimeApi<Block, AccountId, Moment, AssetId, AssetBalance, Hash, TransactionCtx>,
+    C::Api: DeipStorageRuntimeApi<
+        Block,
+        AccountId,
+        Moment,
+        AssetId,
+        AssetBalance,
+        Hash,
+        TransactionCtx,
+    >,
     State: sc_rpc_api::state::StateApi<HashOf<Block>>,
     AccountId: 'static + Codec + Send,
     Moment: 'static + Codec + Send,
@@ -252,7 +272,7 @@ where
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<ProjectId>,
-    ) -> FutureResult<Vec<ListResult<ProjectId, Project<Hash, AccountId>>>> {
+    ) -> BoxFutureResult<Vec<ListResult<ProjectId, Project<Hash, AccountId>>>> {
         StorageMap::<Identity>::get_list(
             &self.state,
             at,
@@ -282,7 +302,7 @@ where
         key: AccountId,
         count: u32,
         start_id: Option<ProjectId>,
-    ) -> FutureResult<Vec<ListResult<ProjectId, Project<Hash, AccountId>>>> {
+    ) -> BoxFutureResult<Vec<ListResult<ProjectId, Project<Hash, AccountId>>>> {
         get_list_by_index::<Blake2_128Concat, Identity, _, _, _, _>(
             &self.state,
             at,
@@ -300,7 +320,7 @@ where
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<DomainId>,
-    ) -> FutureResult<Vec<ListResult<DomainId, Domain>>> {
+    ) -> BoxFutureResult<Vec<ListResult<DomainId, Domain>>> {
         StorageMap::<Blake2_128Concat>::get_list(
             &self.state,
             at,
@@ -329,7 +349,7 @@ where
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<ProjectContentId>,
-    ) -> FutureResult<Vec<ListResult<ProjectContentId, ProjectContent<Hash, AccountId>>>> {
+    ) -> BoxFutureResult<Vec<ListResult<ProjectContentId, ProjectContent<Hash, AccountId>>>> {
         StorageMap::<Identity>::get_list(
             &self.state,
             at,
@@ -346,7 +366,7 @@ where
         key: ProjectId,
         count: u32,
         start_id: Option<ProjectContentId>,
-    ) -> FutureResult<Vec<ListResult<ProjectContentId, ProjectContent<Hash, AccountId>>>> {
+    ) -> BoxFutureResult<Vec<ListResult<ProjectContentId, ProjectContent<Hash, AccountId>>>> {
         get_list_by_index::<Identity, Identity, _, _, _, _>(
             &self.state,
             at,
@@ -377,7 +397,7 @@ where
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<NdaId>,
-    ) -> FutureResult<Vec<ListResult<NdaId, Nda<Hash, AccountId, Moment>>>> {
+    ) -> BoxFutureResult<Vec<ListResult<NdaId, Nda<Hash, AccountId, Moment>>>> {
         StorageMap::<Identity>::get_list(
             &self.state,
             at,
@@ -397,7 +417,8 @@ where
         let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 
         let runtime_api_result = api.get_nda(&at, &nda_id);
-        runtime_api_result.map_err(|e| to_rpc_error(Error::NdaApiGetFailed, Some(format!("{:?}", e))))
+        runtime_api_result
+            .map_err(|e| to_rpc_error(Error::NdaApiGetFailed, Some(format!("{:?}", e))))
     }
 
     fn get_review_list(
@@ -405,7 +426,7 @@ where
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<ReviewId>,
-    ) -> FutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>> {
+    ) -> BoxFutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>> {
         StorageMap::<Identity>::get_list(
             &self.state,
             at,
@@ -422,7 +443,7 @@ where
         key: ProjectId,
         count: u32,
         start_id: Option<ReviewId>,
-    ) -> FutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>> {
+    ) -> BoxFutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>> {
         get_list_by_index::<Identity, Identity, _, _, _, _>(
             &self.state,
             at,
@@ -441,7 +462,7 @@ where
         key: ProjectContentId,
         count: u32,
         start_id: Option<ReviewId>,
-    ) -> FutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>> {
+    ) -> BoxFutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>> {
         get_list_by_index::<Identity, Identity, _, _, _, _>(
             &self.state,
             at,
@@ -460,7 +481,7 @@ where
         key: AccountId,
         count: u32,
         start_id: Option<ReviewId>,
-    ) -> FutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>> {
+    ) -> BoxFutureResult<Vec<ListResult<ReviewId, Review<Hash, AccountId>>>> {
         get_list_by_index::<Blake2_128Concat, Identity, _, _, _, _>(
             &self.state,
             at,
@@ -496,10 +517,7 @@ where
 
         let runtime_api_result = api.get_investment_opportunity(&at, &id);
         runtime_api_result.map_err(|e| {
-            to_rpc_error(
-                Error::InvestmentOpportunityApiGetFailed,
-                Some(format!("{:?}", e)),
-            )
+            to_rpc_error(Error::InvestmentOpportunityApiGetFailed, Some(format!("{:?}", e)))
         })
     }
 
@@ -508,8 +526,13 @@ where
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<InvestmentId>,
-    ) -> FutureResult<
-        Vec<ListResult<InvestmentId, SimpleCrowdfunding<Moment, AssetId, AssetBalance, TransactionCtx>>>,
+    ) -> BoxFutureResult<
+        Vec<
+            ListResult<
+                InvestmentId,
+                SimpleCrowdfunding<Moment, AssetId, AssetBalance, TransactionCtx>,
+            >,
+        >,
     > {
         StorageMap::<Identity>::get_list(
             &self.state,
@@ -541,7 +564,7 @@ where
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<ContractAgreementId>,
-    ) -> FutureResult<
+    ) -> BoxFutureResult<
         Vec<
             ListResult<
                 ContractAgreementId,
@@ -565,7 +588,7 @@ where
         key: ContractAgreementIndexTerms,
         count: u32,
         start_id: Option<ContractAgreementId>,
-    ) -> FutureResult<
+    ) -> BoxFutureResult<
         Vec<
             ListResult<
                 ContractAgreementId,
@@ -591,7 +614,9 @@ where
         key: ReviewId,
         count: u32,
         start_id: Option<(ReviewId, AccountId, DomainId)>,
-    ) -> FutureResult<Vec<ListResult<(ReviewId, AccountId, DomainId), DeipReviewVote<AccountId, Moment>>>> {
+    ) -> BoxFutureResult<
+        Vec<ListResult<(ReviewId, AccountId, DomainId), DeipReviewVote<AccountId, Moment>>>,
+    > {
         get_list_by_index::<Identity, Blake2_128Concat, _, _, _, _>(
             &self.state,
             at,
@@ -610,7 +635,9 @@ where
         key: AccountId,
         count: u32,
         start_id: Option<(ReviewId, AccountId, DomainId)>,
-    ) -> FutureResult<Vec<ListResult<(ReviewId, AccountId, DomainId), DeipReviewVote<AccountId, Moment>>>> {
+    ) -> BoxFutureResult<
+        Vec<ListResult<(ReviewId, AccountId, DomainId), DeipReviewVote<AccountId, Moment>>>,
+    > {
         get_list_by_index::<Blake2_128Concat, Blake2_128Concat, _, _, _, _>(
             &self.state,
             at,

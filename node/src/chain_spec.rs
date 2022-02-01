@@ -1,7 +1,7 @@
 use appchain_deip_runtime::{
     AccountId, AssetsConfig, BabeConfig, BalancesConfig, DeipConfig, DeipDaoConfig,
-    DeipPortalConfig, DeipProposalConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig, DeipVestingConfig,
-    SystemConfig, WASM_BINARY,
+    DeipPortalConfig, DeipProposalConfig, DeipVestingConfig, GenesisConfig, GrandpaConfig,
+    Signature, SudoConfig, SystemConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
 use sp_core::{sr25519, Pair, Public};
@@ -193,7 +193,6 @@ fn testnet_genesis(
         system: SystemConfig {
             // Add Wasm runtime to storage.
             code: wasm_binary.to_vec(),
-            changes_trie_config: Default::default(),
         },
         balances: BalancesConfig {
             balances: endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect(),
@@ -224,17 +223,15 @@ fn testnet_genesis(
         },
         im_online: ImOnlineConfig { keys: vec![] },
         grandpa: GrandpaConfig { authorities: vec![] },
+        transaction_payment: Default::default(),
         beefy: BeefyConfig { authorities: vec![] },
         octopus_appchain: OctopusAppchainConfig {
-            appchain_id: "".to_string(),
             anchor_contract: "octopus-anchor.testnet".to_string(),
             asset_id_by_name: vec![("usdc.testnet".to_string(), 0)],
             validators,
+            premined_amount: 1024 * DOLLARS, //@TODO is it ok to use value from barnacle template
         },
-        deip: DeipConfig {
-            domains: vec![],
-            domain_count: 0u32,
-        },
+        deip: DeipConfig { domains: vec![], domain_count: 0u32 },
         assets: AssetsConfig {
             core_asset_admin: root_key,
             balances: endowed_accounts
@@ -247,8 +244,6 @@ fn testnet_genesis(
         deip_proposal: DeipProposalConfig {},
         deip_dao: DeipDaoConfig {},
         deip_portal: DeipPortalConfig {},
-        deip_vesting: DeipVestingConfig {
-            vesting: vec![],
-        }
+        deip_vesting: DeipVestingConfig { vesting: vec![] },
     }
 }
