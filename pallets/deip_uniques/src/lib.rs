@@ -16,7 +16,6 @@ pub mod pallet {
         pallet_prelude::{OptionQuery, StorageMap, StorageValue, ValueQuery},
         sp_runtime::traits::{CheckedAdd, One, StaticLookup},
         traits::Get,
-        weights::Pays,
         BoundedVec, Identity, Parameter,
     };
     use frame_system::{ensure_signed, pallet_prelude::OriginFor};
@@ -383,7 +382,11 @@ pub mod pallet {
             Self::create_or_force(origin, class, admin, project_id, call)
         }
 
-        #[pallet::weight((10_000, Pays::No))] // ??? @TODO benchmark
+        #[pallet::weight(
+            pallet_uniques::Call::<T>::destroy(
+                <_>::default(), witness.clone()
+            ).get_dispatch_info().weight + T::DbWeight::get().reads(2)
+        )]
         pub fn deip_destroy(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
