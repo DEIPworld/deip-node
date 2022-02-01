@@ -1,10 +1,10 @@
 [workspace]
 members = [
+    'bin/*',
     'deip_common/*',
     'node',
     'pallets/*',
     'runtime',
-    'bin/*',
 ]
 
 [profile.release]

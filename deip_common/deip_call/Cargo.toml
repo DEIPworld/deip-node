@@ -4,23 +4,20 @@ name = "common-deip-call"
 version = "0.0.0"
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive", "full"] }
-serde = { version = "1.0.130", features = ["derive"], optional = true }
-
-frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 
 deip_serializable_u128 = { path = "../deip_serializable_u128", default-features = false }
+
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 node-runtime = { package = "appchain-deip-runtime", path = "../../runtime", default-features = false }
-pallet-deip-proposal = { path = "../../pallets/deip_proposal", default-features = false }
-pallet-deip-dao = { path = "../../pallets/deip_dao", default-features = false }
 pallet-deip = { path = "../../pallets/deip", default-features = false }
 pallet-deip-assets = { path = "../../pallets/deip_assets", default-features = false }
-
+pallet-deip-dao = { path = "../../pallets/deip_dao", default-features = false }
+pallet-deip-proposal = { path = "../../pallets/deip_proposal", default-features = false }
+serde = { version = "1.0.130", features = ["derive"], optional = true }
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 
 [features]
 default = ["std"]
