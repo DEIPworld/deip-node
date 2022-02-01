@@ -1,11 +1,11 @@
 [workspace]
 members = [
-    'bin/*',
-    'deip_common/*',
-    'node',
-    'pallets/*',
-    'runtime',
+    "bin/*",
+    "deip_common/*",
+    "node",
+    "pallets/*",
+    "runtime",
 ]
 
 [profile.release]
-panic = 'unwind'
+panic = "unwind"

@@ -1,25 +1,25 @@
 [package]
-authors = ['DEIP world <https://github.com/DEIPworld>']
-description = 'RPC for DEIP Assets pallet'
-edition = '2018'
-homepage = 'https://deip.world/'
-license = 'Apache-2.0'
-name = 'deip-assets-rpc'
-repository = 'https://github.com/DEIPworld/deip-substrate'
-version = '3.0.0'
+authors = ["DEIP world <https://github.com/DEIPworld>"]
+description = "RPC for DEIP Assets pallet"
+edition = "2018"
+homepage = "https://deip.world/"
+license = "Apache-2.0"
+name = "deip-assets-rpc"
+repository = "https://github.com/DEIPworld/deip-substrate"
+version = "3.0.0"
 
 [package.metadata.docs.rs]
-targets = ['x86_64-unknown-linux-gnu']
+targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies.codec]
 default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '2.0.0'
+features = ["derive"]
+package = "parity-scale-codec"
+version = "2.0.0"
 
 [dependencies.common_rpc]
 default-features = false
-package = 'common-deip-rpc'
+package = "common-deip-rpc"
 path = "../../deip_common/deip_rpc"
 
 [dependencies]
@@ -41,15 +41,15 @@ sp-blockchain = { git = "https://github.com/paritytech/substrate.git", branch = 
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 
 [features]
-default = ['std']
+default = ["std"]
 std = [
-    'serde',
-    'codec/std',
+    "serde",
+    "codec/std",
     "common_rpc/std",
     "frame-support/std",
     "sp-core/std",
     "sp-runtime/std",
-    'pallet-deip-assets/std',
-    'deip_serializable_u128/std',
+    "pallet-deip-assets/std",
+    "deip_serializable_u128/std",
     "sp-io/std",
 ]

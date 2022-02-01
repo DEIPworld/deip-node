@@ -2,14 +2,14 @@
 name = "deip-rpc"
 version = "1.0.0"
 edition = "2018"
-authors = ['DEIP world <https://github.com/DEIPworld>']
-repository = 'https://github.com/DEIPworld/deip-polkadot'
+authors = ["DEIP world <https://github.com/DEIPworld>"]
+repository = "https://github.com/DEIPworld/deip-polkadot"
 description = "A pallet which implements read RPC API for DEIP pallet"
 license = "GPL-3.0-or-later"
 
 [dependencies.common_rpc]
 default-features = false
-package = 'common-deip-rpc'
+package = "common-deip-rpc"
 path = "../../deip_common/deip_rpc"
 
 [dependencies]

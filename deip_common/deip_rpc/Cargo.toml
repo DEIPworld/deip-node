@@ -1,5 +1,5 @@
 [package]
-authors = ['DEIP world <https://github.com/DEIPworld>']
+authors = ["DEIP world <https://github.com/DEIPworld>"]
 name = "common-deip-rpc"
 version = "0.0.0"
 edition = "2018"
@@ -16,9 +16,9 @@ sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "po
 
 [dependencies.codec]
 default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '2.0.0'
+features = ["derive"]
+package = "parity-scale-codec"
+version = "2.0.0"
 
 [features]
 default = ["std"]

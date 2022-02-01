@@ -1,12 +1,12 @@
 [package]
-authors = ['DEIP world <https://github.com/DEIPworld>']
-description = 'Event proxy Node->Kafka'
-edition = '2018'
-homepage = 'https://deip.world/'
-license = 'Apache-2.0'
-name = 'event-proxy'
-repository = 'https://github.com/DEIPworld/deip-polkadot'
-version = '3.0.0'
+authors = ["DEIP world <https://github.com/DEIPworld>"]
+description = "Event proxy Node->Kafka"
+edition = "2018"
+homepage = "https://deip.world/"
+license = "Apache-2.0"
+name = "event-proxy"
+repository = "https://github.com/DEIPworld/deip-polkadot"
+version = "3.0.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -33,7 +33,7 @@ pallet-deip-portal = { path = "../pallets/deip_portal" }
 pallet-deip = { path = "../pallets/deip"}
 pallet-deip-assets = { path = "../pallets/deip_assets"}
 pallet-deip-vesting = { path = "../pallets/deip_vesting"}
-node-template-runtime = { package = 'appchain-deip-runtime', path = '../runtime'}
+node-template-runtime = { package = "appchain-deip-runtime", path = "../runtime"}
 deip-call = { package = "common-deip-call", path = "../deip_common/deip_call" }
 
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive", "full"] }

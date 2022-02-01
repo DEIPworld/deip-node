@@ -3,17 +3,17 @@ name = "pallet-deip-vesting"
 description = "FRAME pallet defines DEIP Vesting module"
 homepage = "https://deip.world/"
 version = "3.0.0"
-authors = ['DEIP world <https://github.com/DEIPworld>']
+authors = ["DEIP world <https://github.com/DEIPworld>"]
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/DEIPworld/deip-canary-network"
 
 [package.metadata.docs.rs]
-targets = ['x86_64-unknown-linux-gnu']
+targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 blake2 = { version = "0.9.1", default-features = false }
-codec = { default-features = false, features = ['derive'], package = 'parity-scale-codec', version = '2.0.0' }
+codec = { default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.0.0" }
 
 frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
 
@@ -32,9 +32,9 @@ sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "po
 sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 
 [features]
-default = ['std']
+default = ["std"]
 std = [
-    'codec/std',
+    "codec/std",
     "frame-support/std",
     "frame-system/std",
     "pallet-assets/std",
