@@ -8,7 +8,20 @@ name = "custom-transaction"
 repository = "https://github.com/DEIPworld/deip-polkadot"
 version = "3.0.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+
+node-template-runtime = { package = "appchain-deip-runtime", default-features = false, path = "../../runtime" }
+pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-deip-dao = { default-features = false, path = "../../pallets/deip_dao" }
+pallet-sudo = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-transaction-payment = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+rustc-hex = "2.1.0"
+scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-keyring = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 
 # alias "parity-scale-code" to "codec"
 [dependencies.codec]
@@ -16,22 +29,6 @@ default-features = false
 features = ["derive"]
 package = "parity-scale-codec"
 version = "2.0.0"
-
-[dependencies]
-rustc-hex = "2.1.0"
-scale-info = { version = "1.0", default-features = false, features = ["derive"] }
-
-frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-pallet-transaction-payment = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-pallet-sudo = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-sp-keyring = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-
-node-template-runtime = { package = "appchain-deip-runtime", default-features = false, path = "../../runtime" }
-pallet-deip-dao = { default-features = false, path = "../../pallets/deip_dao" }
 
 [features]
 default = ["std"]
