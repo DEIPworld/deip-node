@@ -383,9 +383,9 @@ pub mod pallet {
         }
 
         #[pallet::weight(
-            pallet_uniques::Call::<T>::destroy(
-                <_>::default(), witness.clone()
-            ).get_dispatch_info().weight + T::DbWeight::get().reads(2)
+            pallet_uniques::Call::<T>::destroy{
+                class: <_>::default(), witness: *witness
+            }.get_dispatch_info().weight + T::DbWeight::get().reads(2)
         )]
         pub fn deip_destroy(
             origin: OriginFor<T>,
