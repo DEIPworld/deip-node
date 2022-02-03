@@ -11,8 +11,9 @@ version = "3.0.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-substrate-subxt = { git = "https://github.com/DEIPworld/substrate-subxt.git", rev = "297bf5354de99df1ee34c54901d1c800957f5928" }
+# substrate-subxt = { git = "https://github.com/DEIPworld/substrate-subxt.git", rev = "297bf5354de99df1ee34c54901d1c800957f5928" }
 #substrate-subxt = { path = "../../substrate-subxt" }
+subxt = "0.16.0"
 jsonrpsee-ws-client = { version = "0.2.0", default-features = false, features = ["tokio1"] }
 rdkafka = { version = "=0.26.0", default_features = true, features = ["cmake-build"] }
 tokio = { version = "1", features = ["full"] }
@@ -23,6 +24,7 @@ futures = "0.3.19"
 toml = "=0.5.8"
 
 frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
@@ -48,4 +50,5 @@ clap = "3.0"
 
 [features]
 default = ["octopus"]
-octopus = ["substrate-subxt/octopus"]
+octopus = []
+# octopus = ["substrate-subxt/octopus"]
