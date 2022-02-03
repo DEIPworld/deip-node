@@ -3,7 +3,10 @@ use appchain_deip_runtime::{
     DeipPortalConfig, DeipProposalConfig, DeipVestingConfig, GenesisConfig, GrandpaConfig,
     Signature, SudoConfig, SystemConfig, UniquesConfig, WASM_BINARY,
 };
+use sc_chain_spec::ChainSpecExtension;
 use sc_service::ChainType;
+use sc_sync_state_rpc::LightSyncStateExtension;
+use serde::{Deserialize, Serialize};
 use sp_core::{sr25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
@@ -23,7 +26,13 @@ use pallet_deip_assets::SerializableAssetBalance;
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
-pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
+pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
+
+#[derive(Default, Clone, Serialize, Deserialize, ChainSpecExtension)]
+#[serde(rename_all = "camelCase")]
+pub struct Extensions {
+    light_sync_state: LightSyncStateExtension,
+}
 
 fn session_keys(
     babe: BabeId,
@@ -109,7 +118,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
         // Properties
         None,
         // Extensions
-        None,
+        Extensions::default(),
     ))
 }
 
@@ -156,7 +165,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
         // Properties
         None,
         // Extensions
-        None,
+        Extensions::default(),
     ))
 }
 
