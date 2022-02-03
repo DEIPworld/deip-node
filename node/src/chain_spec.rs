@@ -1,9 +1,10 @@
 use appchain_deip_runtime::{
-    AccountId, AssetsConfig, BabeConfig, BalancesConfig, DeipConfig, DeipDaoConfig,
+    opaque::Block, AccountId, AssetsConfig, BabeConfig, BalancesConfig, DeipConfig, DeipDaoConfig,
     DeipPortalConfig, DeipProposalConfig, DeipVestingConfig, GenesisConfig, GrandpaConfig,
     Signature, SudoConfig, SystemConfig, UniquesConfig, WASM_BINARY,
 };
 use sc_chain_spec::ChainSpecExtension;
+use sc_client_api::{BadBlocks, ForkBlocks};
 use sc_service::ChainType;
 use sc_sync_state_rpc::LightSyncStateExtension;
 use serde::{Deserialize, Serialize};
@@ -31,7 +32,12 @@ pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
 #[derive(Default, Clone, Serialize, Deserialize, ChainSpecExtension)]
 #[serde(rename_all = "camelCase")]
 pub struct Extensions {
-    light_sync_state: LightSyncStateExtension,
+    // Block numbers with known hashes.
+    pub fork_blocks: ForkBlocks<Block>,
+    /// Known bad block hashes.
+    pub bad_blocks: BadBlocks<Block>,
+    /// The light sync state extension used by the sync-state rpc.
+    pub light_sync_state: LightSyncStateExtension,
 }
 
 fn session_keys(
