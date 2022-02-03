@@ -1,13 +1,15 @@
+// use substrate_subxt::system::System;
+// use substrate_subxt::{module, Event};
 
-use substrate_subxt::system::System;
-use substrate_subxt::{module, Event};
-
-use sp_std::prelude::*;
-use codec::{Decode};
-use frame_support::{Parameter};
+use codec::Decode;
+use frame_support::Parameter;
 use sp_runtime::traits::Member;
+use sp_std::prelude::*;
 
-use serde::{Serialize, ser::{Serializer, SerializeMap}};
+use serde::{
+    ser::{SerializeMap, Serializer},
+    Serialize,
+};
 
 #[module]
 pub trait Assets: System {
@@ -26,7 +28,8 @@ const WHO: &str = "who";
 pub struct CreatedEvent<T: Assets>(T::AssetId, T::AccountId, T::AccountId);
 impl<T: Assets> Serialize for CreatedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(3))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -40,7 +43,8 @@ impl<T: Assets> Serialize for CreatedEvent<T> {
 pub struct IssuedEvent<T: Assets>(T::AssetId, T::AccountId, T::Balance);
 impl<T: Assets> Serialize for IssuedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(3))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -54,7 +58,8 @@ impl<T: Assets> Serialize for IssuedEvent<T> {
 pub struct TransferredEvent<T: Assets>(T::AssetId, T::AccountId, T::AccountId, T::Balance);
 impl<T: Assets> Serialize for TransferredEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(4))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -69,7 +74,8 @@ impl<T: Assets> Serialize for TransferredEvent<T> {
 pub struct BurnedEvent<T: Assets>(T::AssetId, T::AccountId, T::Balance);
 impl<T: Assets> Serialize for BurnedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(3))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -83,7 +89,8 @@ impl<T: Assets> Serialize for BurnedEvent<T> {
 pub struct TeamChangedEvent<T: Assets>(T::AssetId, T::AccountId, T::AccountId, T::AccountId);
 impl<T: Assets> Serialize for TeamChangedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(4))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -98,7 +105,8 @@ impl<T: Assets> Serialize for TeamChangedEvent<T> {
 pub struct OwnerChangedEvent<T: Assets>(T::AssetId, T::AccountId);
 impl<T: Assets> Serialize for OwnerChangedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(2))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -113,7 +121,8 @@ pub struct ForceTransferredEvent<T: Assets>(T::AssetId, T::AccountId, T::Account
 #[cfg(not(feature = "octopus"))]
 impl<T: Assets> Serialize for ForceTransferredEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(4))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -128,7 +137,8 @@ impl<T: Assets> Serialize for ForceTransferredEvent<T> {
 pub struct FrozenEvent<T: Assets>(T::AssetId, T::AccountId);
 impl<T: Assets> Serialize for FrozenEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(2))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -141,7 +151,8 @@ impl<T: Assets> Serialize for FrozenEvent<T> {
 pub struct ThawedEvent<T: Assets>(T::AssetId, T::AccountId);
 impl<T: Assets> Serialize for ThawedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(2))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -154,7 +165,8 @@ impl<T: Assets> Serialize for ThawedEvent<T> {
 pub struct AssetFrozenEvent<T: Assets>(T::AssetId);
 impl<T: Assets> Serialize for AssetFrozenEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(1))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -166,7 +178,8 @@ impl<T: Assets> Serialize for AssetFrozenEvent<T> {
 pub struct AssetThawedEvent<T: Assets>(T::AssetId);
 impl<T: Assets> Serialize for AssetThawedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(1))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -178,7 +191,8 @@ impl<T: Assets> Serialize for AssetThawedEvent<T> {
 pub struct DestroyedEvent<T: Assets>(T::AssetId);
 impl<T: Assets> Serialize for DestroyedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(1))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -190,7 +204,8 @@ impl<T: Assets> Serialize for DestroyedEvent<T> {
 pub struct ForceCreatedEvent<T: Assets>(T::AssetId, T::AccountId);
 impl<T: Assets> Serialize for ForceCreatedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(2))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -205,7 +220,8 @@ pub struct MaxZombiesChangedEvent<T: Assets>(T::AssetId, u32);
 #[cfg(not(feature = "octopus"))]
 impl<T: Assets> Serialize for MaxZombiesChangedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(2))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -218,7 +234,8 @@ impl<T: Assets> Serialize for MaxZombiesChangedEvent<T> {
 pub struct MetadataSetEvent<T: Assets>(T::AssetId, Vec<u8>, Vec<u8>, u8);
 impl<T: Assets> Serialize for MetadataSetEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(4))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -235,7 +252,8 @@ pub struct MetadataClearedEvent<T: Assets>(T::AssetId);
 #[cfg(feature = "octopus")]
 impl<T: Assets> Serialize for MetadataClearedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(1))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -249,7 +267,8 @@ pub struct ApprovedTransferEvent<T: Assets>(T::AssetId, T::AccountId, T::Account
 #[cfg(feature = "octopus")]
 impl<T: Assets> Serialize for ApprovedTransferEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(4))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -266,7 +285,8 @@ pub struct ApprovalCancelledEvent<T: Assets>(T::AssetId, T::AccountId, T::Accoun
 #[cfg(feature = "octopus")]
 impl<T: Assets> Serialize for ApprovalCancelledEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(3))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -278,11 +298,18 @@ impl<T: Assets> Serialize for ApprovalCancelledEvent<T> {
 
 #[cfg(feature = "octopus")]
 #[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
-pub struct TransferredApprovedEvent<T: Assets>(T::AssetId, T::AccountId, T::AccountId, T::AccountId, T::Balance);
+pub struct TransferredApprovedEvent<T: Assets>(
+    T::AssetId,
+    T::AccountId,
+    T::AccountId,
+    T::AccountId,
+    T::Balance,
+);
 #[cfg(feature = "octopus")]
 impl<T: Assets> Serialize for TransferredApprovedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(4))?;
         s.serialize_entry(ASSET_ID, &self.0)?;
@@ -299,7 +326,8 @@ pub struct AssetStatusChangedEvent<T: Assets>(T::AssetId);
 #[cfg(feature = "octopus")]
 impl<T: Assets> Serialize for AssetStatusChangedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_map(Some(1))?;
         s.serialize_entry(ASSET_ID, &self.0)?;

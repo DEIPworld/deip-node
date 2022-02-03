@@ -114,80 +114,80 @@ where
     use pallet_deip_assets::pallet_assets::Event::*;
 
     match e {
-        Created(..) => {
+        Created{..} => {
             /* deip_assets::CreatedEvent */
             unimplemented!()
         }
-        Issued(..) => {
+        Issued{..} => {
             /* deip_assets::IssuedEvent */
             unimplemented!()
         }
-        Transferred(..) => {
+        Transferred{..} => {
             /* deip_assets::TransferredEvent */
             unimplemented!()
         }
-        Burned(..) => {
+        Burned{..} => {
             /* deip_assets::BurnedEvent */
             unimplemented!()
         }
-        TeamChanged(..) => {
+        TeamChanged{..} => {
             /* deip_assets::TeamChangedEvent */
             unimplemented!()
         }
-        OwnerChanged(..) => {
+        OwnerChanged{..} => {
             /* deip_assets::OwnerChangedEvent */
             unimplemented!()
         }
         #[cfg(not(feature = "octopus"))]
-        ForceTransferred(..) => {
+        ForceTransferred{..} => {
             /* deip_assets::ForceTransferredEvent */
             unimplemented!()
         }
-        Frozen(..) => {
+        Frozen{..} => {
             /* deip_assets::FrozenEvent */
             unimplemented!()
         }
-        Thawed(..) => {
+        Thawed{..} => {
             /* deip_assets::ThawedEvent */
             unimplemented!()
         }
-        AssetFrozen(..) => {
+        AssetFrozen{..} => {
             /* deip_assets::AssetFrozenEvent */
             unimplemented!()
         }
-        AssetThawed(..) => {
+        AssetThawed{..} => {
             /* deip_assets::AssetThawedEvent */
             unimplemented!()
         }
-        Destroyed(..) => {
+        Destroyed{..} => {
             /* deip_assets::DestroyedEvent */
             unimplemented!()
         }
-        ForceCreated(..) => {
+        ForceCreated{..} => {
             /* deip_assets::ForceCreatedEvent */
             unimplemented!()
         }
         #[cfg(not(feature = "octopus"))]
-        MaxZombiesChanged(..) => {
+        MaxZombiesChanged{..} => {
             /* deip_assets::MaxZombiesChangedEvent */
             unimplemented!()
         }
-        MetadataSet(..) => {
+        MetadataSet{..} => {
             /* deip_assets::MetadataSetEvent */
             unimplemented!()
         }
         #[cfg(feature = "octopus")]
-        MetadataCleared(..) => unimplemented!(),
+        MetadataCleared{..} => unimplemented!(),
         #[cfg(feature = "octopus")]
-        ApprovedTransfer(..) => unimplemented!(),
+        ApprovedTransfer{..} => unimplemented!(),
         #[cfg(feature = "octopus")]
-        ApprovalCancelled(..) => unimplemented!(),
+        ApprovalCancelled{..} => unimplemented!(),
         #[cfg(feature = "octopus")]
-        TransferredApproved(..) => unimplemented!(),
+        TransferredApproved{..} => unimplemented!(),
         #[cfg(feature = "octopus")]
-        AssetStatusChanged(..) => unimplemented!(),
+        AssetStatusChanged{..} => unimplemented!(),
         
-        __Ignore(..) => unreachable!(),
+        __Ignore{..} => unreachable!(),
     }
 }
 
