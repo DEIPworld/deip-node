@@ -18,4 +18,6 @@ pub trait DeipProjectsInfo<AccountId>: TypeInfo {
         + TypeInfo;
 
     fn try_get_project_team(id: &Self::ProjectId) -> Option<AccountId>;
+    
+    fn project_id(source: &[u8]) -> Self::ProjectId;
 }

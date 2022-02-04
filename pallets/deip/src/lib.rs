@@ -169,6 +169,7 @@ pub type NdaId = H160;
 pub type NdaAccessRequestId = H160;
 
 type AccountIdOf<T> = <T as system::Config>::AccountId;
+pub type DeipAccountIdOf<T> = <T as crate::Config>::DeipAccountId;
 type MomentOf<T> = <T as pallet_timestamp::Config>::Moment;
 pub type HashOf<T> = <T as system::Config>::Hash;
 pub type ProjectOf<T> = Project<HashOf<T>, AccountIdOf<T>>;
@@ -993,7 +994,7 @@ decl_module! {
         ///     supported types
         #[weight = {
             T::DeipWeightInfo::accept_contract_agreement_project_license_unsigned()
-                // .max(T::DeipWeightInfo::accept_contract_agreement_project_license_signed_by_licenser())
+                .max(T::DeipWeightInfo::accept_contract_agreement_project_license_signed_by_licenser())
                 .max(T::DeipWeightInfo::accept_contract_agreement_general_contract_partially_accepted())
                 .max(T::DeipWeightInfo::accept_contract_agreement_general_contract_finalized())
         }]

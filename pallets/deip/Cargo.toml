@@ -18,6 +18,7 @@ frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", bran
 deip-assets-error = { path = "../../deip_common/deip_assets_error", default-features = false }
 deip-transaction-ctx = { path = "../../deip_common/deip_transaction_ctx", default-features = false }
 deip_serializable_u128 = { path = "../../deip_common/deip_serializable_u128", default-features = false }
+deip-asset-system = { path = "../../deip_common/deip_asset_system", default-features = false }
 
 frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
@@ -29,6 +30,12 @@ sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polka
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+# Benchmarking deps:
+pallet-deip-assets = { path = "../deip_assets", default-features = false, optional = true }
+deip-projects-info = {path = "../../deip_common/deip_projects_info", default-features = false, optional = true }
+pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
+pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
+log = { version = "0.4.14", default-features = false, optional = true }
 
 # alias "parity-scale-code" to "codec"
 [dependencies.codec]
@@ -45,8 +52,16 @@ deip-projects-info = { path = "../../deip_common/deip_projects_info", default-fe
 
 [features]
 default = ["std"]
-runtime-benchmarks = ["frame-benchmarking"]
+runtime-benchmarks = [
+    "frame-benchmarking",
+    "pallet-deip-assets",
+    "deip-projects-info",
+    "pallet-balances",
+    "pallet-assets",
+    "log",
+]
 std = [
+    "log/std",
     "codec/std",
     "scale-info/std",
     "serde",
@@ -62,6 +77,8 @@ std = [
     "deip_serializable_u128/std",
     "deip-transaction-ctx/std",
     "frame-benchmarking/std",
+    "deip-projects-info/std",
+    "deip-asset-system/std",
 
     "pallet-assets/std",
     "pallet-balances/std",

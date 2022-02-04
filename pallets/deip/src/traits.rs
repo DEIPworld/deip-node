@@ -2,8 +2,9 @@ use crate::*;
 
 use deip_assets_error::*;
 use sp_runtime::traits::AtLeast32BitUnsigned;
+use deip_asset_system::AssetIdInitT;
 
-pub trait DeipAssetSystem<AccountId> {
+pub trait DeipAssetSystem<AccountId>: AssetIdInitT<Self::AssetId> {
     /// The units in which asset balances are recorded.
     type Balance: Member + Parameter + AtLeast32BitUnsigned + Default + Copy;
 

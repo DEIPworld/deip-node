@@ -46,7 +46,7 @@ pub trait WeightInfo {
     fn create_contract_agreement_project_license() -> Weight;
     fn create_contract_agreement_general_contract() -> Weight;
     fn accept_contract_agreement_project_license_unsigned() -> Weight;
-    // fn accept_contract_agreement_project_license_signed_by_licenser() -> Weight;
+    fn accept_contract_agreement_project_license_signed_by_licenser() -> Weight;
     fn accept_contract_agreement_general_contract_partially_accepted() -> Weight;
     fn accept_contract_agreement_general_contract_finalized() -> Weight;
 }
@@ -175,6 +175,20 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
         (54_005_000 as Weight)
             .saturating_add(T::DbWeight::get().reads(2 as Weight))
             .saturating_add(T::DbWeight::get().writes(1 as Weight))
+    }
+    // Storage: Deip ContractAgreementMap (r:1 w:1)
+    // Storage: Timestamp Now (r:1 w:0)
+    // Storage: Assets AssetIdByDeipAssetId (r:4 w:0)
+    // Storage: ParityTechAssets Account (r:2 w:2)
+    // Storage: Assets AssetIdByProjectId (r:1 w:0)
+    // Storage: ParityTechAssets Asset (r:2 w:1)
+    // Storage: Assets FtBalanceMap (r:1 w:0)
+    // Storage: Deip ProjectMap (r:1 w:0)
+    // Storage: Assets ProjectIdByAssetId (r:1 w:0)
+    fn accept_contract_agreement_project_license_signed_by_licenser() -> Weight {
+        (330_723_000 as Weight)
+            .saturating_add(T::DbWeight::get().reads(14 as Weight))
+            .saturating_add(T::DbWeight::get().writes(4 as Weight))
     }
     // Storage: Deip ContractAgreementMap (r:1 w:1)
     fn accept_contract_agreement_general_contract_partially_accepted() -> Weight {

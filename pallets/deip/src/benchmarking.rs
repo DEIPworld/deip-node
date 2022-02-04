@@ -1,28 +1,42 @@
 #![cfg(feature = "runtime-benchmarks")]
 
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
 use super::{*};
 use frame_system::{RawOrigin, EventRecord};
 use frame_support::{traits::Get};
 use frame_benchmarking::{benchmarks, account, whitelisted_caller, whitelist_account};
 use sp_std::prelude::*;
 use core::convert::TryInto;
+use sp_core::H160;
 
 use crate::Pallet;
-use sp_runtime::traits::{Hash, Scale};
+use sp_runtime::traits::{Hash, Scale, StaticLookup};
 use crate::contract::{
     License, LicenseOf, LicenseStatus,
     TermsOf, Terms,
     GeneralContractStatus, GeneralContract, GeneralContractOf,
 };
 
+use pallet_deip_assets::{
+    Pallet as DeipAssets,
+    ProjectsInfoOf,
+    Config as DeipAssetsConfig,
+    DeipAssetIdOf
+};
+use pallet_assets::Config as AssetsConfig;
+use deip_projects_info::DeipProjectsInfo;
+use pallet_balances::Config as BalancesConfig;
+
 const SEED: u32 = 0;
 
 fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
-	let events = frame_system::Pallet::<T>::events();
-	let system_event: <T as frame_system::Config>::Event = generic_event.into();
-	// compare to the last event record
-	let EventRecord { event, .. } = &events[events.len() - 1];
-	assert_eq!(event, &system_event);
+    let events = frame_system::Pallet::<T>::events();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    // compare to the last event record
+    let EventRecord { event, .. } = &events[events.len() - 1];
+    assert_eq!(event, &system_event);
 }
 
 fn init_member<T: Config>(index: u32) -> T::AccountId {
@@ -80,6 +94,26 @@ fn _create_project<T: Config>(project: ProjectOf<T>) -> ProjectOf<T> {
         domains
     ).unwrap();
     ProjectMap::<T>::get(external_id)
+}
+
+fn create_project_asset<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
+	project: &ProjectOf<T>
+) -> DispatchResultWithPostInfo
+{
+	pallet_balances::Pallet::<T>::set_balance(
+        RawOrigin::Root.into(),
+        T::Lookup::unlookup(project.team_id.clone()),
+        <T as BalancesConfig>::Balance::max_value(),
+        <T as BalancesConfig>::Balance::from(0u16),
+    ).unwrap();
+	DeipAssets::<T>::deip_create_asset(
+        RawOrigin::Signed(project.team_id.clone()).into(),
+        T::AssetIdInit::asset_id(project.external_id.as_bytes()),
+        project.team_id.clone().into(),
+        <T as AssetsConfig>::Balance::from(200u16),
+        Some(ProjectsInfoOf::<T>::project_id(project.external_id.as_bytes()))
+    ).unwrap();
+	Ok(None.into())
 }
 
 fn init_project_content<T: Config>(
@@ -155,88 +189,88 @@ fn now<T: Config>() -> T::Moment {
     pallet_timestamp::Pallet::<T>::get()
 }
 
-fn init_project_nda<T: Config>(idx: u8, parties: &[ProjectOf<T>]) -> NdaOf<T>
-{
-    let contract_creator: T::AccountId = whitelisted_caller();
-    let external_id: NdaId = NdaId::from([idx; 20]);
-    let end_date: T::Moment = now::<T>() + project_ttl::<T>();
-    let start_date: Option<T::Moment> = Some(now::<T>());
-    let contract_hash: T::Hash = T::Hashing::hash("contract".as_bytes());
-    let projects: Vec<ProjectId> = parties.iter().map(|x| x.external_id).collect();
-    let parties: Vec<T::AccountId> = parties.iter().map(|x| x.team_id.clone()).collect();
-    NdaOf::<T> {
-        contract_creator,
-        external_id,
-        end_date,
-        start_date,
-        contract_hash,
-        parties,
-        projects,
-    }
-}
+// fn init_project_nda<T: Config>(idx: u8, parties: &[ProjectOf<T>]) -> NdaOf<T>
+// {
+//     let contract_creator: T::AccountId = whitelisted_caller();
+//     let external_id: NdaId = NdaId::from([idx; 20]);
+//     let end_date: T::Moment = now::<T>() + project_ttl::<T>();
+//     let start_date: Option<T::Moment> = Some(now::<T>());
+//     let contract_hash: T::Hash = T::Hashing::hash("contract".as_bytes());
+//     let projects: Vec<ProjectId> = parties.iter().map(|x| x.external_id).collect();
+//     let parties: Vec<T::AccountId> = parties.iter().map(|x| x.team_id.clone()).collect();
+//     NdaOf::<T> {
+//         contract_creator,
+//         external_id,
+//         end_date,
+//         start_date,
+//         contract_hash,
+//         parties,
+//         projects,
+//     }
+// }
 
-fn _create_project_nda<T: Config>(nda: NdaOf<T>) -> NdaOf<T> {
-    let NdaOf::<T> {
-        contract_creator,
-        external_id,
-        end_date,
-        start_date,
-        contract_hash,
-        parties,
-        projects,
-    } = nda;
-    Pallet::<T>::create_project_nda(
-        RawOrigin::Signed(contract_creator).into(),
-        external_id,
-        end_date,
-        contract_hash,
-        start_date,
-        parties.into_iter().map(Into::into).collect(),
-        projects
-    ).unwrap();
-    NdaMap::<T>::get(external_id)
-}
+// fn _create_project_nda<T: Config>(nda: NdaOf<T>) -> NdaOf<T> {
+//     let NdaOf::<T> {
+//         contract_creator,
+//         external_id,
+//         end_date,
+//         start_date,
+//         contract_hash,
+//         parties,
+//         projects,
+//     } = nda;
+//     Pallet::<T>::create_project_nda(
+//         RawOrigin::Signed(contract_creator).into(),
+//         external_id,
+//         end_date,
+//         contract_hash,
+//         start_date,
+//         parties.into_iter().map(Into::into).collect(),
+//         projects
+//     ).unwrap();
+//     NdaMap::<T>::get(external_id)
+// }
 
-fn init_nda_content_access_request<T: Config>(idx: u8, nda: &NdaOf<T>) -> NdaAccessRequestOf<T>
-{
-    let external_id: NdaAccessRequestId = NdaAccessRequestId::from([idx; 20]);
-    let nda_external_id: NdaId = nda.external_id;
-    let requester: T::AccountId = whitelisted_caller();
-    let encrypted_payload_hash: T::Hash = T::Hashing::hash("encrypted payload".as_bytes());
-    let encrypted_payload_iv: Vec<u8> = "encrypted payload iv".as_bytes().to_vec();
-    NdaAccessRequestOf::<T> {
-        external_id,
-        nda_external_id,
-        requester,
-        encrypted_payload_hash,
-        encrypted_payload_iv,
-        status: NdaAccessRequestStatus::Pending,
-        grantor: None,
-        encrypted_payload_encryption_key: None,
-        proof_of_encrypted_payload_encryption_key: None,
-    }
-}
+// fn init_nda_content_access_request<T: Config>(idx: u8, nda: &NdaOf<T>) -> NdaAccessRequestOf<T>
+// {
+//     let external_id: NdaAccessRequestId = NdaAccessRequestId::from([idx; 20]);
+//     let nda_external_id: NdaId = nda.external_id;
+//     let requester: T::AccountId = whitelisted_caller();
+//     let encrypted_payload_hash: T::Hash = T::Hashing::hash("encrypted payload".as_bytes());
+//     let encrypted_payload_iv: Vec<u8> = "encrypted payload iv".as_bytes().to_vec();
+//     NdaAccessRequestOf::<T> {
+//         external_id,
+//         nda_external_id,
+//         requester,
+//         encrypted_payload_hash,
+//         encrypted_payload_iv,
+//         status: NdaAccessRequestStatus::Pending,
+//         grantor: None,
+//         encrypted_payload_encryption_key: None,
+//         proof_of_encrypted_payload_encryption_key: None,
+//     }
+// }
 
-fn _create_nda_content_access_request<T: Config>(request: NdaAccessRequestOf<T>)
-    -> NdaAccessRequestOf<T>
-{
-    let NdaAccessRequestOf::<T> {
-        external_id,
-        nda_external_id,
-        requester,
-        encrypted_payload_hash,
-        encrypted_payload_iv,
-        ..
-    } = request;
-    Pallet::<T>::create_nda_content_access_request(
-        RawOrigin::Signed(requester).into(),
-        external_id,
-        nda_external_id,
-        encrypted_payload_hash,
-        encrypted_payload_iv
-    ).unwrap();
-    NdaAccessRequestMap::<T>::get(external_id)
-}
+// fn _create_nda_content_access_request<T: Config>(request: NdaAccessRequestOf<T>)
+//     -> NdaAccessRequestOf<T>
+// {
+//     let NdaAccessRequestOf::<T> {
+//         external_id,
+//         nda_external_id,
+//         requester,
+//         encrypted_payload_hash,
+//         encrypted_payload_iv,
+//         ..
+//     } = request;
+//     Pallet::<T>::create_nda_content_access_request(
+//         RawOrigin::Signed(requester).into(),
+//         external_id,
+//         nda_external_id,
+//         encrypted_payload_hash,
+//         encrypted_payload_iv
+//     ).unwrap();
+//     NdaAccessRequestMap::<T>::get(external_id)
+// }
 
 fn init_review<T: Config>(
     idx: u8,
@@ -287,6 +321,8 @@ fn _create_review<T: Config>(review: ReviewOf<T>) -> ReviewOf<T>
 }
 
 benchmarks! {
+    where_clause { where T: pallet_deip_assets::Config + pallet_balances::Config }
+
     create_project {
         let d in 1 .. 50;
         let project = init_project::<T>(0, d as u8);
@@ -345,7 +381,7 @@ benchmarks! {
             references,
         } = project_content;
 
-        let authors: Vec<T::DeipAccountId> = authors.into_iter()
+        let authors: Vec<DeipAccountIdOf<T>> = authors.into_iter()
             .map(Into::into)
             .collect();
 
@@ -365,103 +401,103 @@ benchmarks! {
         ).into());
     }
 
-    create_project_nda {
-        let p in 0 .. T::MaxNdaParties::get().try_into().unwrap();
-        let mut parties = vec![];
-        for i in 0..p {
-            let project = _create_project::<T>(init_project::<T>(i as u8 + 1, 0));
-            parties.push(project);
-        }
-        let NdaOf::<T> {
-            contract_creator,
-            external_id,
-            end_date,
-            start_date,
-            contract_hash,
-            parties,
-            projects,
-        } = init_project_nda::<T>(1, parties.as_slice());
-
-    }: _(RawOrigin::Signed(contract_creator.clone()),
-            external_id,
-            end_date,
-            contract_hash,
-            start_date,
-            parties.into_iter().map(Into::into).collect(),
-            projects)
-    verify {
-        assert_last_event::<T>(Event::<T>::NdaCreated(
-            contract_creator,
-            external_id
-        ).into());
-    }
-
-    create_nda_content_access_request {
-        let project = init_project::<T>(1, 0);
-        let project = _create_project::<T>(project);
-        let nda = init_project_nda::<T>(1, &[project]);
-        let nda = _create_project_nda::<T>(nda);
-        let NdaAccessRequestOf::<T> {
-            external_id,
-            nda_external_id,
-            requester,
-            encrypted_payload_hash,
-            encrypted_payload_iv,
-            ..
-        } = init_nda_content_access_request::<T>(1, &nda);
-
-    }: _(RawOrigin::Signed(requester.clone()),
-            external_id,
-            nda_external_id,
-            encrypted_payload_hash,
-            encrypted_payload_iv)
-    verify {
-        assert_last_event::<T>(Event::<T>::NdaAccessRequestCreated(
-            requester,
-            external_id
-        ).into());
-    }
-
-    fulfill_nda_content_access_request {
-        let project = init_project::<T>(1, 0);
-        let project = _create_project::<T>(project);
-        let nda = init_project_nda::<T>(1, &[project]);
-        let nda = _create_project_nda::<T>(nda);
-        let request = init_nda_content_access_request::<T>(1, &nda);
-        let request = _create_nda_content_access_request::<T>(request);
-
-        let grantor: T::AccountId = whitelisted_caller();
-        let encrypted_payload_encryption_key: Vec<u8> = vec![1];
-        let proof_of_encrypted_payload_encryption_key: Vec<u8> = vec![2];
-
-    }: _(RawOrigin::Signed(grantor.clone()),
-            request.external_id,
-            encrypted_payload_encryption_key,
-            proof_of_encrypted_payload_encryption_key)
-    verify {
-        assert_last_event::<T>(Event::<T>::NdaAccessRequestFulfilled(
-            grantor,
-            request.external_id
-        ).into());
-    }
-
-    reject_nda_content_access_request {
-        let project = init_project::<T>(1, 0);
-        let project = _create_project::<T>(project);
-        let nda = init_project_nda::<T>(1, &[project]);
-        let nda = _create_project_nda::<T>(nda);
-        let request = init_nda_content_access_request::<T>(1, &nda);
-        let request = _create_nda_content_access_request::<T>(request);
-
-        let grantor: T::AccountId = whitelisted_caller();
-
-    }: _(RawOrigin::Signed(grantor.clone()), request.external_id)
-    verify {
-        assert_last_event::<T>(Event::<T>::NdaAccessRequestRejected(
-            grantor,
-            request.external_id
-        ).into());
-    }
+    // create_project_nda {
+    //     let p in 0 .. T::MaxNdaParties::get().try_into().unwrap();
+    //     let mut parties = vec![];
+    //     for i in 0..p {
+    //         let project = _create_project::<T>(init_project::<T>(i as u8 + 1, 0));
+    //         parties.push(project);
+    //     }
+    //     let NdaOf::<T> {
+    //         contract_creator,
+    //         external_id,
+    //         end_date,
+    //         start_date,
+    //         contract_hash,
+    //         parties,
+    //         projects,
+    //     } = init_project_nda::<T>(1, parties.as_slice());
+    //
+    // }: _(RawOrigin::Signed(contract_creator.clone()),
+    //         external_id,
+    //         end_date,
+    //         contract_hash,
+    //         start_date,
+    //         parties.into_iter().map(Into::into).collect(),
+    //         projects)
+    // verify {
+    //     assert_last_event::<T>(Event::<T>::NdaCreated(
+    //         contract_creator,
+    //         external_id
+    //     ).into());
+    // }
+    //
+    // create_nda_content_access_request {
+    //     let project = init_project::<T>(1, 0);
+    //     let project = _create_project::<T>(project);
+    //     let nda = init_project_nda::<T>(1, &[project]);
+    //     let nda = _create_project_nda::<T>(nda);
+    //     let NdaAccessRequestOf::<T> {
+    //         external_id,
+    //         nda_external_id,
+    //         requester,
+    //         encrypted_payload_hash,
+    //         encrypted_payload_iv,
+    //         ..
+    //     } = init_nda_content_access_request::<T>(1, &nda);
+    //
+    // }: _(RawOrigin::Signed(requester.clone()),
+    //         external_id,
+    //         nda_external_id,
+    //         encrypted_payload_hash,
+    //         encrypted_payload_iv)
+    // verify {
+    //     assert_last_event::<T>(Event::<T>::NdaAccessRequestCreated(
+    //         requester,
+    //         external_id
+    //     ).into());
+    // }
+    //
+    // fulfill_nda_content_access_request {
+    //     let project = init_project::<T>(1, 0);
+    //     let project = _create_project::<T>(project);
+    //     let nda = init_project_nda::<T>(1, &[project]);
+    //     let nda = _create_project_nda::<T>(nda);
+    //     let request = init_nda_content_access_request::<T>(1, &nda);
+    //     let request = _create_nda_content_access_request::<T>(request);
+    //
+    //     let grantor: T::AccountId = whitelisted_caller();
+    //     let encrypted_payload_encryption_key: Vec<u8> = vec![1];
+    //     let proof_of_encrypted_payload_encryption_key: Vec<u8> = vec![2];
+    //
+    // }: _(RawOrigin::Signed(grantor.clone()),
+    //         request.external_id,
+    //         encrypted_payload_encryption_key,
+    //         proof_of_encrypted_payload_encryption_key)
+    // verify {
+    //     assert_last_event::<T>(Event::<T>::NdaAccessRequestFulfilled(
+    //         grantor,
+    //         request.external_id
+    //     ).into());
+    // }
+    //
+    // reject_nda_content_access_request {
+    //     let project = init_project::<T>(1, 0);
+    //     let project = _create_project::<T>(project);
+    //     let nda = init_project_nda::<T>(1, &[project]);
+    //     let nda = _create_project_nda::<T>(nda);
+    //     let request = init_nda_content_access_request::<T>(1, &nda);
+    //     let request = _create_nda_content_access_request::<T>(request);
+    //
+    //     let grantor: T::AccountId = whitelisted_caller();
+    //
+    // }: _(RawOrigin::Signed(grantor.clone()), request.external_id)
+    // verify {
+    //     assert_last_event::<T>(Event::<T>::NdaAccessRequestRejected(
+    //         grantor,
+    //         request.external_id
+    //     ).into());
+    // }
 
     create_review {
         let d in 1 .. 50;
@@ -512,24 +548,27 @@ benchmarks! {
         ).into());
     }
 
-    add_domain {
-        let domain = init_domain(1);
-        let account: T::AccountId = whitelisted_caller();
-        let external_id = domain.external_id;
-
-    }: _(RawOrigin::Signed(account.clone()), domain)
-    verify {
-        assert_last_event::<T>(Event::<T>::DomainAdded(
-            account,
-            external_id
-        ).into());
-    }
+    // add_domain {
+    //     let domain = init_domain(1);
+    //     let account: T::AccountId = whitelisted_caller();
+    //     let external_id = domain.external_id;
+    // 
+    // }: _(RawOrigin::Signed(account.clone()), domain)
+    // verify {
+    //     assert_last_event::<T>(Event::<T>::DomainAdded(
+    //         account,
+    //         external_id
+    //     ).into());
+    // }
 
     create_contract_agreement_project_license {
         let project = init_project::<T>(1, 0);
         let project = _create_project::<T>(project);
 
-        let terms = init_license_agreement::<T>(&project);
+        let terms = init_license_agreement::<T>(
+            &project,
+            T::AssetSystem::asset_id([38; 20].as_slice())
+        );
         let parties = Parties::<T>::license_agreement(&project, init_member::<T>(99));
         let agreement = init_contract_agreement::<T>(1, terms, parties);
 
@@ -585,9 +624,13 @@ benchmarks! {
 
     accept_contract_agreement_project_license_unsigned {
         let project = init_project::<T>(1, 0);
+
         let project = _create_project::<T>(project);
 
-        let terms = init_license_agreement::<T>(&project);
+        let terms = init_license_agreement::<T>(
+            &project,
+            T::AssetSystem::asset_id([38; 20].as_slice())
+        );
         let parties = Parties::<T>::license_agreement(&project, init_member::<T>(99));
         let agreement = init_contract_agreement::<T>(1, terms, parties);
         let agreement = _create_contract_agreement::<T>(agreement);
@@ -606,36 +649,45 @@ benchmarks! {
         ).into());
     }
 
-    // accept_contract_agreement_project_license_signed_by_licenser {
-    //     let project = init_project::<T>(1, 0);
-    //     let project = _create_project::<T>(project);
-    //
-    //     let terms = init_license_agreement::<T>(&project);
-    //     let parties = Parties::<T>::license_agreement(&project, init_member::<T>(99));
-    //     let agreement = init_contract_agreement::<T>(1, terms, parties);
-    //     let agreement = _create_contract_agreement::<T>(agreement);
-    //
-    //     let license = as_unsigned_license_agreement::<T>(agreement);
-    //
-    //     let id = license.id;
-    //
-    //     // Sign by Licenser:
-    //     Pallet::<T>::accept_contract_agreement(
-    //         RawOrigin::Signed(license.licenser.clone()).into(),
-    //         id,
-    //         license.licenser.clone().into()
-    //     ).unwrap();
-    //
-    //     let party = license.licensee;
-    //
-    // }: accept_contract_agreement(RawOrigin::Signed(party.clone()),
-    //         id,
-    //         party.clone().into())
-    // verify {
-    //     assert_last_event::<T>(Event::<T>::ContractAgreementFinalized(
-    //         id
-    //     ).into());
-    // }
+    accept_contract_agreement_project_license_signed_by_licenser {
+        let project = init_project::<T>(1, 0);
+        let project = _create_project::<T>(project);
+		create_project_asset::<T>(&project)?;
+
+        let terms = init_license_agreement::<T>(
+            &project,
+            T::AssetSystem::asset_id([38; 20].as_slice())
+        );
+        let parties = Parties::<T>::license_agreement(&project, init_member::<T>(99));
+        let agreement = init_contract_agreement::<T>(1, terms, parties);
+        let agreement = _create_contract_agreement::<T>(agreement);
+
+        let license = as_unsigned_license_agreement::<T>(agreement);
+
+        let id = license.id;
+
+        // Sign by Licenser:
+        Pallet::<T>::accept_contract_agreement(
+            RawOrigin::Signed(license.licenser.clone()).into(),
+            id,
+            license.licenser.clone().into()
+        ).unwrap();
+
+        let party = license.licensee;
+
+        _add_balance::<T>(
+            party.clone(),
+            T::AssetIdInit::asset_id([38; 20].as_slice())
+        )?;
+
+    }: accept_contract_agreement(RawOrigin::Signed(party.clone()),
+            id,
+            party.clone().into())
+    verify {
+        assert_last_event::<T>(Event::<T>::ContractAgreementFinalized(
+            id
+        ).into());
+    }
 
     accept_contract_agreement_general_contract_partially_accepted {
         let project = init_project::<T>(1, 0);
@@ -695,11 +747,15 @@ benchmarks! {
     }
 }
 
-fn init_license_agreement<T: Config>(source: &ProjectOf<T>) -> TermsOf<T> {
+fn init_license_agreement<T: Config + DeipAssetsConfig>(
+    source: &ProjectOf<T>,
+    asset_id: crate::DeipAssetIdOf<T>
+) -> TermsOf<T>
+{
     TermsOf::<T>::LicenseAgreement {
         source: source.external_id,
         price: DeipAssetOf::<T>::new(
-            <_>::default(),
+            asset_id,
             <_>::from(200u16)
         ),
     }
@@ -880,4 +936,41 @@ fn as_partially_accepted_contract<T: Config>(
         },
         _ => unreachable!(),
     }
+}
+
+use sp_runtime::traits::Bounded;
+use deip_asset_system::AssetIdInitT;
+use crate::traits::DeipAssetSystem;
+
+fn _add_balance<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
+    party: T::AccountId,
+    asset_id: pallet_deip_assets::DeipAssetIdOf<T>,
+) -> DispatchResultWithPostInfo
+{
+    pallet_balances::Pallet::<T>::set_balance(
+        RawOrigin::Root.into(),
+        T::Lookup::unlookup(party.clone()),
+        <T as BalancesConfig>::Balance::max_value(),
+        <T as BalancesConfig>::Balance::from(0u16),
+    ).unwrap();
+
+	let asset_admin: <T as DeipAssetsConfig>::DeipAccountId = party.clone().into();
+    let min_balance = <T as AssetsConfig>::Balance::from(200u16);
+
+    DeipAssets::<T>::deip_create_asset(
+        RawOrigin::Signed(party.clone()).into(),
+        asset_id.clone(),
+        asset_admin.clone(),
+        min_balance.clone(),
+        None
+    ).unwrap();
+
+	DeipAssets::<T>::deip_issue_asset(
+		RawOrigin::Signed(party.clone()).into(),
+		asset_id,
+		asset_admin,
+		min_balance
+	)?;
+
+    Ok(None.into())
 }

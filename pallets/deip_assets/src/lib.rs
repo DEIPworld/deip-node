@@ -74,9 +74,11 @@ pub mod pallet {
     use pallet_assets::{DestroyWitness, WeightInfo};
 
     use deip_projects_info::DeipProjectsInfo;
+    use deip_asset_system::AssetIdInitT;
 
     type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-    type DeipProjectIdOf<T> =
+    pub type ProjectsInfoOf<T> = <T as Config>::ProjectsInfo;
+    pub type DeipProjectIdOf<T> =
         <<T as Config>::ProjectsInfo as DeipProjectsInfo<AccountIdOf<T>>>::ProjectId;
     type DeipInvestmentIdOf<T> =
         <<T as Config>::ProjectsInfo as DeipProjectsInfo<AccountIdOf<T>>>::InvestmentId;
@@ -85,6 +87,10 @@ pub mod pallet {
     pub type DeipAssetIdOf<T> = <T as Config>::AssetId;
     type AssetsWeightInfoOf<T> = <T as pallet_assets::Config>::WeightInfo;
 
+    // pub trait AssetIdInitT<T: Config>: TypeInfo {
+    //     fn from_bytes(source: &[u8]) -> <T as Config>::AssetId;
+    // }
+
     #[pallet::config]
     pub trait Config:
         frame_system::Config
@@ -92,7 +98,7 @@ pub mod pallet {
         + SendTransactionTypes<Call<Self>>
     {
         type ProjectsInfo: DeipProjectsInfo<Self::AccountId>;
-        type DeipAccountId: Into<Self::AccountId> + Parameter + Member;
+        type DeipAccountId: Into<Self::AccountId> + From<Self::AccountId> + Parameter + Member;
 
         type AssetsAssetId: Member
             + Parameter
@@ -113,6 +119,7 @@ pub mod pallet {
             + serde::Serialize
             + serde::de::DeserializeOwned
             + TypeInfo;
+        type AssetIdInit: AssetIdInitT<<Self as Config>::AssetId>;
 
         /// Period of check for accounts with zero FTs
         #[pallet::constant]
