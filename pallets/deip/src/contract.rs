@@ -311,8 +311,7 @@ impl<T: Config> Module<T> {
         Self::deposit_event(RawEvent::ContractAgreementAccepted(id, licensee));
         Self::deposit_event(RawEvent::ContractAgreementFinalized(id));
 
-        // Ok(Some(T::DeipWeightInfo::accept_contract_agreement_project_license_signed_by_licenser()).into())
-        Ok(None.into())
+        Ok(Some(T::DeipWeightInfo::accept_contract_agreement_project_license_signed_by_licenser()).into())
     }
 
     fn distribute_revenue(

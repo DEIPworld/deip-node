@@ -557,10 +557,21 @@ impl deip_projects_info::DeipProjectsInfo<AccountId> for Runtime {
     fn try_get_project_team(id: &Self::ProjectId) -> Option<AccountId> {
         Deip::try_get_project_team(id)
     }
+
+    fn project_id(source: &[u8]) -> Self::ProjectId {
+        Self::ProjectId::from_slice(source)
+    }
 }
 
 parameter_types! {
     pub const WipePeriod: BlockNumber = DAYS;
+}
+
+pub struct AssetIdInit;
+impl deip_asset_system::AssetIdInitT<DeipAssetId> for AssetIdInit {
+    fn asset_id(raw: &[u8]) -> DeipAssetId {
+        DeipAssetId::from_slice(raw)
+    }
 }
 
 impl pallet_deip_assets::Config for Runtime {
@@ -568,6 +579,7 @@ impl pallet_deip_assets::Config for Runtime {
     type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
     type AssetsAssetId = AssetId;
     type AssetId = DeipAssetId;
+    type AssetIdInit = AssetIdInit;
     type WipePeriod = WipePeriod;
 }
 
@@ -783,6 +795,12 @@ impl pallet_deip_portal::TenantLookupT<AccountId> for Runtime {
 
     fn lookup(key: &AccountId) -> Option<Self::TenantId> {
         DeipDao::lookup_dao(key)
+    }
+}
+
+impl deip_asset_system::AssetIdInitT<DeipAssetId> for Runtime {
+    fn asset_id(raw: &[u8]) -> DeipAssetId {
+        DeipAssetId::from_slice(raw)
     }
 }
 
@@ -1177,7 +1195,6 @@ impl_runtime_apis! {
 
             list_benchmark!(list, extra, frame_benchmarking, BaselineBench::<Runtime>);
             list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
-            list_benchmark!(list, extra, pallet_balances, Balances);
             list_benchmark!(list, extra, pallet_timestamp, Timestamp);
             list_benchmark!(list, extra, pallet_deip_proposal, DeipProposal);
             list_benchmark!(list, extra, pallet_deip_dao, DeipDao);
@@ -1218,7 +1235,6 @@ impl_runtime_apis! {
 
             add_benchmark!(params, batches, frame_benchmarking, BaselineBench::<Runtime>);
             add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
-            add_benchmark!(params, batches, pallet_balances, Balances);
             add_benchmark!(params, batches, pallet_timestamp, Timestamp);
             add_benchmark!(params, batches, pallet_deip_proposal, DeipProposal);
             add_benchmark!(params, batches, pallet_deip_dao, DeipDao);

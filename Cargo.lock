@@ -179,6 +179,7 @@ version = "3.0.0-monthly-2021-08"
 dependencies = [
  "beefy-primitives",
  "borsh",
+ "deip-asset-system",
  "deip-assets-error",
  "deip-projects-info",
  "frame-benchmarking",
@@ -1387,6 +1388,18 @@ checksum = "a5bbed42daaa95e780b60a50546aa345b8413a1e46f9a40a12907d3598f038db"
 dependencies = [
  "data-encoding",
  "syn",
+]
+
+[[package]]
+name = "deip-asset-system"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -4225,6 +4238,7 @@ dependencies = [
 name = "pallet-deip"
 version = "3.0.0"
 dependencies = [
+ "deip-asset-system",
  "deip-assets-error",
  "deip-projects-info",
  "deip-transaction-ctx",
@@ -4232,6 +4246,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "log",
  "pallet-assets",
  "pallet-balances",
  "pallet-deip-assets",
@@ -4250,6 +4265,7 @@ dependencies = [
 name = "pallet-deip-assets"
 version = "3.0.0"
 dependencies = [
+ "deip-asset-system",
  "deip-assets-error",
  "deip-projects-info",
  "deip_serializable_u128",
