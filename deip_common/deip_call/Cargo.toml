@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive", "full"] }
+scale-info = { version = "1.0", default-features = false, features = ["derive"] }
 
 deip_serializable_u128 = { path = "../deip_serializable_u128", default-features = false }
 
@@ -23,6 +24,7 @@ sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkad
 default = ["std"]
 std = [
     "codec/std",
+    "scale-info/std",
     "serde",
     "frame-support/std",
     "node-runtime/std",

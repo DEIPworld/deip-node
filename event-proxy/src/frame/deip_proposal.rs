@@ -1,16 +1,18 @@
+// use substrate_subxt::system::System;
+// use substrate_subxt::{module, Event};
 
-use substrate_subxt::system::System;
-use substrate_subxt::{module, Event};
-
-use sp_std::prelude::*;
-use codec::{Decode};
-use frame_support::{Parameter};
+use codec::Decode;
+use frame_support::Parameter;
+use frame_system::Config;
 use sp_runtime::traits::Member;
 
-use serde::{Serialize, ser::{Serializer, SerializeStruct}};
+use serde::{
+    ser::{SerializeStruct, Serializer},
+    Serialize,
+};
 
-#[module]
-pub trait DeipProposal: System {
+// #[module]
+pub trait DeipProposal: Config {
     type ProposalBatch: Parameter + Member;
     type InputProposalBatch: Parameter + Member;
     type ProposalId: Parameter + Member + Serialize;
@@ -23,21 +25,22 @@ pub trait DeipProposal: System {
     type WrappedInputBatch: Parameter + Member + Serialize;
     /// Wrapper type to perform data transformations before serialization
     type WrappedCall: Parameter + Member + Serialize;
-    
+
     fn wrap_batch<T: From<Self::WrappedBatch>>(batch: &Self::ProposalBatch) -> T;
-    
+
     fn wrap_input_batch(batch: &Self::InputProposalBatch) -> Self::WrappedInputBatch;
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct ProposedEvent<T: DeipProposal> {
-    pub author: <T as System>::AccountId,
+    pub author: <T as Config>::AccountId,
     pub batch: T::ProposalBatch,
     pub proposal_id: T::ProposalId,
 }
 impl<T: DeipProposal> Serialize for ProposedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_struct("ProposedEvent", 3)?;
         s.serialize_field("author", &self.author)?;
@@ -47,14 +50,15 @@ impl<T: DeipProposal> Serialize for ProposedEvent<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct ApprovedEvent<T: DeipProposal> {
-    pub member: <T as System>::AccountId,
+    pub member: <T as Config>::AccountId,
     pub proposal_id: T::ProposalId,
 }
 impl<T: DeipProposal> Serialize for ApprovedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_struct("ApprovedEvent", 2)?;
         s.serialize_field("member", &self.member)?;
@@ -63,14 +67,15 @@ impl<T: DeipProposal> Serialize for ApprovedEvent<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct RevokedApprovalEvent<T: DeipProposal> {
-    pub member: <T as System>::AccountId,
+    pub member: <T as Config>::AccountId,
     pub proposal_id: T::ProposalId,
 }
 impl<T: DeipProposal> Serialize for RevokedApprovalEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_struct("RevokedApprovalEvent", 2)?;
         s.serialize_field("member", &self.member)?;
@@ -79,15 +84,16 @@ impl<T: DeipProposal> Serialize for RevokedApprovalEvent<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct ResolvedEvent<T: DeipProposal> {
-    pub member: <T as System>::AccountId,
+    pub member: <T as Config>::AccountId,
     pub proposal_id: T::ProposalId,
-    pub state: T::ProposalState
+    pub state: T::ProposalState,
 }
 impl<T: DeipProposal> Serialize for ResolvedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_struct("ResolvedEvent", 3)?;
         s.serialize_field("member", &self.member)?;
@@ -97,13 +103,14 @@ impl<T: DeipProposal> Serialize for ResolvedEvent<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct ExpiredEvent<T: DeipProposal> {
     pub proposal_id: T::ProposalId,
 }
 impl<T: DeipProposal> Serialize for ExpiredEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_struct("ExpiredEvent", 1)?;
         s.serialize_field("proposal_id", &self.proposal_id)?;
