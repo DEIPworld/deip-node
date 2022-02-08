@@ -73,8 +73,8 @@ pub mod pallet {
 
     use pallet_assets::{DestroyWitness, WeightInfo};
 
-    use deip_projects_info::DeipProjectsInfo;
     use deip_asset_system::AssetIdInitT;
+    use deip_projects_info::DeipProjectsInfo;
 
     type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
     pub type ProjectsInfoOf<T> = <T as Config>::ProjectsInfo;

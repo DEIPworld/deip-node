@@ -50,6 +50,9 @@ use sp_version::NativeVersion;
 
 pub mod deip_account;
 
+// #[cfg(feature = "subxt-impl")]
+pub mod subxt_impl;
+
 /// An index to a block.
 pub type BlockNumber = u32;
 

@@ -3,16 +3,16 @@
 
 use codec::Decode;
 use frame_support::Parameter;
+use frame_system::Config;
 use sp_runtime::traits::Member;
-use sp_std::prelude::*;
 
 use serde::{
     ser::{SerializeMap, Serializer},
     Serialize,
 };
 
-#[module]
-pub trait Assets: System {
+// #[module]
+pub trait Assets: Config {
     type AssetId: Parameter + Member + Serialize;
     type Balance: Parameter + Member + Serialize;
 }
@@ -24,7 +24,7 @@ const TO: &str = "to";
 const AMOUNT: &str = "amount";
 const WHO: &str = "who";
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct CreatedEvent<T: Assets>(T::AssetId, T::AccountId, T::AccountId);
 impl<T: Assets> Serialize for CreatedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
@@ -39,7 +39,7 @@ impl<T: Assets> Serialize for CreatedEvent<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct IssuedEvent<T: Assets>(T::AssetId, T::AccountId, T::Balance);
 impl<T: Assets> Serialize for IssuedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
@@ -54,7 +54,7 @@ impl<T: Assets> Serialize for IssuedEvent<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct TransferredEvent<T: Assets>(T::AssetId, T::AccountId, T::AccountId, T::Balance);
 impl<T: Assets> Serialize for TransferredEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
@@ -70,7 +70,7 @@ impl<T: Assets> Serialize for TransferredEvent<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct BurnedEvent<T: Assets>(T::AssetId, T::AccountId, T::Balance);
 impl<T: Assets> Serialize for BurnedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
@@ -85,7 +85,7 @@ impl<T: Assets> Serialize for BurnedEvent<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct TeamChangedEvent<T: Assets>(T::AssetId, T::AccountId, T::AccountId, T::AccountId);
 impl<T: Assets> Serialize for TeamChangedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
@@ -101,7 +101,7 @@ impl<T: Assets> Serialize for TeamChangedEvent<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct OwnerChangedEvent<T: Assets>(T::AssetId, T::AccountId);
 impl<T: Assets> Serialize for OwnerChangedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
@@ -133,7 +133,7 @@ impl<T: Assets> Serialize for ForceTransferredEvent<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct FrozenEvent<T: Assets>(T::AssetId, T::AccountId);
 impl<T: Assets> Serialize for FrozenEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
@@ -147,7 +147,7 @@ impl<T: Assets> Serialize for FrozenEvent<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct ThawedEvent<T: Assets>(T::AssetId, T::AccountId);
 impl<T: Assets> Serialize for ThawedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
@@ -161,7 +161,7 @@ impl<T: Assets> Serialize for ThawedEvent<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct AssetFrozenEvent<T: Assets>(T::AssetId);
 impl<T: Assets> Serialize for AssetFrozenEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
@@ -174,7 +174,7 @@ impl<T: Assets> Serialize for AssetFrozenEvent<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct AssetThawedEvent<T: Assets>(T::AssetId);
 impl<T: Assets> Serialize for AssetThawedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
@@ -187,7 +187,7 @@ impl<T: Assets> Serialize for AssetThawedEvent<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct DestroyedEvent<T: Assets>(T::AssetId);
 impl<T: Assets> Serialize for DestroyedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
@@ -200,7 +200,7 @@ impl<T: Assets> Serialize for DestroyedEvent<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct ForceCreatedEvent<T: Assets>(T::AssetId, T::AccountId);
 impl<T: Assets> Serialize for ForceCreatedEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
@@ -213,7 +213,6 @@ impl<T: Assets> Serialize for ForceCreatedEvent<T> {
         s.end()
     }
 }
-
 #[cfg(not(feature = "octopus"))]
 #[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
 pub struct MaxZombiesChangedEvent<T: Assets>(T::AssetId, u32);
@@ -230,7 +229,7 @@ impl<T: Assets> Serialize for MaxZombiesChangedEvent<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct MetadataSetEvent<T: Assets>(T::AssetId, Vec<u8>, Vec<u8>, u8);
 impl<T: Assets> Serialize for MetadataSetEvent<T> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
@@ -247,7 +246,7 @@ impl<T: Assets> Serialize for MetadataSetEvent<T> {
 }
 
 #[cfg(feature = "octopus")]
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct MetadataClearedEvent<T: Assets>(T::AssetId);
 #[cfg(feature = "octopus")]
 impl<T: Assets> Serialize for MetadataClearedEvent<T> {
@@ -262,7 +261,7 @@ impl<T: Assets> Serialize for MetadataClearedEvent<T> {
 }
 
 #[cfg(feature = "octopus")]
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct ApprovedTransferEvent<T: Assets>(T::AssetId, T::AccountId, T::AccountId, T::Balance);
 #[cfg(feature = "octopus")]
 impl<T: Assets> Serialize for ApprovedTransferEvent<T> {
@@ -280,7 +279,7 @@ impl<T: Assets> Serialize for ApprovedTransferEvent<T> {
 }
 
 #[cfg(feature = "octopus")]
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct ApprovalCancelledEvent<T: Assets>(T::AssetId, T::AccountId, T::AccountId);
 #[cfg(feature = "octopus")]
 impl<T: Assets> Serialize for ApprovalCancelledEvent<T> {
@@ -297,7 +296,7 @@ impl<T: Assets> Serialize for ApprovalCancelledEvent<T> {
 }
 
 #[cfg(feature = "octopus")]
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct TransferredApprovedEvent<T: Assets>(
     T::AssetId,
     T::AccountId,
@@ -321,7 +320,7 @@ impl<T: Assets> Serialize for TransferredApprovedEvent<T> {
 }
 
 #[cfg(feature = "octopus")]
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode)]
 pub struct AssetStatusChangedEvent<T: Assets>(T::AssetId);
 #[cfg(feature = "octopus")]
 impl<T: Assets> Serialize for AssetStatusChangedEvent<T> {

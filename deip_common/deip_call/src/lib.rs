@@ -3,6 +3,7 @@ mod assets_call_args;
 use codec::{Decode, Encode};
 use frame_support::Parameter;
 use node_runtime::{Call, Runtime};
+use scale_info::TypeInfo;
 use serde::{ser::Serializer, Deserialize, Serialize};
 use sp_runtime::traits::{AtLeast32BitUnsigned, Member};
 use sp_std::borrow::Borrow;
@@ -19,7 +20,7 @@ use crate::assets_call_args::{
     AssetsTransferCallArgs, AssetsTransferKeepAliveCallArgs, AssetsTransferOwnershipCallArgs,
 };
 
-#[derive(Clone, Debug, Eq, PartialEq, Decode, Encode, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Decode, Encode, Deserialize, TypeInfo)]
 pub struct WrappedCall<Call: Parameter + Member>(pub Call);
 
 impl<Call: Parameter + Member> WrappedCall<Call> {

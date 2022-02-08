@@ -1,15 +1,15 @@
 use crate::actor::*;
-use super::actor_io::*;
+// use super::actor_io::*;
 
-use crate::RuntimeT;
-use crate::events::{BlockMetadata};
+use crate::{config::OffchainConfig, events::BlockMetadata, RuntimeT};
 
+use super::actor_io::ActorJack;
 
-pub type LastKnownBlock = Option<BlockMetadata<RuntimeT>>; 
-pub type MaybeLastKnownBlock = Result<LastKnownBlock, ()>; 
+pub type LastKnownBlock = Option<BlockMetadata<RuntimeT>>;
+pub type MaybeLastKnownBlock = Result<LastKnownBlock, ()>;
 
 pub struct OffchainClient {
-    mock: MaybeLastKnownBlock
+    mock: MaybeLastKnownBlock,
 }
 impl OffchainClient {
     pub fn mock(mock: MaybeLastKnownBlock) -> Self {
@@ -34,15 +34,19 @@ pub enum OffchainActorInputData {
     GetLastKnownBlock,
     BuildClient { mock: MaybeLastKnownBlock },
 }
+
 pub type OffchainActorInput = ActorDirective<OffchainActorInputData>;
+
 impl OffchainActorInput {
     pub fn set_client(client: OffchainClient) -> Self {
         Self::Input(OffchainActorInputData::SetClient(client))
     }
+
     pub fn get_last_known_block() -> Self {
         Self::Input(OffchainActorInputData::GetLastKnownBlock)
     }
-    pub fn build_client(config: super::OffchainConfig<LastKnownBlock>) -> Self {
+
+    pub fn build_client(config: OffchainConfig<LastKnownBlock>) -> Self {
         Self::Input(OffchainActorInputData::BuildClient { mock: Ok(config.last_known_block) })
     }
 }
@@ -58,19 +62,14 @@ pub enum OffchainActorOutputData {
 pub type OffchainActorIO = ActorJack<OffchainActorInput, OffchainActorOutput>;
 
 #[async_trait::async_trait]
-impl Actor
-<
-    OffchainActorInputData,
-    OffchainActorInput,
-    OffchainActorOutput,
-    OffchainActorIO
->
-for OffchainActor
+impl Actor<OffchainActorInputData, OffchainActorInput, OffchainActorOutput, OffchainActorIO>
+    for OffchainActor
 {
     async fn on_input(&mut self, data: OffchainActorInputData) -> OffchainActorOutput {
         if let OffchainActorInputData::BuildClient { mock } = data {
-            return OffchainActorOutput::Output(
-                OffchainActorOutputData::BuildClient(OffchainClient::mock(mock)))
+            return OffchainActorOutput::Output(OffchainActorOutputData::BuildClient(
+                OffchainClient::mock(mock),
+            ))
         }
         if self.client.is_none() {
             return match data {
@@ -81,8 +80,8 @@ for OffchainActor
                 OffchainActorInputData::BuildClient { .. } => {
                     unreachable!();
                 },
-                _ => OffchainActorOutput::NoClient, 
-            };
+                _ => OffchainActorOutput::NoClient,
+            }
         }
         let client = self.client.as_mut().unwrap();
         let output = match data {
@@ -90,10 +89,8 @@ for OffchainActor
                 let _ = std::mem::replace(client, c);
                 OffchainActorOutputData::SetClient
             },
-            OffchainActorInputData::GetLastKnownBlock => {
-                OffchainActorOutputData::GetLastKnownBlock(
-                    client.get_last_known_block().await)
-            },
+            OffchainActorInputData::GetLastKnownBlock =>
+                OffchainActorOutputData::GetLastKnownBlock(client.get_last_known_block().await),
             OffchainActorInputData::BuildClient { .. } => {
                 unreachable!();
             },

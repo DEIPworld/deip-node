@@ -1,4 +1,7 @@
-use crate::{frame, RuntimeT};
+use crate::{
+    frame::{self, deip_proposal::DeipProposal},
+    RuntimeT,
+};
 
 use pallet_deip_assets::pallet_assets;
 
@@ -6,7 +9,7 @@ use deip_call::WrappedCall;
 
 type RealRuntime = node_template_runtime::Runtime;
 
-impl frame::deip_proposal::DeipProposal for RuntimeT {
+impl DeipProposal for RuntimeT {
     type ProposalBatch = pallet_deip_proposal::proposal::ProposalBatch<RealRuntime>;
     type InputProposalBatch = pallet_deip_proposal::proposal::InputProposalBatch<RealRuntime>;
     type ProposalId = pallet_deip_proposal::proposal::ProposalId;
@@ -25,7 +28,7 @@ impl frame::deip_proposal::DeipProposal for RuntimeT {
             Self::WrappedCall,
         >,
     >;
-    type WrappedCall = WrappedCall<Self::Call>;
+    type WrappedCall = WrappedCall<<Self as DeipProposal>::Call>;
 
     fn wrap_batch<T: From<Self::WrappedBatch>>(batch: &Self::ProposalBatch) -> T {
         batch
@@ -70,12 +73,12 @@ impl frame::assets::Assets for RuntimeT {
     type Balance = Balance;
 }
 
-impl frame::octopus_appchain::OctopusAppchain for RuntimeT {
-    type Balance = <<RealRuntime as pallet_octopus_appchain::Config>::Currency as frame_support::traits::Currency<<RealRuntime as frame_system::Config>::AccountId>>::Balance;
-    type AssetBalance = <<RealRuntime as pallet_octopus_appchain::Config>::Assets as frame_support::traits::fungibles::Inspect<<RealRuntime as frame_system::Config>::AccountId>>::Balance;
-    type AssetId = <<RealRuntime as pallet_octopus_appchain::Config>::Assets as frame_support::traits::fungibles::Inspect<<RealRuntime as frame_system::Config>::AccountId>>::AssetId;
-}
+// impl frame::octopus_appchain::OctopusAppchain for RuntimeT {
+//     type Balance = <<RealRuntime as pallet_octopus_appchain::Config>::Currency as frame_support::traits::Currency<<RealRuntime as frame_system::Config>::AccountId>>::Balance;
+//     type AssetBalance = <<RealRuntime as pallet_octopus_appchain::Config>::Assets as frame_support::traits::fungibles::Inspect<<RealRuntime as frame_system::Config>::AccountId>>::Balance;
+//     type AssetId = <<RealRuntime as pallet_octopus_appchain::Config>::Assets as frame_support::traits::fungibles::Inspect<<RealRuntime as frame_system::Config>::AccountId>>::AssetId;
+// }
 
-impl frame::octopus_lpos::OctopusLpos for RuntimeT {
-    type EraIndex = pallet_octopus_lpos::EraIndex;
-}
+// impl frame::octopus_lpos::OctopusLpos for RuntimeT {
+//     type EraIndex = pallet_octopus_lpos::EraIndex;
+// }
