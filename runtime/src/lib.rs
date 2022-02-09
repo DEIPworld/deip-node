@@ -39,16 +39,10 @@ use sp_api::{impl_runtime_apis, BlockT, NumberFor, RuntimeVersion};
 use sp_core::OpaqueMetadata;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-use sp_runtime::{
-    create_runtime_str,
-    generic::{self, Era},
-    impl_opaque_keys,
-    traits::{
-        AccountIdLookup, BlakeTwo256, ConvertInto, Extrinsic, IdentifyAccount, Keccak256,
-        OpaqueKeys, SaturatedConversion, StaticLookup, Verify,
-    },
-    ApplyExtrinsicResult, KeyTypeId, MultiSignature,
-};
+use sp_runtime::{create_runtime_str, generic::{self, Era}, impl_opaque_keys, traits::{
+    AccountIdLookup, BlakeTwo256, ConvertInto, Extrinsic, IdentifyAccount, Keccak256,
+    OpaqueKeys, SaturatedConversion, StaticLookup, Verify,
+}, ApplyExtrinsicResult, KeyTypeId, MultiSignature};
 pub use sp_runtime::{Perbill, Permill};
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -353,8 +347,12 @@ parameter_types! {
     pub const OperationalFeeMultiplier: u8 = 5;
 }
 
+impl pallet_deip_ecosystem_fund::Config for Runtime {}
+
+use pallet_deip_ecosystem_fund::DontBurnFee;
+
 impl pallet_transaction_payment::Config for Runtime {
-    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    type OnChargeTransaction = CurrencyAdapter<Balances, DontBurnFee<(Self, Balances)>>;
     type TransactionByteFee = TransactionByteFee;
     type WeightToFee = IdentityFee<Balance>;
     type FeeMultiplierUpdate = ();
@@ -900,6 +898,7 @@ construct_runtime!(
         DeipDao: pallet_deip_dao::{Pallet, Call, Storage, Event<T>, Config},
         DeipPortal: pallet_deip_portal::{Pallet, Call, Storage, Config, ValidateUnsigned},
         DeipVesting: pallet_deip_vesting::{Pallet, Call, Storage, Event<T>, Config<T>},
+        DeipEcosystemFund: pallet_deip_ecosystem_fund::{Pallet, Config<T>, Storage},
     }
 );
 
@@ -1213,7 +1212,7 @@ impl_runtime_apis! {
 
             let mut batches = Vec::<BenchmarkBatch>::new();
             let params = (&config, &whitelist);
-            
+
             add_benchmark!(params, batches, frame_benchmarking, BaselineBench::<Runtime>);
             add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
             add_benchmark!(params, batches, pallet_balances, Balances);

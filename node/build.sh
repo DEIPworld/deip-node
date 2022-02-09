@@ -8,7 +8,7 @@ if [ "$BUILD_MODE" == "release" ]; then
 fi
 
 features=""
-if [ -n "FEATURES" ]; then
+if [ -z "FEATURES" ]; then
   features="--features $FEATURES"
 fi
 
