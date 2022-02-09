@@ -21,7 +21,6 @@ use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_octopus_appchain::AuthorityId as OctopusId;
 use sp_consensus_babe::AuthorityId as BabeId;
 
-use pallet_deip_assets::SerializableAssetBalance;
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -247,15 +246,7 @@ fn testnet_genesis(
             premined_amount: 1024 * DOLLARS, //@TODO is it ok to use value from barnacle template
         },
         deip: DeipConfig { domains: vec![], domain_count: 0u32 },
-        assets: AssetsConfig {
-            core_asset_admin: root_key,
-            balances: endowed_accounts
-                .iter()
-                .cloned()
-                .map(|k| (k, SerializableAssetBalance((1u64 << 60).into())))
-                .collect(),
-            ..Default::default()
-        },
+        assets: AssetsConfig::default(),
         uniques: UniquesConfig::default(),
         deip_proposal: DeipProposalConfig {},
         deip_dao: DeipDaoConfig {},
