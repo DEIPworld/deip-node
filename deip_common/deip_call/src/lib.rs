@@ -186,65 +186,65 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            create_project_nda {
-                external_id,
-                end_date,
-                contract_hash,
-                maybe_start_date,
-                parties,
-                projects,
-            } => CallObject {
-                module: "deip",
-                call: "create_project_nda",
-                args: &DeipCreateProjectNdaCallArgs {
-                    external_id,
-                    end_date,
-                    contract_hash,
-                    maybe_start_date,
-                    parties,
-                    projects,
-                },
-            }
-            .serialize(serializer),
+            // create_project_nda {
+            //     external_id,
+            //     end_date,
+            //     contract_hash,
+            //     maybe_start_date,
+            //     parties,
+            //     projects,
+            // } => CallObject {
+            //     module: "deip",
+            //     call: "create_project_nda",
+            //     args: &DeipCreateProjectNdaCallArgs {
+            //         external_id,
+            //         end_date,
+            //         contract_hash,
+            //         maybe_start_date,
+            //         parties,
+            //         projects,
+            //     },
+            // }
+            // .serialize(serializer),
 
-            create_nda_content_access_request {
-                external_id,
-                nda_external_id,
-                encrypted_payload_hash,
-                encrypted_payload_iv,
-            } => CallObject {
-                module: "deip",
-                call: "create_nda_content_access_request",
-                args: &DeipCreateProjectNdaAccessRequestCallArgs {
-                    external_id,
-                    nda_external_id,
-                    encrypted_payload_hash,
-                    encrypted_payload_iv,
-                },
-            }
-            .serialize(serializer),
+            // create_nda_content_access_request {
+            //     external_id,
+            //     nda_external_id,
+            //     encrypted_payload_hash,
+            //     encrypted_payload_iv,
+            // } => CallObject {
+            //     module: "deip",
+            //     call: "create_nda_content_access_request",
+            //     args: &DeipCreateProjectNdaAccessRequestCallArgs {
+            //         external_id,
+            //         nda_external_id,
+            //         encrypted_payload_hash,
+            //         encrypted_payload_iv,
+            //     },
+            // }
+            // .serialize(serializer),
 
-            fulfill_nda_content_access_request {
-                external_id,
-                encrypted_payload_encryption_key,
-                proof_of_encrypted_payload_encryption_key,
-            } => CallObject {
-                module: "deip",
-                call: "fulfill_nda_content_access_request",
-                args: &DeipFulfillNdaAccessRequestCallArgs {
-                    external_id,
-                    encrypted_payload_encryption_key,
-                    proof_of_encrypted_payload_encryption_key,
-                },
-            }
-            .serialize(serializer),
+            // fulfill_nda_content_access_request {
+            //     external_id,
+            //     encrypted_payload_encryption_key,
+            //     proof_of_encrypted_payload_encryption_key,
+            // } => CallObject {
+            //     module: "deip",
+            //     call: "fulfill_nda_content_access_request",
+            //     args: &DeipFulfillNdaAccessRequestCallArgs {
+            //         external_id,
+            //         encrypted_payload_encryption_key,
+            //         proof_of_encrypted_payload_encryption_key,
+            //     },
+            // }
+            // .serialize(serializer),
 
-            reject_nda_content_access_request { external_id } => CallObject {
-                module: "deip",
-                call: "reject_nda_content_access_request",
-                args: &DeipRejectNdaAccessRequestCallArgs { external_id },
-            }
-            .serialize(serializer),
+            // reject_nda_content_access_request { external_id } => CallObject {
+            //     module: "deip",
+            //     call: "reject_nda_content_access_request",
+            //     args: &DeipRejectNdaAccessRequestCallArgs { external_id },
+            // }
+            // .serialize(serializer),
 
             create_review {
                 external_id,
