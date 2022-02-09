@@ -1,7 +1,7 @@
 use appchain_deip_runtime::{
     opaque::Block, AccountId, AssetsConfig, BabeConfig, BalancesConfig, DeipConfig, DeipDaoConfig,
     DeipPortalConfig, DeipProposalConfig, DeipVestingConfig, GenesisConfig, GrandpaConfig,
-    Signature, SudoConfig, SystemConfig, UniquesConfig, WASM_BINARY,
+    Signature, SudoConfig, SystemConfig, UniquesConfig, WASM_BINARY, DeipEcosystemFundConfig
 };
 use sc_chain_spec::ChainSpecExtension;
 use sc_client_api::{BadBlocks, ForkBlocks};
@@ -252,5 +252,8 @@ fn testnet_genesis(
         deip_dao: DeipDaoConfig {},
         deip_portal: DeipPortalConfig {},
         deip_vesting: DeipVestingConfig { vesting: vec![] },
+        deip_ecosystem_fund: DeipEcosystemFundConfig {
+            fee_recipient: get_account_id_from_seed::<sr25519::Public>("Ferdie")
+        },
     }
 }

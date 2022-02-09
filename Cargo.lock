@@ -198,6 +198,7 @@ dependencies = [
  "pallet-deip",
  "pallet-deip-assets",
  "pallet-deip-dao",
+ "pallet-deip-ecosystem-fund",
  "pallet-deip-portal",
  "pallet-deip-proposal",
  "pallet-deip-uniques",
@@ -4285,6 +4286,23 @@ dependencies = [
  "sp-api",
  "sp-core",
  "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-deip-ecosystem-fund"
+version = "3.0.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-transaction-payment",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
  "sp-runtime",
  "sp-std",
 ]
