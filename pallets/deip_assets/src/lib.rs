@@ -236,9 +236,6 @@ pub mod pallet {
         StorageMap<_, Identity, DeipAssetIdOf<T>, DeipProjectIdOf<T>, OptionQuery>;
 
     #[pallet::storage]
-    pub(super) type CoreAssetId<T> = StorageValue<_, DeipAssetIdOf<T>, ValueQuery>;
-
-    #[pallet::storage]
     pub(super) type InvestmentByAssetId<T: Config> =
         StorageMap<_, Identity, DeipAssetIdOf<T>, Vec<DeipInvestmentIdOf<T>>, OptionQuery>;
 
@@ -274,62 +271,20 @@ pub mod pallet {
         StorageMap<_, Identity, DeipAssetIdOf<T>, AssetMetadata<u8>, OptionQuery>;
 
     #[pallet::genesis_config]
-    pub struct GenesisConfig<T: Config> {
-        pub core_asset_admin: AccountIdOf<T>,
-        pub core_asset_id: DeipAssetIdOf<T>,
-        pub balances: Vec<(AccountIdOf<T>, super::SerializableAssetBalance<AssetsBalanceOf<T>>)>,
+    pub struct GenesisConfig<T> {
+        pub _marker: std::marker::PhantomData<T>,
     }
 
     #[cfg(feature = "std")]
     impl<T: Config> Default for GenesisConfig<T> {
         fn default() -> Self {
-            Self {
-                core_asset_admin: Default::default(),
-                core_asset_id: Default::default(),
-                balances: Default::default(),
-            }
+            Self { _marker: std::marker::PhantomData }
         }
     }
 
     #[pallet::genesis_build]
     impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
-        fn build(&self) {
-            NextAssetId::<T>::put(<AssetsAssetIdOf<T> as Default>::default());
-
-            CoreAssetId::<T>::put(self.core_asset_id);
-
-            let result = Pallet::<T>::deip_create_asset_impl(
-                RawOrigin::Signed(self.core_asset_admin.clone()).into(),
-                self.core_asset_id,
-                self.core_asset_admin.clone(),
-                One::one(),
-                None,
-            );
-            assert!(result.is_ok());
-
-            // ensure no duplicates exist.
-            let endowed_accounts = self
-                .balances
-                .iter()
-                .map(|(x, _)| x)
-                .cloned()
-                .collect::<std::collections::BTreeSet<_>>();
-
-            assert!(
-                endowed_accounts.len() == self.balances.len(),
-                "duplicate balances in genesis."
-            );
-
-            for (ref who, amount) in &self.balances {
-                let result = Pallet::<T>::deip_issue_asset_impl(
-                    RawOrigin::Signed(self.core_asset_admin.clone()).into(),
-                    self.core_asset_id,
-                    who.clone(),
-                    amount.0,
-                );
-                assert!(result.is_ok());
-            }
-        }
+        fn build(&self) {}
     }
 
     impl<T: Config> Pallet<T> {
