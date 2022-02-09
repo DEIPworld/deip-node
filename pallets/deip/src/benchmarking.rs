@@ -137,7 +137,7 @@ fn _create_project_content<T: Config>(
         content,
         authors,
         references
-    ).unwrap(); 
+    ).unwrap();
     ProjectContentMap::<T>::get(external_id)
 }
 
@@ -272,7 +272,7 @@ fn _create_review<T: Config>(review: ReviewOf<T>) -> ReviewOf<T>
         assessment_model,
         weight,
         project_content_external_id
-    } = review; 
+    } = review;
     Pallet::<T>::create_review(
         RawOrigin::Signed(author.clone()).into(),
         external_id,
@@ -302,7 +302,7 @@ benchmarks! {
             project
         ).into());
     }
-    
+
     update_project {
         let project = init_project::<T>(0, 0);
         let project = _create_project::<T>(project);
@@ -318,17 +318,17 @@ benchmarks! {
             project.external_id
         ).into());
     }
-    
+
     create_project_content {
         let a in 0 .. 50;
         let r in 0 .. 50;
-        
+
         let project = _create_project::<T>(init_project::<T>(1, 0));
-        
+
         let references = (0..r)
             .map(|idx| create_reference_project::<T>(idx as u8 + 2))
             .collect::<Vec<_>>();
-        
+
         let project_content = init_project_content::<T>(
             &project,
             a as u8,
@@ -344,11 +344,11 @@ benchmarks! {
             authors,
             references,
         } = project_content;
-        
+
         let authors: Vec<T::DeipAccountId> = authors.into_iter()
             .map(Into::into)
             .collect();
-        
+
     }: _(RawOrigin::Signed(team_id.clone()),
             external_id,
             project_external_id,
@@ -364,7 +364,7 @@ benchmarks! {
             external_id
         ).into());
     }
-    
+
     create_project_nda {
         let p in 0 .. T::MaxNdaParties::get().try_into().unwrap();
         let mut parties = vec![];
@@ -381,7 +381,7 @@ benchmarks! {
             parties,
             projects,
         } = init_project_nda::<T>(1, parties.as_slice());
-        
+
     }: _(RawOrigin::Signed(contract_creator.clone()),
             external_id,
             end_date,
@@ -395,7 +395,7 @@ benchmarks! {
             external_id
         ).into());
     }
-    
+
     create_nda_content_access_request {
         let project = init_project::<T>(1, 0);
         let project = _create_project::<T>(project);
@@ -409,7 +409,7 @@ benchmarks! {
             encrypted_payload_iv,
             ..
         } = init_nda_content_access_request::<T>(1, &nda);
-        
+
     }: _(RawOrigin::Signed(requester.clone()),
             external_id,
             nda_external_id,
@@ -421,7 +421,7 @@ benchmarks! {
             external_id
         ).into());
     }
-    
+
     fulfill_nda_content_access_request {
         let project = init_project::<T>(1, 0);
         let project = _create_project::<T>(project);
@@ -429,11 +429,11 @@ benchmarks! {
         let nda = _create_project_nda::<T>(nda);
         let request = init_nda_content_access_request::<T>(1, &nda);
         let request = _create_nda_content_access_request::<T>(request);
-        
+
         let grantor: T::AccountId = whitelisted_caller();
         let encrypted_payload_encryption_key: Vec<u8> = vec![1];
         let proof_of_encrypted_payload_encryption_key: Vec<u8> = vec![2];
-        
+
     }: _(RawOrigin::Signed(grantor.clone()),
             request.external_id,
             encrypted_payload_encryption_key,
@@ -444,7 +444,7 @@ benchmarks! {
             request.external_id
         ).into());
     }
-    
+
     reject_nda_content_access_request {
         let project = init_project::<T>(1, 0);
         let project = _create_project::<T>(project);
@@ -452,9 +452,9 @@ benchmarks! {
         let nda = _create_project_nda::<T>(nda);
         let request = init_nda_content_access_request::<T>(1, &nda);
         let request = _create_nda_content_access_request::<T>(request);
-        
+
         let grantor: T::AccountId = whitelisted_caller();
-        
+
     }: _(RawOrigin::Signed(grantor.clone()), request.external_id)
     verify {
         assert_last_event::<T>(Event::<T>::NdaAccessRequestRejected(
@@ -462,18 +462,18 @@ benchmarks! {
             request.external_id
         ).into());
     }
-    
+
     create_review {
         let d in 1 .. 50;
-        
+
         let project = init_project::<T>(1, d as u8);
         let project = _create_project::<T>(project);
-        
+
         let project_content = init_project_content::<T>(&project, 0, None);
         let project_content = _create_project_content::<T>(project_content);
-        
+
         let review = init_review::<T>(1, &project.domains[..], &project_content);
-        
+
     }: _(RawOrigin::Signed(review.author.clone()),
             review.external_id,
             review.author.clone().into(),
@@ -488,19 +488,19 @@ benchmarks! {
             review
         ).into());
     }
-    
+
     upvote_review {
         let project = init_project::<T>(1, 10);
         let project = _create_project::<T>(project);
-        
+
         let project_content = init_project_content::<T>(&project, 0, None);
         let project_content = _create_project_content::<T>(project_content);
-        
+
         let review = init_review::<T>(1, &project.domains[..], &project_content);
         let review = _create_review::<T>(review);
-        
+
         let domain_id = review.domains[0];
-        
+
     }: _(RawOrigin::Signed(review.author.clone()),
             review.external_id,
             domain_id)
@@ -511,12 +511,12 @@ benchmarks! {
             domain_id
         ).into());
     }
-    
+
     add_domain {
         let domain = init_domain(1);
         let account: T::AccountId = whitelisted_caller();
         let external_id = domain.external_id;
-        
+
     }: _(RawOrigin::Signed(account.clone()), domain)
     verify {
         assert_last_event::<T>(Event::<T>::DomainAdded(
@@ -524,19 +524,19 @@ benchmarks! {
             external_id
         ).into());
     }
-    
+
     create_contract_agreement_project_license {
         let project = init_project::<T>(1, 0);
         let project = _create_project::<T>(project);
-        
+
         let terms = init_license_agreement::<T>(&project);
         let parties = Parties::<T>::license_agreement(&project, init_member::<T>(99));
         let agreement = init_contract_agreement::<T>(1, terms, parties);
-        
+
         let license = as_unsigned_license_agreement::<T>(agreement);
-        
+
         let id = license.id;
-        
+
     }: create_contract_agreement(RawOrigin::Signed(license.creator.clone()),
             license.id,
             license.creator.clone().into(),
@@ -556,19 +556,19 @@ benchmarks! {
             id
         ).into());
     }
-    
+
     create_contract_agreement_general_contract {
         let project = init_project::<T>(1, 0);
         let project = _create_project::<T>(project);
-        
+
         let terms = init_general_contract_agreement::<T>();
         let parties = Parties::<T>::ContractAgreement((100..105).map(init_member::<T>).collect());
         let agreement = init_contract_agreement::<T>(1, terms, parties);
-        
+
         let license = as_partially_accepted_contract::<T>(agreement);
-        
+
         let id = license.id;
-        
+
     }: create_contract_agreement(RawOrigin::Signed(license.creator.clone()),
             license.id,
             license.creator.clone().into(),
@@ -582,20 +582,20 @@ benchmarks! {
             id
         ).into());
     }
-    
+
     accept_contract_agreement_project_license_unsigned {
         let project = init_project::<T>(1, 0);
         let project = _create_project::<T>(project);
-        
+
         let terms = init_license_agreement::<T>(&project);
         let parties = Parties::<T>::license_agreement(&project, init_member::<T>(99));
         let agreement = init_contract_agreement::<T>(1, terms, parties);
         let agreement = _create_contract_agreement::<T>(agreement);
-        
+
         let license = as_unsigned_license_agreement::<T>(agreement);
         let id = license.id;
         let party = license.licenser;
-        
+
     }: accept_contract_agreement(RawOrigin::Signed(party.clone()),
             id,
             party.clone().into())
@@ -605,29 +605,29 @@ benchmarks! {
             party
         ).into());
     }
-    
+
     // accept_contract_agreement_project_license_signed_by_licenser {
     //     let project = init_project::<T>(1, 0);
     //     let project = _create_project::<T>(project);
-    //     
+    //
     //     let terms = init_license_agreement::<T>(&project);
     //     let parties = Parties::<T>::license_agreement(&project, init_member::<T>(99));
     //     let agreement = init_contract_agreement::<T>(1, terms, parties);
     //     let agreement = _create_contract_agreement::<T>(agreement);
-    //     
+    //
     //     let license = as_unsigned_license_agreement::<T>(agreement);
-    //     
+    //
     //     let id = license.id;
-    //     
+    //
     //     // Sign by Licenser:
     //     Pallet::<T>::accept_contract_agreement(
     //         RawOrigin::Signed(license.licenser.clone()).into(),
     //         id,
     //         license.licenser.clone().into()
     //     ).unwrap();
-    //     
+    //
     //     let party = license.licensee;
-    //     
+    //
     // }: accept_contract_agreement(RawOrigin::Signed(party.clone()),
     //         id,
     //         party.clone().into())
@@ -636,22 +636,22 @@ benchmarks! {
     //         id
     //     ).into());
     // }
-    
+
     accept_contract_agreement_general_contract_partially_accepted {
         let project = init_project::<T>(1, 0);
         let project = _create_project::<T>(project);
-        
+
         let terms = init_general_contract_agreement::<T>();
         let parties = Parties::<T>::ContractAgreement((100..105).map(init_member::<T>).collect());
         let agreement = init_contract_agreement::<T>(1, terms, parties);
         let agreement = _create_contract_agreement::<T>(agreement);
-        
+
         let contract = as_partially_accepted_contract::<T>(agreement);
-        
+
         let id = contract.id;
-        
+
         let party = contract.parties.get(0).unwrap().clone();
-        
+
     }: accept_contract_agreement(RawOrigin::Signed(party.clone()),
             id,
             party.clone().into())
@@ -661,20 +661,20 @@ benchmarks! {
             party
         ).into());
     }
-    
+
     accept_contract_agreement_general_contract_finalized {
         let project = init_project::<T>(1, 0);
         let project = _create_project::<T>(project);
-        
+
         let terms = init_general_contract_agreement::<T>();
         let parties = Parties::<T>::ContractAgreement((100..105).map(init_member::<T>).collect());
         let agreement = init_contract_agreement::<T>(1, terms, parties);
         let agreement = _create_contract_agreement::<T>(agreement);
-        
+
         let contract = as_partially_accepted_contract::<T>(agreement);
-        
+
         let id = contract.id;
-        
+
         for p in &contract.parties[1..] {
             Pallet::<T>::accept_contract_agreement(
                RawOrigin::Signed(p.clone()).into(),
@@ -682,9 +682,9 @@ benchmarks! {
                 p.clone().into()
             ).unwrap();
         }
-        
+
         let party = contract.parties.get(0).unwrap().clone();
-        
+
     }: accept_contract_agreement(RawOrigin::Signed(party.clone()),
             id,
             party.clone().into())
@@ -731,7 +731,7 @@ impl<T: Config> Parties<T> {
         Self::LicenseAgreement(LicenseAgreementParties {
             licenser: licenser.team_id.clone(),
             licensee,
-        }) 
+        })
     }
     fn into_license_agreement(self) -> LicenseAgreementParties<T> {
         match self {
@@ -757,11 +757,11 @@ fn init_contract_agreement<T: Config>(
 {
     let id = ContractAgreementId::from([idx; 20]);
     let creator: T::AccountId = whitelisted_caller();
-    
+
     let hash: HashOf<T> = T::Hashing::hash(b"contract agreement");
     let activation_time: Option<MomentOf<T>> = None;
     let expiration_time: Option<MomentOf<T>> = None;
-    
+
     match terms {
         Terms::LicenseAgreement { source, price } => {
             let parties = parties.into_license_agreement();
