@@ -994,11 +994,11 @@ fn simple_crowdfunding_hard_cap_reached() {
         let base_asset_total = 120_000u64;
         create_issue_asset(ALICE_ACCOUNT_ID, base_asset_id, base_asset_total, None);
 
-        let call = pallet_deip_assets::Call::<Test>::transfer(
-            base_asset_id,
-            BOB_ACCOUNT_ID,
-            base_asset_total / 2,
-        );
+        let call = pallet_deip_assets::Call::<Test>::transfer {
+            id: base_asset_id,
+            target: BOB_ACCOUNT_ID,
+            amount: base_asset_total / 2,
+        };
         let result = call.dispatch_bypass_filter(Origin::signed(ALICE_ACCOUNT_ID));
         assert_ok!(result);
 

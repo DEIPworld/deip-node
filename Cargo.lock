@@ -4227,6 +4227,7 @@ name = "pallet-deip"
 version = "3.0.0"
 dependencies = [
  "deip-assets-error",
+ "deip-projects-info",
  "deip-transaction-ctx",
  "deip_serializable_u128",
  "frame-benchmarking",

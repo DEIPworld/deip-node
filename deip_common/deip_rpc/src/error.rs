@@ -47,18 +47,14 @@ pub enum Error {
     AssetIdRemainingLengthFailed = 38,
 }
 
-impl Into<RpcErrorCode> for Error {
-    fn into(self) -> RpcErrorCode {
+impl From<Error> for RpcErrorCode {
+    fn from(val: Error) -> Self {
         const BASE: i64 = 9900;
 
-        RpcErrorCode::ServerError(BASE + self as i64)
+        RpcErrorCode::ServerError(BASE + val as i64)
     }
 }
 
 pub fn to_rpc_error(e: Error, data: Option<String>) -> RpcError {
-    RpcError {
-        message: String::new(),
-        code: e.into(),
-        data: data.map(|d| d.into()),
-    }
+    RpcError { message: String::new(), code: e.into(), data: data.map(|d| d.into()) }
 }

@@ -21,6 +21,14 @@ frame_support::construct_runtime!(
     }
 );
 
+impl<C> SendTransactionTypes<C> for TestRuntime
+where
+    Call: From<C>,
+{
+    type Extrinsic = UncheckedExtrinsic;
+    type OverarchingCall = Call;
+}
+
 frame_support::parameter_types! {
     pub const BlockHashCount: u64 = 250;
     pub BlockWeights: frame_system::limits::BlockWeights =
@@ -72,7 +80,7 @@ fn with_test_ext<R>(t: impl FnOnce() -> R) -> R {
 
 use crate::dao::*;
 use frame_support::{assert_noop, assert_ok};
-use frame_system::RawOrigin;
+use frame_system::{offchain::SendTransactionTypes, RawOrigin};
 use sp_std::str::FromStr;
 
 fn last_event() -> Event {

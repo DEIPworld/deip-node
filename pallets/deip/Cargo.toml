@@ -41,6 +41,7 @@ version = "2.0.0"
 pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-deip-assets = { path = "../deip_assets", default-features = false }
+deip-projects-info = { path = "../../deip_common/deip_projects_info", default-features = false }
 
 [features]
 default = ["std"]
@@ -65,4 +66,5 @@ std = [
     "pallet-assets/std",
     "pallet-balances/std",
     "pallet-deip-assets/std",
+    "deip-projects-info/std",
 ]

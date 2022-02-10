@@ -51,7 +51,7 @@ impl<Hasher: StorageHasher> HashedKey<Hasher> {
 
 impl<Hasher: StorageHasher> HashedKeyTrait for HashedKey<Hasher> {
     fn as_ref(&self) -> &[u8] {
-        return self.0.as_ref()
+        self.0.as_ref()
     }
 }
 
