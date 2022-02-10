@@ -2,8 +2,8 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
+use super::{Call as RawCall, *};
 use crate as pallet_deip_dao;
-use super::{*, Event as RawEvent, Call as RawCall};
 
 use sp_std::prelude::*;
 
@@ -16,8 +16,8 @@ frame_support::construct_runtime!(
         NodeBlock = Block,
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
-        System: frame_system::{Module, Call, Config, Storage, Event<T>},
-        DeipDao: pallet_deip_dao::{Module, Call, Storage, Event<T>, Config},
+        System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+        DeipDao: pallet_deip_dao::{Pallet, Call, Storage, Config},
     }
 );
 
@@ -53,7 +53,6 @@ impl frame_system::Config for TestRuntime {
 }
 
 impl crate::Config for TestRuntime {
-    type Event = Event;
     type Call = Call;
 }
 
@@ -61,7 +60,8 @@ pub struct ExtBuilder;
 
 impl ExtBuilder {
     pub fn build() -> sp_io::TestExternalities {
-        let storage = frame_system::GenesisConfig::default().build_storage::<TestRuntime>().unwrap();
+        let storage =
+            frame_system::GenesisConfig::default().build_storage::<TestRuntime>().unwrap();
         sp_io::TestExternalities::from(storage)
     }
 }
@@ -70,13 +70,16 @@ fn with_test_ext<R>(t: impl FnOnce() -> R) -> R {
     ExtBuilder::build().execute_with(t)
 }
 
-use frame_support::{assert_noop, assert_ok};
 use crate::dao::*;
-use sp_std::str::FromStr;
+use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
+use sp_std::str::FromStr;
 
 fn last_event() -> Event {
-    frame_system::Module::<TestRuntime>::events().pop().map(|e| e.event).expect("Event expected")
+    frame_system::Module::<TestRuntime>::events()
+        .pop()
+        .map(|e| e.event)
+        .expect("Event expected")
 }
 
 fn expect_event<E: Into<Event>>(e: E) {

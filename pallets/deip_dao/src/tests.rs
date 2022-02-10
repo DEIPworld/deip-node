@@ -228,47 +228,47 @@ fn dao_on_behalf() {
     })
 }
 
-#[test]
-fn dao_on_behalf_not_found() {
-    with_test_ext(|| {
-        System::set_block_number(1);
-        let who = 1;
-        let id = DaoId::from_slice("test_dao\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
-        let transfer_to = 2;
-        assert_noop!(
-            DeipDao::on_behalf(
-                Origin::signed(who),
-                id,
-                Box::new(Call::DeipDao(RawCall::transfer_ownership(
-                    id,
-                    transfer_to,
-                    plain_key_source(transfer_to)
-                )))
-            ),
-            Error::<TestRuntime>::NotFound,
-        );
-    })
-}
+// #[test]
+// fn dao_on_behalf_not_found() {
+//     with_test_ext(|| {
+//         System::set_block_number(1);
+//         let who = 1;
+//         let id = DaoId::from_slice("test_dao\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
+//         let transfer_to = 2;
+//         assert_noop!(
+//             DeipDao::on_behalf(
+//                 Origin::signed(who),
+//                 id,
+//                 Box::new(Call::DeipDao(RawCall::transfer_ownership(
+//                     id,
+//                     transfer_to,
+//                     plain_key_source(transfer_to)
+//                 )))
+//             ),
+//             Error::<TestRuntime>::NotFound,
+//         );
+//     })
+// }
 
-#[test]
-fn dao_on_behalf_forbidden() {
-    with_test_ext(|| {
-        System::set_block_number(1);
-        let who = 1;
-        let name = DaoId::from_slice("test_dao\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
-        DeipDao::create(Origin::signed(who), name, plain_key_source(who), None).expect("create OK");
-        let transfer_to = 2;
-        assert_noop!(
-            DeipDao::on_behalf(
-                Origin::signed(transfer_to),
-                name,
-                Box::new(Call::DeipDao(RawCall::transfer_ownership(
-                    name,
-                    transfer_to,
-                    plain_key_source(transfer_to)
-                )))
-            ),
-            Error::<TestRuntime>::Forbidden,
-        );
-    })
-}
+// #[test]
+// fn dao_on_behalf_forbidden() {
+//     with_test_ext(|| {
+//         System::set_block_number(1);
+//         let who = 1;
+//         let name = DaoId::from_slice("test_dao\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes());
+//         DeipDao::create(Origin::signed(who), name, plain_key_source(who), None).expect("create OK");
+//         let transfer_to = 2;
+//         assert_noop!(
+//             DeipDao::on_behalf(
+//                 Origin::signed(transfer_to),
+//                 name,
+//                 Box::new(Call::DeipDao(RawCall::transfer_ownership(
+//                     name,
+//                     transfer_to,
+//                     plain_key_source(transfer_to)
+//                 )))
+//             ),
+//             Error::<TestRuntime>::Forbidden,
+//         );
+//     })
+// }

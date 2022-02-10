@@ -1,26 +1,39 @@
-use crate::*;
-use crate::{mock::*};
-use sp_core::{H256, offchain::{TransactionPoolExt, testing::*}};
-use frame_support::{assert_ok, assert_noop,
-    traits::{UnfilteredDispatchable, OnFinalize, OnInitialize, OffchainWorker}};
-use sp_runtime::offchain::OffchainWorkerExt;
-use std::time::{SystemTime, UNIX_EPOCH};
+use crate::{mock::*, *};
+use frame_support::{
+    assert_noop, assert_ok,
+    traits::{OffchainWorker, OnFinalize, OnInitialize, UnfilteredDispatchable},
+};
+use sp_core::{
+    offchain::{testing::*, TransactionPoolExt},
+    H256,
+};
 use sp_io::TestExternalities;
+use sp_runtime::{
+    offchain::OffchainWorkerExt,
+    traits::{One, Zero},
+};
 use sp_std::sync::Arc;
-use parking_lot::RwLock;
-use sp_runtime::traits::{Zero, One};
+use std::{
+    sync::RwLock,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 const DAY_IN_MILLIS: u64 = 86400000;
 
 type BlockNumber = <Test as system::Config>::BlockNumber;
 
-fn create_ok_project(maybe_account_id: Option<<Test as system::Config>::AccountId>) 
-    -> (ProjectId, ProjectOf<Test>, DomainId, <Test as system::Config>::AccountId, ) {
+fn create_ok_project(
+    maybe_account_id: Option<<Test as system::Config>::AccountId>,
+) -> (ProjectId, ProjectOf<Test>, DomainId, <Test as system::Config>::AccountId) {
     let domain_id = DomainId::random();
-    let account_id: <Test as system::Config>::AccountId = maybe_account_id.unwrap_or(DEFAULT_ACCOUNT_ID);
+    let account_id: <Test as system::Config>::AccountId =
+        maybe_account_id.unwrap_or(DEFAULT_ACCOUNT_ID);
     let project_id = ProjectId::random();
 
-    assert_ok!(Deip::add_domain(Origin::signed(account_id), Domain { external_id: domain_id.clone() }));
+    assert_ok!(Deip::add_domain(
+        Origin::signed(account_id),
+        Domain { external_id: domain_id.clone() }
+    ));
 
     let project = ProjectOf::<Test> {
         is_private: false,
@@ -30,7 +43,8 @@ fn create_ok_project(maybe_account_id: Option<<Test as system::Config>::AccountI
         domains: vec![domain_id],
     };
 
-    assert_ok!(Deip::create_project(Origin::signed(account_id),
+    assert_ok!(Deip::create_project(
+        Origin::signed(account_id),
         project.is_private,
         project.external_id.clone(),
         project.team_id.clone(),
@@ -43,62 +57,59 @@ fn create_ok_project(maybe_account_id: Option<<Test as system::Config>::AccountI
 
 fn create_ok_nda() -> (NdaId, NdaOf<Test>) {
     let (project_id, ..) = create_ok_project(None);
-    let project_nda_id =  NdaId::random();
+    let project_nda_id = NdaId::random();
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards :)").as_millis() as u64;
-    
+        .expect("Time went backwards :)")
+        .as_millis() as u64;
+
     let end_date = now + DAY_IN_MILLIS;
     let contract_hash = H256::random();
     let maybe_start_date = None;
     let parties = vec![DEFAULT_ACCOUNT_ID];
     let projects = vec![project_id];
-    
 
-    assert_ok!(
-        Deip::create_project_nda(
-            Origin::signed(DEFAULT_ACCOUNT_ID), 
-            project_nda_id, 
-            end_date, 
-            contract_hash, 
-            maybe_start_date,
-            parties.clone(),
-            projects.clone()
-        )
-    );
+    assert_ok!(Deip::create_project_nda(
+        Origin::signed(DEFAULT_ACCOUNT_ID),
+        project_nda_id,
+        end_date,
+        contract_hash,
+        maybe_start_date,
+        parties.clone(),
+        projects.clone()
+    ));
 
-    let expected_nda  = Nda {
+    let expected_nda = Nda {
         contract_creator: DEFAULT_ACCOUNT_ID,
         external_id: project_nda_id,
         end_date,
         start_date: maybe_start_date,
         contract_hash,
         parties,
-        projects
+        projects,
     };
 
     (project_nda_id, expected_nda)
-        
 }
 
-fn create_ok_nda_content_access_request(project_nda_id: NdaId) -> (NdaAccessRequestId, NdaAccessRequestOf<Test>) {
+fn create_ok_nda_content_access_request(
+    project_nda_id: NdaId,
+) -> (NdaAccessRequestId, NdaAccessRequestOf<Test>) {
     let access_request_id = NdaAccessRequestId::random();
     let encrypted_payload_hash = H256::random();
     let encrypted_payload_iv = vec![1, 2, 3];
 
-    assert_ok!(
-        Deip::create_nda_content_access_request(
-            Origin::signed(DEFAULT_ACCOUNT_ID), 
-            access_request_id, 
-            project_nda_id,
-            encrypted_payload_hash, 
-            encrypted_payload_iv.clone()
-        )
-    );
+    assert_ok!(Deip::create_nda_content_access_request(
+        Origin::signed(DEFAULT_ACCOUNT_ID),
+        access_request_id,
+        project_nda_id,
+        encrypted_payload_hash,
+        encrypted_payload_iv.clone()
+    ));
 
     let expected_nda_request = NdaAccessRequest {
         external_id: access_request_id,
-        nda_external_id: project_nda_id, 
+        nda_external_id: project_nda_id,
         requester: DEFAULT_ACCOUNT_ID,
         encrypted_payload_hash,
         encrypted_payload_iv,
@@ -117,12 +128,8 @@ fn create_issue_asset(
     amount: DeipAssetBalanceOf<Test>,
     project_id: Option<ProjectId>,
 ) {
-    let call = pallet_deip_assets::Call::<Test>::create_asset(
-        id,
-        account_id,
-        1u32.into(),
-        project_id,
-    );
+    let call =
+        pallet_deip_assets::Call::<Test>::create_asset(id, account_id, 1u32.into(), project_id);
     let result = call.dispatch_bypass_filter(Origin::signed(account_id));
     assert_ok!(result);
 
@@ -161,7 +168,8 @@ fn decode_validate_deip_call(encoded: &[u8]) -> crate::Call<Test> {
         <Deip as sp_runtime::traits::ValidateUnsigned>::validate_unsigned(
             TransactionSource::Local,
             &inner,
-        ).is_ok(),
+        )
+        .is_ok(),
         true
     );
 
@@ -173,8 +181,11 @@ fn add_domain() {
     new_test_ext().execute_with(|| {
         let domain_id = DomainId::random();
         // Dispatch a signed add domian extrinsic.
-        assert_ok!(Deip::add_domain(Origin::signed(DEFAULT_ACCOUNT_ID), Domain { external_id: domain_id.clone() }));
-        
+        assert_ok!(Deip::add_domain(
+            Origin::signed(DEFAULT_ACCOUNT_ID),
+            Domain { external_id: domain_id.clone() }
+        ));
+
         // Read pallet storage and assert an expected result.
         assert_eq!(Deip::domain_count(), 1);
         assert!(
@@ -189,11 +200,17 @@ fn add_domain() {
 fn cant_add_duplicate_domain() {
     new_test_ext().execute_with(|| {
         let domain_id = DomainId::random();
-        
-        assert_ok!(Deip::add_domain(Origin::signed(DEFAULT_ACCOUNT_ID), Domain { external_id: domain_id.clone() }));
+
+        assert_ok!(Deip::add_domain(
+            Origin::signed(DEFAULT_ACCOUNT_ID),
+            Domain { external_id: domain_id.clone() }
+        ));
 
         assert_noop!(
-            Deip::add_domain(Origin::signed(DEFAULT_ACCOUNT_ID), Domain { external_id: domain_id.clone() }),
+            Deip::add_domain(
+                Origin::signed(DEFAULT_ACCOUNT_ID),
+                Domain { external_id: domain_id.clone() }
+            ),
             Error::<Test>::DomainAlreadyExists
         );
     })
@@ -229,12 +246,14 @@ fn cant_add_project_with_non_exixsted_domain() {
         let account_id = DEFAULT_ACCOUNT_ID;
 
         assert_noop!(
-            Deip::create_project(Origin::signed(DEFAULT_ACCOUNT_ID),
+            Deip::create_project(
+                Origin::signed(DEFAULT_ACCOUNT_ID),
                 false,
                 ProjectId::random(),
                 account_id,
                 H256::random(),
-                vec![domain]),
+                vec![domain]
+            ),
             Error::<Test>::DomainNotExists
         );
     })
@@ -246,12 +265,14 @@ fn cant_add_duplicated_project() {
         let (_, project, ..) = create_ok_project(None);
 
         assert_noop!(
-            Deip::create_project(Origin::signed(DEFAULT_ACCOUNT_ID),
+            Deip::create_project(
+                Origin::signed(DEFAULT_ACCOUNT_ID),
                 project.is_private,
                 project.external_id,
                 project.team_id,
                 project.description,
-                project.domains),
+                project.domains
+            ),
             Error::<Test>::ProjectAlreadyExists
         );
     })
@@ -264,7 +285,12 @@ fn update_project() {
 
         let new_description = H256::random();
 
-        assert_ok!(Deip::update_project(Origin::signed(DEFAULT_ACCOUNT_ID), project_id, Some(new_description), Some(true)));
+        assert_ok!(Deip::update_project(
+            Origin::signed(DEFAULT_ACCOUNT_ID),
+            project_id,
+            Some(new_description),
+            Some(true)
+        ));
 
         let project_stored = ProjectMap::<Test>::get(project_id);
 
@@ -284,7 +310,12 @@ fn cant_update_project_not_belonged_to_your_signature() {
         let new_description = H256::random();
 
         assert_noop!(
-            Deip::update_project(Origin::signed(wrong_account_id), project_id, Some(new_description), Some(true)),
+            Deip::update_project(
+                Origin::signed(wrong_account_id),
+                project_id,
+                Some(new_description),
+                Some(true)
+            ),
             Error::<Test>::NoPermission
         );
     })
@@ -306,9 +337,10 @@ fn cant_update_not_existed_project() {
 fn create_project_content() {
     new_test_ext().execute_with(|| {
         let (project_id, ..) = create_ok_project(None);
-        let project_content_id =  ProjectContentId::random();
+        let project_content_id = ProjectContentId::random();
 
-        assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+        assert_ok!(Deip::create_project_content(
+            Origin::signed(DEFAULT_ACCOUNT_ID),
             project_content_id,
             project_id,
             DEFAULT_ACCOUNT_ID,
@@ -316,7 +348,8 @@ fn create_project_content() {
             H256::random(),
             H256::random(),
             vec![DEFAULT_ACCOUNT_ID],
-            None));
+            None
+        ));
 
         assert!(
             <ProjectContentMap<Test>>::contains_key(project_content_id),
@@ -342,7 +375,8 @@ fn create_project_content_with_references() {
         let description = H256::random();
         let content = H256::random();
 
-        assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+        assert_ok!(Deip::create_project_content(
+            Origin::signed(DEFAULT_ACCOUNT_ID),
             project_content_id,
             project_id,
             DEFAULT_ACCOUNT_ID,
@@ -350,11 +384,13 @@ fn create_project_content_with_references() {
             description,
             content,
             vec![DEFAULT_ACCOUNT_ID],
-            None));
+            None
+        ));
 
         let project_content_with_reference_id = ProjectContentId::random();
 
-        assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+        assert_ok!(Deip::create_project_content(
+            Origin::signed(DEFAULT_ACCOUNT_ID),
             project_content_with_reference_id,
             project_id,
             DEFAULT_ACCOUNT_ID,
@@ -362,7 +398,8 @@ fn create_project_content_with_references() {
             description,
             content,
             vec![DEFAULT_ACCOUNT_ID],
-            Some(vec![project_content_id])));
+            Some(vec![project_content_id])
+        ));
 
         assert!(
             <ProjectContentMap<Test>>::contains_key(project_content_with_reference_id),
@@ -388,7 +425,8 @@ fn cant_add_duplicated_project_content() {
         let description = H256::random();
         let content = H256::random();
 
-        assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+        assert_ok!(Deip::create_project_content(
+            Origin::signed(DEFAULT_ACCOUNT_ID),
             content_id,
             project_id,
             DEFAULT_ACCOUNT_ID,
@@ -396,10 +434,12 @@ fn cant_add_duplicated_project_content() {
             description,
             content,
             vec![DEFAULT_ACCOUNT_ID],
-            None));
+            None
+        ));
 
         assert_noop!(
-            Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+            Deip::create_project_content(
+                Origin::signed(DEFAULT_ACCOUNT_ID),
                 content_id,
                 project_id,
                 DEFAULT_ACCOUNT_ID,
@@ -407,7 +447,8 @@ fn cant_add_duplicated_project_content() {
                 description,
                 content,
                 vec![DEFAULT_ACCOUNT_ID],
-                None),
+                None
+            ),
             Error::<Test>::ProjectContentAlreadyExists
         );
     })
@@ -417,7 +458,8 @@ fn cant_add_duplicated_project_content() {
 fn cant_add_project_content_with_wrong_project_reference() {
     new_test_ext().execute_with(|| {
         assert_noop!(
-            Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+            Deip::create_project_content(
+                Origin::signed(DEFAULT_ACCOUNT_ID),
                 ProjectContentId::random(),
                 ProjectId::random(),
                 DEFAULT_ACCOUNT_ID,
@@ -425,7 +467,8 @@ fn cant_add_project_content_with_wrong_project_reference() {
                 H256::random(),
                 H256::random(),
                 vec![DEFAULT_ACCOUNT_ID],
-                None),
+                None
+            ),
             Error::<Test>::NoSuchProject
         );
     })
@@ -438,7 +481,8 @@ fn cant_add_project_content_to_incorrect_team() {
         let wrong_account_id = 234;
 
         assert_noop!(
-            Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+            Deip::create_project_content(
+                Origin::signed(DEFAULT_ACCOUNT_ID),
                 ProjectContentId::random(),
                 project_id,
                 wrong_account_id,
@@ -446,7 +490,8 @@ fn cant_add_project_content_to_incorrect_team() {
                 H256::random(),
                 H256::random(),
                 vec![DEFAULT_ACCOUNT_ID],
-                None),
+                None
+            ),
             Error::<Test>::ProjectNotBelongToTeam
         );
     })
@@ -456,11 +501,12 @@ fn cant_add_project_content_to_incorrect_team() {
 fn cant_add_project_content_to_finished_project() {
     new_test_ext().execute_with(|| {
         let (project_id, ..) = create_ok_project(None);
-        
+
         let description = H256::random();
         let content = H256::random();
 
-        assert_ok!(Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+        assert_ok!(Deip::create_project_content(
+            Origin::signed(DEFAULT_ACCOUNT_ID),
             ProjectContentId::random(),
             project_id,
             DEFAULT_ACCOUNT_ID,
@@ -468,10 +514,12 @@ fn cant_add_project_content_to_finished_project() {
             description,
             content,
             vec![DEFAULT_ACCOUNT_ID],
-            None,));
+            None,
+        ));
 
         assert_noop!(
-            Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+            Deip::create_project_content(
+                Origin::signed(DEFAULT_ACCOUNT_ID),
                 ProjectContentId::random(),
                 project_id,
                 DEFAULT_ACCOUNT_ID,
@@ -479,7 +527,8 @@ fn cant_add_project_content_to_finished_project() {
                 description,
                 content,
                 vec![DEFAULT_ACCOUNT_ID],
-                None,),
+                None,
+            ),
             Error::<Test>::ProjectAlreadyFinished
         );
     })
@@ -489,9 +538,10 @@ fn cant_add_project_content_to_finished_project() {
 fn cant_add_project_content_with_wrong_references() {
     new_test_ext().execute_with(|| {
         let (project_id, ..) = create_ok_project(None);
-        
+
         assert_noop!(
-            Deip::create_project_content(Origin::signed(DEFAULT_ACCOUNT_ID),
+            Deip::create_project_content(
+                Origin::signed(DEFAULT_ACCOUNT_ID),
                 ProjectContentId::random(),
                 project_id,
                 DEFAULT_ACCOUNT_ID,
@@ -499,7 +549,8 @@ fn cant_add_project_content_with_wrong_references() {
                 H256::random(),
                 H256::random(),
                 vec![DEFAULT_ACCOUNT_ID],
-                Some(vec![ProjectContentId::random()]),),
+                Some(vec![ProjectContentId::random()]),
+            ),
             Error::<Test>::NoSuchReference
         );
     })
@@ -522,7 +573,9 @@ fn create_project_nda() {
         assert_eq!(expected_nda, nda_stored);
 
         assert!(
-            nda_list.binary_search_by_key(&project_nda_id, |&(external_id, ..)| external_id).is_ok(),
+            nda_list
+                .binary_search_by_key(&project_nda_id, |&(external_id, ..)| external_id)
+                .is_ok(),
             "NDA List did not contain the NDA, value was `{}`",
             project_nda_id
         );
@@ -533,7 +586,7 @@ fn create_project_nda() {
 fn cant_create_project_nda_ends_in_past() {
     new_test_ext().execute_with(|| {
         let (project_id, ..) = create_ok_project(None);
-        let project_nda_id =  NdaId::random();        
+        let project_nda_id = NdaId::random();
         let end_date = 0;
 
         let contract_hash = H256::random();
@@ -543,10 +596,10 @@ fn cant_create_project_nda_ends_in_past() {
 
         assert_noop!(
             Deip::create_project_nda(
-                Origin::signed(DEFAULT_ACCOUNT_ID), 
-                project_nda_id, 
-                end_date, 
-                contract_hash, 
+                Origin::signed(DEFAULT_ACCOUNT_ID),
+                project_nda_id,
+                end_date,
+                contract_hash,
                 maybe_start_date,
                 parties.clone(),
                 projects.clone()
@@ -560,7 +613,7 @@ fn cant_create_project_nda_ends_in_past() {
 fn cant_create_project_nda_with_start_date_greater_end_date() {
     new_test_ext().execute_with(|| {
         let (project_id, ..) = create_ok_project(None);
-        let project_nda_id =  NdaId::random();        
+        let project_nda_id = NdaId::random();
 
         let end_date = 1;
         let maybe_start_date = Some(3);
@@ -572,10 +625,10 @@ fn cant_create_project_nda_with_start_date_greater_end_date() {
 
         assert_noop!(
             Deip::create_project_nda(
-                Origin::signed(DEFAULT_ACCOUNT_ID), 
-                project_nda_id, 
-                end_date, 
-                contract_hash, 
+                Origin::signed(DEFAULT_ACCOUNT_ID),
+                project_nda_id,
+                end_date,
+                contract_hash,
                 maybe_start_date,
                 parties.clone(),
                 projects.clone()
@@ -589,32 +642,31 @@ fn cant_create_project_nda_with_start_date_greater_end_date() {
 fn cant_create_project_nda_with_non_existed_project() {
     new_test_ext().execute_with(|| {
         let project_id = ProjectId::random();
-        let project_nda_id =  NdaId::random();        
+        let project_nda_id = NdaId::random();
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards :)").as_millis() as u64;
-    
+            .expect("Time went backwards :)")
+            .as_millis() as u64;
+
         let end_date = now + DAY_IN_MILLIS;
-        
+
         let contract_hash = H256::random();
         let maybe_start_date = None;
         let parties = vec![DEFAULT_ACCOUNT_ID];
         let projects = vec![project_id];
-        
 
         assert_noop!(
             Deip::create_project_nda(
-                Origin::signed(DEFAULT_ACCOUNT_ID), 
-                project_nda_id, 
-                end_date, 
-                contract_hash, 
+                Origin::signed(DEFAULT_ACCOUNT_ID),
+                project_nda_id,
+                end_date,
+                contract_hash,
                 maybe_start_date,
                 parties.clone(),
                 projects.clone()
             ),
             Error::<Test>::NoSuchProject
         );
-
     })
 }
 
@@ -622,27 +674,27 @@ fn cant_create_project_nda_with_non_existed_project() {
 fn cant_create_project_nda_with_not_correct_parties() {
     new_test_ext().execute_with(|| {
         let (project_id, ..) = create_ok_project(None);
-        let project_nda_id =  NdaId::random();        
+        let project_nda_id = NdaId::random();
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards :)").as_millis() as u64;
-    
+            .expect("Time went backwards :)")
+            .as_millis() as u64;
+
         let end_date = now + DAY_IN_MILLIS;
 
         let wrong_account_id = 4;
-        
+
         let contract_hash = H256::random();
         let maybe_start_date = None;
         let parties = vec![wrong_account_id];
         let projects = vec![project_id];
-        
 
         assert_noop!(
             Deip::create_project_nda(
-                Origin::signed(wrong_account_id), 
-                project_nda_id, 
-                end_date, 
-                contract_hash, 
+                Origin::signed(wrong_account_id),
+                project_nda_id,
+                end_date,
+                contract_hash,
                 maybe_start_date,
                 parties.clone(),
                 projects.clone()
@@ -656,14 +708,15 @@ fn cant_create_project_nda_with_not_correct_parties() {
 fn cant_create_duplicated_project_nda() {
     new_test_ext().execute_with(|| {
         let (project_nda_id, ..) = create_ok_nda();
-        
-        let (project_id, ..) = create_ok_project(None);    
+
+        let (project_id, ..) = create_ok_project(None);
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards :)").as_millis() as u64;
-    
+            .expect("Time went backwards :)")
+            .as_millis() as u64;
+
         let end_date = now + DAY_IN_MILLIS;
-        
+
         let contract_hash = H256::random();
         let maybe_start_date = None;
         let parties = vec![DEFAULT_ACCOUNT_ID];
@@ -671,10 +724,10 @@ fn cant_create_duplicated_project_nda() {
 
         assert_noop!(
             Deip::create_project_nda(
-                Origin::signed(DEFAULT_ACCOUNT_ID), 
-                project_nda_id, 
-                end_date, 
-                contract_hash, 
+                Origin::signed(DEFAULT_ACCOUNT_ID),
+                project_nda_id,
+                end_date,
+                contract_hash,
                 maybe_start_date,
                 parties.clone(),
                 projects.clone()
@@ -689,7 +742,8 @@ fn create_nda_content_access_request() {
     new_test_ext().execute_with(|| {
         let (project_nda_id, ..) = create_ok_nda();
 
-        let (access_request_id, expected_nda_request) = create_ok_nda_content_access_request(project_nda_id);
+        let (access_request_id, expected_nda_request) =
+            create_ok_nda_content_access_request(project_nda_id);
 
         let nda_list = NdaAccessRequests::<Test>::get();
         let nda_stored = NdaAccessRequestMap::<Test>::get(access_request_id);
@@ -698,20 +752,19 @@ fn create_nda_content_access_request() {
             <NdaAccessRequestMap<Test>>::contains_key(access_request_id),
             "NDA request Map did not contain key, value was `{}`",
             access_request_id
-
         );
 
         assert_eq!(expected_nda_request, nda_stored);
 
         assert!(
-            nda_list.binary_search_by_key(&access_request_id, |&(external_id, ..)| external_id).is_ok(),
+            nda_list
+                .binary_search_by_key(&access_request_id, |&(external_id, ..)| external_id)
+                .is_ok(),
             "NDA request List did not contain the NDA request, value was `{}`",
             access_request_id
         );
-
     })
 }
-
 
 #[test]
 fn cant_create_nda_content_access_with_non_existed_nda() {
@@ -724,15 +777,14 @@ fn cant_create_nda_content_access_with_non_existed_nda() {
 
         assert_noop!(
             Deip::create_nda_content_access_request(
-                Origin::signed(DEFAULT_ACCOUNT_ID), 
-                access_request_id, 
+                Origin::signed(DEFAULT_ACCOUNT_ID),
+                access_request_id,
                 project_nda_id,
-                encrypted_payload_hash, 
+                encrypted_payload_hash,
                 encrypted_payload_iv.clone()
             ),
             Error::<Test>::NoSuchNda
         );
-
     })
 }
 
@@ -740,22 +792,21 @@ fn cant_create_nda_content_access_with_non_existed_nda() {
 fn cant_create_duplicated_nda_content_access() {
     new_test_ext().execute_with(|| {
         let (project_nda_id, ..) = create_ok_nda();
-        let (access_request_id, expected_nda_request) = create_ok_nda_content_access_request(project_nda_id);
+        let (access_request_id, expected_nda_request) =
+            create_ok_nda_content_access_request(project_nda_id);
 
         assert_noop!(
             Deip::create_nda_content_access_request(
-                Origin::signed(DEFAULT_ACCOUNT_ID), 
-                access_request_id, 
+                Origin::signed(DEFAULT_ACCOUNT_ID),
+                access_request_id,
                 project_nda_id,
-                expected_nda_request.encrypted_payload_hash, 
+                expected_nda_request.encrypted_payload_hash,
                 expected_nda_request.encrypted_payload_iv
             ),
             Error::<Test>::NdaAccessRequestAlreadyExists
         );
-
     })
 }
-
 
 #[test]
 fn fulfill_nda_content_access_request() {
@@ -764,17 +815,15 @@ fn fulfill_nda_content_access_request() {
 
         let (access_request_id, nda_request) = create_ok_nda_content_access_request(project_nda_id);
 
-        let encrypted_payload_encryption_key = vec![1,3,4,2];
-        let proof_of_encrypted_payload_encryption_key = vec![3,4,5,6];
+        let encrypted_payload_encryption_key = vec![1, 3, 4, 2];
+        let proof_of_encrypted_payload_encryption_key = vec![3, 4, 5, 6];
 
-        assert_ok!(
-            Deip::fulfill_nda_content_access_request(
-                Origin::signed(DEFAULT_ACCOUNT_ID), 
-                access_request_id.clone(), 
-                encrypted_payload_encryption_key.clone(), 
-                proof_of_encrypted_payload_encryption_key.clone()
-            )
-        );
+        assert_ok!(Deip::fulfill_nda_content_access_request(
+            Origin::signed(DEFAULT_ACCOUNT_ID),
+            access_request_id.clone(),
+            encrypted_payload_encryption_key.clone(),
+            proof_of_encrypted_payload_encryption_key.clone()
+        ));
 
         let nda_stored = NdaAccessRequestMap::<Test>::get(access_request_id);
 
@@ -782,34 +831,33 @@ fn fulfill_nda_content_access_request() {
             status: NdaAccessRequestStatus::Fulfilled,
             grantor: Some(DEFAULT_ACCOUNT_ID),
             encrypted_payload_encryption_key: Some(encrypted_payload_encryption_key),
-            proof_of_encrypted_payload_encryption_key: Some(proof_of_encrypted_payload_encryption_key),
+            proof_of_encrypted_payload_encryption_key: Some(
+                proof_of_encrypted_payload_encryption_key,
+            ),
             ..nda_request
         };
 
         assert_eq!(expected_nda_request, nda_stored);
-
     })
 }
-
 
 #[test]
 fn cant_fulfill_not_existed_nda_content_access_request() {
     new_test_ext().execute_with(|| {
         let access_request_id = NdaAccessRequestId::random();
 
-        let encrypted_payload_encryption_key = vec![1,3,4,2];
-        let proof_of_encrypted_payload_encryption_key = vec![3,4,5,6];
+        let encrypted_payload_encryption_key = vec![1, 3, 4, 2];
+        let proof_of_encrypted_payload_encryption_key = vec![3, 4, 5, 6];
 
         assert_noop!(
             Deip::fulfill_nda_content_access_request(
-                Origin::signed(DEFAULT_ACCOUNT_ID), 
-                access_request_id.clone(), 
-                encrypted_payload_encryption_key.clone(), 
+                Origin::signed(DEFAULT_ACCOUNT_ID),
+                access_request_id.clone(),
+                encrypted_payload_encryption_key.clone(),
                 proof_of_encrypted_payload_encryption_key.clone()
             ),
             Error::<Test>::NoSuchNdaAccessRequest
         );
-
     })
 }
 
@@ -820,28 +868,25 @@ fn cant_fulfill_finalized_nda_content_access_request() {
 
         let (access_request_id, ..) = create_ok_nda_content_access_request(project_nda_id);
 
-        let encrypted_payload_encryption_key = vec![1,3,4,2];
-        let proof_of_encrypted_payload_encryption_key = vec![3,4,5,6];
+        let encrypted_payload_encryption_key = vec![1, 3, 4, 2];
+        let proof_of_encrypted_payload_encryption_key = vec![3, 4, 5, 6];
 
-        assert_ok!(
-            Deip::fulfill_nda_content_access_request(
-                Origin::signed(DEFAULT_ACCOUNT_ID), 
-                access_request_id.clone(), 
-                encrypted_payload_encryption_key.clone(), 
-                proof_of_encrypted_payload_encryption_key.clone()
-            )
-        );
+        assert_ok!(Deip::fulfill_nda_content_access_request(
+            Origin::signed(DEFAULT_ACCOUNT_ID),
+            access_request_id.clone(),
+            encrypted_payload_encryption_key.clone(),
+            proof_of_encrypted_payload_encryption_key.clone()
+        ));
 
         assert_noop!(
             Deip::fulfill_nda_content_access_request(
-                Origin::signed(DEFAULT_ACCOUNT_ID), 
-                access_request_id.clone(), 
-                encrypted_payload_encryption_key.clone(), 
+                Origin::signed(DEFAULT_ACCOUNT_ID),
+                access_request_id.clone(),
+                encrypted_payload_encryption_key.clone(),
                 proof_of_encrypted_payload_encryption_key.clone()
             ),
             Error::<Test>::NdaAccessRequestAlreadyFinalized
         );
-
     })
 }
 
@@ -852,25 +897,19 @@ fn reject_nda_content_access_request() {
 
         let (access_request_id, nda_request) = create_ok_nda_content_access_request(project_nda_id);
 
-        assert_ok!(
-            Deip::reject_nda_content_access_request(
-                Origin::signed(DEFAULT_ACCOUNT_ID), 
-                access_request_id.clone(), 
-            )
-        );
+        assert_ok!(Deip::reject_nda_content_access_request(
+            Origin::signed(DEFAULT_ACCOUNT_ID),
+            access_request_id.clone(),
+        ));
 
         let nda_stored = NdaAccessRequestMap::<Test>::get(access_request_id);
 
-        let expected_nda_request = NdaAccessRequest {
-            status: NdaAccessRequestStatus::Rejected,
-            ..nda_request
-        };
+        let expected_nda_request =
+            NdaAccessRequest { status: NdaAccessRequestStatus::Rejected, ..nda_request };
 
         assert_eq!(expected_nda_request, nda_stored);
-
     })
 }
-
 
 #[test]
 fn cant_reject_not_existed_nda_content_access_request() {
@@ -879,12 +918,11 @@ fn cant_reject_not_existed_nda_content_access_request() {
 
         assert_noop!(
             Deip::reject_nda_content_access_request(
-                Origin::signed(DEFAULT_ACCOUNT_ID), 
-                access_request_id.clone(), 
+                Origin::signed(DEFAULT_ACCOUNT_ID),
+                access_request_id.clone(),
             ),
             Error::<Test>::NoSuchNdaAccessRequest
         );
-
     })
 }
 
@@ -895,17 +933,15 @@ fn cant_reject_finalized_nda_content_access_request() {
 
         let (access_request_id, ..) = create_ok_nda_content_access_request(project_nda_id);
 
-        assert_ok!(
-            Deip::reject_nda_content_access_request(
-                Origin::signed(DEFAULT_ACCOUNT_ID), 
-                access_request_id.clone(), 
-            )
-        );
+        assert_ok!(Deip::reject_nda_content_access_request(
+            Origin::signed(DEFAULT_ACCOUNT_ID),
+            access_request_id.clone(),
+        ));
 
         assert_noop!(
             Deip::reject_nda_content_access_request(
-                Origin::signed(DEFAULT_ACCOUNT_ID), 
-                access_request_id.clone(), 
+                Origin::signed(DEFAULT_ACCOUNT_ID),
+                access_request_id.clone(),
             ),
             Error::<Test>::NdaAccessRequestAlreadyFinalized
         );
@@ -916,25 +952,34 @@ fn cant_reject_finalized_nda_content_access_request() {
 fn simple_crowdfunding_create_should_fail() {
     new_test_ext2().execute_with(|| {
         let start_time = pallet_timestamp::Pallet::<Test>::get();
-        assert_noop!(Deip::create_simple_crowdfunding(DEFAULT_ACCOUNT_ID,
-            H160::random(),
-            start_time,
-            start_time + 1,
-            DeipAsset::new(DeipAssetId(0u32), 100u32.into()),
-            DeipAsset::new(DeipAssetId(0u32), 120u32.into()),
-            vec![DeipAsset::new(DeipAssetId(0u32), 100u32.into()), DeipAsset::new(DeipAssetId(14u32), 200u32.into())]
-        ),
-        Error::<Test>::InvestmentOpportunityWrongAssetId);
+        assert_noop!(
+            Deip::create_simple_crowdfunding(
+                DEFAULT_ACCOUNT_ID,
+                H160::random(),
+                start_time,
+                start_time + 1,
+                DeipAsset::new(DeipAssetId(0u32), 100u32.into()),
+                DeipAsset::new(DeipAssetId(0u32), 120u32.into()),
+                vec![
+                    DeipAsset::new(DeipAssetId(0u32), 100u32.into()),
+                    DeipAsset::new(DeipAssetId(14u32), 200u32.into())
+                ]
+            ),
+            Error::<Test>::InvestmentOpportunityWrongAssetId
+        );
 
-        assert_noop!(Deip::create_simple_crowdfunding(DEFAULT_ACCOUNT_ID,
-            H160::random(),
-            start_time,
-            start_time + 1,
-            DeipAsset::new(DeipAssetId(0u32), 100u32.into()),
-            DeipAsset::new(DeipAssetId(0u32), 120u32.into()),
-            vec![]
-        ),
-        Error::<Test>::InvestmentOpportunitySecurityTokenNotSpecified);
+        assert_noop!(
+            Deip::create_simple_crowdfunding(
+                DEFAULT_ACCOUNT_ID,
+                H160::random(),
+                start_time,
+                start_time + 1,
+                DeipAsset::new(DeipAssetId(0u32), 100u32.into()),
+                DeipAsset::new(DeipAssetId(0u32), 120u32.into()),
+                vec![]
+            ),
+            Error::<Test>::InvestmentOpportunitySecurityTokenNotSpecified
+        );
     })
 }
 
@@ -949,7 +994,11 @@ fn simple_crowdfunding_hard_cap_reached() {
         let base_asset_total = 120_000u64;
         create_issue_asset(ALICE_ACCOUNT_ID, base_asset_id, base_asset_total, None);
 
-        let call = pallet_deip_assets::Call::<Test>::transfer(base_asset_id, BOB_ACCOUNT_ID, base_asset_total / 2);
+        let call = pallet_deip_assets::Call::<Test>::transfer(
+            base_asset_id,
+            BOB_ACCOUNT_ID,
+            base_asset_total / 2,
+        );
         let result = call.dispatch_bypass_filter(Origin::signed(ALICE_ACCOUNT_ID));
         assert_ok!(result);
 
@@ -1009,13 +1058,22 @@ fn simple_crowdfunding_hard_cap_reached() {
 
         assert_eq!(DeipAssets::account_balance(&BOB_ACCOUNT_ID, &usd_id), usd_to_sale / 2);
         assert_eq!(DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &usd_id), usd_to_sale / 2);
-        assert_eq!(DeipAssets::account_balance(account_id, &usd_id), DeipAssets::total_supply(&usd_id) - usd_to_sale);
+        assert_eq!(
+            DeipAssets::account_balance(account_id, &usd_id),
+            DeipAssets::total_supply(&usd_id) - usd_to_sale
+        );
 
         assert_eq!(DeipAssets::account_balance(&BOB_ACCOUNT_ID, &eur_id), eur_to_sale / 2);
         assert_eq!(DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &eur_id), eur_to_sale / 2);
-        assert_eq!(DeipAssets::account_balance(account_id, &eur_id), DeipAssets::total_supply(&eur_id) - eur_to_sale);
+        assert_eq!(
+            DeipAssets::account_balance(account_id, &eur_id),
+            DeipAssets::total_supply(&eur_id) - eur_to_sale
+        );
 
-        assert_eq!(DeipAssets::account_balance(account_id, &base_asset_id), hard_cap + balance_before);
+        assert_eq!(
+            DeipAssets::account_balance(account_id, &base_asset_id),
+            hard_cap + balance_before
+        );
     })
 }
 
@@ -1030,11 +1088,19 @@ fn simple_crowdfunding_expired() {
         let base_asset_total = 120_000u64;
         create_issue_asset(*account_id, base_asset_id, base_asset_total, Some(*project_id));
 
-        let call = pallet_deip_assets::Call::<Test>::transfer(base_asset_id, ALICE_ACCOUNT_ID, base_asset_total / 2);
+        let call = pallet_deip_assets::Call::<Test>::transfer(
+            base_asset_id,
+            ALICE_ACCOUNT_ID,
+            base_asset_total / 2,
+        );
         let result = call.dispatch_bypass_filter(Origin::signed(*account_id));
         assert_ok!(result);
 
-        let call = pallet_deip_assets::Call::<Test>::transfer(base_asset_id, BOB_ACCOUNT_ID, base_asset_total / 2);
+        let call = pallet_deip_assets::Call::<Test>::transfer(
+            base_asset_id,
+            BOB_ACCOUNT_ID,
+            base_asset_total / 2,
+        );
         let result = call.dispatch_bypass_filter(Origin::signed(*account_id));
         assert_ok!(result);
 
@@ -1050,7 +1116,8 @@ fn simple_crowdfunding_expired() {
         let bob_balance_before = DeipAssets::account_balance(&BOB_ACCOUNT_ID, &base_asset_id);
 
         let start_time_in_blocks = 5;
-        let start_time = pallet_timestamp::Pallet::<Test>::get() + start_time_in_blocks * BLOCK_TIME;
+        let start_time =
+            pallet_timestamp::Pallet::<Test>::get() + start_time_in_blocks * BLOCK_TIME;
         let sale_id = H160::random();
         let soft_cap = 100_000u64;
         let alice_investing = soft_cap / 2;
@@ -1102,7 +1169,11 @@ fn simple_crowdfunding_expired() {
 
         // make alice zombie
         let alice_remainder = DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &base_asset_id);
-        let call = pallet_deip_assets::Call::<Test>::transfer(base_asset_id, BOB_ACCOUNT_ID, alice_remainder);
+        let call = pallet_deip_assets::Call::<Test>::transfer(
+            base_asset_id,
+            BOB_ACCOUNT_ID,
+            alice_remainder,
+        );
         let result = call.dispatch_bypass_filter(Origin::signed(ALICE_ACCOUNT_ID));
         assert_ok!(result);
 
@@ -1132,7 +1203,10 @@ fn simple_crowdfunding_expired() {
             _ => unreachable!(),
         };
 
-        assert_eq!(DeipAssets::account_balance(&BOB_ACCOUNT_ID, &base_asset_id), bob_balance_before + alice_remainder);
+        assert_eq!(
+            DeipAssets::account_balance(&BOB_ACCOUNT_ID, &base_asset_id),
+            bob_balance_before + alice_remainder
+        );
         assert_eq!(DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &base_asset_id), alice_investing);
         assert_eq!(DeipAssets::account_balance(account_id, &base_asset_id), balance_before);
 
@@ -1155,11 +1229,19 @@ fn two_simultaneous_crowdfundings_expired() {
         let base_asset_total = 120_000u64;
         create_issue_asset(DEFAULT_ACCOUNT_ID, base_asset_id, base_asset_total, None);
 
-        let call = pallet_deip_assets::Call::<Test>::transfer(base_asset_id, ALICE_ACCOUNT_ID, base_asset_total / 2);
+        let call = pallet_deip_assets::Call::<Test>::transfer(
+            base_asset_id,
+            ALICE_ACCOUNT_ID,
+            base_asset_total / 2,
+        );
         let result = call.dispatch_bypass_filter(Origin::signed(DEFAULT_ACCOUNT_ID));
         assert_ok!(result);
 
-        let call = pallet_deip_assets::Call::<Test>::transfer(base_asset_id, BOB_ACCOUNT_ID, base_asset_total / 2);
+        let call = pallet_deip_assets::Call::<Test>::transfer(
+            base_asset_id,
+            BOB_ACCOUNT_ID,
+            base_asset_total / 2,
+        );
         let result = call.dispatch_bypass_filter(Origin::signed(DEFAULT_ACCOUNT_ID));
         assert_ok!(result);
 
@@ -1175,10 +1257,12 @@ fn two_simultaneous_crowdfundings_expired() {
         let bob_eur_balance_before = DeipAssets::account_balance(&BOB_ACCOUNT_ID, &eur_id);
 
         let alice_usd_balance_before = DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &usd_id);
-        let alice_base_balance_before = DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &base_asset_id);
+        let alice_base_balance_before =
+            DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &base_asset_id);
 
         let start_time_in_blocks = 5;
-        let start_time = pallet_timestamp::Pallet::<Test>::get() + start_time_in_blocks * BLOCK_TIME;
+        let start_time =
+            pallet_timestamp::Pallet::<Test>::get() + start_time_in_blocks * BLOCK_TIME;
         let eur_sale_id = H160::random();
         let usd_sale_id = H160::random();
         let soft_cap = 50_000u64;
@@ -1274,10 +1358,16 @@ fn two_simultaneous_crowdfundings_expired() {
             _ => unreachable!(),
         };
 
-        assert_eq!(DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &base_asset_id), alice_base_balance_before);
+        assert_eq!(
+            DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &base_asset_id),
+            alice_base_balance_before
+        );
 
         assert_eq!(DeipAssets::account_balance(&BOB_ACCOUNT_ID, &usd_id), bob_usd_balance_before);
-        assert_eq!(DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &usd_id), alice_usd_balance_before);
+        assert_eq!(
+            DeipAssets::account_balance(&ALICE_ACCOUNT_ID, &usd_id),
+            alice_usd_balance_before
+        );
 
         assert_eq!(DeipAssets::account_balance(&BOB_ACCOUNT_ID, &eur_id), bob_eur_balance_before);
     })
@@ -1286,76 +1376,91 @@ fn two_simultaneous_crowdfundings_expired() {
 #[test]
 fn create_license_agreement_well_known_cases() {
     new_test_ext2().execute_with(|| {
-        assert_noop!(Deip::create_contract_agreement_impl(
-            BOB_ACCOUNT_ID,
-            ContractAgreementId::random(),
-            BOB_ACCOUNT_ID,
-            vec![BOB_ACCOUNT_ID.into(), DEFAULT_ACCOUNT_ID.into()],
-            HashOf::<Test>::random(),
-            None,
-            None,
-            ContractAgreementTermsOf::<Test>::LicenseAgreement{
-                source: ProjectId::random(),
-                price: DeipAsset::new(Default::default(), One::one()),
-            }),
-            Error::<Test>::NoSuchProject);
+        assert_noop!(
+            Deip::create_contract_agreement_impl(
+                BOB_ACCOUNT_ID,
+                ContractAgreementId::random(),
+                BOB_ACCOUNT_ID,
+                vec![BOB_ACCOUNT_ID.into(), DEFAULT_ACCOUNT_ID.into()],
+                HashOf::<Test>::random(),
+                None,
+                None,
+                ContractAgreementTermsOf::<Test>::LicenseAgreement {
+                    source: ProjectId::random(),
+                    price: DeipAsset::new(Default::default(), One::one()),
+                }
+            ),
+            Error::<Test>::NoSuchProject
+        );
 
         let (ref project_id, .., ref account_id) = create_ok_project(Some(ALICE_ACCOUNT_ID));
-        assert_noop!(Deip::create_contract_agreement_impl(
-            BOB_ACCOUNT_ID,
-            ContractAgreementId::random(),
-            BOB_ACCOUNT_ID,
-            vec![BOB_ACCOUNT_ID.into(), DEFAULT_ACCOUNT_ID.into()],
-            HashOf::<Test>::random(),
-            None,
-            None,
-            ContractAgreementTermsOf::<Test>::LicenseAgreement{
-                source: *project_id,
-                price: DeipAsset::new(Default::default(), One::one()),
-            }),
-            Error::<Test>::ContractAgreementLicenseProjectTeamIsNotListedInParties);
+        assert_noop!(
+            Deip::create_contract_agreement_impl(
+                BOB_ACCOUNT_ID,
+                ContractAgreementId::random(),
+                BOB_ACCOUNT_ID,
+                vec![BOB_ACCOUNT_ID.into(), DEFAULT_ACCOUNT_ID.into()],
+                HashOf::<Test>::random(),
+                None,
+                None,
+                ContractAgreementTermsOf::<Test>::LicenseAgreement {
+                    source: *project_id,
+                    price: DeipAsset::new(Default::default(), One::one()),
+                }
+            ),
+            Error::<Test>::ContractAgreementLicenseProjectTeamIsNotListedInParties
+        );
 
-        assert_noop!(Deip::create_contract_agreement_impl(
-            *account_id,
-            ContractAgreementId::random(),
-            *account_id,
-            vec![BOB_ACCOUNT_ID.into()],
-            HashOf::<Test>::random(),
-            None,
-            None,
-            ContractAgreementTermsOf::<Test>::LicenseAgreement{
-                source: *project_id,
-                price: DeipAsset::new(Default::default(), Zero::zero()),
-            }),
-            Error::<Test>::ContractAgreementFeeMustBePositive);
+        assert_noop!(
+            Deip::create_contract_agreement_impl(
+                *account_id,
+                ContractAgreementId::random(),
+                *account_id,
+                vec![BOB_ACCOUNT_ID.into()],
+                HashOf::<Test>::random(),
+                None,
+                None,
+                ContractAgreementTermsOf::<Test>::LicenseAgreement {
+                    source: *project_id,
+                    price: DeipAsset::new(Default::default(), Zero::zero()),
+                }
+            ),
+            Error::<Test>::ContractAgreementFeeMustBePositive
+        );
 
-        assert_noop!(Deip::create_contract_agreement_impl(
-            *account_id,
-            ContractAgreementId::random(),
-            *account_id,
-            vec![BOB_ACCOUNT_ID.into()],
-            HashOf::<Test>::random(),
-            Some(pallet_timestamp::Pallet::<Test>::get()),
-            Some(pallet_timestamp::Pallet::<Test>::get()),
-            ContractAgreementTermsOf::<Test>::LicenseAgreement{
-                source: *project_id,
-                price: DeipAsset::new(Default::default(), Zero::zero()),
-            }),
-            Error::<Test>::ContractAgreementEndTimeMustBeLaterStartTime);
+        assert_noop!(
+            Deip::create_contract_agreement_impl(
+                *account_id,
+                ContractAgreementId::random(),
+                *account_id,
+                vec![BOB_ACCOUNT_ID.into()],
+                HashOf::<Test>::random(),
+                Some(pallet_timestamp::Pallet::<Test>::get()),
+                Some(pallet_timestamp::Pallet::<Test>::get()),
+                ContractAgreementTermsOf::<Test>::LicenseAgreement {
+                    source: *project_id,
+                    price: DeipAsset::new(Default::default(), Zero::zero()),
+                }
+            ),
+            Error::<Test>::ContractAgreementEndTimeMustBeLaterStartTime
+        );
 
-        assert_noop!(Deip::create_contract_agreement_impl(
-            *account_id,
-            ContractAgreementId::random(),
-            *account_id,
-            vec![BOB_ACCOUNT_ID.into()],
-            HashOf::<Test>::random(),
-            None,
-            Some(pallet_timestamp::Pallet::<Test>::get()),
-            ContractAgreementTermsOf::<Test>::LicenseAgreement{
-                source: *project_id,
-                price: DeipAsset::new(Default::default(), Zero::zero()),
-            }),
-            Error::<Test>::ContractAgreementEndTimeMustBeLaterStartTime);
+        assert_noop!(
+            Deip::create_contract_agreement_impl(
+                *account_id,
+                ContractAgreementId::random(),
+                *account_id,
+                vec![BOB_ACCOUNT_ID.into()],
+                HashOf::<Test>::random(),
+                None,
+                Some(pallet_timestamp::Pallet::<Test>::get()),
+                ContractAgreementTermsOf::<Test>::LicenseAgreement {
+                    source: *project_id,
+                    price: DeipAsset::new(Default::default(), Zero::zero()),
+                }
+            ),
+            Error::<Test>::ContractAgreementEndTimeMustBeLaterStartTime
+        );
 
         let license_id = ContractAgreementId::random();
         assert!(Deip::create_contract_agreement_impl(
@@ -1366,23 +1471,28 @@ fn create_license_agreement_well_known_cases() {
             HashOf::<Test>::random(),
             None,
             None,
-            ContractAgreementTermsOf::<Test>::LicenseAgreement{
+            ContractAgreementTermsOf::<Test>::LicenseAgreement {
                 source: *project_id,
                 price: DeipAsset::new(Default::default(), One::one()),
-            }).is_ok());
+            }
+        )
+        .is_ok());
 
-        assert_noop!(Deip::create_contract_agreement_impl(
-            *account_id,
-            license_id,
-            *account_id,
-            vec![BOB_ACCOUNT_ID.into(), account_id.clone().into()],
-            HashOf::<Test>::random(),
-            None,
-            None,
-            ContractAgreementTermsOf::<Test>::LicenseAgreement{
-                source: *project_id,
-                price: DeipAsset::new(Default::default(), One::one()),
-            }),
-            Error::<Test>::ContractAgreementAlreadyExists);
+        assert_noop!(
+            Deip::create_contract_agreement_impl(
+                *account_id,
+                license_id,
+                *account_id,
+                vec![BOB_ACCOUNT_ID.into(), account_id.clone().into()],
+                HashOf::<Test>::random(),
+                None,
+                None,
+                ContractAgreementTermsOf::<Test>::LicenseAgreement {
+                    source: *project_id,
+                    price: DeipAsset::new(Default::default(), One::one()),
+                }
+            ),
+            Error::<Test>::ContractAgreementAlreadyExists
+        );
     })
 }

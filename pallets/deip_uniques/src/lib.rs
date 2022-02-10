@@ -131,17 +131,6 @@ pub mod pallet {
             UniquesPallet::<T>::create(origin, class, admin)
         }
 
-        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::force_create())]
-        pub fn force_create(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            owner: <T::Lookup as StaticLookup>::Source,
-            free_holding: bool,
-        ) -> DispatchResult {
-            ensure!(class <= T::MaxOriginClassId::get(), pallet_uniques::Error::<T>::InUse);
-            UniquesPallet::<T>::force_create(origin, class, owner, free_holding)
-        }
-
         /// Destroy a class of fungible assets.
         #[pallet::weight(pallet_uniques::Call::<T>::destroy{class: *class, witness: *witness}.get_dispatch_info().weight)]
         pub fn destroy(
@@ -271,31 +260,6 @@ pub mod pallet {
             UniquesPallet::<T>::cancel_approval(origin, class, instance, maybe_check_delegate)
         }
 
-        /// Alter the attributes of a given asset.
-        #[pallet::weight(T::WeightInfo::force_asset_status())]
-        #[allow(clippy::too_many_arguments)]
-        pub fn force_asset_status(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            owner: <T::Lookup as StaticLookup>::Source,
-            issuer: <T::Lookup as StaticLookup>::Source,
-            admin: <T::Lookup as StaticLookup>::Source,
-            freezer: <T::Lookup as StaticLookup>::Source,
-            free_holding: bool,
-            is_frozen: bool,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::force_asset_status(
-                origin,
-                class,
-                owner,
-                issuer,
-                admin,
-                freezer,
-                free_holding,
-                is_frozen,
-            )
-        }
-
         /// Set an attribute for an asset class or instance.
         #[pallet::weight(T::WeightInfo::set_attribute())]
         pub fn set_attribute(
@@ -366,19 +330,6 @@ pub mod pallet {
             project_id: Option<DeipProjectIdOf<T>>,
         ) -> DispatchResultWithPostInfo {
             let call = |class, admin| UniquesCall::<T>::create { class, admin };
-            Self::create_or_force(origin, class, admin, project_id, call)
-        }
-
-        #[pallet::weight(T::WeightInfo::force_create())]
-        pub fn deip_force_create(
-            origin: OriginFor<T>,
-            class: DeipNftClassIdOf<T>,
-            admin: T::DeipAccountId,
-            project_id: Option<DeipProjectIdOf<T>>,
-            free_holding: bool,
-        ) -> DispatchResultWithPostInfo {
-            let call =
-                |class, admin| UniquesCall::<T>::force_create { class, owner: admin, free_holding };
             Self::create_or_force(origin, class, admin, project_id, call)
         }
 
@@ -667,35 +618,6 @@ pub mod pallet {
                 maybe_check_delegate.map(|d| <T::Lookup as StaticLookup>::unlookup(d.into()));
             // ??? @TODO update inner storages.
             UniquesPallet::<T>::cancel_approval(origin, class, instance, maybe_check_delegate)
-        }
-
-        #[pallet::weight(T::WeightInfo::force_asset_status())]
-        #[allow(clippy::too_many_arguments)]
-        pub fn deip_force_asset_status(
-            origin: OriginFor<T>,
-            class: DeipNftClassIdOf<T>,
-            owner: T::DeipAccountId,
-            issuer: T::DeipAccountId,
-            admin: T::DeipAccountId,
-            freezer: T::DeipAccountId,
-            free_holding: bool,
-            is_frozen: bool,
-        ) -> DispatchResult {
-            let class = Self::deip_to_origin_class_id(class)?;
-            let owner = <T::Lookup as StaticLookup>::unlookup(owner.into());
-            let issuer = <T::Lookup as StaticLookup>::unlookup(issuer.into());
-            let admin = <T::Lookup as StaticLookup>::unlookup(admin.into());
-            let freezer = <T::Lookup as StaticLookup>::unlookup(freezer.into());
-            UniquesPallet::<T>::force_asset_status(
-                origin,
-                class,
-                owner,
-                issuer,
-                admin,
-                freezer,
-                free_holding,
-                is_frozen,
-            )
         }
 
         #[pallet::weight(T::WeightInfo::set_attribute())]
