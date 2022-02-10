@@ -571,6 +571,8 @@ impl pallet_deip_assets::Config for Runtime {
     type WipePeriod = WipePeriod;
 }
 
+impl pallet_deip_balances::Config for Runtime {}
+
 parameter_types! {
     /// The basic amount of funds that must be reserved for an asset class.
     pub const ClassDeposit: Balance = 10 * DOLLARS; // ??? correct value
@@ -874,7 +876,7 @@ construct_runtime!(
         Babe: pallet_babe,
         Timestamp: pallet_timestamp,
         Authorship: pallet_authorship,
-        Balances: pallet_balances,
+        Balances: pallet_deip_balances,
         TransactionPayment: pallet_transaction_payment,
         OctopusAppchain: pallet_octopus_appchain::{Pallet, Call, Storage, Config<T>, Event<T>, ValidateUnsigned},
         OctopusLpos: pallet_octopus_lpos,
@@ -886,6 +888,7 @@ construct_runtime!(
         Historical: pallet_session_historical::{Pallet},
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage},
         ParityTechAssets: pallet_assets::{Pallet, Storage, Event<T>},
+        ParityTechBalances: pallet_balances::{Pallet, Storage, Event<T>, Config<T>},
         ParityTechUniques: pallet_uniques::{Pallet, Storage, Event<T>},
         Mmr: pallet_mmr::{Pallet, Storage},
         Beefy: pallet_beefy::{Pallet, Config<T>},
