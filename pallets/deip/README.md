@@ -52,16 +52,6 @@ fn create_project_content(
 ```
 
 
-### Create project domain
-
-```rust
-fn add_domain(
-    origin: OriginFor<T>, 
-    domain: Domain
-) -> DispatchResult
-```
-
-
 
 ## Review module
 

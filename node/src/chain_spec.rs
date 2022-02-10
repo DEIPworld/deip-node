@@ -1,26 +1,29 @@
 use appchain_deip_runtime::{
-    opaque::Block, AccountId, AssetsConfig, BabeConfig, DeipConfig, DeipDaoConfig,
-    DeipEcosystemFundConfig, DeipPortalConfig, DeipProposalConfig, DeipVestingConfig,
-    GenesisConfig, GrandpaConfig, ParityTechBalancesConfig, Signature, SudoConfig, SystemConfig,
-    UniquesConfig, WASM_BINARY,
+    currency::{OCTS, UNITS as DEIP},
+    opaque::Block, opaque::SessionKeys, Balance, BeefyConfig, ImOnlineConfig, OctopusAppchainConfig,
+    AccountId, AssetsConfig, BabeConfig, DeipConfig, DeipDaoConfig,
+    DeipPortalConfig, DeipProposalConfig, DeipVestingConfig, GenesisConfig, GrandpaConfig,
+    ParityTechBalancesConfig, Signature, SudoConfig, SystemConfig, UniquesConfig, SessionConfig, 
+    OctopusLposConfig, WASM_BINARY, DeipEcosystemFundConfig,
 };
+
 use sc_chain_spec::ChainSpecExtension;
 use sc_client_api::{BadBlocks, ForkBlocks};
-use sc_service::ChainType;
+use sc_service::{ChainType, Properties};
 use sc_sync_state_rpc::LightSyncStateExtension;
 use serde::{Deserialize, Serialize};
 use sp_core::{sr25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
+use sp_core::crypto::{Ss58Codec};
 
-use appchain_deip_runtime::{
-    opaque::SessionKeys, Balance, BeefyConfig, ImOnlineConfig, OctopusAppchainConfig,
-    OctopusLposConfig, SessionConfig, DOLLARS,
-};
 use beefy_primitives::crypto::AuthorityId as BeefyId;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_octopus_appchain::AuthorityId as OctopusId;
 use sp_consensus_babe::AuthorityId as BabeId;
+use pallet_deip::{Domain, DomainId};
+use core::str::FromStr;
+
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -69,7 +72,8 @@ where
 /// Helper function to generate stash, controller and session key from seed
 pub fn authority_keys_from_seed(
     s: &str,
-) -> (AccountId, BabeId, GrandpaId, ImOnlineId, BeefyId, OctopusId) {
+    stash_amount: Balance,
+) -> (AccountId, BabeId, GrandpaId, ImOnlineId, BeefyId, OctopusId, Balance) {
     (
         get_account_id_from_seed::<sr25519::Public>(s),
         get_from_seed::<BabeId>(s),
@@ -77,40 +81,64 @@ pub fn authority_keys_from_seed(
         get_from_seed::<ImOnlineId>(s),
         get_from_seed::<BeefyId>(s),
         get_from_seed::<OctopusId>(s),
+        stash_amount,
     )
 }
 
+/// Helper function to generate an properties
+pub fn get_properties(symbol: &str, decimals: u32, ss58format: u32) -> Properties {
+    let mut properties = Properties::new();
+    properties.insert("tokenSymbol".into(), symbol.into());
+    properties.insert("tokenDecimals".into(), decimals.into());
+    properties.insert("ss58Format".into(), ss58format.into());
+
+    properties
+}
+
+/// Helper function to generate appchain config
+pub fn get_appchain_config(
+    anchor_contract: &str,
+    premined_amount: Balance,
+    era_payout: Balance,
+) -> (String, Balance, Balance) {
+	(anchor_contract.to_string(), premined_amount, era_payout)
+}
+
+
 pub fn development_config() -> Result<ChainSpec, String> {
     let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
+    let properties = get_properties("DEIP", 18, 42);
 
     Ok(ChainSpec::from_genesis(
         // Name
-        "Development",
+        "DEIP Development",
         // ID
         "dev",
         ChainType::Development,
         move || {
-            testnet_genesis(
+            genesis(
                 wasm_binary,
                 // Initial PoA authorities
-                vec![authority_keys_from_seed("Alice")],
+                vec![
+                    authority_keys_from_seed("Alice", 100 * OCTS)
+                ],
                 // Sudo account
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 // Pre-funded accounts
-                Some(vec![
-                    get_account_id_from_seed::<sr25519::Public>("Alice"),
-                    get_account_id_from_seed::<sr25519::Public>("Bob"),
-                    get_account_id_from_seed::<sr25519::Public>("Charlie"),
-                    get_account_id_from_seed::<sr25519::Public>("Dave"),
-                    get_account_id_from_seed::<sr25519::Public>("Eve"),
-                    get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-                    get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
-                ]),
+                get_endowed_accounts(),
+                // Vestings
+                get_vesting_plans(),
+                // Domains
+                get_domains(),
+                // Appchain
+                get_appchain_config(
+                  // Appchain Relay Contract
+                  "octopus-anchor.testnet",
+                  // Premined amount
+                  100_000 * DEIP,
+                  // Era Payout
+                  109_589 * DEIP,
+                ),
                 true,
             )
         },
@@ -119,9 +147,9 @@ pub fn development_config() -> Result<ChainSpec, String> {
         // Telemetry
         None,
         // Protocol ID
-        None,
+        Some("deip-development"),
         // Properties
-        None,
+        Some(properties),
         // Extensions
         Extensions::default(),
     ))
@@ -129,35 +157,39 @@ pub fn development_config() -> Result<ChainSpec, String> {
 
 pub fn local_testnet_config() -> Result<ChainSpec, String> {
     let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
+    let properties = get_properties("DEIP", 18, 42);
 
     Ok(ChainSpec::from_genesis(
         // Name
-        "Local Testnet",
+        "DEIP Local Testnet",
         // ID
-        "local_testnet",
+        "deip_local_testnet",
         ChainType::Local,
         move || {
-            testnet_genesis(
+            genesis(
                 wasm_binary,
                 // Initial PoA authorities
-                vec![authority_keys_from_seed("Alice"), authority_keys_from_seed("Bob")],
+                vec![
+                    authority_keys_from_seed("Alice", 100 * OCTS), 
+                    authority_keys_from_seed("Bob", 100 * OCTS)
+                ],
                 // Sudo account
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 // Pre-funded accounts
-                Some(vec![
-                    get_account_id_from_seed::<sr25519::Public>("Alice"),
-                    get_account_id_from_seed::<sr25519::Public>("Bob"),
-                    get_account_id_from_seed::<sr25519::Public>("Charlie"),
-                    get_account_id_from_seed::<sr25519::Public>("Dave"),
-                    get_account_id_from_seed::<sr25519::Public>("Eve"),
-                    get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-                    get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
-                ]),
+                get_endowed_accounts(),
+                // Vestings
+                get_vesting_plans(),
+                // Domains
+                get_domains(),
+                // Appchain
+                get_appchain_config(
+                  // Appchain Relay Contract
+                  "octopus-anchor.testnet",
+                  // Premined amount
+                  100_000 * DEIP,
+                  // Era Payout
+                  109_589 * DEIP,
+                ),
                 true,
             )
         },
@@ -166,42 +198,35 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
         // Telemetry
         None,
         // Protocol ID
-        None,
+        Some("deip-local"),
         // Properties
-        None,
+        Some(properties),
         // Extensions
         Extensions::default(),
     ))
 }
 
 /// Configure initial storage state for FRAME modules.
-fn testnet_genesis(
+fn genesis(
     wasm_binary: &[u8],
-    initial_authorities: Vec<(AccountId, BabeId, GrandpaId, ImOnlineId, BeefyId, OctopusId)>,
+    initial_authorities: Vec<(AccountId, BabeId, GrandpaId, ImOnlineId, BeefyId, OctopusId, Balance)>,
     root_key: AccountId,
-    endowed_accounts: Option<Vec<AccountId>>,
+    endowed_accounts: Vec<(AccountId, u128)>,
+    vesting_plans: Vec<(AccountId, u64, u64, u64, u64, u128, u128, bool)>,
+    domains: Vec<DomainId>,
+    appchain_config: (String, Balance, Balance),
     _enable_println: bool,
 ) -> GenesisConfig {
-    let mut endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(|| {
-        vec![
-            get_account_id_from_seed::<sr25519::Public>("Alice"),
-            get_account_id_from_seed::<sr25519::Public>("Bob"),
-            get_account_id_from_seed::<sr25519::Public>("Charlie"),
-            get_account_id_from_seed::<sr25519::Public>("Dave"),
-            get_account_id_from_seed::<sr25519::Public>("Eve"),
-            get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-        ]
-    });
 
+    let endowed_addresses: Vec<AccountId> = endowed_accounts.iter().map(|x| x.0.clone()).collect::<Vec<_>>();
     initial_authorities.iter().map(|x| &x.0).for_each(|x| {
-        if !endowed_accounts.contains(x) {
-            endowed_accounts.push(x.clone())
-        }
+        assert!(
+            endowed_addresses.contains(x),
+            "Initial authority account must be pre-funded"
+        );
     });
-    let validators = initial_authorities.iter().map(|x| (x.0.clone(), STASH)).collect::<Vec<_>>();
 
-    const ENDOWMENT: Balance = 1_000_000_000_000 * DOLLARS;
-    const STASH: Balance = 100 * DOLLARS;
+    let validators = initial_authorities.iter().map(|x| (x.0.clone(), x.6)).collect::<Vec<_>>();
 
     GenesisConfig {
         system: SystemConfig {
@@ -209,7 +234,7 @@ fn testnet_genesis(
             code: wasm_binary.to_vec(),
         },
         parity_tech_balances: ParityTechBalancesConfig {
-            balances: endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect(),
+            balances: endowed_accounts
         },
         session: SessionConfig {
             keys: initial_authorities
@@ -229,7 +254,6 @@ fn testnet_genesis(
                 })
                 .collect::<Vec<_>>(),
         },
-        octopus_lpos: OctopusLposConfig { era_payout: 1024, ..Default::default() },
         sudo: SudoConfig { key: root_key.clone() },
         babe: BabeConfig {
             authorities: vec![],
@@ -240,20 +264,46 @@ fn testnet_genesis(
         transaction_payment: Default::default(),
         beefy: BeefyConfig { authorities: vec![] },
         octopus_appchain: OctopusAppchainConfig {
-            anchor_contract: "octopus-anchor.testnet".to_string(),
+            anchor_contract: appchain_config.0,
             asset_id_by_name: vec![("usdc.testnet".to_string(), 0)],
             validators,
-            premined_amount: 1024 * DOLLARS, //@TODO is it ok to use value from barnacle template
+            premined_amount: appchain_config.1
         },
-        deip: DeipConfig { domains: vec![], domain_count: 0u32 },
+        octopus_lpos: OctopusLposConfig { era_payout: appchain_config.2, ..Default::default() },
+        deip: DeipConfig {
+            domains: domains.iter().cloned().map(|k| (k, Domain { external_id: k })).collect(),
+            domain_count: domains.len() as u32,
+        },
         assets: AssetsConfig::default(),
         uniques: UniquesConfig::default(),
         deip_proposal: DeipProposalConfig {},
         deip_dao: DeipDaoConfig {},
         deip_portal: DeipPortalConfig {},
-        deip_vesting: DeipVestingConfig { vesting: vec![] },
+        deip_vesting: DeipVestingConfig { vesting: vesting_plans },
         deip_ecosystem_fund: DeipEcosystemFundConfig {
-            fee_recipient: get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-        },
+            fee_recipient: get_account_id_from_seed::<sr25519::Public>("Ferdie")
+        }
     }
+}
+
+pub fn get_domains() -> Vec<DomainId> {
+    vec![ 
+        DomainId::from_str("6225314ed224d2b25a22f01a34af16d3354d556c").unwrap(),
+        /* generic */
+    ]
+}
+
+pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
+    vec![
+        (
+            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            1_000_000 * DEIP
+        )
+    ]
+}
+
+pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bool)> {
+    vec![
+
+    ]
 }
