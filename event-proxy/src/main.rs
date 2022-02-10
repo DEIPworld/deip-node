@@ -31,8 +31,7 @@ use futures::{
 };
 use tokio::sync::mpsc;
 
-#[subxt::subxt]
-pub mod appchain_deip {}
+pub type RuntimeT = node_template_runtime::Runtime;
 
 macro_rules! reset {
     ($actor_task_queue:ident, $_released_actor_queue:ident, $offchain_config:expr) => {
@@ -249,25 +248,25 @@ async fn main() {
                         config.blockchain
                     );
                 },
-        //     BlockchainActorOutput::Ok(BlockchainActorOutputData::BuildClient(maybe_client)) => {
-        //         match maybe_client {
-        //             Ok(client) => {
-        //                 blockchain_actor_task_queue.push(init_actor_task::<_, _, BlockchainActorIO>(
-        //                     BlockchainActorInput::set_client(client),
-        //                     &mut released_blockchain_actor_queue
-        //                 ).await);
-        //             },
-        //             Err(e) => {
-        //                 error!("{}", e);
-        //                 tokio::time::sleep(Duration::from_secs(5)).await;
-        //                 reset_blockchain_actor!(
-        //                     blockchain_actor_task_queue,
-        //                     released_blockchain_actor_queue,
-        //                     config.blockchain
-        //                 );
-        //             },
-        //         }
-        //     },
+                BlockchainActorOutput::Ok(BlockchainActorOutputData::BuildClient(maybe_client)) => {
+                    match maybe_client {
+                        Ok(client) => {
+                            blockchain_actor_task_queue.push(init_actor_task::<_, _, BlockchainActorIO>(
+                                BlockchainActorInput::set_client(client),
+                                &mut released_blockchain_actor_queue
+                            ).await);
+                        },
+                        Err(e) => {
+                            error!("{}", e);
+                            tokio::time::sleep(Duration::from_secs(5)).await;
+                            reset_blockchain_actor!(
+                                blockchain_actor_task_queue,
+                                released_blockchain_actor_queue,
+                                config.blockchain
+                            );
+                        },
+                    }
+                },
                 BlockchainActorOutput::Ok(BlockchainActorOutputData::SetClient) => {
                     reset!(offchain_actor_task_queue, released_offchain_actor_queue, config.offchain);
                 },
