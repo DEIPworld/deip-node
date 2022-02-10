@@ -1,22 +1,22 @@
-use substrate_subxt::{Runtime, ClientBuilder, system::System};
-
-use super::frame::{DeipProposal, Deip, DeipDao};
 #[cfg(feature = "octopus")]
-use super::frame::{OctopusAppchain, OctopusLpos};
+use super::frame::{octopus_appchain::OctopusAppchain, octopus_lpos::OctopusLpos};
 
+use subxt::{ClientBuilder, Config};
 
-fn _register_types<T: Runtime>(c: ClientBuilder<T>) -> ClientBuilder<T>
-    where
-        T: System + DeipProposal + Deip + DeipDao,
+use crate::frame::{deip::Deip, deip_dao::DeipDao, deip_proposal::DeipProposal};
+
+fn _register_types<T>(c: ClientBuilder) -> ClientBuilder
+where
+    T: Config + DeipProposal,
 {
     c
         // System:
-        .register_type_size::<<T as System>::AccountId>("T::AccountId")
+        .register_type_size::<<T as Config>::AccountId>("T::AccountId")
         // DeipProposal:
         .register_type_size::<<T as DeipProposal>::ProposalBatch>("ProposalBatch<T>")
         .register_type_size::<<T as DeipProposal>::ProposalId>("ProposalId")
         .register_type_size::<<T as DeipProposal>::ProposalState>("ProposalState")
-        // Deip:               
+        // Deip:
         .register_type_size::<<T as Deip>::DomainId>("DomainId")
         .register_type_size::<<T as Deip>::ProjectId>("ProjectId")
         .register_type_size::<<T as Deip>::Project>("Project")
@@ -35,16 +35,16 @@ fn _register_types<T: Runtime>(c: ClientBuilder<T>) -> ClientBuilder<T>
 
 #[cfg(not(feature = "octopus"))]
 pub fn register_types<T: Runtime>(c: ClientBuilder<T>) -> ClientBuilder<T>
-    where
-        T: System + DeipProposal + Deip + DeipDao,
+where
+    T: System + DeipProposal + Deip + DeipDao,
 {
     _register_types(c)
 }
 
 #[cfg(feature = "octopus")]
-pub fn register_types<T: Runtime>(c: ClientBuilder<T>) -> ClientBuilder<T>
-    where
-        T: System + DeipProposal + Deip + DeipDao + OctopusAppchain + OctopusLpos,
+pub fn register_types<T>(c: ClientBuilder) -> ClientBuilder<T>
+where
+    T: Config + DeipProposal + Deip + DeipDao + OctopusAppchain + OctopusLpos,
 {
     let c = _register_types(c);
     c

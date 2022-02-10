@@ -1,12 +1,3 @@
-// use super::{actor_io::*, BlockchainConfig, LastKnownBlock};
-// use crate::actor::*;
-
-// use substrate_subxt::{Client};
-// use substrate_subxt::system::System;
-// use substrate_subxt::{RawEvent, Phase, Raw};
-// use substrate_subxt::{EventsDecoder};
-use codec::{Decode, Encode};
-
 use frame_system::Config;
 use jsonrpsee_ws_client::Subscription;
 
@@ -29,9 +20,7 @@ use crate::{
 use super::{actor_io::ActorJack, LastKnownBlock};
 
 pub struct BlockchainActor {
-    client: Option<
-        (), // Client<RuntimeT>
-    >,
+    client: Option<Client<RuntimeT>>,
 }
 
 impl BlockchainActor {
@@ -62,7 +51,7 @@ pub type FinalizedBlocksSubscriptionItem =
 pub enum BlockchainActorInputData {
     BuildClient(BlockchainConfig),
     SubscribeFinalizedBlocks(LastKnownBlock),
-    //     SetClient(Client<RuntimeT>),
+    SetClient(Client<RuntimeT>),
     GetBlockEvents(<RuntimeT as Config>::Hash, SubscriptionBuffer, EventsBuffer),
     ReplayBlocks(LastKnownBlock, <RuntimeT as Config>::Hash, SubscriptionBuffer, EventsBuffer),
     GetReplayedBlockEvents(<RuntimeT as Config>::Hash, BlocksReplay),
@@ -78,9 +67,10 @@ impl BlockchainActorInput {
     pub fn subscribe_finalized_blocks(last_known_block: LastKnownBlock) -> Self {
         Self::Input(BlockchainActorInputData::SubscribeFinalizedBlocks(last_known_block))
     }
-    //     pub fn set_client(client: Client<RuntimeT>) -> Self {
-    //         Self::Input(BlockchainActorInputData::SetClient(client))
-    //     }
+
+    pub fn set_client(client: Client<RuntimeT>) -> Self {
+        Self::Input(BlockchainActorInputData::SetClient(client))
+    }
 
     pub fn get_block_events(
         hash: <RuntimeT as Config>::Hash,
@@ -123,7 +113,7 @@ pub enum BlockchainActorOutput {
 }
 
 pub enum BlockchainActorOutputData {
-    //     BuildClient(Result<Client<RuntimeT>, Error>),
+    BuildClient(Result<Client<RuntimeT>, Error>),
     SubscribeFinalizedBlocks(
         Result<FinalizedBlocksSubscription, Error>,
         LastKnownBlock,
@@ -148,20 +138,21 @@ impl Actor<BlockchainActorInputData, BlockchainActorInput, BlockchainActorOutput
 {
     async fn on_input(&mut self, data: BlockchainActorInputData) -> BlockchainActorOutput {
         //  If we receive the BuildClient directive we have only choose to build client:
-        //         if let BlockchainActorInputData::BuildClient(ref conf) = data {
-        //             use crate::types::register_types;
-        //             let client = register_types(ClientBuilder::<RuntimeT>::new())
-        //                 .set_url(&conf.rpc)
-        //                 // We'll never to skip size checks, only for debug purposes:
-        //                 // .skip_type_sizes_check()
-        //                 .build()
-        //                 .await
-        //                 .map_err(|e| {
-        //                     log::error!("{:?}", &e);
-        //                     e
-        //                 });
-        //             return BlockchainActorOutput::Ok(BlockchainActorOutputData::BuildClient(client))
-        // }
+        if let BlockchainActorInputData::BuildClient(ref conf) = data {
+            // use crate::types::register_types;
+            // let client = register_types(ClientBuilder::<RuntimeT>::new())
+            let client = ClientBuilder::new()
+                .set_url(&conf.rpc)
+                // We'll never to skip size checks, only for debug purposes:
+                // .skip_type_sizes_check()
+                .build()
+                .await
+                .map_err(|e| {
+                    log::error!("{:?}", &e);
+                    Box::new(e.into())
+                });
+            return BlockchainActorOutput::Ok(BlockchainActorOutputData::BuildClient(client))
+        }
 
         // If client is not set we might only set client or raise an error:
         //         if self.client.is_none() {

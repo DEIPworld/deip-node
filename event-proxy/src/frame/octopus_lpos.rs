@@ -1,13 +1,9 @@
-
-use substrate_subxt::system::System;
-use substrate_subxt::{module};
-
-use frame_support::{Parameter};
+use frame_support::Parameter;
 use sp_runtime::traits::Member;
 
-use serde::{Serialize};
+use serde::Serialize;
+use subxt::Config;
 
-#[module]
-pub trait OctopusLpos: System {
+pub trait OctopusLpos: Config {
     type EraIndex: Parameter + Member + Serialize;
 }
