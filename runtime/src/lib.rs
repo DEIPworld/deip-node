@@ -176,12 +176,18 @@ pub const MINUTES: BlockNumber = 60 / (SECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 
-pub const MILLICENTS: Balance = 1_000_000_000;
-pub const CENTS: Balance = 1_000 * MILLICENTS; // assume this is worth about a cent.
-pub const DOLLARS: Balance = 100 * CENTS;
 
 pub mod currency {
-    use super::{Balance, CENTS};
+    use super::Balance;
+
+    pub const OCTS: Balance = 1_000_000_000_000_000_000;
+    pub const UNITS: Balance = 1_000_000_000_000_000_000;
+
+    pub const DOLLARS: Balance = UNITS;
+    pub const CENTS: Balance = DOLLARS / 100;
+    pub const MILLICENTS: Balance = CENTS / 1_000;
+
+    pub const EXISTENSIAL_DEPOSIT: Balance = CENTS;
 
     pub const fn deposit(items: u32, bytes: u32) -> Balance {
         items as Balance * 15 * CENTS + (bytes as Balance) * 6 * CENTS
@@ -321,7 +327,7 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: Balance = 1 * DOLLARS;
+    pub const ExistentialDeposit: Balance = currency::EXISTENSIAL_DEPOSIT;
     // For weight estimation, we assume that the most locks on an individual account will be 50.
     // This number may need to be adjusted in the future if this assumption no longer holds true.
     pub const MaxLocks: u32 = 50;
@@ -343,7 +349,7 @@ impl pallet_balances::Config for Runtime {
 }
 
 parameter_types! {
-    pub const TransactionByteFee: Balance = 10 * MILLICENTS;
+    pub const TransactionByteFee: Balance = 10 * currency::MILLICENTS;
     pub const OperationalFeeMultiplier: u8 = 5;
 }
 
@@ -527,11 +533,11 @@ impl pallet_mmr::Config for Runtime {
 }
 
 parameter_types! {
-    pub const AssetDeposit: Balance = 100 * DOLLARS;
-    pub const ApprovalDeposit: Balance = 1 * DOLLARS;
+    pub const AssetDeposit: Balance = 100 * currency::UNITS;
+    pub const ApprovalDeposit: Balance = 1 * currency::UNITS;
     pub const StringLimit: u32 = 50;
-    pub const MetadataDepositBase: Balance = 10 * DOLLARS;
-    pub const MetadataDepositPerByte: Balance = 1 * DOLLARS;
+    pub const MetadataDepositBase: Balance = 10 * currency::UNITS;
+    pub const MetadataDepositPerByte: Balance = 1 * currency::UNITS;
 }
 
 impl pallet_assets::Config for Runtime {
@@ -587,23 +593,23 @@ impl pallet_deip_balances::Config for Runtime {}
 
 parameter_types! {
     /// The basic amount of funds that must be reserved for an asset class.
-    pub const ClassDeposit: Balance = 10 * DOLLARS; // ??? correct value
+    pub const ClassDeposit: Balance = 10 * currency::UNITS;
 
     /// The basic amount of funds that must be reserved for an asset instance.
-    pub const InstanceDeposit: Balance = 10 * DOLLARS; // ??? correct value
+    pub const InstanceDeposit: Balance = 10 * currency::UNITS;
 
     /// The basic amount of funds that must be reserved when adding an attribute to an asset.
-    pub const AttributeDepositBase: Balance = 10 * DOLLARS; // ??? correct value
+    pub const AttributeDepositBase: Balance = 10 * currency::UNITS;
 
     /// The additional funds that must be reserved for the number of bytes store in metadata,
     /// either "normal" metadata or attribute metadata.
-    pub const DepositPerByte: Balance = 10 * DOLLARS; // ??? correct value
+    pub const DepositPerByte: Balance = 10 * currency::UNITS;
 
     /// The maximum length of an attribute key.
-    pub const KeyLimit: u32 = 50; // ??? correct value
+    pub const KeyLimit: u32 = 50;
 
     /// The maximum length of an attribute value.
-    pub const ValueLimit: u32 = 50; // ??? correct value
+    pub const ValueLimit: u32 = 50;
 
     /// Greater class ids will be reserved for `deip_*` calls.
     pub const MaxOriginClassId: NftClassId = NftClassId::MAX / 2;

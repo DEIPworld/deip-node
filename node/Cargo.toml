@@ -33,6 +33,7 @@ frame-benchmarking-cli = { git = "https://github.com/paritytech/substrate.git", 
 jsonrpc-core = "18.0.0"
 jsonrpc-pubsub = "18.0.0"
 
+pallet-deip = { path = "../pallets/deip" }
 pallet-deip-assets = { path = "../pallets/deip_assets" }
 pallet-im-online = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 pallet-mmr-rpc = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
