@@ -691,17 +691,6 @@ pub mod pallet {
             pallet_assets::Pallet::<T>::create(origin, id, admin, min_balance)
         }
 
-        #[pallet::weight(AssetsWeightInfoOf::<T>::force_create())]
-        pub fn force_create(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            owner: <T::Lookup as StaticLookup>::Source,
-            is_sufficient: bool,
-            min_balance: AssetsBalanceOf<T>,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::force_create(origin, id, owner, is_sufficient, min_balance)
-        }
-
         #[pallet::weight(AssetsWeightInfoOf::<T>::destroy(0, 0, 0))] // @TODO replace with actual coeff
         pub fn destroy(
             origin: OriginFor<T>,
@@ -749,17 +738,6 @@ pub mod pallet {
             amount: AssetsBalanceOf<T>,
         ) -> DispatchResult {
             pallet_assets::Pallet::<T>::transfer_keep_alive(origin, id, target, amount)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::force_transfer())]
-        pub fn force_transfer(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            source: <T::Lookup as StaticLookup>::Source,
-            dest: <T::Lookup as StaticLookup>::Source,
-            amount: AssetsBalanceOf<T>,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::force_transfer(origin, id, source, dest, amount)
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::freeze())]
@@ -835,54 +813,6 @@ pub mod pallet {
             pallet_assets::Pallet::<T>::clear_metadata(origin, id)
         }
 
-        #[pallet::weight(AssetsWeightInfoOf::<T>::force_set_metadata(name.len() as u32, symbol.len() as u32))]
-        pub fn force_set_metadata(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            name: Vec<u8>,
-            symbol: Vec<u8>,
-            decimals: u8,
-            is_frozen: bool,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::force_set_metadata(
-                origin, id, name, symbol, decimals, is_frozen,
-            )
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::force_clear_metadata())]
-        pub fn force_clear_metadata(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::force_clear_metadata(origin, id)
-        }
-
-        #[allow(clippy::too_many_arguments)]
-        #[pallet::weight(AssetsWeightInfoOf::<T>::force_asset_status())]
-        pub fn force_asset_status(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            owner: <T::Lookup as StaticLookup>::Source,
-            issuer: <T::Lookup as StaticLookup>::Source,
-            admin: <T::Lookup as StaticLookup>::Source,
-            freezer: <T::Lookup as StaticLookup>::Source,
-            min_balance: AssetsBalanceOf<T>,
-            is_sufficient: bool,
-            is_frozen: bool,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::force_asset_status(
-                origin,
-                id,
-                owner,
-                issuer,
-                admin,
-                freezer,
-                min_balance,
-                is_sufficient,
-                is_frozen,
-            )
-        }
-
         #[pallet::weight(AssetsWeightInfoOf::<T>::approve_transfer())]
         pub fn approve_transfer(
             origin: OriginFor<T>,
@@ -900,16 +830,6 @@ pub mod pallet {
             delegate: <T::Lookup as StaticLookup>::Source,
         ) -> DispatchResult {
             pallet_assets::Pallet::<T>::cancel_approval(origin, id, delegate)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::force_cancel_approval())]
-        pub fn force_cancel_approval(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            owner: <T::Lookup as StaticLookup>::Source,
-            delegate: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::force_cancel_approval(origin, id, owner, delegate)
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::transfer_approved())]

@@ -419,13 +419,6 @@ impl WrappedCall<Call> {
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
-            // pallet_assets::Call::force_create
-            force_create { id, owner, is_sufficient, min_balance } => {
-                let call = "force_create";
-                let args = AssetsForceCreateCallArgs::new(*id, owner, *is_sufficient, *min_balance);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
             // pallet_assets::Call::destroy
             destroy { id, witness: _ } => {
                 // todo!("find a way to serialize witness")
@@ -459,13 +452,6 @@ impl WrappedCall<Call> {
             transfer_keep_alive { id, target, amount } => {
                 let call = "transfer_keep_alive";
                 let args = AssetsTransferKeepAliveCallArgs::new(*id, target, *amount);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::force_transfer
-            force_transfer { id, source, dest, amount } => {
-                let call = "force_transfer";
-                let args = AssetsForceTransferCallArgs::new(*id, source, dest, *amount);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
@@ -525,46 +511,6 @@ impl WrappedCall<Call> {
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
-            // pallet_assets::Call::force_set_metadata
-            force_set_metadata { id, name, symbol, decimals, is_frozen } => {
-                let call = "force_set_metadata";
-                let args =
-                    AssetsForceSetMetadataCallArgs::new(*id, name, symbol, *decimals, *is_frozen);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::force_clear_metadata
-            force_clear_metadata { id } => {
-                let call = "force_clear_metadata";
-                let args = AssetsForceClearMetadataCallArgs::new(*id);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::force_asset_status
-            force_asset_status {
-                id,
-                owner,
-                issuer,
-                admin,
-                freezer,
-                min_balance,
-                is_sufficient,
-                is_frozen,
-            } => {
-                let call = "force_asset_status";
-                let args = AssetsForceAssetStatusCallArgs::new(
-                    *id,
-                    owner,
-                    issuer,
-                    admin,
-                    freezer,
-                    *min_balance,
-                    *is_sufficient,
-                    *is_frozen,
-                );
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
             // pallet_assets::Call::approve_transfer
             approve_transfer { id, delegate, amount } => {
                 let call = "approve_transfer";
@@ -576,13 +522,6 @@ impl WrappedCall<Call> {
             cancel_approval { id, delegate } => {
                 let call = "cancel_approval";
                 let args = AssetsCancelApprovalCallArgs::new(*id, delegate);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::force_cancel_approval
-            force_cancel_approval { id, owner, delegate } => {
-                let call = "force_cancel_approval";
-                let args = AssetsForceCancelApprovalCallArgs::new(*id, owner, delegate);
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
