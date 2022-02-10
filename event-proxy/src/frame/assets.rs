@@ -1,6 +1,3 @@
-// use substrate_subxt::system::System;
-// use substrate_subxt::{module, Event};
-
 use codec::Decode;
 use frame_support::Parameter;
 use frame_system::Config;
@@ -11,7 +8,6 @@ use serde::{
     Serialize,
 };
 
-// #[module]
 pub trait Assets: Config {
     type AssetId: Parameter + Member + Serialize;
     type Balance: Parameter + Member + Serialize;

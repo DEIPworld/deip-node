@@ -1,5 +1,4 @@
 use crate::actor::*;
-// use super::actor_io::*;
 
 use crate::{config::OffchainConfig, events::BlockMetadata, RuntimeT};
 
@@ -16,7 +15,7 @@ impl OffchainClient {
         Self { mock }
     }
     pub async fn get_last_known_block(&self) -> MaybeLastKnownBlock {
-        self.mock.clone()
+        self.mock
     }
 }
 
