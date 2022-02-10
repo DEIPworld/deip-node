@@ -1,7 +1,8 @@
 use appchain_deip_runtime::{
-    opaque::Block, AccountId, AssetsConfig, BabeConfig, BalancesConfig, DeipConfig, DeipDaoConfig,
-    DeipPortalConfig, DeipProposalConfig, DeipVestingConfig, GenesisConfig, GrandpaConfig,
-    Signature, SudoConfig, SystemConfig, UniquesConfig, WASM_BINARY, DeipEcosystemFundConfig
+    opaque::Block, AccountId, AssetsConfig, BabeConfig, DeipConfig, DeipDaoConfig,
+    DeipEcosystemFundConfig, DeipPortalConfig, DeipProposalConfig, DeipVestingConfig,
+    GenesisConfig, GrandpaConfig, ParityTechBalancesConfig, Signature, SudoConfig, SystemConfig,
+    UniquesConfig, WASM_BINARY,
 };
 use sc_chain_spec::ChainSpecExtension;
 use sc_client_api::{BadBlocks, ForkBlocks};
@@ -20,7 +21,6 @@ use beefy_primitives::crypto::AuthorityId as BeefyId;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_octopus_appchain::AuthorityId as OctopusId;
 use sp_consensus_babe::AuthorityId as BabeId;
-
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -208,7 +208,7 @@ fn testnet_genesis(
             // Add Wasm runtime to storage.
             code: wasm_binary.to_vec(),
         },
-        balances: BalancesConfig {
+        parity_tech_balances: ParityTechBalancesConfig {
             balances: endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect(),
         },
         session: SessionConfig {
@@ -253,7 +253,7 @@ fn testnet_genesis(
         deip_portal: DeipPortalConfig {},
         deip_vesting: DeipVestingConfig { vesting: vec![] },
         deip_ecosystem_fund: DeipEcosystemFundConfig {
-            fee_recipient: get_account_id_from_seed::<sr25519::Public>("Ferdie")
+            fee_recipient: get_account_id_from_seed::<sr25519::Public>("Ferdie"),
         },
     }
 }
