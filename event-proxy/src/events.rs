@@ -69,14 +69,18 @@ pub enum InfrastructureEventMeta {
 pub type InfrastructureEvent<T> =
     BaseEvent<InfrastructureEventData<BlockMetadata<T>>, InfrastructureEventMeta>;
 
-impl<T: Config> InfrastructureEvent<T> {
-    // pub fn block_created(block: &Block<T::Header, T::Extrinsic>, domain_events: u32) -> Self {
-    //     Self {
-    //         name: "block_created".to_string(),
-    //         data: InfrastructureEventData::BlockCreated(BlockMetadata::new(block)),
-    //         meta: InfrastructureEventMeta::BlockCreated { domain_events },
-    //     }
-    // }
+impl<T> InfrastructureEvent<T>
+where
+    T: Config,
+    T::Extrinsic: Send + Sync,
+{
+    pub fn block_created(block: &Block<T::Header, T::Extrinsic>, domain_events: u32) -> Self {
+        Self {
+            name: "block_created".to_string(),
+            data: InfrastructureEventData::BlockCreated(BlockMetadata::new(block)),
+            meta: InfrastructureEventMeta::BlockCreated { domain_events },
+        }
+    }
 }
 
 #[derive(Serialize, Debug)]
