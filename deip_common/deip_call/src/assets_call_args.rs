@@ -17,27 +17,6 @@ impl AssetsCreateCallArgs {
 }
 
 #[derive(Serialize)]
-pub(crate) struct AssetsForceCreateCallArgs {
-    id: u32,
-    owner: MultiAddress<AccountId32, ()>,
-    is_sufficient: bool,
-    min_balance: SerializableAtLeast32BitUnsigned<u128>,
-}
-
-impl AssetsForceCreateCallArgs {
-    pub(crate) fn new(
-        id: u32,
-        owner: &SpMultiAddress<AccountId32, ()>,
-        is_sufficient: bool,
-        min_balance: u128,
-    ) -> Self {
-        let min_balance = SerializableAtLeast32BitUnsigned(min_balance);
-        let owner = owner.into();
-        Self { id, owner, is_sufficient, min_balance }
-    }
-}
-
-#[derive(Serialize)]
 pub(crate) struct AssetsDestroyCallArgs {
     id: u32,
 }
@@ -109,28 +88,6 @@ impl AssetsTransferKeepAliveCallArgs {
         let amount = SerializableAtLeast32BitUnsigned(amount);
         let target = target.into();
         Self { id, target, amount }
-    }
-}
-
-#[derive(Serialize)]
-pub(crate) struct AssetsForceTransferCallArgs {
-    id: u32,
-    source: MultiAddress<AccountId32, ()>,
-    dest: MultiAddress<AccountId32, ()>,
-    amount: SerializableAtLeast32BitUnsigned<u128>,
-}
-
-impl AssetsForceTransferCallArgs {
-    pub(crate) fn new(
-        id: u32,
-        source: &SpMultiAddress<AccountId32, ()>,
-        dest: &SpMultiAddress<AccountId32, ()>,
-        amount: u128,
-    ) -> Self {
-        let amount = SerializableAtLeast32BitUnsigned(amount);
-        let source = source.into();
-        let dest = dest.into();
-        Self { id, source, dest, amount }
     }
 }
 
@@ -240,73 +197,6 @@ impl AssetsClearMetadataCallArgs {
 }
 
 #[derive(Serialize)]
-pub(crate) struct AssetsForceSetMetadataCallArgs<N, S>
-where
-    N: Serialize,
-    S: Serialize,
-{
-    id: u32,
-    name: N,
-    symbol: S,
-    decimals: u8,
-    is_frozen: bool,
-}
-
-impl<N, S> AssetsForceSetMetadataCallArgs<N, S>
-where
-    N: Serialize,
-    S: Serialize,
-{
-    pub(crate) fn new(id: u32, name: N, symbol: S, decimals: u8, is_frozen: bool) -> Self {
-        Self { id, name, symbol, decimals, is_frozen }
-    }
-}
-
-#[derive(Serialize)]
-pub(crate) struct AssetsForceClearMetadataCallArgs {
-    id: u32,
-}
-
-impl AssetsForceClearMetadataCallArgs {
-    pub(crate) fn new(id: u32) -> Self {
-        Self { id }
-    }
-}
-
-#[derive(Serialize)]
-pub(crate) struct AssetsForceAssetStatusCallArgs {
-    id: u32,
-    owner: MultiAddress<AccountId32, ()>,
-    issuer: MultiAddress<AccountId32, ()>,
-    admin: MultiAddress<AccountId32, ()>,
-    freezer: MultiAddress<AccountId32, ()>,
-    min_balance: SerializableAtLeast32BitUnsigned<u128>,
-    is_sufficient: bool,
-    is_frozen: bool,
-}
-
-impl AssetsForceAssetStatusCallArgs {
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn new(
-        id: u32,
-        owner: &SpMultiAddress<AccountId32, ()>,
-        issuer: &SpMultiAddress<AccountId32, ()>,
-        admin: &SpMultiAddress<AccountId32, ()>,
-        freezer: &SpMultiAddress<AccountId32, ()>,
-        min_balance: u128,
-        is_sufficient: bool,
-        is_frozen: bool,
-    ) -> Self {
-        let owner = owner.into();
-        let issuer = issuer.into();
-        let admin = admin.into();
-        let freezer = freezer.into();
-        let min_balance = SerializableAtLeast32BitUnsigned(min_balance);
-        Self { id, owner, issuer, admin, freezer, min_balance, is_sufficient, is_frozen }
-    }
-}
-
-#[derive(Serialize)]
 pub(crate) struct AssetsApproveTransferCallArgs {
     id: u32,
     delegate: MultiAddress<AccountId32, ()>,
@@ -331,25 +221,6 @@ impl AssetsCancelApprovalCallArgs {
     pub(crate) fn new(id: u32, delegate: &SpMultiAddress<AccountId32, ()>) -> Self {
         let delegate = delegate.into();
         Self { id, delegate }
-    }
-}
-
-#[derive(Serialize)]
-pub(crate) struct AssetsForceCancelApprovalCallArgs {
-    id: u32,
-    owner: MultiAddress<AccountId32, ()>,
-    delegate: MultiAddress<AccountId32, ()>,
-}
-
-impl AssetsForceCancelApprovalCallArgs {
-    pub(crate) fn new(
-        id: u32,
-        owner: &SpMultiAddress<AccountId32, ()>,
-        delegate: &SpMultiAddress<AccountId32, ()>,
-    ) -> Self {
-        let owner = owner.into();
-        let delegate = delegate.into();
-        Self { id, owner, delegate }
     }
 }
 

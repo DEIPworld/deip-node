@@ -54,7 +54,7 @@ fn main() {
     let extra = (
         frame_system::CheckSpecVersion::new(),
         frame_system::CheckTxVersion::new(),
-        CheckGenesis::new(),
+        CheckGenesis::default(),
         CheckMortality::from(sp_runtime::generic::Era::immortal()),
         CheckNonce::from(0),
         frame_system::CheckWeight::new(),

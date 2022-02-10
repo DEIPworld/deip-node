@@ -14,12 +14,9 @@ use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 use crate::assets_call_args::{
     AssetsApproveTransferCallArgs, AssetsBurnCallArgs, AssetsCancelApprovalCallArgs,
     AssetsClearMetadataCallArgs, AssetsCreateCallArgs, AssetsDestroyCallArgs,
-    AssetsForceAssetStatusCallArgs, AssetsForceCancelApprovalCallArgs,
-    AssetsForceClearMetadataCallArgs, AssetsForceCreateCallArgs, AssetsForceSetMetadataCallArgs,
-    AssetsForceTransferCallArgs, AssetsFreezeAssetCallArgs, AssetsFreezeCallArgs,
-    AssetsMintCallArgs, AssetsSetMetadataCallArgs, AssetsSetTeamCallArgs, AssetsThawCallArgs,
-    AssetsTransferApprovedCallArgs, AssetsTransferCallArgs, AssetsTransferKeepAliveCallArgs,
-    AssetsTransferOwnershipCallArgs,
+    AssetsFreezeAssetCallArgs, AssetsFreezeCallArgs, AssetsMintCallArgs, AssetsSetMetadataCallArgs,
+    AssetsSetTeamCallArgs, AssetsThawCallArgs, AssetsTransferApprovedCallArgs,
+    AssetsTransferCallArgs, AssetsTransferKeepAliveCallArgs, AssetsTransferOwnershipCallArgs,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, Decode, Encode, Deserialize)]

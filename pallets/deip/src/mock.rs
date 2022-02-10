@@ -206,7 +206,7 @@ parameter_types! {
     pub const WipePeriod: u64 = 10;
 }
 
-impl pallet_deip_assets::traits::DeipProjectsInfo<AccountId> for Test {
+impl DeipProjectsInfo<AccountId> for Test {
     type ProjectId = pallet_deip::ProjectId;
     type InvestmentId = pallet_deip::InvestmentId;
 
