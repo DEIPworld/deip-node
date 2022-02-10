@@ -200,18 +200,18 @@ async fn main() {
             let (maybe_finalized_block_header, subscription, buf) = subscription_task_result;
             // println!("BUFFERED SUBSCRIPTION TASK QUEUE");
             match maybe_finalized_block_header {
-                Ok(Some(finalized_block_header)) => {
+                Some(Ok(finalized_block_header)) => {
                     // Put subscription item into buffer:
                     // println!("PUT SUBSCRIPTION ITEM INTO BUFFER");
                     let buf: SubscriptionBufferIn = buf;
                     buf.push(finalized_block_header);
                     subscription_task_queue.push(subscription_task(subscription, buf));
                 },
-                err => {
-                    match err {
-                        Ok(Some(_)) => unreachable!(),
-                        Ok(None) => error!("Subscription termination unexpected"),
-                        Err(e) => error!("{}", e),
+                maybe_err => {
+                    match maybe_err {
+                        Some(Ok(_)) => unreachable!(),
+                        None => error!("Subscription termination unexpected"),
+                        Some(Err(e)) => error!("{}", e),
                     }
                     reset_blockchain_actor!(
                         blockchain_actor_task_queue,
@@ -281,7 +281,7 @@ async fn main() {
                             let (maybe_head_block, subscription, subscription_buffer_in)
                                 = subscription_task(subscription, subscription_buffer.detach_in()).await;
                             match maybe_head_block {
-                                Ok(Some(head_block)) => {
+                                Some(Ok(head_block)) => {
                                     let replay_blocks = BlockchainActorInput::replay_blocks(
                                         last_known_block,
                                         head_block.hash(),
@@ -299,9 +299,9 @@ async fn main() {
                                 },
                                 err => {
                                     match err {
-                                        Ok(Some(_)) => unreachable!(),
-                                        Ok(None) => error!("Subscription termination unexpected"),
-                                        Err(e) => error!("{}", e),
+                                        Some(Ok(_)) => unreachable!(),
+                                        None => error!("Subscription termination unexpected"),
+                                        Some(Err(e)) => error!("{}", e),
                                     }
                                     reset_blockchain_actor!(
                                         blockchain_actor_task_queue,
