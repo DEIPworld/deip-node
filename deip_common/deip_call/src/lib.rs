@@ -273,13 +273,12 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            add_domain { domain } => CallObject {
-                module: "deip",
-                call: "add_domain",
-                args: &DeipAddDomainCallArgs { domain },
-            }
-            .serialize(serializer),
-
+            // add_domain { domain } => CallObject {
+            //     module: "deip",
+            //     call: "add_domain",
+            //     args: &DeipAddDomainCallArgs { domain },
+            // }
+            // .serialize(serializer),
             create_contract_agreement {
                 id,
                 creator,

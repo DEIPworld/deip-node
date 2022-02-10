@@ -20,7 +20,6 @@
 //!
 //! ### Dispatchable Functions
 //!
-//! * `add_domain` - Add cryptographic hash of DomainId
 //! * `create_project` - Create Project belongs to Account (Team)
 //! * [`create_investment_opportunity`](./enum.Call.html#variant.create_investment_opportunity)
 //! * [`invest`](./enum.Call.html#variant.invest)
@@ -97,6 +96,7 @@ pub mod traits;
 
 pub mod benchmarking;
 pub mod weights;
+use system::pallet_prelude::OriginFor;
 pub use weights::{WeightInfo, Weights};
 
 /// A maximum number of Domains. When domains reaches this number, no new domains can be added.
@@ -958,36 +958,6 @@ decl_module! {
             Self::upvote_review_impl(account, review_id, domain_id)
         }
 
-        /// Allow a user to create domains.
-        ///
-        /// The origin for this call must be _Signed_.
-        ///
-        /// - `project`: [Domain](./struct.Domain.html) to be created.
-        #[weight = {
-            T::DeipWeightInfo::add_domain()
-        }]
-        fn add_domain(origin, domain: Domain) {
-            let account = ensure_signed(origin)?;
-
-            let domain_count = DomainCount::get();
-            ensure!(domain_count < MAX_DOMAINS, Error::<T>::DomainLimitReached);
-
-            let external_id = domain.external_id;
-
-            // We don't want to add duplicate domains, so we check whether the potential new
-            // domain is already present in the list. Because the domains is stored as a hash
-            // map this check is constant time O(1)
-            ensure!(!Domains::contains_key(&external_id), Error::<T>::DomainAlreadyExists);
-
-
-
-            // Insert the new domin and emit the event
-            Domains::insert(&external_id, domain);
-            DomainCount::put(domain_count + 1); // overflow check not necessary because of maximum
-
-            Self::deposit_event(RawEvent::DomainAdded(account, external_id));
-        }
-
         /// Allows DAO to create a contract agreement between parties.
         ///
         /// The origin for this call must be _Signed_.
@@ -1160,5 +1130,35 @@ impl<T: Config> Module<T> {
 
     pub fn get_contract_agreement(id: &ContractAgreementId) -> Option<ContractAgreementOf<T>> {
         ContractAgreementMap::<T>::try_get(id).ok()
+    }
+
+    // /// Allow a user to create domains.
+    // ///
+    // /// The origin for this call must be _Signed_.
+    // ///
+    // /// - `project`: [Domain](./struct.Domain.html) to be created.
+    // #[weight = {
+    //     T::DeipWeightInfo::add_domain()
+    // }]
+    #[allow(dead_code)]
+    fn add_domain(origin: OriginFor<T>, domain: Domain) -> DispatchResult {
+        let account = ensure_signed(origin)?;
+
+        let domain_count = DomainCount::get();
+        ensure!(domain_count < MAX_DOMAINS, Error::<T>::DomainLimitReached);
+
+        let external_id = domain.external_id;
+
+        // We don't want to add duplicate domains, so we check whether the potential new
+        // domain is already present in the list. Because the domains is stored as a hash
+        // map this check is constant time O(1)
+        ensure!(!Domains::contains_key(&external_id), Error::<T>::DomainAlreadyExists);
+
+        // Insert the new domin and emit the event
+        Domains::insert(&external_id, domain);
+        DomainCount::put(domain_count + 1); // overflow check not necessary because of maximum
+
+        Self::deposit_event(RawEvent::DomainAdded(account, external_id));
+        Ok(())
     }
 }
