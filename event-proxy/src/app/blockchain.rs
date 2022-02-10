@@ -9,11 +9,10 @@ use sp_core::{
 
 use subxt::{
     rpc::{RpcError, Subscription},
-    Client, ClientBuilder, Error as SubxtError, EventsDecoder, GenericError, Phase, RawEvent,
+    BasicError, Client, ClientBuilder, EventsDecoder, GenericError, Phase, RawEvent,
 };
 use tokio::sync::mpsc;
 
-// events::{known_domain_events, BlockMetadata, InfrastructureEvent, SpecializedEvent},
 use crate::{
     actor::{Actor, ActorDirective},
     config::BlockchainConfig,
@@ -41,7 +40,7 @@ pub type BlocksReplay = (
 );
 pub type MaybeBlockEvent = Result<SpecializedEvent<RuntimeT>, codec::Error>;
 type Error = Box<dyn std::error::Error + Send>;
-pub type BlockEvents = Result<Option<Vec<MaybeBlockEvent>>, GenericError<Infallible>>;
+pub type BlockEvents = Result<Option<Vec<MaybeBlockEvent>>, BasicError>;
 
 pub type SubscriptionBuffer = crate::Buffer<<RuntimeT as Config>::Header>;
 pub type SubscriptionBufferIn = crate::BufferIn<<RuntimeT as Config>::Header>;
@@ -116,9 +115,9 @@ pub enum BlockchainActorOutput {
 }
 
 pub enum BlockchainActorOutputData {
-    BuildClient(Result<Client<RuntimeT>, Error>),
+    BuildClient(Result<Client<RuntimeT>, BasicError>),
     SubscribeFinalizedBlocks(
-        Result<FinalizedBlocksSubscription, GenericError<Infallible>>,
+        Result<FinalizedBlocksSubscription, BasicError>,
         LastKnownBlock,
         SubscriptionBuffer,
         EventsBuffer,
@@ -144,16 +143,7 @@ impl Actor<BlockchainActorInputData, BlockchainActorInput, BlockchainActorOutput
         if let BlockchainActorInputData::BuildClient(ref conf) = data {
             // use crate::types::register_types;
             // let client = register_types(ClientBuilder::<RuntimeT>::new())
-            let client = ClientBuilder::new()
-                .set_url(&conf.rpc)
-                // We'll never to skip size checks, only for debug purposes:
-                // .skip_type_sizes_check()
-                .build()
-                .await
-                .map_err(|e| {
-                    log::error!("{:?}", &e);
-                    Box::new(e) as Error
-                });
+            let client = ClientBuilder::new().set_url(&conf.rpc).build().await;
             return BlockchainActorOutput::Ok(BlockchainActorOutputData::BuildClient(client))
         }
 
@@ -345,30 +335,26 @@ async fn get_block_events(
     client: &Client<RuntimeT>,
     decoder: &EventsDecoder<RuntimeT>,
     hash: <RuntimeT as Config>::Hash,
-) -> Result<Vec<(u32, RawEvent)>, GenericError<Infallible>> {
-    // let change_set = client.query_storage_at(&[SystemEvents::new().into()], Some(hash)).await?;
+) -> Result<Vec<(u32, RawEvent)>, BasicError> {
+    let change_set =
+        client.rpc().query_storage_at(&[SystemEvents::new().into()], Some(hash)).await?;
 
-    // let mut events = Vec::new();
+    let mut events = Vec::new();
 
-    // for (_key, data) in change_set.into_iter().map(|x| x.changes).flatten() {
-    //     if let Some(data) = data {
-    //         let raw_events = match decoder.decode_events(&mut &data.0[..]) {
-    //             Ok(events) => events,
-    //             Err(error) => return Err(error),
-    //         };
-    //         for (phase, raw) in raw_events {
-    //             if let Phase::ApplyExtrinsic(i) = phase {
-    //                 let event = match raw {
-    //                     RawEvent::Event(event) => event,
-    //                     RawEvent::Error(_) => continue,
-    //                 };
-    //                 events.push((i, event));
-    //             }
-    //         }
-    //     }
-    // }
-    // Ok(events)
-    todo!()
+    for (_key, data) in change_set.into_iter().flat_map(|x| x.changes) {
+        if let Some(data) = data {
+            let raw_events = match decoder.decode_events(&mut &data.0[..]) {
+                Ok(events) => events,
+                Err(error) => return Err(error),
+            };
+            for (phase, raw) in raw_events {
+                if let Phase::ApplyExtrinsic(i) = phase {
+                    events.push((i, raw));
+                }
+            }
+        }
+    }
+    Ok(events)
 }
 
 mod portal_info {
@@ -387,13 +373,13 @@ mod portal_info {
     pub type PortalInfo = Vec<(PortalId, ExtrinsicIdList)>;
 
     pub fn transpose(source: &PortalInfo) -> HashMap<&ExtrinsicIndex, &PortalId> {
-        HashMap::from_iter(source.iter().map(|(x, y)| y.iter().map(move |z| (z, x))).flatten())
+        HashMap::from_iter(source.iter().flat_map(|(x, y)| y.iter().map(move |z| (z, x))))
     }
 
     pub async fn fetch(
         client: &Client<RuntimeT>,
         at: &<RuntimeT as Config>::Header,
-    ) -> Result<PortalInfo, GenericError<Infallible>> {
+    ) -> Result<PortalInfo, BasicError> {
         // let mut prefix = twox_128(b"DeipPortal").to_vec();
         // prefix.extend(twox_128(b"PortalTagOfTransaction").to_vec());
         // prefix.extend(at.number.using_encoded(twox_64_concat));
