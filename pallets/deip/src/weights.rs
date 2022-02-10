@@ -26,7 +26,6 @@
 // --output
 // weights.rs
 
-
 #![allow(unused_parens)]
 #![allow(unused_imports)]
 
@@ -43,7 +42,7 @@ pub trait WeightInfo {
     fn reject_nda_content_access_request() -> Weight;
     fn create_review(d: u32) -> Weight;
     fn upvote_review() -> Weight;
-    fn add_domain() -> Weight;
+    // fn add_domain() -> Weight;
     fn create_contract_agreement_project_license() -> Weight;
     fn create_contract_agreement_general_contract() -> Weight;
     fn accept_contract_agreement_project_license_unsigned() -> Weight;
@@ -148,11 +147,11 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
     }
     // Storage: Deip DomainCount (r:1 w:1)
     // Storage: Deip Domains (r:1 w:1)
-    fn add_domain() -> Weight {
-        (46_126_000 as Weight)
-            .saturating_add(T::DbWeight::get().reads(2 as Weight))
-            .saturating_add(T::DbWeight::get().writes(2 as Weight))
-    }
+    // fn add_domain() -> Weight {
+    //     (46_126_000 as Weight)
+    //         .saturating_add(T::DbWeight::get().reads(2 as Weight))
+    //         .saturating_add(T::DbWeight::get().writes(2 as Weight))
+    // }
     // Storage: Timestamp Now (r:1 w:0)
     // Storage: Deip ContractAgreementMap (r:1 w:1)
     // Storage: Deip ProjectMap (r:1 w:0)
