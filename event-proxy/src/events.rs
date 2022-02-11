@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use codec::Decode;
 use frame_support::pallet_prelude::Member;
 use serde::{ser::Serializer, Deserialize, Serialize};
-use subxt::Config;
+use subxt::{Config, Event};
 
 use sp_runtime::{
     generic::Block,
@@ -12,11 +12,14 @@ use sp_runtime::{
 };
 use subxt::RawEvent;
 
-use crate::frame::{
-    assets::{self, Assets},
-    deip::{self, Deip},
-    deip_dao::{self, DeipDao},
-    deip_proposal::{self, DeipProposal},
+use crate::{
+    appchain_deip::deip_proposal::events::{Approved, Proposed},
+    frame::{
+        assets::{self, Assets},
+        deip::{self, Deip},
+        deip_dao::{self, DeipDao},
+        deip_proposal::{self, DeipProposal},
+    },
 };
 
 mod mapping;
@@ -193,8 +196,8 @@ impl<T: DeipProposal + Deip + DeipDao + Assets> Serialize for DomainEventData<T>
 #[derive(Debug)]
 pub enum DomainEventData<T: DeipProposal + Deip + DeipDao + Assets> {
     // DeipProposal:
-    ProposalProposed(deip_proposal::ProposedEvent<T>),
-    ProposalApproved(deip_proposal::ApprovedEvent<T>),
+    ProposalProposed(Proposed),
+    ProposalApproved(Approved),
     ProposalRevokedApproval(deip_proposal::RevokedApprovalEvent<T>),
     ProposalResolved(deip_proposal::ResolvedEvent<T>),
     ProposalExpired(deip_proposal::ExpiredEvent<T>),
@@ -263,341 +266,338 @@ where
     T::Extrinsic: Member + Send + Sync,
 {
     let (index, raw) = raw;
-    // let meta =
-    //     DomainEventMeta { index: *index, block: BlockMetadata::new(block), portal_id: *portal_id };
-    // let event = match (raw.pallet.as_str(), raw.variant.as_str()) {
-    // // =========== DeipProposal:
-    // (deip_proposal::ProposedEvent::<T>::PALLET, deip_proposal::ProposedEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "proposal_proposed".to_string(),
-    //         data: decode_event_data(raw).map(ProposalProposed)?,
-    //         meta,
-    //     },
-    // (deip_proposal::ApprovedEvent::<T>::PALLET, deip_proposal::ApprovedEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "proposal_approved".to_string(),
-    //         data: decode_event_data(raw).map(ProposalApproved)?,
-    //         meta,
-    //     },
-    // (
-    //     deip_proposal::RevokedApprovalEvent::<T>::PALLET,
-    //     deip_proposal::RevokedApprovalEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "proposal_revokedApproval".to_string(),
-    //     data: decode_event_data(raw).map(ProposalRevokedApproval)?,
-    //     meta,
-    // },
-    // (deip_proposal::ResolvedEvent::<T>::PALLET, deip_proposal::ResolvedEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "proposal_resolved".to_string(),
-    //         data: decode_event_data(raw).map(ProposalResolved)?,
-    //         meta,
-    //     },
-    // (deip_proposal::ExpiredEvent::<T>::PALLET, deip_proposal::ExpiredEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "proposal_expired".to_string(),
-    //         data: decode_event_data(raw).map(ProposalExpired)?,
-    //         meta,
-    //     },
-    // // =========== Deip:
-    // (deip::ProjectCreatedEvent::<T>::PALLET, deip::ProjectCreatedEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "project_created".to_string(),
-    //         data: decode_event_data(raw).map(ProjectCreated)?,
-    //         meta,
-    //     },
-    // (deip::ProjectRemovedEvent::<T>::PALLET, deip::ProjectRemovedEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "project_removed".to_string(),
-    //         data: decode_event_data(raw).map(ProjectRemoved)?,
-    //         meta,
-    //     },
-    // (deip::ProjectUpdatedEvent::<T>::PALLET, deip::ProjectUpdatedEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "project_updated".to_string(),
-    //         data: decode_event_data(raw).map(ProjectUpdated)?,
-    //         meta,
-    //     },
-    // (
-    //     deip::ProjectContentCreatedEvent::<T>::PALLET,
-    //     deip::ProjectContentCreatedEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "project_contentCreated".to_string(),
-    //     data: decode_event_data(raw).map(ProjectContentCreated)?,
-    //     meta,
-    // },
-    // (deip::NdaCreatedEvent::<T>::PALLET, deip::NdaCreatedEvent::<T>::EVENT) => DomainEvent {
-    //     name: "project_ndaCreated".to_string(),
-    //     data: decode_event_data(raw).map(NdaCreated)?,
-    //     meta,
-    // },
-    // (
-    //     deip::NdaAccessRequestCreatedEvent::<T>::PALLET,
-    //     deip::NdaAccessRequestCreatedEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "project_ndaAccessRequestCreated".to_string(),
-    //     data: decode_event_data(raw).map(NdaAccessRequestCreated)?,
-    //     meta,
-    // },
-    // (
-    //     deip::NdaAccessRequestFulfilledEvent::<T>::PALLET,
-    //     deip::NdaAccessRequestFulfilledEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "project_ndaAccessRequestFulfilled".to_string(),
-    //     data: decode_event_data(raw).map(NdaAccessRequestFulfilled)?,
-    //     meta,
-    // },
-    // (
-    //     deip::NdaAccessRequestRejectedEvent::<T>::PALLET,
-    //     deip::NdaAccessRequestRejectedEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "project_ndaAccessRequestRejected".to_string(),
-    //     data: decode_event_data(raw).map(NdaAccessRequestRejected)?,
-    //     meta,
-    // },
-    // (deip::DomainAddedEvent::<T>::PALLET, deip::DomainAddedEvent::<T>::EVENT) => DomainEvent {
-    //     name: "project_domainAdded".to_string(),
-    //     data: decode_event_data(raw).map(DomainAdded)?,
-    //     meta,
-    // },
-    // (deip::ReviewCreatedEvent::<T>::PALLET, deip::ReviewCreatedEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "project_reviewCreated".to_string(),
-    //         data: decode_event_data(raw).map(ReviewCreated)?,
-    //         meta,
-    //     },
-    // (deip::ReviewUpvotedEvent::<T>::PALLET, deip::ReviewUpvotedEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "project_reviewUpvoted".to_string(),
-    //         data: decode_event_data(raw).map(ReviewUpvoted)?,
-    //         meta,
-    //     },
-    // (
-    //     deip::SimpleCrowdfundingCreatedEvent::<T>::PALLET,
-    //     deip::SimpleCrowdfundingCreatedEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "project_tokenSaleCreated".to_string(),
-    //     data: decode_event_data(raw).map(SimpleCrowdfundingCreated)?,
-    //     meta,
-    // },
-    // (
-    //     deip::SimpleCrowdfundingActivatedEvent::<T>::PALLET,
-    //     deip::SimpleCrowdfundingActivatedEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "project_tokenSaleActivated".to_string(),
-    //     data: decode_event_data(raw).map(SimpleCrowdfundingActivated)?,
-    //     meta,
-    // },
-    // (
-    //     deip::SimpleCrowdfundingFinishedEvent::<T>::PALLET,
-    //     deip::SimpleCrowdfundingFinishedEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "project_tokenSaleFinished".to_string(),
-    //     data: decode_event_data(raw).map(SimpleCrowdfundingFinished)?,
-    //     meta,
-    // },
-    // (
-    //     deip::SimpleCrowdfundingExpiredEvent::<T>::PALLET,
-    //     deip::SimpleCrowdfundingExpiredEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "project_tokenSaleExpired".to_string(),
-    //     data: decode_event_data(raw).map(SimpleCrowdfundingExpired)?,
-    //     meta,
-    // },
-    // (deip::InvestedEvent::<T>::PALLET, deip::InvestedEvent::<T>::EVENT) => DomainEvent {
-    //     name: "project_tokenSaleContributed".to_string(),
-    //     data: decode_event_data(raw).map(Invested)?,
-    //     meta,
-    // },
-    // (
-    //     deip::ContractAgreementCreatedEvent::<T>::PALLET,
-    //     deip::ContractAgreementCreatedEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "deip_contractAgreementCreated".to_string(),
-    //     data: decode_event_data(raw).map(ContractAgreementCreated)?,
-    //     meta,
-    // },
-    // (
-    //     deip::ContractAgreementAcceptedEvent::<T>::PALLET,
-    //     deip::ContractAgreementAcceptedEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "deip_contractAgreementAccepted".to_string(),
-    //     data: decode_event_data(raw).map(ContractAgreementAccepted)?,
-    //     meta,
-    // },
-    // (
-    //     deip::ContractAgreementFinalizedEvent::<T>::PALLET,
-    //     deip::ContractAgreementFinalizedEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "deip_contractAgreementFinalized".to_string(),
-    //     data: decode_event_data(raw).map(ContractAgreementFinalized)?,
-    //     meta,
-    // },
-    // (
-    //     deip::ContractAgreementRejectedEvent::<T>::PALLET,
-    //     deip::ContractAgreementRejectedEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "deip_contractAgreementRejected".to_string(),
-    //     data: decode_event_data(raw).map(ContractAgreementRejected)?,
-    //     meta,
-    // },
-    // // =========== DeipDao:
-    // (deip_dao::DaoCreateEvent::<T>::PALLET, deip_dao::DaoCreateEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "dao_create".to_string(),
-    //         data: decode_event_data(raw).map(DaoCreate)?,
-    //         meta,
-    //     },
-    // (
-    //     deip_dao::DaoAlterAuthorityEvent::<T>::PALLET,
-    //     deip_dao::DaoAlterAuthorityEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "dao_alterAuthority".to_string(),
-    //     data: decode_event_data(raw).map(DaoAlterAuthority)?,
-    //     meta,
-    // },
-    // (
-    //     deip_dao::DaoMetadataUpdatedEvent::<T>::PALLET,
-    //     deip_dao::DaoMetadataUpdatedEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "dao_metadataUpdated".to_string(),
-    //     data: decode_event_data(raw).map(DaoMetadataUpdated)?,
-    //     meta,
-    // },
-    // // =========== Assets:
-    // (assets::CreatedEvent::<T>::PALLET, assets::CreatedEvent::<T>::EVENT) => DomainEvent {
-    //     name: "asset_class_created".to_string(),
-    //     data: decode_event_data(raw).map(AssetClassCreated)?,
-    //     meta,
-    // },
-    // (assets::IssuedEvent::<T>::PALLET, assets::IssuedEvent::<T>::EVENT) => DomainEvent {
-    //     name: "asset_issued".to_string(),
-    //     data: decode_event_data(raw).map(AssetIssued)?,
-    //     meta,
-    // },
-    // (assets::TransferredEvent::<T>::PALLET, assets::TransferredEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "asset_transferred".to_string(),
-    //         data: decode_event_data(raw).map(AssetTransferred)?,
-    //         meta,
-    //     },
-    // (assets::BurnedEvent::<T>::PALLET, assets::BurnedEvent::<T>::EVENT) => DomainEvent {
-    //     name: "asset_burned".to_string(),
-    //     data: decode_event_data(raw).map(AssetBurned)?,
-    //     meta,
-    // },
-    // (assets::TeamChangedEvent::<T>::PALLET, assets::TeamChangedEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "asset_team_changed".to_string(),
-    //         data: decode_event_data(raw).map(AssetTeamChanged)?,
-    //         meta,
-    //     },
-    // (assets::OwnerChangedEvent::<T>::PALLET, assets::OwnerChangedEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "asset_owner_changed".to_string(),
-    //         data: decode_event_data(raw).map(AssetOwnerChanged)?,
-    //         meta,
-    //     },
-    // #[cfg(not(feature = "octopus"))]
-    // (assets::ForceTransferredEvent::<T>::PALLET, assets::ForceTransferredEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "asset_force_transferred".to_string(),
-    //         data: decode_event_data(raw).map(AssetForceTransferred)?,
-    //         meta,
-    //     },
-    // (assets::FrozenEvent::<T>::PALLET, assets::FrozenEvent::<T>::EVENT) => DomainEvent {
-    //     name: "asset_account_frozen".to_string(),
-    //     data: decode_event_data(raw).map(AssetAccountFrozen)?,
-    //     meta,
-    // },
-    // (assets::ThawedEvent::<T>::PALLET, assets::ThawedEvent::<T>::EVENT) => DomainEvent {
-    //     name: "asset_account_thawed".to_string(),
-    //     data: decode_event_data(raw).map(AssetAccountThawed)?,
-    //     meta,
-    // },
-    // (assets::AssetFrozenEvent::<T>::PALLET, assets::AssetFrozenEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "asset_frozen".to_string(),
-    //         data: decode_event_data(raw).map(AssetFrozen)?,
-    //         meta,
-    //     },
-    // (assets::AssetThawedEvent::<T>::PALLET, assets::AssetThawedEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "asset_thawed".to_string(),
-    //         data: decode_event_data(raw).map(AssetThawed)?,
-    //         meta,
-    //     },
-    // (assets::DestroyedEvent::<T>::PALLET, assets::DestroyedEvent::<T>::EVENT) => DomainEvent {
-    //     name: "asset_class_destroyed".to_string(),
-    //     data: decode_event_data(raw).map(AssetClassDestroyed)?,
-    //     meta,
-    // },
-    // (assets::ForceCreatedEvent::<T>::PALLET, assets::ForceCreatedEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "asset_class_force_created".to_string(),
-    //         data: decode_event_data(raw).map(AssetClassForceCreated)?,
-    //         meta,
-    //     },
-    // #[cfg(not(feature = "octopus"))]
-    // (
-    //     assets::MaxZombiesChangedEvent::<T>::PALLET,
-    //     assets::MaxZombiesChangedEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "asset_max_zombies_changed".to_string(),
-    //     data: decode_event_data(raw).map(AssetMaxZombiesChanged)?,
-    //     meta,
-    // },
-    // (assets::MetadataSetEvent::<T>::PALLET, assets::MetadataSetEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "asset_metadata_set".to_string(),
-    //         data: decode_event_data(raw).map(AssetMetadataSet)?,
-    //         meta,
-    //     },
-    // #[cfg(feature = "octopus")]
-    // (assets::MetadataClearedEvent::<T>::PALLET, assets::MetadataClearedEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "asset_metadata_cleared".to_string(),
-    //         data: decode_event_data(raw).map(AssetMetadataCleared)?,
-    //         meta,
-    //     },
-    // #[cfg(feature = "octopus")]
-    // (assets::ApprovedTransferEvent::<T>::PALLET, assets::ApprovedTransferEvent::<T>::EVENT) =>
-    //     DomainEvent {
-    //         name: "asset_approved_transfer".to_string(),
-    //         data: decode_event_data(raw).map(AssetApprovedTransfer)?,
-    //         meta,
-    //     },
-    // #[cfg(feature = "octopus")]
-    // (
-    //     assets::ApprovalCancelledEvent::<T>::PALLET,
-    //     assets::ApprovalCancelledEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "asset_approval_cancelled".to_string(),
-    //     data: decode_event_data(raw).map(AssetApprovalCancelled)?,
-    //     meta,
-    // },
-    // #[cfg(feature = "octopus")]
-    // (
-    //     assets::TransferredApprovedEvent::<T>::PALLET,
-    //     assets::TransferredApprovedEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "asset_transferred_approved".to_string(),
-    //     data: decode_event_data(raw).map(AssetTransferredApproved)?,
-    //     meta,
-    // },
-    // #[cfg(feature = "octopus")]
-    // (
-    //     assets::AssetStatusChangedEvent::<T>::PALLET,
-    //     assets::AssetStatusChangedEvent::<T>::EVENT,
-    // ) => DomainEvent {
-    //     name: "asset_status_changed".to_string(),
-    //     data: decode_event_data(raw).map(AssetStatusChanged)?,
-    //     meta,
-    // },
-    //     _ => return Ok(None),
-    // };
-    // Ok(Some(event.into()))
-    todo!()
+    let meta =
+        DomainEventMeta { index: *index, block: BlockMetadata::new(block), portal_id: *portal_id };
+
+    use crate::{appchain_deip::deip_proposal::events::*, events::DomainEventData::*};
+
+    info!("Event from: {} - {}", raw.pallet.as_str(), raw.variant.as_str());
+    let event = match (raw.pallet.as_str(), raw.variant.as_str()) {
+        // =========== DeipProposal:
+        (Proposed::PALLET, Proposed::EVENT) => DomainEvent {
+            name: "proposal_proposed".to_string(),
+            data: decode_event_data(raw).map(ProposalProposed)?,
+            meta,
+        },
+        (Approved::PALLET, Approved::EVENT) => DomainEvent {
+            name: "proposal_approved".to_string(),
+            data: decode_event_data(raw).map(ProposalApproved)?,
+            meta,
+        },
+        (RevokedApproval::PALLET, RevokedApproval::EVENT) => DomainEvent {
+            name: "proposal_revokedApproval".to_string(),
+            data: decode_event_data(raw).map(ProposalRevokedApproval)?,
+            meta,
+        },
+        (Resolved::PALLET, Resolved::EVENT) => DomainEvent {
+            name: "proposal_resolved".to_string(),
+            data: decode_event_data(raw).map(ProposalResolved)?,
+            meta,
+        },
+        (Expired::PALLET, Expired::EVENT) => DomainEvent {
+            name: "proposal_expired".to_string(),
+            data: decode_event_data(raw).map(ProposalExpired)?,
+            meta,
+        },
+        // =========== Deip:
+        // (deip::ProjectCreatedEvent::<T>::PALLET, deip::ProjectCreatedEvent::<T>::EVENT) =>
+        //     DomainEvent {
+        //         name: "project_created".to_string(),
+        //         data: decode_event_data(raw).map(ProjectCreated)?,
+        //         meta,
+        //     },
+        // (deip::ProjectRemovedEvent::<T>::PALLET, deip::ProjectRemovedEvent::<T>::EVENT) =>
+        //     DomainEvent {
+        //         name: "project_removed".to_string(),
+        //         data: decode_event_data(raw).map(ProjectRemoved)?,
+        //         meta,
+        //     },
+        // (deip::ProjectUpdatedEvent::<T>::PALLET, deip::ProjectUpdatedEvent::<T>::EVENT) =>
+        //     DomainEvent {
+        //         name: "project_updated".to_string(),
+        //         data: decode_event_data(raw).map(ProjectUpdated)?,
+        //         meta,
+        //     },
+        // (
+        //     deip::ProjectContentCreatedEvent::<T>::PALLET,
+        //     deip::ProjectContentCreatedEvent::<T>::EVENT,
+        // ) => DomainEvent {
+        //     name: "project_contentCreated".to_string(),
+        //     data: decode_event_data(raw).map(ProjectContentCreated)?,
+        //     meta,
+        // },
+        // (deip::NdaCreatedEvent::<T>::PALLET, deip::NdaCreatedEvent::<T>::EVENT) => DomainEvent {
+        //     name: "project_ndaCreated".to_string(),
+        //     data: decode_event_data(raw).map(NdaCreated)?,
+        //     meta,
+        // },
+        // (
+        //     deip::NdaAccessRequestCreatedEvent::<T>::PALLET,
+        //     deip::NdaAccessRequestCreatedEvent::<T>::EVENT,
+        // ) => DomainEvent {
+        //     name: "project_ndaAccessRequestCreated".to_string(),
+        //     data: decode_event_data(raw).map(NdaAccessRequestCreated)?,
+        //     meta,
+        // },
+        // (
+        //     deip::NdaAccessRequestFulfilledEvent::<T>::PALLET,
+        //     deip::NdaAccessRequestFulfilledEvent::<T>::EVENT,
+        // ) => DomainEvent {
+        //     name: "project_ndaAccessRequestFulfilled".to_string(),
+        //     data: decode_event_data(raw).map(NdaAccessRequestFulfilled)?,
+        //     meta,
+        // },
+        // (
+        //     deip::NdaAccessRequestRejectedEvent::<T>::PALLET,
+        //     deip::NdaAccessRequestRejectedEvent::<T>::EVENT,
+        // ) => DomainEvent {
+        //     name: "project_ndaAccessRequestRejected".to_string(),
+        //     data: decode_event_data(raw).map(NdaAccessRequestRejected)?,
+        //     meta,
+        // },
+        // (deip::DomainAddedEvent::<T>::PALLET, deip::DomainAddedEvent::<T>::EVENT) => DomainEvent {
+        //     name: "project_domainAdded".to_string(),
+        //     data: decode_event_data(raw).map(DomainAdded)?,
+        //     meta,
+        // },
+        // (deip::ReviewCreatedEvent::<T>::PALLET, deip::ReviewCreatedEvent::<T>::EVENT) =>
+        //     DomainEvent {
+        //         name: "project_reviewCreated".to_string(),
+        //         data: decode_event_data(raw).map(ReviewCreated)?,
+        //         meta,
+        //     },
+        // (deip::ReviewUpvotedEvent::<T>::PALLET, deip::ReviewUpvotedEvent::<T>::EVENT) =>
+        //     DomainEvent {
+        //         name: "project_reviewUpvoted".to_string(),
+        //         data: decode_event_data(raw).map(ReviewUpvoted)?,
+        //         meta,
+        //     },
+        // (
+        //     deip::SimpleCrowdfundingCreatedEvent::<T>::PALLET,
+        //     deip::SimpleCrowdfundingCreatedEvent::<T>::EVENT,
+        // ) => DomainEvent {
+        //     name: "project_tokenSaleCreated".to_string(),
+        //     data: decode_event_data(raw).map(SimpleCrowdfundingCreated)?,
+        //     meta,
+        // },
+        // (
+        //     deip::SimpleCrowdfundingActivatedEvent::<T>::PALLET,
+        //     deip::SimpleCrowdfundingActivatedEvent::<T>::EVENT,
+        // ) => DomainEvent {
+        //     name: "project_tokenSaleActivated".to_string(),
+        //     data: decode_event_data(raw).map(SimpleCrowdfundingActivated)?,
+        //     meta,
+        // },
+        // (
+        //     deip::SimpleCrowdfundingFinishedEvent::<T>::PALLET,
+        //     deip::SimpleCrowdfundingFinishedEvent::<T>::EVENT,
+        // ) => DomainEvent {
+        //     name: "project_tokenSaleFinished".to_string(),
+        //     data: decode_event_data(raw).map(SimpleCrowdfundingFinished)?,
+        //     meta,
+        // },
+        // (
+        //     deip::SimpleCrowdfundingExpiredEvent::<T>::PALLET,
+        //     deip::SimpleCrowdfundingExpiredEvent::<T>::EVENT,
+        // ) => DomainEvent {
+        //     name: "project_tokenSaleExpired".to_string(),
+        //     data: decode_event_data(raw).map(SimpleCrowdfundingExpired)?,
+        //     meta,
+        // },
+        // (deip::InvestedEvent::<T>::PALLET, deip::InvestedEvent::<T>::EVENT) => DomainEvent {
+        //     name: "project_tokenSaleContributed".to_string(),
+        //     data: decode_event_data(raw).map(Invested)?,
+        //     meta,
+        // },
+        // (
+        //     deip::ContractAgreementCreatedEvent::<T>::PALLET,
+        //     deip::ContractAgreementCreatedEvent::<T>::EVENT,
+        // ) => DomainEvent {
+        //     name: "deip_contractAgreementCreated".to_string(),
+        //     data: decode_event_data(raw).map(ContractAgreementCreated)?,
+        //     meta,
+        // },
+        // (
+        //     deip::ContractAgreementAcceptedEvent::<T>::PALLET,
+        //     deip::ContractAgreementAcceptedEvent::<T>::EVENT,
+        // ) => DomainEvent {
+        //     name: "deip_contractAgreementAccepted".to_string(),
+        //     data: decode_event_data(raw).map(ContractAgreementAccepted)?,
+        //     meta,
+        // },
+        // (
+        //     deip::ContractAgreementFinalizedEvent::<T>::PALLET,
+        //     deip::ContractAgreementFinalizedEvent::<T>::EVENT,
+        // ) => DomainEvent {
+        //     name: "deip_contractAgreementFinalized".to_string(),
+        //     data: decode_event_data(raw).map(ContractAgreementFinalized)?,
+        //     meta,
+        // },
+        // (
+        //     deip::ContractAgreementRejectedEvent::<T>::PALLET,
+        //     deip::ContractAgreementRejectedEvent::<T>::EVENT,
+        // ) => DomainEvent {
+        //     name: "deip_contractAgreementRejected".to_string(),
+        //     data: decode_event_data(raw).map(ContractAgreementRejected)?,
+        //     meta,
+        // },
+        // // =========== DeipDao:
+        // (deip_dao::DaoCreateEvent::<T>::PALLET, deip_dao::DaoCreateEvent::<T>::EVENT) =>
+        //     DomainEvent {
+        //         name: "dao_create".to_string(),
+        //         data: decode_event_data(raw).map(DaoCreate)?,
+        //         meta,
+        //     },
+        // (
+        //     deip_dao::DaoAlterAuthorityEvent::<T>::PALLET,
+        //     deip_dao::DaoAlterAuthorityEvent::<T>::EVENT,
+        // ) => DomainEvent {
+        //     name: "dao_alterAuthority".to_string(),
+        //     data: decode_event_data(raw).map(DaoAlterAuthority)?,
+        //     meta,
+        // },
+        // (
+        //     deip_dao::DaoMetadataUpdatedEvent::<T>::PALLET,
+        //     deip_dao::DaoMetadataUpdatedEvent::<T>::EVENT,
+        // ) => DomainEvent {
+        //     name: "dao_metadataUpdated".to_string(),
+        //     data: decode_event_data(raw).map(DaoMetadataUpdated)?,
+        //     meta,
+        // },
+        // // =========== Assets:
+        // (assets::CreatedEvent::<T>::PALLET, assets::CreatedEvent::<T>::EVENT) => DomainEvent {
+        //     name: "asset_class_created".to_string(),
+        //     data: decode_event_data(raw).map(AssetClassCreated)?,
+        //     meta,
+        // },
+        // (assets::IssuedEvent::<T>::PALLET, assets::IssuedEvent::<T>::EVENT) => DomainEvent {
+        //     name: "asset_issued".to_string(),
+        //     data: decode_event_data(raw).map(AssetIssued)?,
+        //     meta,
+        // },
+        // (assets::TransferredEvent::<T>::PALLET, assets::TransferredEvent::<T>::EVENT) =>
+        //     DomainEvent {
+        //         name: "asset_transferred".to_string(),
+        //         data: decode_event_data(raw).map(AssetTransferred)?,
+        //         meta,
+        //     },
+        // (assets::BurnedEvent::<T>::PALLET, assets::BurnedEvent::<T>::EVENT) => DomainEvent {
+        //     name: "asset_burned".to_string(),
+        //     data: decode_event_data(raw).map(AssetBurned)?,
+        //     meta,
+        // },
+        // (assets::TeamChangedEvent::<T>::PALLET, assets::TeamChangedEvent::<T>::EVENT) =>
+        //     DomainEvent {
+        //         name: "asset_team_changed".to_string(),
+        //         data: decode_event_data(raw).map(AssetTeamChanged)?,
+        //         meta,
+        //     },
+        // (assets::OwnerChangedEvent::<T>::PALLET, assets::OwnerChangedEvent::<T>::EVENT) =>
+        //     DomainEvent {
+        //         name: "asset_owner_changed".to_string(),
+        //         data: decode_event_data(raw).map(AssetOwnerChanged)?,
+        //         meta,
+        //     },
+        // #[cfg(not(feature = "octopus"))]
+        // (assets::ForceTransferredEvent::<T>::PALLET, assets::ForceTransferredEvent::<T>::EVENT) =>
+        //     DomainEvent {
+        //         name: "asset_force_transferred".to_string(),
+        //         data: decode_event_data(raw).map(AssetForceTransferred)?,
+        //         meta,
+        //     },
+        // (assets::FrozenEvent::<T>::PALLET, assets::FrozenEvent::<T>::EVENT) => DomainEvent {
+        //     name: "asset_account_frozen".to_string(),
+        //     data: decode_event_data(raw).map(AssetAccountFrozen)?,
+        //     meta,
+        // },
+        // (assets::ThawedEvent::<T>::PALLET, assets::ThawedEvent::<T>::EVENT) => DomainEvent {
+        //     name: "asset_account_thawed".to_string(),
+        //     data: decode_event_data(raw).map(AssetAccountThawed)?,
+        //     meta,
+        // },
+        // (assets::AssetFrozenEvent::<T>::PALLET, assets::AssetFrozenEvent::<T>::EVENT) =>
+        //     DomainEvent {
+        //         name: "asset_frozen".to_string(),
+        //         data: decode_event_data(raw).map(AssetFrozen)?,
+        //         meta,
+        //     },
+        // (assets::AssetThawedEvent::<T>::PALLET, assets::AssetThawedEvent::<T>::EVENT) =>
+        //     DomainEvent {
+        //         name: "asset_thawed".to_string(),
+        //         data: decode_event_data(raw).map(AssetThawed)?,
+        //         meta,
+        //     },
+        // (assets::DestroyedEvent::<T>::PALLET, assets::DestroyedEvent::<T>::EVENT) => DomainEvent {
+        //     name: "asset_class_destroyed".to_string(),
+        //     data: decode_event_data(raw).map(AssetClassDestroyed)?,
+        //     meta,
+        // },
+        // (assets::ForceCreatedEvent::<T>::PALLET, assets::ForceCreatedEvent::<T>::EVENT) =>
+        //     DomainEvent {
+        //         name: "asset_class_force_created".to_string(),
+        //         data: decode_event_data(raw).map(AssetClassForceCreated)?,
+        //         meta,
+        //     },
+        // #[cfg(not(feature = "octopus"))]
+        // (
+        //     assets::MaxZombiesChangedEvent::<T>::PALLET,
+        //     assets::MaxZombiesChangedEvent::<T>::EVENT,
+        // ) => DomainEvent {
+        //     name: "asset_max_zombies_changed".to_string(),
+        //     data: decode_event_data(raw).map(AssetMaxZombiesChanged)?,
+        //     meta,
+        // },
+        // (assets::MetadataSetEvent::<T>::PALLET, assets::MetadataSetEvent::<T>::EVENT) =>
+        //     DomainEvent {
+        //         name: "asset_metadata_set".to_string(),
+        //         data: decode_event_data(raw).map(AssetMetadataSet)?,
+        //         meta,
+        //     },
+        // #[cfg(feature = "octopus")]
+        // (assets::MetadataClearedEvent::<T>::PALLET, assets::MetadataClearedEvent::<T>::EVENT) =>
+        //     DomainEvent {
+        //         name: "asset_metadata_cleared".to_string(),
+        //         data: decode_event_data(raw).map(AssetMetadataCleared)?,
+        //         meta,
+        //     },
+        // #[cfg(feature = "octopus")]
+        // (assets::ApprovedTransferEvent::<T>::PALLET, assets::ApprovedTransferEvent::<T>::EVENT) =>
+        //     DomainEvent {
+        //         name: "asset_approved_transfer".to_string(),
+        //         data: decode_event_data(raw).map(AssetApprovedTransfer)?,
+        //         meta,
+        //     },
+        // #[cfg(feature = "octopus")]
+        // (
+        //     assets::ApprovalCancelledEvent::<T>::PALLET,
+        //     assets::ApprovalCancelledEvent::<T>::EVENT,
+        // ) => DomainEvent {
+        //     name: "asset_approval_cancelled".to_string(),
+        //     data: decode_event_data(raw).map(AssetApprovalCancelled)?,
+        //     meta,
+        // },
+        // #[cfg(feature = "octopus")]
+        // (
+        //     assets::TransferredApprovedEvent::<T>::PALLET,
+        //     assets::TransferredApprovedEvent::<T>::EVENT,
+        // ) => DomainEvent {
+        //     name: "asset_transferred_approved".to_string(),
+        //     data: decode_event_data(raw).map(AssetTransferredApproved)?,
+        //     meta,
+        // },
+        // #[cfg(feature = "octopus")]
+        // (
+        //     assets::AssetStatusChangedEvent::<T>::PALLET,
+        //     assets::AssetStatusChangedEvent::<T>::EVENT,
+        // ) => DomainEvent {
+        //     name: "asset_status_changed".to_string(),
+        //     data: decode_event_data(raw).map(AssetStatusChanged)?,
+        //     meta,
+        // },
+        _ => return Ok(None),
+    };
+    info!("Event decoded: {}", event.name);
+    Ok(Some(event.into()))
 }
 
 fn decode_event_data<T: Decode>(e: &RawEvent) -> Result<T, codec::Error> {

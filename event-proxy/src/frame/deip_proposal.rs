@@ -8,6 +8,8 @@ use serde::{
     Serialize,
 };
 
+use crate::runtime_api::api::deip_proposal::events::{Approved, Proposed};
+
 pub trait DeipProposal: Config {
     type ProposalBatch: Parameter + Member;
     type InputProposalBatch: Parameter + Member;
@@ -27,37 +29,26 @@ pub trait DeipProposal: Config {
     fn wrap_input_batch(batch: &Self::InputProposalBatch) -> Self::WrappedInputBatch;
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Decode)]
-pub struct ProposedEvent<T: DeipProposal> {
-    pub author: <T as Config>::AccountId,
-    pub batch: T::ProposalBatch,
-    pub proposal_id: T::ProposalId,
-}
-impl<T: DeipProposal> Serialize for ProposedEvent<T> {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("ProposedEvent", 3)?;
-        s.serialize_field("author", &self.author)?;
-        s.serialize_field("batch", &T::wrap_batch::<T::WrappedBatch>(&self.batch))?;
-        s.serialize_field("proposal_id", &self.proposal_id)?;
-        s.end()
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Decode)]
-pub struct ApprovedEvent<T: DeipProposal> {
-    pub member: <T as Config>::AccountId,
-    pub proposal_id: T::ProposalId,
-}
-impl<T: DeipProposal> Serialize for ApprovedEvent<T> {
+impl Serialize for Approved {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
     where
         S: Serializer,
     {
         let mut s = serializer.serialize_struct("ApprovedEvent", 2)?;
         s.serialize_field("member", &self.member)?;
+        // s.serialize_field("proposal_id", &self.proposal_id)?;
+        s.end()
+    }
+}
+
+impl Serialize for Proposed {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_struct("ProposedEvent", 3)?;
+        s.serialize_field("author", &self.author)?;
+        // s.serialize_field("batch", &T::wrap_batch::<T::WrappedBatch>(&self.batch))?;
         s.serialize_field("proposal_id", &self.proposal_id)?;
         s.end()
     }

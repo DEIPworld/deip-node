@@ -4,14 +4,13 @@ mod config;
 mod events;
 mod frame;
 mod runtime;
+mod runtime_api;
 // mod types;
 
 #[macro_use]
 extern crate log;
 
 use std::{process::exit, time::Duration};
-
-// use substrate_subxt::{system::System, NodeTemplateRuntime};
 
 use actor::{Actor, ActorI, ActorIO, ActorO};
 use app::{
@@ -30,6 +29,14 @@ use futures::{
     Future,
 };
 use tokio::sync::mpsc;
+
+use runtime_api::api as appchain_deip;
+
+// #[subxt::subxt(
+//     runtime_metadata_path = "src/metadata.scale",
+//     // generated_type_derives = "Clone"
+// )]
+// pub mod appchain_deip {}
 
 pub type RuntimeT = node_template_runtime::Runtime;
 
@@ -351,6 +358,7 @@ async fn main() {
                     match maybe_events {
                         Ok(events) => {
                             let events = events.expect("EXISTENT BLOCK");
+                            info!("received {} events", events.len());
                             // println!("REPLAYED EVENTS: {:?}", &events);
                             let remaining = events.len();
                             for x in events.into_iter() {
@@ -358,6 +366,7 @@ async fn main() {
                             }
                             replayed_block_events_buffer_task_queue.push(
                                 replayed_block_events_buffer_task(remaining, replay));
+                            info!("events pushed to replayed_block_events_buffer_task_queue");
                         },
                         Err(e) => {
                             error!("{}", e);
@@ -397,6 +406,7 @@ async fn main() {
             event, remaining, replay
         }) = replayed_block_events_buffer_task_queue.next() => {
             // println!("ReplayedBlockEventsBufferTaskResult: {:?}", &event);
+            info!("received ReplayedBlockEventsBufferTaskResult");
             let task = init_actor_task::<_, _, MessageBrokerActorIO>(
                 MessageBrokerActorInput::send_replayed_block_event(event, remaining, replay),
                 &mut released_message_broker_actor_queue
@@ -404,6 +414,7 @@ async fn main() {
             message_broker_actor_task_queue.push(task);
         },
         Some(message_broker_actor_task_result) = message_broker_actor_task_queue.next() => {
+            info!("received task from message_broker_actor_task_queue");
             let (maybe_output, io) = message_broker_actor_task_result;
             let output = maybe_output.unwrap_or_else(|| unreachable!());
             release_actor(io, &mut released_message_broker_actor_queue).await;
