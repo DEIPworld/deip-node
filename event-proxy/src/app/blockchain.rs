@@ -9,7 +9,8 @@ use sp_core::{
 
 use subxt::{
     rpc::{RpcError, Subscription},
-    BasicError, Client, ClientBuilder, EventsDecoder, GenericError, Phase, RawEvent,
+    BasicError, Client, ClientBuilder, DefaultConfig, DefaultExtra, EventsDecoder, GenericError,
+    Phase, RawEvent,
 };
 use tokio::sync::mpsc;
 
@@ -143,7 +144,12 @@ impl Actor<BlockchainActorInputData, BlockchainActorInput, BlockchainActorOutput
         if let BlockchainActorInputData::BuildClient(ref conf) = data {
             // use crate::types::register_types;
             // let client = register_types(ClientBuilder::<RuntimeT>::new())
+            info!("rpc endpoint: {}", conf.rpc);
             let client = ClientBuilder::new().set_url(&conf.rpc).build().await;
+            // .map(|client| {
+            //     client.to_runtime_api::<RuntimeApi<DefaultConfig, DefaultExtra<DefaultConfig>>>()
+            // });
+
             return BlockchainActorOutput::Ok(BlockchainActorOutputData::BuildClient(client))
         }
 
@@ -197,6 +203,7 @@ impl Actor<BlockchainActorInputData, BlockchainActorInput, BlockchainActorOutput
                         ),
                 };
                 let portal_info = portal_info::fetch(client, &block.block.header).await.unwrap();
+                info!("fetched {} events", portal_info.len());
 
                 let maybe_events =
                     get_block_events(client, client.events_decoder(), hash).await.map(|ok| {
@@ -239,6 +246,7 @@ impl Actor<BlockchainActorInputData, BlockchainActorInput, BlockchainActorOutput
                         ),
                 };
                 let portal_info = portal_info::fetch(client, &block.block.header).await.unwrap();
+                info!("fetched {} events", portal_info.len());
 
                 let events =
                     get_block_events(client, client.events_decoder(), hash).await.map(|ok| {
@@ -260,6 +268,7 @@ impl Actor<BlockchainActorInputData, BlockchainActorInput, BlockchainActorOutput
                         .into()));
                         Some(list)
                     });
+                info!("send blockchain actor output data: replayed block events");
                 BlockchainActorOutputData::GetReplayedBlockEvents(events, replay)
             },
             BlockchainActorInputData::ReplayBlocks(
@@ -359,6 +368,7 @@ async fn get_block_events(
 
 mod portal_info {
     use super::*;
+    use codec::{Decode, Encode};
     use std::{collections::HashMap, iter::FromIterator};
 
     fn twox_64_concat(x: &[u8]) -> Vec<u8> {
@@ -380,21 +390,25 @@ mod portal_info {
         client: &Client<RuntimeT>,
         at: &<RuntimeT as Config>::Header,
     ) -> Result<PortalInfo, BasicError> {
-        // let mut prefix = twox_128(b"DeipPortal").to_vec();
-        // prefix.extend(twox_128(b"PortalTagOfTransaction").to_vec());
-        // prefix.extend(at.number.using_encoded(twox_64_concat));
-        // let prefix_len = prefix.len();
-        // client
-        //     .storage_pairs(StorageKey(prefix), Some(at.hash()))
-        //     .await?
-        //     .into_iter()
-        //     .map(|(key, data)| -> Result<_, _> {
-        //         Ok((
-        //             PortalId::decode(&mut &key.0[prefix_len + 16..])?,
-        //             ExtrinsicIdList::decode(&mut &data.0[..])?,
-        //         ))
-        //     })
-        //     .collect()
-        todo!()
+        let mut prefix = twox_128(b"DeipPortal").to_vec();
+        prefix.extend(twox_128(b"PortalTagOfTransaction").to_vec());
+        prefix.extend(at.number.using_encoded(twox_64_concat));
+        let prefix_len = prefix.len();
+        info!("fetch at: {}", at.hash());
+        client
+            .rpc()
+            .query_storage_at(&[StorageKey(prefix)], Some(at.hash()))
+            .await?
+            .into_iter()
+            .flat_map(|set| set.changes)
+            .filter_map(|(key, data)| {
+                data.map(|d| {
+                    Ok((
+                        PortalId::decode(&mut &key.0[prefix_len + 16..])?,
+                        ExtrinsicIdList::decode(&mut &d.0[..])?,
+                    ))
+                })
+            })
+            .collect()
     }
 }

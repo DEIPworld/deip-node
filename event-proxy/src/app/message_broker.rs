@@ -130,7 +130,9 @@ fn configure(
 ) -> (Option<FutureProducer>, MessageBrokerActorOutput) {
     let MessageBrokerConfigure { config: c, ctx } = c;
     let mut config = rdkafka::ClientConfig::new();
-    config.set("bootstrap.servers", &c.kafka_bootstrap_servers);
+    let key = "bootstrap.servers";
+    config.set(key, &c.kafka_bootstrap_servers);
+    info!("{}: {}", key, config.get(key).unwrap());
 
     match config.create::<FutureProducer>() {
         Ok(producer) => {
