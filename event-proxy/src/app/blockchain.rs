@@ -1,5 +1,3 @@
-use std::convert::Infallible;
-
 use frame_system::Config;
 
 use sp_core::{
@@ -9,8 +7,7 @@ use sp_core::{
 
 use subxt::{
     rpc::{RpcError, Subscription},
-    BasicError, Client, ClientBuilder, DefaultConfig, DefaultExtra, EventsDecoder, GenericError,
-    Phase, RawEvent,
+    BasicError, Client, ClientBuilder, EventsDecoder, Phase, RawEvent,
 };
 use tokio::sync::mpsc;
 
@@ -40,7 +37,6 @@ pub type BlocksReplay = (
     EventsBuffer,
 );
 pub type MaybeBlockEvent = Result<SpecializedEvent<RuntimeT>, codec::Error>;
-type Error = Box<dyn std::error::Error + Send>;
 pub type BlockEvents = Result<Option<Vec<MaybeBlockEvent>>, BasicError>;
 
 pub type SubscriptionBuffer = crate::Buffer<<RuntimeT as Config>::Header>;
