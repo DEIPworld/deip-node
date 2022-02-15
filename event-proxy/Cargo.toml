@@ -11,9 +11,7 @@ version = "3.0.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-subxt = { git = "https://github.com/pyakushin/subxt.git", branch = "polkadot-v0.9.13" }
-# subxt = { path = "../../subxt/subxt" }
-# subxt = "0.17.0"
+subxt = { git = "https://github.com/DEIPworld/substrate-subxt.git", branch = "polkadot-v0.9.13" }
 jsonrpsee-ws-client = { version = "0.2.0", default-features = false, features = ["tokio1"] }
 rdkafka = { version = "=0.26.0", default_features = true, features = ["cmake-build"] }
 tokio = { version = "1", features = ["full"] }
