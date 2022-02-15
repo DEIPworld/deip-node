@@ -3,7 +3,7 @@ use appchain_deip_runtime::{
     opaque::Block, opaque::SessionKeys, Balance, BeefyConfig, ImOnlineConfig, OctopusAppchainConfig,
     AccountId, AssetsConfig, BabeConfig, DeipConfig, DeipDaoConfig,
     DeipPortalConfig, DeipProposalConfig, DeipVestingConfig, GenesisConfig, GrandpaConfig,
-    ParityTechBalancesConfig, Signature, SudoConfig, SystemConfig, UniquesConfig, SessionConfig, 
+    ParityTechBalancesConfig, Signature, SudoConfig, SystemConfig, UniquesConfig, SessionConfig,
     OctopusLposConfig, WASM_BINARY, DeipEcosystemFundConfig,
 };
 
@@ -112,6 +112,16 @@ pub fn octopus_testnet_config() -> Result<ChainSpec, String> {
     ChainSpec::from_json_bytes(&include_bytes!("../res/octopus-testnet.json")[..])
 }
 
+/// Helper function to generate appchain config
+pub fn get_appchain_config(
+    anchor_contract: &str,
+    premined_amount: Balance,
+    era_payout: Balance,
+) -> (String, Balance, Balance) {
+	(anchor_contract.to_string(), premined_amount, era_payout)
+}
+
+
 pub fn development_config() -> Result<ChainSpec, String> {
     let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
     let properties = get_properties("DEIP", 18, 42);
@@ -192,7 +202,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                 wasm_binary,
                 // Initial PoA authorities
                 vec![
-                    authority_keys_from_seed("Alice", 10 * OCTS), 
+                    authority_keys_from_seed("Alice", 10 * OCTS),
                     authority_keys_from_seed("Bob", 10 * OCTS)
                 ],
                 // Sudo account
