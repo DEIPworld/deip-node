@@ -130,6 +130,18 @@ where
             // deip_assets::TransferredEvent
             unimplemented!()
         },
+        ApprovedTransfer { .. } => {
+            unimplemented!()
+        },
+        ApprovalCancelled { .. } => {
+            unimplemented!()
+        },
+        TransferredApproved { .. } => {
+            unimplemented!()
+        },
+        AssetStatusChanged { .. } => {
+            unimplemented!()
+        },
         Burned { .. } => {
             // deip_assets::BurnedEvent
             unimplemented!()
@@ -140,11 +152,6 @@ where
         },
         OwnerChanged { .. } => {
             // deip_assets::OwnerChangedEvent
-            unimplemented!()
-        },
-        #[cfg(not(feature = "octopus"))]
-        ForceTransferred { .. } => {
-            // deip_assets::ForceTransferredEvent
             unimplemented!()
         },
         Frozen { .. } => {
@@ -171,25 +178,13 @@ where
             // deip_assets::ForceCreatedEvent
             unimplemented!()
         },
-        #[cfg(not(feature = "octopus"))]
-        MaxZombiesChanged { .. } => {
-            // deip_assets::MaxZombiesChangedEvent
-            unimplemented!()
-        },
         MetadataSet { .. } => {
             // deip_assets::MetadataSetEvent
             unimplemented!()
         },
-        #[cfg(feature = "octopus")]
-        MetadataCleared { .. } => unimplemented!(),
-        #[cfg(feature = "octopus")]
-        ApprovedTransfer { .. } => unimplemented!(),
-        #[cfg(feature = "octopus")]
-        ApprovalCancelled { .. } => unimplemented!(),
-        #[cfg(feature = "octopus")]
-        TransferredApproved { .. } => unimplemented!(),
-        #[cfg(feature = "octopus")]
-        AssetStatusChanged { .. } => unimplemented!(),
+        MetadataCleared { .. } => {
+            unimplemented!()
+        },
 
         __Ignore { .. } => unreachable!(),
     }
