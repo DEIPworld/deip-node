@@ -63,7 +63,7 @@ pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/parityt
 pallet-uniques = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-utility = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 scale-info = { version = "1.0", default-features = false, features = ["derive"] }
-serde = { version = "1.0.130", features = ["derive"], default-features = false }
+serde = { version = "1.0.130", features = ["derive"], default-features = false, optional = true }
 sp-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-block-builder = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-consensus-babe = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
@@ -79,11 +79,8 @@ sp-version = { git = "https://github.com/paritytech/substrate.git", branch = "po
 
 pallet-octopus-appchain = { git = "https://github.com/octopus-network/octopus-pallets.git", branch = "release-v0.9.13", default-features = false }
 
-subxt = { path = "../../subxt/subxt", optional = true }
-
 [features]
 default = ["std"]
-# subxt-impl = ["subxt", "std"]
 runtime-benchmarks = [
     "frame-benchmarking",
     "frame-system-benchmarking",
@@ -101,10 +98,9 @@ runtime-benchmarks = [
 	"pallet-deip-ecosystem-fund/runtime-benchmarks",
 ]
 std = [
-    "subxt",
+    "serde",
     "codec/std",
     "getrandom/std",
-    "serde/std",
     "beefy-primitives/std",
     "deip-projects-info/std",
     "frame-executive/std",
