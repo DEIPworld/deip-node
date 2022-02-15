@@ -47,7 +47,7 @@ where
         | Event::System(_)
         | Event::Utility(_)
         | Event::Grandpa(_)
-        | Event::Balances(_)
+        | Event::ParityTechBalances(_)
         | Event::Sudo(_)
         // | Event::template(_)
         | Event::DeipVesting(_)
