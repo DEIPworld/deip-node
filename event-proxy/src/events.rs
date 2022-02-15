@@ -166,16 +166,12 @@ where
             AssetBurned(e) => e.serialize(serializer),
             AssetTeamChanged(e) => e.serialize(serializer),
             AssetOwnerChanged(e) => e.serialize(serializer),
-            #[cfg(not(feature = "octopus"))]
-            AssetForceTransferred(e) => e.serialize(serializer),
             AssetAccountFrozen(e) => e.serialize(serializer),
             AssetAccountThawed(e) => e.serialize(serializer),
             AssetFrozen(e) => e.serialize(serializer),
             AssetThawed(e) => e.serialize(serializer),
             AssetClassDestroyed(e) => e.serialize(serializer),
             AssetClassForceCreated(e) => e.serialize(serializer),
-            #[cfg(not(feature = "octopus"))]
-            AssetMaxZombiesChanged(e) => e.serialize(serializer),
             AssetMetadataSet(e) => e.serialize(serializer),
             #[cfg(feature = "octopus")]
             AssetMetadataCleared(e) => e.serialize(serializer),
@@ -231,16 +227,12 @@ pub enum DomainEventData<T: DeipProposal> {
     AssetBurned(assets_events::Burned),
     AssetTeamChanged(assets_events::TeamChanged),
     AssetOwnerChanged(assets_events::OwnerChanged),
-    #[cfg(not(feature = "octopus"))]
-    AssetForceTransferred(assets_events::ForceTransferred),
     AssetAccountFrozen(assets_events::Frozen),
     AssetAccountThawed(assets_events::Thawed),
     AssetFrozen(assets_events::AssetFrozen),
     AssetThawed(assets_events::AssetThawed),
     AssetClassDestroyed(assets_events::Destroyed),
     AssetClassForceCreated(assets_events::ForceCreated),
-    #[cfg(not(feature = "octopus"))]
-    AssetMaxZombiesChanged(assets_events::MaxZombiesChanged),
     AssetMetadataSet(assets_events::MetadataSet),
     #[cfg(feature = "octopus")]
     AssetMetadataCleared(assets_events::MetadataCleared),
@@ -480,13 +472,6 @@ where
             data: decode_event_data(raw).map(DomainEventData::AssetOwnerChanged)?,
             meta,
         },
-        #[cfg(not(feature = "octopus"))]
-        (assets_events::ForceTransferred::PALLET, assets_events::ForceTransferred::EVENT) =>
-            DomainEvent {
-                name: "asset_force_transferred".to_string(),
-                data: decode_event_data(raw).map(DomainEventData::AssetForceTransferred)?,
-                meta,
-            },
         (assets_events::Frozen::PALLET, assets_events::Frozen::EVENT) => DomainEvent {
             name: "asset_account_frozen".to_string(),
             data: decode_event_data(raw).map(DomainEventData::AssetAccountFrozen)?,
@@ -517,13 +502,6 @@ where
             data: decode_event_data(raw).map(DomainEventData::AssetClassForceCreated)?,
             meta,
         },
-        #[cfg(not(feature = "octopus"))]
-        (assets_events::MaxZombiesChanged::PALLET, assets_events::MaxZombiesChanged::EVENT) =>
-            DomainEvent {
-                name: "asset_max_zombies_changed".to_string(),
-                data: decode_event_data(raw).map(DomainEventData::AssetMaxZombiesChanged)?,
-                meta,
-            },
         (assets_events::MetadataSet::PALLET, assets_events::MetadataSet::EVENT) => DomainEvent {
             name: "asset_metadata_set".to_string(),
             data: decode_event_data(raw).map(DomainEventData::AssetMetadataSet)?,
