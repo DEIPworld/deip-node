@@ -9,7 +9,7 @@ pub trait DeipAssetSystem<AccountId>: AssetIdInitT<Self::AssetId> {
     type Balance: Member + Parameter + AtLeast32BitUnsigned + Default + Copy;
 
     /// The arithmetic type of asset identifier.
-    type AssetId: Member + Parameter + Default + Copy;
+    type AssetId: Member + Parameter + Default + Copy + AsRef<[u8]>;
 
     fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId>;
 

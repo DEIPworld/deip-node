@@ -155,6 +155,7 @@ pub trait Config:
     type DeipWeightInfo: WeightInfo;
 
     type MaxNdaParties: Get<u16>;
+    type MaxInvestmentShares: Get<u16>;
 }
 
 /// Unique Project ID reference
@@ -451,6 +452,7 @@ decl_error! {
         InvestmentOpportunityExpirationWrongState,
         InvestmentOpportunityWrongAssetId,
         InvestmentOpportunityCapDifferentAssets,
+        InvestmentOpportunityTooMuchShares,
 
         // Possible errors when DAO tries to invest to an opportunity
         InvestingNotFound,
@@ -588,7 +590,10 @@ decl_module! {
         /// - `project_id`: id of the project which tokens are intended to sale.
         /// - `investment_type`: specifies type of created investment opportunity. For possible
         /// variants and details see [`FundingModel`].
-        #[weight = 10_000]
+        #[weight = {
+            let s = shares.len() as u32;
+            T::DeipWeightInfo::create_investment_opportunity(s)
+        }]
         fn create_investment_opportunity(origin,
             external_id: InvestmentId,
             creator: T::DeipAccountId,
@@ -599,19 +604,26 @@ decl_module! {
             Self::create_investment_opportunity_impl(account, external_id, creator.into(), shares, funding_model)
         }
 
-        #[weight = 10_000]
+        #[weight = {
+            T::DeipWeightInfo::activate_crowdfunding()
+        }]
         fn activate_crowdfunding(origin, sale_id: InvestmentId) -> DispatchResult {
             ensure_none(origin)?;
             Self::activate_crowdfunding_impl(sale_id)
         }
 
-        #[weight = 10_000]
-        fn expire_crowdfunding(origin, sale_id: InvestmentId) -> DispatchResult {
+        #[weight = {
+            T::DeipWeightInfo::expire_crowdfunding_already_expired()
+                .max(T::DeipWeightInfo::expire_crowdfunding())
+        }]
+        fn expire_crowdfunding(origin, sale_id: InvestmentId) -> DispatchResultWithPostInfo {
             ensure_none(origin)?;
             Self::expire_crowdfunding_impl(sale_id)
         }
 
-        #[weight = 10_000]
+        #[weight = {
+            T::DeipWeightInfo::finish_crowdfunding()
+        }]
         fn finish_crowdfunding(origin, sale_id: InvestmentId) -> DispatchResult {
             ensure_none(origin)?;
             Self::finish_crowdfunding_impl(sale_id)
@@ -624,11 +636,14 @@ decl_module! {
         /// - `id`: identifier of the investment opportunity
         /// - `amount`: amount of units to invest. The account should have enough funds on
         ///     the balance. This amount is reserved until the investment finished or expired
-        #[weight = 10_000]
+        #[weight = {
+            T::DeipWeightInfo::invest()
+                .max(T::DeipWeightInfo::invest_hard_cap_reached())
+        }]
         fn invest(origin,
             id: InvestmentId,
             asset: DeipAssetOf<T>
-        ) -> DispatchResult {
+        ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
             Self::invest_to_crowdfunding_impl(account, id, asset)
         }
