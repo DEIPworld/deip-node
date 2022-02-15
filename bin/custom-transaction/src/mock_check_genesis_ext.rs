@@ -15,15 +15,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use codec::{Encode, Decode};
-use frame_system::{Config};
-use sp_runtime::{
-    traits::{SignedExtension},
-    transaction_validity::TransactionValidityError,
-};
+use codec::{Decode, Encode};
+use frame_system::Config;
+use scale_info::TypeInfo;
+use sp_runtime::{traits::SignedExtension, transaction_validity::TransactionValidityError};
 
 /// Genesis hash check to provide replay protection between different networks.
-#[derive(Encode, Decode, Clone, Eq, PartialEq)]
+#[derive(Encode, Decode, Clone, Eq, PartialEq, TypeInfo)]
 pub struct CheckGenesis<T: Config + Send + Sync>(std::marker::PhantomData<T>);
 
 impl<T: Config + Send + Sync> std::fmt::Debug for CheckGenesis<T> {
@@ -38,14 +36,14 @@ impl<T: Config + Send + Sync> std::fmt::Debug for CheckGenesis<T> {
     }
 }
 
-impl<T: Config + Send + Sync> CheckGenesis<T> {
+impl<T: Config + Send + Sync> Default for CheckGenesis<T> {
     /// Creates new `SignedExtension` to check genesis hash.
-    pub fn new() -> Self {
+    fn default() -> Self {
         Self(std::marker::PhantomData)
     }
 }
 
-impl<T: Config + Send + Sync> SignedExtension for CheckGenesis<T> {
+impl<T: Config + Send + Sync + TypeInfo> SignedExtension for CheckGenesis<T> {
     type AccountId = T::AccountId;
     type Call = <T as Config>::Call;
     type AdditionalSigned = super::Hash;

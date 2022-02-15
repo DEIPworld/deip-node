@@ -2,8 +2,8 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
+use super::{Call as RawCall, Event as RawEvent, *};
 use crate as pallet_deip_proposal;
-use super::{*, Event as RawEvent, Call as RawCall};
 
 use sp_std::prelude::*;
 
@@ -16,20 +16,19 @@ frame_support::construct_runtime!(
         NodeBlock = Block,
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
-        System: frame_system::{Module, Call, Config, Storage, Event<T>},
-        // Utility: pallet_utility::{Module, Call, Event},
-        // RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
-        // Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
-        // Aura: pallet_aura::{Module, Config<T>},
-        // Grandpa: pallet_grandpa::{Module, Call, Storage, Config, Event},
-        // Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
-        // TransactionPayment: pallet_transaction_payment::{Module, Storage},
-        // Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
+        System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+        Utility: pallet_utility::{Pallet, Call, Event},
+        RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Call, Storage},
+        Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+        Aura: pallet_aura::{Pallet, Config<T>},
+        Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event},
+        Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+        TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
+        Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
         // // Include the custom logic from the template pallet in the runtime.
-        // TemplateModule: pallet_template::{Module, Call, Storage, Event<T>},
-        // Deip: pallet_deip::{Module, Call, Storage, Event<T>, Config},
-        Proposal: pallet_deip_proposal::{Module, Call, Storage, Event<T>, Config},
-        // Multisig: pallet_multisig::{Module, Call, Storage, Event<T>, Config},
+        Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config},
+        Proposal: pallet_deip_proposal::{Pallet, Call, Storage, Event<T>, Config},
+        Multisig: pallet_multisig::{Pallet, Call, Storage, Event<T>, Config},
     }
 );
 
@@ -73,7 +72,8 @@ pub struct ExtBuilder;
 
 impl ExtBuilder {
     pub fn build() -> sp_io::TestExternalities {
-        let storage = frame_system::GenesisConfig::default().build_storage::<TestRuntime>().unwrap();
+        let storage =
+            frame_system::GenesisConfig::default().build_storage::<TestRuntime>().unwrap();
         sp_io::TestExternalities::from(storage)
     }
 }
@@ -85,7 +85,10 @@ fn with_test_ext<R>(t: impl FnOnce() -> R) -> R {
 use frame_support::{assert_noop, assert_ok};
 
 fn last_event() -> Event {
-    frame_system::Module::<TestRuntime>::events().pop().map(|e| e.event).expect("Event expected")
+    frame_system::Module::<TestRuntime>::events()
+        .pop()
+        .map(|e| e.event)
+        .expect("Event expected")
 }
 
 fn expect_event<E: Into<Event>>(e: E) {
@@ -104,7 +107,11 @@ fn fake_test_example() {
 fn decide_on_not_exist_proposal() {
     with_test_ext(|| {
         assert_noop!(
-            Proposal::decide(Origin::signed(1), ProposalId::default(), ProposalMemberDecision::Pending),
+            Proposal::decide(
+                Origin::signed(1),
+                ProposalId::default(),
+                ProposalMemberDecision::Pending
+            ),
             Error::<TestRuntime>::NotFound,
         );
     })
@@ -116,13 +123,15 @@ fn create_proposal_emits_event() {
         System::set_block_number(1);
         assert_ok!(Proposal::propose(Origin::signed(0), Vec::new()));
         match last_event() {
-            self::Event::pallet_deip_proposal(
-                RawEvent::Proposed {
-                    author: _,
-                    batch: _,
-                    proposal_id: _
-                }) => {},
-            _ => { unreachable!() }
+            self::Event::pallet_deip_proposal(RawEvent::Proposed {
+                author: _,
+                batch: _,
+                proposal_id: _,
+                ..
+            }) => {},
+            _ => {
+                unreachable!()
+            },
         }
     })
 }
@@ -131,28 +140,19 @@ fn create_proposal_emits_event() {
 fn assert_nested_proposals_limit() {
     with_test_ext(|| {
         let author = 0;
-        let batch = vec![
-            ProposalBatchItemOf::<TestRuntime> {
+        let batch = vec![ProposalBatchItemOf::<TestRuntime> {
+            account: author,
+            call: Call::Proposal(RawCall::propose(vec![ProposalBatchItemOf::<TestRuntime> {
                 account: author,
-                call: Call::Proposal(RawCall::propose(vec![
-                    ProposalBatchItemOf::<TestRuntime> {
-                        account: author,
-                        call: Call::Proposal(RawCall::propose(vec![
-                            ProposalBatchItemOf::<TestRuntime> {
-                                account: author,
-                                call: Call::Proposal(RawCall::propose(vec![])),
-                            }
-                        ])),
-                    }
-                ])),
-            }
-        ];
+                call: Call::Proposal(RawCall::propose(vec![ProposalBatchItemOf::<TestRuntime> {
+                    account: author,
+                    call: Call::Proposal(RawCall::propose(vec![])),
+                }])),
+            }])),
+        }];
         // System::set_block_number(1);
         let origin = Origin::signed(0);
-        assert_noop!(
-            Proposal::propose(origin, batch),
-            Error::<TestRuntime>::ReachDepthLimit
-        );
+        assert_noop!(Proposal::propose(origin, batch), Error::<TestRuntime>::ReachDepthLimit);
     })
 }
 

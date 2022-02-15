@@ -1,12 +1,12 @@
 [package]
-authors = ['DEIP world <https://github.com/DEIPworld>']
-description = 'Client for event-proxy'
-edition = '2018'
-homepage = 'https://deip.world/'
-license = 'Apache-2.0'
+authors = ["DEIP world <https://github.com/DEIPworld>"]
+description = "Client for event-proxy"
+edition = "2018"
+homepage = "https://deip.world/"
+license = "Apache-2.0"
 name = "event-proxy-client"
-repository = 'https://github.com/DEIPworld/deip-polkadot'
-version = '3.0.0'
+repository = "https://github.com/DEIPworld/deip-polkadot"
+version = "3.0.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

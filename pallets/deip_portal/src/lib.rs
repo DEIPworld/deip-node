@@ -1,19 +1,20 @@
 //! # DEIP Portal Module
-//! A module for manage Portals
-//! 
+//! A module to make transactions with a Portal signature
+//!
 //! - [`Config`](./trait.Config.html)
 //! - [`Call`](./enum.Call.html)
 //!
 //! ## Overview
-//! A module for manage Portals
+//! A module to make transactions with a Portal signature
 //!
 //! ## Interface
 //!
 //! ### Dispatchable Functions
 //!
-//! * `create` - Create a DAO.
-//! * `alter_authority` - Alter DAO's authority.
-//! * `on_behalf` - Perform action on behalf of a DAO.
+//! * `create` - Create a Portal.
+//! * `update` - Update a Portal.
+//! * `schedule` - Schedule an extrinsic to be executed within Portal context.
+//! * `exec` - Call-wrapper that may be scheduled.
 //!
 //! [`Call`]: ./enum.Call.html
 //! [`Config`]: ./trait.Config.html
@@ -24,16 +25,18 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
+mod portal;
 #[cfg(test)]
 mod tests;
-mod extensions;
 mod transaction_ctx;
 
+pub mod benchmarking;
+pub mod weights;
 
 #[doc(inline)]
 pub use pallet::*;
 #[doc(inline)]
-pub use extensions::*;
+pub use portal::*;
 #[doc(inline)]
 pub use transaction_ctx::*;
 
@@ -43,152 +46,271 @@ pub use deip_transaction_ctx::*;
 #[frame_support::pallet]
 #[doc(hidden)]
 pub mod pallet {
-    use frame_system::pallet_prelude::*;
-    use frame_system::RawOrigin;
-    
-    use frame_support::pallet_prelude::*;
-    use frame_support::{Hashable};
-    use frame_support::weights::{PostDispatchInfo, GetDispatchInfo};
-    
-    use frame_support::traits::{UnfilteredDispatchable, IsSubType};
-    
-    use sp_std::prelude::*;
-    use sp_std::collections::{btree_map::BTreeMap};
-    use sp_std::iter::FromIterator;
-    
-    use sp_runtime::{MultiSigner, traits::{Dispatchable, IdentifyAccount}, DispatchResultWithInfo};
-    use frame_support::dispatch::DispatchResult;
-    
-    // use pallet_deip_toolkit::storage_ops::StorageOpsTransaction;
-    
-    pub trait PortalProvider {
-        type Portal;
-        fn provide() -> Self::Portal;
-    }
-    impl PortalProvider for () {
-        type Portal = ();
+    use frame_system::{pallet_prelude::*, RawOrigin};
 
-        fn provide() -> Self::Portal {}
-    }
-    
+    use frame_support::{
+        pallet_prelude::*,
+        weights::{GetDispatchInfo, PostDispatchInfo},
+        Hashable,
+    };
+
+    use frame_support::{
+        log::debug,
+        traits::{ExtrinsicCall, IsSubType, UnfilteredDispatchable},
+    };
+
+    use sp_std::{collections::btree_map::BTreeMap, iter::FromIterator, prelude::*};
+
+    use codec::EncodeLike;
+    use frame_support::dispatch::DispatchResult;
+    use sp_runtime::{
+        traits::{Dispatchable, IdentifyAccount},
+        DispatchResultWithInfo, MultiSigner,
+    };
+
+    use super::*;
+    use crate::weights::WeightInfo;
+
     use frame_system::offchain::SendTransactionTypes;
+    use sp_runtime::traits::Extrinsic;
+    use sp_std::fmt::Debug;
 
     /// Configuration trait
     #[pallet::config]
-    // pub trait Config: frame_system::Config {
-    pub trait Config: frame_system::Config + SendTransactionTypes<Call<Self>> {
-    
-        // type TransactionCtx: PortalCtxT<Call<Self>>;
-        
-        type PortalId: Member + Parameter + Default + Copy;
-        type Portal;
-        type PortalProvider: PortalProvider<Portal = Self::Portal>;
-        
-        type Call: Parameter +
-             Dispatchable<Origin = Self::Origin, PostInfo = PostDispatchInfo> +
-             GetDispatchInfo +
-             From<frame_system::pallet::Call<Self>> +
-             UnfilteredDispatchable<Origin = Self::Origin> +
-             frame_support::dispatch::Codec + 
-             IsSubType<Call<Self>>;
-        
-        type UnsignedValidator: ValidateUnsigned<Call=<Self as Config>::Call>;
+    pub trait Config:
+        frame_system::Config
+        + SendTransactionTypes<Call<Self>>
+        + PortalModuleT<Self, crate::PortalCtxOf<Self>, crate::Call<Self>>
+        + Debug
+        + TypeInfo
+    {
+        type TenantLookup: TenantLookupT<Self::AccountId, TenantId = Self::PortalId> + Debug;
+
+        type PortalId: Member + Parameter + Copy + Default;
+        type Portal: PortalT<Self> + Member + Parameter + TypeInfo;
+
+        type Call: Parameter
+            + Dispatchable<Origin = Self::Origin, PostInfo = PostDispatchInfo>
+            + GetDispatchInfo
+            + From<frame_system::pallet::Call<Self>>
+            + From<crate::Call<Self>>
+            + UnfilteredDispatchable<Origin = Self::Origin>
+            + frame_support::dispatch::Codec
+            + IsSubType<Call<Self>>;
+
+        type UnsignedValidator: ValidateUnsigned<Call = <Self as Config>::Call>;
+
+        type UncheckedExtrinsic: Encode
+            + EncodeLike
+            + Decode
+            + Clone
+            + Debug
+            + Eq
+            + PartialEq
+            + frame_support::traits::ExtrinsicCall
+            + Extrinsic<Call = <Self as Config>::Call>
+            + TypeInfo;
+
+        type DeipPortalWeightInfo: WeightInfo;
     }
-    
+
     #[doc(hidden)]
     #[pallet::pallet]
     #[pallet::generate_store(pub(super) trait Store)]
     pub struct Pallet<T>(_);
-    
+
     #[doc(hidden)]
     #[pallet::hooks]
-    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
-    
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn offchain_worker(n: BlockNumberFor<T>) {
+            if !sp_io::offchain::is_validator() {
+                debug!("{}", "not a validator");
+                return
+            }
+            let _ = T::submit_scheduled_tx(n);
+        }
+    }
+
     #[pallet::error]
-    pub enum Error<T> {}
-    
+    pub enum Error<T> {
+        DelegateMismatch,
+        PortalMismatch,
+        AlreadyScheduled,
+        UnproperCall,
+        NotScheduled,
+        OwnerIsNotATenant,
+        PortalAlreadyExist,
+        PortalNotFound,
+    }
+
     // #[pallet::event]
     // #[pallet::metadata(u32 = "SpecialU32")]
     // #[pallet::generate_deposit(fn deposit_event)]
     // pub enum Event<T: Config> {}
-    
+
     #[doc(hidden)]
     #[pallet::genesis_config]
     #[derive(Default)]
     pub struct GenesisConfig {}
-    
+
     #[pallet::genesis_build]
     impl<T: Config> GenesisBuild<T> for GenesisConfig {
         fn build(&self) {}
     }
-    
+
     #[pallet::validate_unsigned]
     impl<T: Config> ValidateUnsigned for Pallet<T> {
         type Call = Call<T>;
 
-        fn validate_unsigned(
-            source: TransactionSource,
-            call: &Self::Call,
-        )
-            -> TransactionValidity
-        {
-            // Check that we call the right function.
-            if let Call::on_behalf(ref _portal_id, overarching) = call {
-                T::UnsignedValidator::validate_unsigned(source, overarching)
+        fn validate_unsigned(source: TransactionSource, call: &Self::Call) -> TransactionValidity {
+            if let Call::exec_postponed { portal_id: _, call: target_call } = call {
+                T::UnsignedValidator::validate_unsigned(source, target_call)
             } else {
                 InvalidTransaction::Call.into()
             }
         }
     }
-    
-    use deip_transaction_ctx::PortalCtxT;
-    
+
+    use deip_transaction_ctx::{PortalCtxT, TransactionCtxT};
+
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        #[pallet::weight(0)]
-        pub fn on_behalf(
+        #[pallet::weight((
+            T::DeipPortalWeightInfo::create()
+                // 1 DB read for the tenant_lookup that noop while benchmarking
+                + T::DbWeight::get().reads(1 as Weight),
+            DispatchClass::Normal,
+            Pays::Yes
+        ))]
+        pub fn create(
             origin: OriginFor<T>,
-            portal_id: T::PortalId,
+            delegate: PortalDelegate<T>,
+            metadata: PortalMetadata,
+        ) -> DispatchResultWithPostInfo {
+            // sp_runtime::runtime_logger::RuntimeLogger::init();
+            let owner = ensure_signed(origin)?;
+            T::create_portal(owner, delegate, metadata)?;
+            Ok(Some(0).into())
+        }
+
+        #[pallet::weight((
+            T::DeipPortalWeightInfo::update(),
+            DispatchClass::Normal,
+            Pays::Yes
+        ))]
+        pub fn update(origin: OriginFor<T>, update: PortalUpdate<T>) -> DispatchResultWithPostInfo {
+            // sp_runtime::runtime_logger::RuntimeLogger::init();
+            let owner = ensure_signed(origin)?;
+            T::update_portal(owner, update)?;
+            Ok(Some(0).into())
+        }
+
+        #[pallet::weight((
+            10_000,
+            DispatchClass::Normal,
+            Pays::Yes
+        ))]
+        pub fn schedule(
+            origin: OriginFor<T>,
+            xt: Box<T::UncheckedExtrinsic>,
+        ) -> DispatchResultWithPostInfo {
+            // sp_runtime::runtime_logger::RuntimeLogger::init();
+            let delegate = ensure_signed(origin)?;
+            T::schedule_tx(*xt, delegate)?;
+            Ok(Some(0).into())
+        }
+
+        #[pallet::weight((
+            10_000,
+            DispatchClass::Normal,
+            Pays::Yes
+        ))]
+        pub fn exec(
+            origin: OriginFor<T>,
+            portal_id: PortalId<T>,
             call: Box<<T as Config>::Call>,
-        )
-            -> DispatchResultWithPostInfo
-        {
-            crate::PortalCtxOf::<T>::with_ctx(portal_id, *call, origin)
+        ) -> DispatchResultWithPostInfo {
+            // sp_runtime::runtime_logger::RuntimeLogger::init();
+            T::dispatch_scheduled_tx(portal_id, *call, origin)?
+        }
+
+        #[pallet::weight((
+            10_000,
+            DispatchClass::Normal,
+            Pays::Yes
+        ))]
+        pub fn exec_postponed(
+            origin: OriginFor<T>,
+            portal_id: PortalId<T>,
+            call: Box<<T as Config>::Call>,
+        ) -> DispatchResultWithPostInfo {
+            // sp_runtime::runtime_logger::RuntimeLogger::init();
+            ensure_none(origin)?;
+            T::exec_postponed_tx(portal_id, *call, RawOrigin::None.into())
         }
     }
-    
+
     // ==== Storage ====:
-    
+
     pub type ExtrinsicId = u32;
     pub type ExtrinsicIdList = Vec<ExtrinsicId>;
     pub type PortalInfo<PortalId> = Vec<(PortalId, ExtrinsicIdList)>;
-    
+    pub type ExtrinsicHash = [u8; 32];
+
     pub fn transpose<'a, T, S, PortalId>(source: S) -> T
-        where T: FromIterator<(&'a ExtrinsicId, &'a PortalId)> + 'a,
-              S: Iterator<Item = &'a (PortalId, ExtrinsicIdList)> + 'a,
-              PortalId: 'a
+    where
+        T: FromIterator<(&'a ExtrinsicId, &'a PortalId)> + 'a,
+        S: Iterator<Item = &'a (PortalId, ExtrinsicIdList)> + 'a,
+        PortalId: 'a,
     {
-        T::from_iter(source.map(|(x, y)| { y.iter().map(move |z| (z, x)) }).flatten())
+        T::from_iter(source.map(|(x, y)| y.iter().map(move |z| (z, x))).flatten())
     }
-    
+
     #[pallet::storage]
-    pub(super) type PortalTagOfTransaction<T: Config> = StorageDoubleMap<_,
+    pub(super) type PendingTx<T: Config> = StorageDoubleMap<
+        _,
+        Twox64Concat,
+        T::BlockNumber,
+        Blake2_128Concat,
+        ExtrinsicHash,
+        T::UncheckedExtrinsic,
+    >;
+
+    #[pallet::storage]
+    pub(super) type ScheduledTx<T: Config> =
+        StorageMap<_, Blake2_128Concat, ExtrinsicHash, PortalId<T>>;
+
+    #[pallet::storage]
+    pub(super) type PortalTagOfTransaction<T: Config> = StorageDoubleMap<
+        _,
         Twox64Concat,
         BlockNumberFor<T>,
         Blake2_128Concat,
-        T::PortalId,
+        PortalId<T>,
         ExtrinsicIdList,
-        OptionQuery
+        OptionQuery,
     >;
-    
+
+    #[pallet::storage]
+    pub(super) type PortalRepository<T: Config> =
+        StorageMap<_, Blake2_128Concat, PortalId<T>, T::Portal>;
+
+    #[pallet::storage]
+    pub(super) type DelegateLookup<T: Config> =
+        StorageMap<_, Blake2_128Concat, PortalId<T>, PortalDelegate<T>>;
+
+    #[pallet::storage]
+    pub(super) type OwnerLookup<T: Config> =
+        StorageMap<_, Blake2_128Concat, PortalOwner<T>, PortalId<T>>;
+
+    use sp_core::H256;
     use storage_ops::*;
-    #[doc(no_inline)]
+
     /// Module contains abstractions over pallet storage operations
     pub mod storage_ops {
         use sp_std::prelude::*;
         // use pallet_deip_toolkit::storage_ops::StorageOp;
         use super::{Config, Pallet};
-        // 
         // /// Storage operations
         // pub enum StorageOps<T: Config> {
         //     /// Deposit event
@@ -197,7 +319,7 @@ pub mod pallet {
         //     CreateDao(DaoOf<T>),
         //     /// Update DAO
         //     UpdateDao(DaoOf<T>),
-        //     
+        //
         // }
         // impl<T: Config> StorageOp for StorageOps<T> {
         //     fn exec(self) {

@@ -1,39 +1,56 @@
 use std::fmt::Debug;
 
-use substrate_subxt::{RawEvent, Event, system::System};
+// use substrate_subxt::{RawEvent, Event, system::System};
 use codec::Decode;
-use serde::{Serialize, Deserialize, ser::{Serializer}};
+use frame_support::pallet_prelude::Member;
+use serde::{ser::Serializer, Deserialize, Serialize};
+use subxt::{
+    sp_runtime::{
+        generic::Block,
+        traits::{Block as _Block, Header as _Header},
+    },
+    Config, Event,
+};
 
-use sp_runtime::generic::Block;
-use sp_runtime::traits::{Block as _Block, Header as _Header};
+use subxt::RawEvent;
 
-use super::frame::{
-    deip_proposal::{self, DeipProposal},
-    deip::{self, Deip},
-    deip_dao::{self, DeipDao},
-    assets::{self, Assets},
+use crate::{
+    appchain_deip::{
+        deip::events as deip_events, deip_dao::events as dao_events,
+        deip_proposal::events as proposal_events, parity_tech_assets::events as assets_events,
+    },
+    frame::deip_proposal::{self, DeipProposal},
 };
 
 mod mapping;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
-pub struct BlockMetadata<T: System> {
+pub struct BlockMetadata<T: Config> {
     pub number: T::BlockNumber,
     pub hash: T::Hash,
     pub parent_hash: T::Hash,
 }
-impl<T: System> BlockMetadata<T> {
-    pub fn new(block: &Block<T::Header, T::Extrinsic>) -> Self { Self {
-        number: block.header().number().to_owned(),
-        hash: block.header().hash(),
-        parent_hash: block.header().parent_hash().to_owned(),
-    }}
+
+impl<T> BlockMetadata<T>
+where
+    T: Config,
+    T::Extrinsic: Member,
+{
+    pub fn new(block: &Block<T::Header, T::Extrinsic>) -> Self {
+        Self {
+            number: block.header().number().to_owned(),
+            hash: block.header().hash(),
+            parent_hash: block.header().parent_hash().to_owned(),
+        }
+    }
 }
 
 #[derive(Serialize, Debug)]
 #[serde(tag = "type")]
 #[serde(rename_all = "lowercase")]
-pub enum TypedEvent<D, I> where Self: From<D> + From<I>
+pub enum TypedEvent<D, I>
+where
+    Self: From<D> + From<I>,
 {
     Domain(D),
     Infrastructure(I),
@@ -52,14 +69,21 @@ pub enum InfrastructureEventMeta {
     BlockCreated { domain_events: u32 },
 }
 
-pub type InfrastructureEvent<T> = BaseEvent<InfrastructureEventData<BlockMetadata<T>>, InfrastructureEventMeta>;
+pub type InfrastructureEvent<T> =
+    BaseEvent<InfrastructureEventData<BlockMetadata<T>>, InfrastructureEventMeta>;
 
-impl<T: System> InfrastructureEvent<T> {
-    pub fn block_created(block: &Block<T::Header, T::Extrinsic>, domain_events: u32) -> Self { Self {
-        name: "block_created".to_string(),
-        data: InfrastructureEventData::BlockCreated(BlockMetadata::new(block)),
-        meta: InfrastructureEventMeta::BlockCreated { domain_events }
-    } }
+impl<T> InfrastructureEvent<T>
+where
+    T: Config,
+    T::Extrinsic: Send + Sync,
+{
+    pub fn block_created(block: &Block<T::Header, T::Extrinsic>, domain_events: u32) -> Self {
+        Self {
+            name: "block_created".to_string(),
+            data: InfrastructureEventData::BlockCreated(BlockMetadata::new(block)),
+            meta: InfrastructureEventMeta::BlockCreated { domain_events },
+        }
+    }
 }
 
 #[derive(Serialize, Debug)]
@@ -81,22 +105,28 @@ pub struct DomainEventMeta<Block> {
 
 pub type DomainEvent<T> = BaseEvent<DomainEventData<T>, DomainEventMeta<BlockMetadata<T>>>;
 
-impl<T> From<DomainEvent<T>> for SpecializedEvent<T>
-    where T: Deip + DeipProposal + DeipDao + Assets
-{
-    fn from(source: DomainEvent<T>) -> Self { Self::Domain(source) }
+impl<T: Config + DeipProposal> From<DomainEvent<T>> for SpecializedEvent<T> {
+    fn from(source: DomainEvent<T>) -> Self {
+        Self::Domain(source)
+    }
 }
 
-impl<T> From<InfrastructureEvent<T>> for SpecializedEvent<T>
-    where T: Deip + DeipProposal + DeipDao + Assets
-{
-    fn from(source: InfrastructureEvent<T>) -> Self { Self::Infrastructure(source) }
+impl<T: Config + DeipProposal> From<InfrastructureEvent<T>> for SpecializedEvent<T> {
+    fn from(source: InfrastructureEvent<T>) -> Self {
+        Self::Infrastructure(source)
+    }
 }
 
-impl<T: DeipProposal + Deip + DeipDao + Assets> Serialize for DomainEventData<T> {
+impl<T> Serialize for DomainEventData<T>
+where
+    T: DeipProposal,
+    T::AccountId: Serialize,
+{
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
+        pub use DomainEventData::*;
         match self {
             // =============== DeipProposal:
             ProposalProposed(e) => e.serialize(serializer),
@@ -136,16 +166,12 @@ impl<T: DeipProposal + Deip + DeipDao + Assets> Serialize for DomainEventData<T>
             AssetBurned(e) => e.serialize(serializer),
             AssetTeamChanged(e) => e.serialize(serializer),
             AssetOwnerChanged(e) => e.serialize(serializer),
-            #[cfg(not(feature = "octopus"))]
-            AssetForceTransferred(e) => e.serialize(serializer),
             AssetAccountFrozen(e) => e.serialize(serializer),
             AssetAccountThawed(e) => e.serialize(serializer),
             AssetFrozen(e) => e.serialize(serializer),
             AssetThawed(e) => e.serialize(serializer),
             AssetClassDestroyed(e) => e.serialize(serializer),
             AssetClassForceCreated(e) => e.serialize(serializer),
-            #[cfg(not(feature = "octopus"))]
-            AssetMaxZombiesChanged(e) => e.serialize(serializer),
             AssetMetadataSet(e) => e.serialize(serializer),
             #[cfg(feature = "octopus")]
             AssetMetadataCleared(e) => e.serialize(serializer),
@@ -161,486 +187,364 @@ impl<T: DeipProposal + Deip + DeipDao + Assets> Serialize for DomainEventData<T>
     }
 }
 
-pub use DomainEventData::*;
-
 #[derive(Debug)]
-pub enum DomainEventData<T: DeipProposal + Deip + DeipDao + Assets> {
+pub enum DomainEventData<T: DeipProposal> {
     // DeipProposal:
     ProposalProposed(deip_proposal::ProposedEvent<T>),
-    ProposalApproved(deip_proposal::ApprovedEvent<T>),
-    ProposalRevokedApproval(deip_proposal::RevokedApprovalEvent<T>),
-    ProposalResolved(deip_proposal::ResolvedEvent<T>),
-    ProposalExpired(deip_proposal::ExpiredEvent<T>),
+    ProposalApproved(proposal_events::Approved),
+    ProposalRevokedApproval(proposal_events::RevokedApproval),
+    ProposalResolved(proposal_events::Resolved),
+    ProposalExpired(proposal_events::Expired),
     // Deip:
-    ProjectCreated(deip::ProjectCreatedEvent<T>),
-    ProjectRemoved(deip::ProjectRemovedEvent<T>),
-    ProjectUpdated(deip::ProjectUpdatedEvent<T>),
-    ProjectContentCreated(deip::ProjectContentCreatedEvent<T>),
-    NdaCreated(deip::NdaCreatedEvent<T>),
-    NdaAccessRequestCreated(deip::NdaAccessRequestCreatedEvent<T>),
-    NdaAccessRequestFulfilled(deip::NdaAccessRequestFulfilledEvent<T>),
-    NdaAccessRequestRejected(deip::NdaAccessRequestRejectedEvent<T>),
-    DomainAdded(deip::DomainAddedEvent<T>),
-    ReviewCreated(deip::ReviewCreatedEvent<T>),
-    ReviewUpvoted(deip::ReviewUpvotedEvent<T>),
-    SimpleCrowdfundingCreated(deip::SimpleCrowdfundingCreatedEvent<T>),
-    SimpleCrowdfundingActivated(deip::SimpleCrowdfundingActivatedEvent<T>),
-    SimpleCrowdfundingFinished(deip::SimpleCrowdfundingFinishedEvent<T>),
-    SimpleCrowdfundingExpired(deip::SimpleCrowdfundingExpiredEvent<T>),
-    Invested(deip::InvestedEvent<T>),
-    ContractAgreementCreated(deip::ContractAgreementCreatedEvent<T>),
-    ContractAgreementAccepted(deip::ContractAgreementAcceptedEvent<T>),
-    ContractAgreementFinalized(deip::ContractAgreementFinalizedEvent<T>),
-    ContractAgreementRejected(deip::ContractAgreementRejectedEvent<T>),
+    ProjectCreated(deip_events::ProjectCreated),
+    ProjectRemoved(deip_events::ProjectRemoved),
+    ProjectUpdated(deip_events::ProjectUpdated),
+    ProjectContentCreated(deip_events::ProjectContnetCreated),
+    NdaCreated(deip_events::NdaCreated),
+    NdaAccessRequestCreated(deip_events::NdaAccessRequestCreated),
+    NdaAccessRequestFulfilled(deip_events::NdaAccessRequestFulfilled),
+    NdaAccessRequestRejected(deip_events::NdaAccessRequestRejected),
+    DomainAdded(deip_events::DomainAdded),
+    ReviewCreated(deip_events::ReviewCreated),
+    ReviewUpvoted(deip_events::ReviewUpvoted),
+    SimpleCrowdfundingCreated(deip_events::SimpleCrowdfundingCreated),
+    SimpleCrowdfundingActivated(deip_events::SimpleCrowdfundingActivated),
+    SimpleCrowdfundingFinished(deip_events::SimpleCrowdfundingFinished),
+    SimpleCrowdfundingExpired(deip_events::SimpleCrowdfundingExpired),
+    Invested(deip_events::Invested),
+    ContractAgreementCreated(deip_events::ContractAgreementCreated),
+    ContractAgreementAccepted(deip_events::ContractAgreementAccepted),
+    ContractAgreementFinalized(deip_events::ContractAgreementFinalized),
+    ContractAgreementRejected(deip_events::ContractAgreementRejected),
     // DeipDao:
-    DaoCreate(deip_dao::DaoCreateEvent<T>),
-    DaoAlterAuthority(deip_dao::DaoAlterAuthorityEvent<T>),
-    DaoMetadataUpdated(deip_dao::DaoMetadataUpdatedEvent<T>),
+    DaoCreate(dao_events::DaoCreate),
+    DaoAlterAuthority(dao_events::DaoAlterAuthority),
+    DaoMetadataUpdated(dao_events::DaoMetadataUpdated),
     // Assets:
-    AssetClassCreated(assets::CreatedEvent<T>),
-    AssetIssued(assets::IssuedEvent<T>),
-    AssetTransferred(assets::TransferredEvent<T>),
-    AssetBurned(assets::BurnedEvent<T>),
-    AssetTeamChanged(assets::TeamChangedEvent<T>),
-    AssetOwnerChanged(assets::OwnerChangedEvent<T>),
-    #[cfg(not(feature = "octopus"))]
-    AssetForceTransferred(assets::ForceTransferredEvent<T>),
-    AssetAccountFrozen(assets::FrozenEvent<T>),
-    AssetAccountThawed(assets::ThawedEvent<T>),
-    AssetFrozen(assets::AssetFrozenEvent<T>),
-    AssetThawed(assets::AssetThawedEvent<T>),
-    AssetClassDestroyed(assets::DestroyedEvent<T>),
-    AssetClassForceCreated(assets::ForceCreatedEvent<T>),
-    #[cfg(not(feature = "octopus"))]
-    AssetMaxZombiesChanged(assets::MaxZombiesChangedEvent<T>),
-    AssetMetadataSet(assets::MetadataSetEvent<T>),
+    AssetClassCreated(assets_events::Created),
+    AssetIssued(assets_events::Issued),
+    AssetTransferred(assets_events::Transferred),
+    AssetBurned(assets_events::Burned),
+    AssetTeamChanged(assets_events::TeamChanged),
+    AssetOwnerChanged(assets_events::OwnerChanged),
+    AssetAccountFrozen(assets_events::Frozen),
+    AssetAccountThawed(assets_events::Thawed),
+    AssetFrozen(assets_events::AssetFrozen),
+    AssetThawed(assets_events::AssetThawed),
+    AssetClassDestroyed(assets_events::Destroyed),
+    AssetClassForceCreated(assets_events::ForceCreated),
+    AssetMetadataSet(assets_events::MetadataSet),
     #[cfg(feature = "octopus")]
-    AssetMetadataCleared(assets::MetadataClearedEvent<T>),
+    AssetMetadataCleared(assets_events::MetadataCleared),
     #[cfg(feature = "octopus")]
-    AssetApprovedTransfer(assets::ApprovedTransferEvent<T>),
+    AssetApprovedTransfer(assets_events::ApprovedTransfer),
     #[cfg(feature = "octopus")]
-    AssetApprovalCancelled(assets::ApprovalCancelledEvent<T>),
+    AssetApprovalCancelled(assets_events::ApprovalCancelled),
     #[cfg(feature = "octopus")]
-    AssetTransferredApproved(assets::TransferredApprovedEvent<T>),
+    AssetTransferredApproved(assets_events::TransferredApproved),
     #[cfg(feature = "octopus")]
-    AssetStatusChanged(assets::AssetStatusChangedEvent<T>),
+    AssetStatusChanged(assets_events::AssetStatusChanged),
 }
 
-pub fn known_domain_events
-<
-    T: DeipProposal + Deip + DeipDao + Assets + Debug,
->
-(
+pub fn known_domain_events<T>(
     raw: &(ExtrinsicIndex, RawEvent),
-    block: &Block<<T as System>::Header, <T as System>::Extrinsic>,
-    portal_id: &PortalId
-)
-    -> Result<Option<SpecializedEvent<T>>, codec::Error> 
+    block: &Block<<T as Config>::Header, T::Extrinsic>,
+    portal_id: &PortalId,
+) -> Result<Option<SpecializedEvent<T>>, codec::Error>
+where
+    T: DeipProposal + Debug + Config,
+    T::Extrinsic: Member + Send + Sync,
 {
     let (index, raw) = raw;
-    let meta = DomainEventMeta {
-        index: *index,
-        block: BlockMetadata::new(block),
-        portal_id: *portal_id
-    };
-    let event = match (raw.module.as_str(), raw.variant.as_str()) {
+    let meta =
+        DomainEventMeta { index: *index, block: BlockMetadata::new(block), portal_id: *portal_id };
+
+    info!("Event from: {} - {}", raw.pallet.as_str(), raw.variant.as_str());
+    let event = match (raw.pallet.as_str(), raw.variant.as_str()) {
         // =========== DeipProposal:
-        (
-            deip_proposal::ProposedEvent::<T>::MODULE,
-            deip_proposal::ProposedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (proposal_events::Proposed::PALLET, proposal_events::Proposed::EVENT) => DomainEvent {
             name: "proposal_proposed".to_string(),
-            data: decode_event_data(raw).map(ProposalProposed)?,
+            data: decode_event_data(raw).map(DomainEventData::ProposalProposed)?,
             meta,
         },
-        (
-            deip_proposal::ApprovedEvent::<T>::MODULE,
-            deip_proposal::ApprovedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (proposal_events::Approved::PALLET, proposal_events::Approved::EVENT) => DomainEvent {
             name: "proposal_approved".to_string(),
-            data: decode_event_data(raw).map(ProposalApproved)?,
+            data: decode_event_data(raw).map(DomainEventData::ProposalApproved)?,
             meta,
         },
-        (
-            deip_proposal::RevokedApprovalEvent::<T>::MODULE,
-            deip_proposal::RevokedApprovalEvent::<T>::EVENT
-        ) => DomainEvent {
-            name: "proposal_revokedApproval".to_string(),
-            data: decode_event_data(raw).map(ProposalRevokedApproval)?,
-            meta,
-        },
-        (
-            deip_proposal::ResolvedEvent::<T>::MODULE,
-            deip_proposal::ResolvedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (proposal_events::RevokedApproval::PALLET, proposal_events::RevokedApproval::EVENT) =>
+            DomainEvent {
+                name: "proposal_revokedApproval".to_string(),
+                data: decode_event_data(raw).map(DomainEventData::ProposalRevokedApproval)?,
+                meta,
+            },
+        (proposal_events::Resolved::PALLET, proposal_events::Resolved::EVENT) => DomainEvent {
             name: "proposal_resolved".to_string(),
-            data: decode_event_data(raw).map(ProposalResolved)?,
+            data: decode_event_data(raw).map(DomainEventData::ProposalResolved)?,
             meta,
         },
-        (
-            deip_proposal::ExpiredEvent::<T>::MODULE,
-            deip_proposal::ExpiredEvent::<T>::EVENT
-        ) => DomainEvent {
+        (proposal_events::Expired::PALLET, proposal_events::Expired::EVENT) => DomainEvent {
             name: "proposal_expired".to_string(),
-            data: decode_event_data(raw).map(ProposalExpired)?,
+            data: decode_event_data(raw).map(DomainEventData::ProposalExpired)?,
             meta,
         },
         // =========== Deip:
-        (
-            deip::ProjectCreatedEvent::<T>::MODULE,
-            deip::ProjectCreatedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (deip_events::ProjectCreated::PALLET, deip_events::ProjectCreated::EVENT) => DomainEvent {
             name: "project_created".to_string(),
-            data: decode_event_data(raw).map(ProjectCreated)?,
+            data: decode_event_data(raw).map(DomainEventData::ProjectCreated)?,
             meta,
-        },   
-        (                               
-            deip::ProjectRemovedEvent::<T>::MODULE,
-            deip::ProjectRemovedEvent::<T>::EVENT
-        ) => DomainEvent {
+        },
+        (deip_events::ProjectRemoved::PALLET, deip_events::ProjectRemoved::EVENT) => DomainEvent {
             name: "project_removed".to_string(),
-            data: decode_event_data(raw).map(ProjectRemoved)?,
+            data: decode_event_data(raw).map(DomainEventData::ProjectRemoved)?,
             meta,
         },
-        (                               
-            deip::ProjectUpdatedEvent::<T>::MODULE,
-            deip::ProjectUpdatedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (deip_events::ProjectUpdated::PALLET, deip_events::ProjectUpdated::EVENT) => DomainEvent {
             name: "project_updated".to_string(),
-            data: decode_event_data(raw).map(ProjectUpdated)?,
+            data: decode_event_data(raw).map(DomainEventData::ProjectUpdated)?,
             meta,
         },
-        (                               
-            deip::ProjectContentCreatedEvent::<T>::MODULE,
-            deip::ProjectContentCreatedEvent::<T>::EVENT
-        ) => DomainEvent {
-            name: "project_contentCreated".to_string(),
-            data: decode_event_data(raw).map(ProjectContentCreated)?,
-            meta,
-        },
-        (                               
-            deip::NdaCreatedEvent::<T>::MODULE,
-            deip::NdaCreatedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (deip_events::ProjectContnetCreated::PALLET, deip_events::ProjectContnetCreated::EVENT) =>
+            DomainEvent {
+                name: "project_contentCreated".to_string(),
+                data: decode_event_data(raw).map(DomainEventData::ProjectContentCreated)?,
+                meta,
+            },
+        (deip_events::NdaCreated::PALLET, deip_events::NdaCreated::EVENT) => DomainEvent {
             name: "project_ndaCreated".to_string(),
-            data: decode_event_data(raw).map(NdaCreated)?,
+            data: decode_event_data(raw).map(DomainEventData::NdaCreated)?,
             meta,
         },
-        (                               
-            deip::NdaAccessRequestCreatedEvent::<T>::MODULE,
-            deip::NdaAccessRequestCreatedEvent::<T>::EVENT
+        (
+            deip_events::NdaAccessRequestCreated::PALLET,
+            deip_events::NdaAccessRequestCreated::EVENT,
         ) => DomainEvent {
             name: "project_ndaAccessRequestCreated".to_string(),
-            data: decode_event_data(raw).map(NdaAccessRequestCreated)?,
+            data: decode_event_data(raw).map(DomainEventData::NdaAccessRequestCreated)?,
             meta,
         },
-        (                               
-            deip::NdaAccessRequestFulfilledEvent::<T>::MODULE,
-            deip::NdaAccessRequestFulfilledEvent::<T>::EVENT
+        (
+            deip_events::NdaAccessRequestFulfilled::PALLET,
+            deip_events::NdaAccessRequestFulfilled::EVENT,
         ) => DomainEvent {
             name: "project_ndaAccessRequestFulfilled".to_string(),
-            data: decode_event_data(raw).map(NdaAccessRequestFulfilled)?,
+            data: decode_event_data(raw).map(DomainEventData::NdaAccessRequestFulfilled)?,
             meta,
         },
-        (                               
-            deip::NdaAccessRequestRejectedEvent::<T>::MODULE,
-            deip::NdaAccessRequestRejectedEvent::<T>::EVENT
+        (
+            deip_events::NdaAccessRequestRejected::PALLET,
+            deip_events::NdaAccessRequestRejected::EVENT,
         ) => DomainEvent {
             name: "project_ndaAccessRequestRejected".to_string(),
-            data: decode_event_data(raw).map(NdaAccessRequestRejected)?,
+            data: decode_event_data(raw).map(DomainEventData::NdaAccessRequestRejected)?,
             meta,
         },
-        (                               
-            deip::DomainAddedEvent::<T>::MODULE,
-            deip::DomainAddedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (deip_events::DomainAdded::PALLET, deip_events::DomainAdded::EVENT) => DomainEvent {
             name: "project_domainAdded".to_string(),
-            data: decode_event_data(raw).map(DomainAdded)?,
+            data: decode_event_data(raw).map(DomainEventData::DomainAdded)?,
             meta,
         },
-        (                               
-            deip::ReviewCreatedEvent::<T>::MODULE,
-            deip::ReviewCreatedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (deip_events::ReviewCreated::PALLET, deip_events::ReviewCreated::EVENT) => DomainEvent {
             name: "project_reviewCreated".to_string(),
-            data: decode_event_data(raw).map(ReviewCreated)?,
+            data: decode_event_data(raw).map(DomainEventData::ReviewCreated)?,
             meta,
         },
-        (                               
-            deip::ReviewUpvotedEvent::<T>::MODULE,
-            deip::ReviewUpvotedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (deip_events::ReviewUpvoted::PALLET, deip_events::ReviewUpvoted::EVENT) => DomainEvent {
             name: "project_reviewUpvoted".to_string(),
-            data: decode_event_data(raw).map(ReviewUpvoted)?,
+            data: decode_event_data(raw).map(DomainEventData::ReviewUpvoted)?,
             meta,
         },
-        (                               
-            deip::SimpleCrowdfundingCreatedEvent::<T>::MODULE,
-            deip::SimpleCrowdfundingCreatedEvent::<T>::EVENT
+        (
+            deip_events::SimpleCrowdfundingCreated::PALLET,
+            deip_events::SimpleCrowdfundingCreated::EVENT,
         ) => DomainEvent {
             name: "project_tokenSaleCreated".to_string(),
-            data: decode_event_data(raw).map(SimpleCrowdfundingCreated)?,
+            data: decode_event_data(raw).map(DomainEventData::SimpleCrowdfundingCreated)?,
             meta,
         },
-        (                               
-            deip::SimpleCrowdfundingActivatedEvent::<T>::MODULE,
-            deip::SimpleCrowdfundingActivatedEvent::<T>::EVENT
+        (
+            deip_events::SimpleCrowdfundingActivated::PALLET,
+            deip_events::SimpleCrowdfundingActivated::EVENT,
         ) => DomainEvent {
             name: "project_tokenSaleActivated".to_string(),
-            data: decode_event_data(raw).map(SimpleCrowdfundingActivated)?,
+            data: decode_event_data(raw).map(DomainEventData::SimpleCrowdfundingActivated)?,
             meta,
         },
-        (                               
-            deip::SimpleCrowdfundingFinishedEvent::<T>::MODULE,
-            deip::SimpleCrowdfundingFinishedEvent::<T>::EVENT
+        (
+            deip_events::SimpleCrowdfundingFinished::PALLET,
+            deip_events::SimpleCrowdfundingFinished::EVENT,
         ) => DomainEvent {
             name: "project_tokenSaleFinished".to_string(),
-            data: decode_event_data(raw).map(SimpleCrowdfundingFinished)?,
+            data: decode_event_data(raw).map(DomainEventData::SimpleCrowdfundingFinished)?,
             meta,
         },
-        (                               
-            deip::SimpleCrowdfundingExpiredEvent::<T>::MODULE,
-            deip::SimpleCrowdfundingExpiredEvent::<T>::EVENT
+        (
+            deip_events::SimpleCrowdfundingExpired::PALLET,
+            deip_events::SimpleCrowdfundingExpired::EVENT,
         ) => DomainEvent {
             name: "project_tokenSaleExpired".to_string(),
-            data: decode_event_data(raw).map(SimpleCrowdfundingExpired)?,
+            data: decode_event_data(raw).map(DomainEventData::SimpleCrowdfundingExpired)?,
             meta,
         },
-        (                               
-            deip::InvestedEvent::<T>::MODULE,
-            deip::InvestedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (deip_events::Invested::PALLET, deip_events::Invested::EVENT) => DomainEvent {
             name: "project_tokenSaleContributed".to_string(),
-            data: decode_event_data(raw).map(Invested)?,
+            data: decode_event_data(raw).map(DomainEventData::Invested)?,
             meta,
         },
         (
-            deip::ContractAgreementCreatedEvent::<T>::MODULE,
-            deip::ContractAgreementCreatedEvent::<T>::EVENT
+            deip_events::ContractAgreementCreated::PALLET,
+            deip_events::ContractAgreementCreated::EVENT,
         ) => DomainEvent {
             name: "deip_contractAgreementCreated".to_string(),
-            data: decode_event_data(raw).map(ContractAgreementCreated)?,
+            data: decode_event_data(raw).map(DomainEventData::ContractAgreementCreated)?,
             meta,
         },
         (
-            deip::ContractAgreementAcceptedEvent::<T>::MODULE,
-            deip::ContractAgreementAcceptedEvent::<T>::EVENT
+            deip_events::ContractAgreementAccepted::PALLET,
+            deip_events::ContractAgreementAccepted::EVENT,
         ) => DomainEvent {
             name: "deip_contractAgreementAccepted".to_string(),
-            data: decode_event_data(raw).map(ContractAgreementAccepted)?,
+            data: decode_event_data(raw).map(DomainEventData::ContractAgreementAccepted)?,
             meta,
         },
         (
-            deip::ContractAgreementFinalizedEvent::<T>::MODULE,
-            deip::ContractAgreementFinalizedEvent::<T>::EVENT
+            deip_events::ContractAgreementFinalized::PALLET,
+            deip_events::ContractAgreementFinalized::EVENT,
         ) => DomainEvent {
             name: "deip_contractAgreementFinalized".to_string(),
-            data: decode_event_data(raw).map(ContractAgreementFinalized)?,
+            data: decode_event_data(raw).map(DomainEventData::ContractAgreementFinalized)?,
             meta,
         },
         (
-            deip::ContractAgreementRejectedEvent::<T>::MODULE,
-            deip::ContractAgreementRejectedEvent::<T>::EVENT
+            deip_events::ContractAgreementRejected::PALLET,
+            deip_events::ContractAgreementRejected::EVENT,
         ) => DomainEvent {
             name: "deip_contractAgreementRejected".to_string(),
-            data: decode_event_data(raw).map(ContractAgreementRejected)?,
+            data: decode_event_data(raw).map(DomainEventData::ContractAgreementRejected)?,
             meta,
         },
         // =========== DeipDao:
-        (                               
-            deip_dao::DaoCreateEvent::<T>::MODULE,
-            deip_dao::DaoCreateEvent::<T>::EVENT
-        ) => DomainEvent {
+        (dao_events::DaoCreate::PALLET, dao_events::DaoCreate::EVENT) => DomainEvent {
             name: "dao_create".to_string(),
-            data: decode_event_data(raw).map(DaoCreate)?,
+            data: decode_event_data(raw).map(DomainEventData::DaoCreate)?,
             meta,
         },
-        (                               
-            deip_dao::DaoAlterAuthorityEvent::<T>::MODULE,
-            deip_dao::DaoAlterAuthorityEvent::<T>::EVENT
-        ) => DomainEvent {
-            name: "dao_alterAuthority".to_string(),
-            data: decode_event_data(raw).map(DaoAlterAuthority)?,
-            meta,
-        },
-        (
-            deip_dao::DaoMetadataUpdatedEvent::<T>::MODULE,
-            deip_dao::DaoMetadataUpdatedEvent::<T>::EVENT
-        ) => DomainEvent {
-            name: "dao_metadataUpdated".to_string(),
-            data: decode_event_data(raw).map(DaoMetadataUpdated)?,
-            meta,
-        },
+        (dao_events::DaoAlterAuthority::PALLET, dao_events::DaoAlterAuthority::EVENT) =>
+            DomainEvent {
+                name: "dao_alterAuthority".to_string(),
+                data: decode_event_data(raw).map(DomainEventData::DaoAlterAuthority)?,
+                meta,
+            },
+        (dao_events::DaoMetadataUpdated::PALLET, dao_events::DaoMetadataUpdated::EVENT) =>
+            DomainEvent {
+                name: "dao_metadataUpdated".to_string(),
+                data: decode_event_data(raw).map(DomainEventData::DaoMetadataUpdated)?,
+                meta,
+            },
         // =========== Assets:
-        (                               
-            assets::CreatedEvent::<T>::MODULE,
-            assets::CreatedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (assets_events::Created::PALLET, assets_events::Created::EVENT) => DomainEvent {
             name: "asset_class_created".to_string(),
-            data: decode_event_data(raw).map(AssetClassCreated)?,
+            data: decode_event_data(raw).map(DomainEventData::AssetClassCreated)?,
             meta,
         },
-        (                               
-            assets::IssuedEvent::<T>::MODULE,
-            assets::IssuedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (assets_events::Issued::PALLET, assets_events::Issued::EVENT) => DomainEvent {
             name: "asset_issued".to_string(),
-            data: decode_event_data(raw).map(AssetIssued)?,
+            data: decode_event_data(raw).map(DomainEventData::AssetIssued)?,
             meta,
         },
-        (                               
-            assets::TransferredEvent::<T>::MODULE,
-            assets::TransferredEvent::<T>::EVENT
-        ) => DomainEvent {
+        (assets_events::Transferred::PALLET, assets_events::Transferred::EVENT) => DomainEvent {
             name: "asset_transferred".to_string(),
-            data: decode_event_data(raw).map(AssetTransferred)?,
+            data: decode_event_data(raw).map(DomainEventData::AssetTransferred)?,
             meta,
         },
-        (                               
-            assets::BurnedEvent::<T>::MODULE,
-            assets::BurnedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (assets_events::Burned::PALLET, assets_events::Burned::EVENT) => DomainEvent {
             name: "asset_burned".to_string(),
-            data: decode_event_data(raw).map(AssetBurned)?,
+            data: decode_event_data(raw).map(DomainEventData::AssetBurned)?,
             meta,
         },
-        (                               
-            assets::TeamChangedEvent::<T>::MODULE,
-            assets::TeamChangedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (assets_events::TeamChanged::PALLET, assets_events::TeamChanged::EVENT) => DomainEvent {
             name: "asset_team_changed".to_string(),
-            data: decode_event_data(raw).map(AssetTeamChanged)?,
+            data: decode_event_data(raw).map(DomainEventData::AssetTeamChanged)?,
             meta,
         },
-        (                               
-            assets::OwnerChangedEvent::<T>::MODULE,
-            assets::OwnerChangedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (assets_events::OwnerChanged::PALLET, assets_events::OwnerChanged::EVENT) => DomainEvent {
             name: "asset_owner_changed".to_string(),
-            data: decode_event_data(raw).map(AssetOwnerChanged)?,
+            data: decode_event_data(raw).map(DomainEventData::AssetOwnerChanged)?,
             meta,
         },
-        #[cfg(not(feature = "octopus"))]
-        (                               
-            assets::ForceTransferredEvent::<T>::MODULE,
-            assets::ForceTransferredEvent::<T>::EVENT
-        ) => DomainEvent {
-            name: "asset_force_transferred".to_string(),
-            data: decode_event_data(raw).map(AssetForceTransferred)?,
-            meta,
-        },
-        (                               
-            assets::FrozenEvent::<T>::MODULE,
-            assets::FrozenEvent::<T>::EVENT
-        ) => DomainEvent {
+        (assets_events::Frozen::PALLET, assets_events::Frozen::EVENT) => DomainEvent {
             name: "asset_account_frozen".to_string(),
-            data: decode_event_data(raw).map(AssetAccountFrozen)?,
+            data: decode_event_data(raw).map(DomainEventData::AssetAccountFrozen)?,
             meta,
         },
-        (                               
-            assets::ThawedEvent::<T>::MODULE,
-            assets::ThawedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (assets_events::Thawed::PALLET, assets_events::Thawed::EVENT) => DomainEvent {
             name: "asset_account_thawed".to_string(),
-            data: decode_event_data(raw).map(AssetAccountThawed)?,
+            data: decode_event_data(raw).map(DomainEventData::AssetAccountThawed)?,
             meta,
         },
-        (                               
-            assets::AssetFrozenEvent::<T>::MODULE,
-            assets::AssetFrozenEvent::<T>::EVENT
-        ) => DomainEvent {
+        (assets_events::AssetFrozen::PALLET, assets_events::AssetFrozen::EVENT) => DomainEvent {
             name: "asset_frozen".to_string(),
-            data: decode_event_data(raw).map(AssetFrozen)?,
+            data: decode_event_data(raw).map(DomainEventData::AssetFrozen)?,
             meta,
         },
-        (                               
-            assets::AssetThawedEvent::<T>::MODULE,
-            assets::AssetThawedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (assets_events::AssetThawed::PALLET, assets_events::AssetThawed::EVENT) => DomainEvent {
             name: "asset_thawed".to_string(),
-            data: decode_event_data(raw).map(AssetThawed)?,
+            data: decode_event_data(raw).map(DomainEventData::AssetThawed)?,
             meta,
         },
-        (                               
-            assets::DestroyedEvent::<T>::MODULE,
-            assets::DestroyedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (assets_events::Destroyed::PALLET, assets_events::Destroyed::EVENT) => DomainEvent {
             name: "asset_class_destroyed".to_string(),
-            data: decode_event_data(raw).map(AssetClassDestroyed)?,
+            data: decode_event_data(raw).map(DomainEventData::AssetClassDestroyed)?,
             meta,
         },
-        (                               
-            assets::ForceCreatedEvent::<T>::MODULE,
-            assets::ForceCreatedEvent::<T>::EVENT
-        ) => DomainEvent {
+        (assets_events::ForceCreated::PALLET, assets_events::ForceCreated::EVENT) => DomainEvent {
             name: "asset_class_force_created".to_string(),
-            data: decode_event_data(raw).map(AssetClassForceCreated)?,
+            data: decode_event_data(raw).map(DomainEventData::AssetClassForceCreated)?,
             meta,
         },
-        #[cfg(not(feature = "octopus"))]
-        (                               
-            assets::MaxZombiesChangedEvent::<T>::MODULE,
-            assets::MaxZombiesChangedEvent::<T>::EVENT
-        ) => DomainEvent {
-            name: "asset_max_zombies_changed".to_string(),
-            data: decode_event_data(raw).map(AssetMaxZombiesChanged)?,
-            meta,
-        },
-        (                               
-            assets::MetadataSetEvent::<T>::MODULE,
-            assets::MetadataSetEvent::<T>::EVENT
-        ) => DomainEvent {
+        (assets_events::MetadataSet::PALLET, assets_events::MetadataSet::EVENT) => DomainEvent {
             name: "asset_metadata_set".to_string(),
-            data: decode_event_data(raw).map(AssetMetadataSet)?,
+            data: decode_event_data(raw).map(DomainEventData::AssetMetadataSet)?,
             meta,
         },
         #[cfg(feature = "octopus")]
-        (                               
-            assets::MetadataClearedEvent::<T>::MODULE,
-            assets::MetadataClearedEvent::<T>::EVENT
-        ) => DomainEvent {
-            name: "asset_metadata_cleared".to_string(),
-            data: decode_event_data(raw).map(AssetMetadataCleared)?,
-            meta,
-        },
+        (assets_events::MetadataCleared::PALLET, assets_events::MetadataCleared::EVENT) =>
+            DomainEvent {
+                name: "asset_metadata_cleared".to_string(),
+                data: decode_event_data(raw).map(DomainEventData::AssetMetadataCleared)?,
+                meta,
+            },
         #[cfg(feature = "octopus")]
-        (                               
-            assets::ApprovedTransferEvent::<T>::MODULE,
-            assets::ApprovedTransferEvent::<T>::EVENT
-        ) => DomainEvent {
-            name: "asset_approved_transfer".to_string(),
-            data: decode_event_data(raw).map(AssetApprovedTransfer)?,
-            meta,
-        },
+        (assets_events::ApprovedTransfer::PALLET, assets_events::ApprovedTransfer::EVENT) =>
+            DomainEvent {
+                name: "asset_approved_transfer".to_string(),
+                data: decode_event_data(raw).map(DomainEventData::AssetApprovedTransfer)?,
+                meta,
+            },
         #[cfg(feature = "octopus")]
-        (                               
-            assets::ApprovalCancelledEvent::<T>::MODULE,
-            assets::ApprovalCancelledEvent::<T>::EVENT
-        ) => DomainEvent {
-            name: "asset_approval_cancelled".to_string(),
-            data: decode_event_data(raw).map(AssetApprovalCancelled)?,
-            meta,
-        },
+        (assets_events::ApprovalCancelled::PALLET, assets_events::ApprovalCancelled::EVENT) =>
+            DomainEvent {
+                name: "asset_approval_cancelled".to_string(),
+                data: decode_event_data(raw).map(DomainEventData::AssetApprovalCancelled)?,
+                meta,
+            },
         #[cfg(feature = "octopus")]
-        (                               
-            assets::TransferredApprovedEvent::<T>::MODULE,
-            assets::TransferredApprovedEvent::<T>::EVENT
-        ) => DomainEvent {
-            name: "asset_transferred_approved".to_string(),
-            data: decode_event_data(raw).map(AssetTransferredApproved)?,
-            meta,
-        },
+        (assets_events::TransferredApproved::PALLET, assets_events::TransferredApproved::EVENT) =>
+            DomainEvent {
+                name: "asset_transferred_approved".to_string(),
+                data: decode_event_data(raw).map(DomainEventData::AssetTransferredApproved)?,
+                meta,
+            },
         #[cfg(feature = "octopus")]
-        (                               
-            assets::AssetStatusChangedEvent::<T>::MODULE,
-            assets::AssetStatusChangedEvent::<T>::EVENT
-        ) => DomainEvent {
-            name: "asset_status_changed".to_string(),
-            data: decode_event_data(raw).map(AssetStatusChanged)?,
-            meta,
-        },
+        (assets_events::AssetStatusChanged::PALLET, assets_events::AssetStatusChanged::EVENT) =>
+            DomainEvent {
+                name: "asset_status_changed".to_string(),
+                data: decode_event_data(raw).map(DomainEventData::AssetStatusChanged)?,
+                meta,
+            },
         _ => return Ok(None),
     };
+    info!("Event decoded: {}", event.name);
     Ok(Some(event.into()))
 }
 

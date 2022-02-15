@@ -2,44 +2,39 @@
 name = "deip-rpc"
 version = "1.0.0"
 edition = "2018"
-authors = ['DEIP world <https://github.com/DEIPworld>']
-repository = 'https://github.com/DEIPworld/deip-polkadot'
+authors = ["DEIP world <https://github.com/DEIPworld>"]
+repository = "https://github.com/DEIPworld/deip-polkadot"
 description = "A pallet which implements read RPC API for DEIP pallet"
 license = "GPL-3.0-or-later"
 
 [dependencies.common_rpc]
 default-features = false
-package = 'common-deip-rpc'
+package = "common-deip-rpc"
 path = "../../deip_common/deip_rpc"
 
 [dependencies]
-frame-support = { default-features = false, version = '3.0.0' }
-sc-rpc-api = '0.9.0'
-codec = { package = "parity-scale-codec", version = "2.0.0" }
-jsonrpc-core = "15.0"
-jsonrpc-core-client = "15.0"
-jsonrpc-derive = "15.0"
-serde = { version = "1.0.119", optional = true }
+codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
+jsonrpc-core = "18.0"
+jsonrpc-core-client = "18.0"
+jsonrpc-derive = "18.0"
 
 # Substrate packages
-
-sp-api = { version = '3.0', default-features = false }
-sp-blockchain = { version = '3.0', default-features = false}
-sp-rpc = { version = '3.0', default-features = false}
-sp-runtime = { version = '3.0', default-features = false}
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sc-rpc-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-blockchain = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-rpc = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 
 # local packages
 
 pallet-deip = { version = "3.0.0", path = "../../pallets/deip", default-features = false }
 
-[dev-dependencies]
-serde_json = "1.0.64"
-
 [features]
 default = ["std"]
 std = [
-  "serde",
   "sp-api/std",
   "sp-runtime/std",
-  "pallet-deip/std"
+  "pallet-deip/std",
+  "frame-support/std"
 ]

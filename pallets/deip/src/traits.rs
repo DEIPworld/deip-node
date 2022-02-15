@@ -2,8 +2,9 @@ use crate::*;
 
 use deip_assets_error::*;
 use sp_runtime::traits::AtLeast32BitUnsigned;
+use deip_asset_system::AssetIdInitT;
 
-pub trait DeipAssetSystem<AccountId> {
+pub trait DeipAssetSystem<AccountId>: AssetIdInitT<Self::AssetId> {
     /// The units in which asset balances are recorded.
     type Balance: Member + Parameter + AtLeast32BitUnsigned + Default + Copy;
 
@@ -16,9 +17,9 @@ pub trait DeipAssetSystem<AccountId> {
 
     fn total_supply(asset: &Self::AssetId) -> Self::Balance;
 
-    fn get_project_nfts(id: &ProjectId) -> Vec<Self::AssetId>;
+    fn get_project_fts(id: &ProjectId) -> Vec<Self::AssetId>;
 
-    fn get_nft_balances(id: &Self::AssetId) -> Option<Vec<AccountId>>;
+    fn get_ft_balances(id: &Self::AssetId) -> Option<Vec<AccountId>>;
 
     fn transactionally_transfer(
         from: &AccountId,

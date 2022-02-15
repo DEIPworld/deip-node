@@ -3,34 +3,26 @@ name = "deip_serializable_u128"
 version = "0.0.0"
 edition = "2018"
 
+[dependencies]
+scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+serde = { version = "1.0.130", optional = true, features = ["derive"] }
+
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies.codec]
 default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '2.0.0'
-
-[dependencies]
-serde = { version = "1.0.123", optional = true, features = ["derive"] }
-
-[dependencies.sp-runtime]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sp-std]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
+features = ["derive"]
+package = "parity-scale-codec"
+version = "2.0.0"
 
 [features]
-default = ['std']
+default = ["std"]
 std = [
-    'codec/std',
-    'serde',
-    'sp-runtime/std',
-    'sp-std/std',
+    "codec/std",
+    "serde",
+    "scale-info/std",
+    "sp-runtime/std",
+    "sp-std/std",
 ]

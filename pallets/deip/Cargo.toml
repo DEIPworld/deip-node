@@ -1,56 +1,87 @@
 [package]
-authors = ['DEIP world <https://github.com/DEIPworld>']
-description = 'FRAME pallet defined DEIP porjects'
-edition = '2018'
-homepage = 'https://deip.world/'
-license = 'Apache-2.0'
-name = 'pallet-deip'
-repository = 'https://github.com/DEIPworld/deip-polkadot'
-version = '3.0.0'
+authors = ["DEIP world <https://github.com/DEIPworld>"]
+description = "FRAME pallet defined DEIP porjects"
+edition = "2018"
+homepage = "https://deip.world/"
+license = "Apache-2.0"
+name = "pallet-deip"
+repository = "https://github.com/DEIPworld/deip-polkadot"
+version = "3.0.0"
 
 [package.metadata.docs.rs]
-targets = ['x86_64-unknown-linux-gnu']
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+
+frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
+
+deip-assets-error = { path = "../../deip_common/deip_assets_error", default-features = false }
+deip-transaction-ctx = { path = "../../deip_common/deip_transaction_ctx", default-features = false }
+deip_serializable_u128 = { path = "../../deip_common/deip_serializable_u128", default-features = false }
+deip-asset-system = { path = "../../deip_common/deip_asset_system", default-features = false }
+
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-timestamp = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+serde = { version = "1.0.130", optional = true, features = ["derive"] }
+sp-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+# Benchmarking deps:
+pallet-deip-assets = { path = "../deip_assets", default-features = false, optional = true }
+deip-projects-info = {path = "../../deip_common/deip_projects_info", default-features = false, optional = true }
+pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
+pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
+log = { version = "0.4.14", default-features = false, optional = true }
 
 # alias "parity-scale-code" to "codec"
 [dependencies.codec]
 default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '2.0.0'
-
-[dependencies]
-frame-support = { default-features = false, version = '3.0.0' }
-pallet-timestamp = { default-features = false, version = '3.0.0' }
-frame-system = { default-features = false, version = '3.0.0' }
-sp-std = { default-features = false, version = '3.0.0' }
-sp-runtime = { version = '3.0.0', default-features = false }
-sp-core = { default-features = false, version = '3.0.0' }
-sp-io = { default-features = false, version = '3.0.0' }
-serde = { version = "1.0.119", optional = true, features = ["derive"]}
-deip-assets-error = { path = "../../deip_common/deip_assets_error", default-features = false }
-sp-api = { version = '3.0.0', default-features = false}
-deip_serializable_u128 = { path = "../../deip_common/deip_serializable_u128", default-features = false }
-deip-transaction-ctx = { path = "../../deip_common/deip_transaction_ctx", default-features = false }
+features = ["derive"]
+package = "parity-scale-codec"
+version = "2.0.0"
 
 [dev-dependencies]
-pallet-balances = { default-features = false, version = '3.0.0' }
-pallet-assets = { default-features = false, version = '3.0.0' }
+pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-deip-assets = { path = "../deip_assets", default-features = false }
-parking_lot = "0.11.1"
+deip-projects-info = { path = "../../deip_common/deip_projects_info", default-features = false }
 
 [features]
-default = ['std']
+default = ["std"]
+runtime-benchmarks = [
+    "frame-benchmarking",
+    "pallet-deip-assets",
+    "deip-projects-info",
+    "pallet-balances",
+    "pallet-assets",
+    "log",
+]
 std = [
-    'codec/std',
-    'frame-support/std',
-    'frame-system/std',
-    'sp-std/std',
-    'sp-runtime/std',
-    'sp-core/std',
-    'sp-io/std',
-    'pallet-timestamp/std',
-    'serde',
+    "log/std",
+    "codec/std",
+    "scale-info/std",
+    "serde",
+    "frame-support/std",
+    "frame-system/std",
+    "pallet-timestamp/std",
     "sp-api/std",
-    'deip_serializable_u128/std',
-    'deip-transaction-ctx/std',
+    "sp-core/std",
+    "sp-io/std",
+    "sp-runtime/std",
+    "sp-std/std",
+    "deip-assets-error/std",
+    "deip_serializable_u128/std",
+    "deip-transaction-ctx/std",
+    "frame-benchmarking/std",
+    "deip-projects-info/std",
+    "deip-asset-system/std",
+
+    "pallet-assets/std",
+    "pallet-balances/std",
+    "pallet-deip-assets/std",
+    "deip-projects-info/std",
 ]

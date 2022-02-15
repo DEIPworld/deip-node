@@ -1,0 +1,30 @@
+[package]
+name = "deip-tenant"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+# alias "parity-scale-code" to "codec"
+[dependencies.codec]
+default-features = false
+features = ["derive"]
+package = "parity-scale-codec"
+version = "2.0.0"
+
+[features]
+default = ["std"]
+std = [
+    "codec/std",
+    "sp-std/std",
+    "sp-runtime/std",
+    "sp-io/std",
+    "frame-system/std",
+    "frame-support/std",
+]

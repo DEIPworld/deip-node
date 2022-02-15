@@ -1,11 +1,9 @@
 /// Module contains classification of the proposal batch item
-
 use frame_support::traits::IsSubType;
 
-use crate::proposal::{ProposalId, ProposalBatchX, BatchItem};
+use crate::proposal::{BatchItem, ProposalBatchX, ProposalId};
 
-use super::{Config, Call};
-
+use super::{Call, Config};
 
 pub trait BatchItemKindT<T: Config>: Sized {
     fn kind(&self) -> BatchItemKind<'_, Self>;
@@ -17,20 +15,15 @@ pub enum BatchItemKind<'a, Item> {
     Propose(&'a ProposalBatchX<Item>),
     /// Batch item contains `decide` dispatchable
     Decide(&'a ProposalId),
-    Other
+    Other,
 }
 
 impl<T: Config> BatchItemKindT<T> for BatchItem<T::DeipAccountId, <T as Config>::Call> {
-
     fn kind(&self) -> BatchItemKind<'_, Self> {
         match self.call.is_sub_type() {
-            Some(Call::propose(batch, _)) => {
-                BatchItemKind::Propose(batch)
-            },
-            Some(Call::decide(proposal_id, _decision)) => {
-                BatchItemKind::Decide(proposal_id)
-            },
-            _ => BatchItemKind::Other
+            Some(Call::propose { batch, .. }) => BatchItemKind::Propose(batch),
+            Some(Call::decide { proposal_id, .. }) => BatchItemKind::Decide(proposal_id),
+            _ => BatchItemKind::Other,
         }
     }
 }

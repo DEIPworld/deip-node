@@ -10,7 +10,7 @@ use pallet_deip_proposal::proposal::ProposalId;
 
 use frame_support::Blake2_128Concat;
 
-use common_rpc::{get_list_by_index, FutureResult, HashOf, ListResult, StorageMap};
+use common_rpc::{get_list_by_index, BoxFutureResult, HashOf, ListResult, StorageMap};
 
 mod types;
 
@@ -26,7 +26,7 @@ where
         &self,
         at: Option<BlockHash>,
         id: ProposalId,
-    ) -> FutureResult<Option<types::DeipProposal<AccountId, Moment, CallT>>>;
+    ) -> BoxFutureResult<Option<types::DeipProposal<AccountId, Moment, CallT>>>;
 
     #[rpc(name = "deipProposal_getList")]
     fn get_proposal_list(
@@ -34,7 +34,7 @@ where
         at: Option<BlockHash>,
         count: u32,
         start_id: Option<ProposalId>,
-    ) -> FutureResult<Vec<ListResult<ProposalId, types::DeipProposal<AccountId, Moment, CallT>>>>;
+    ) -> BoxFutureResult<Vec<ListResult<ProposalId, types::DeipProposal<AccountId, Moment, CallT>>>>;
 
     #[rpc(name = "deipProposal_getListByCreator")]
     fn get_proposal_list_by_creator(
@@ -43,7 +43,7 @@ where
         creator: AccountId,
         count: u32,
         start_id: Option<ProposalId>,
-    ) -> FutureResult<Vec<ListResult<ProposalId, types::DeipProposal<AccountId, Moment, CallT>>>>;
+    ) -> BoxFutureResult<Vec<ListResult<ProposalId, types::DeipProposal<AccountId, Moment, CallT>>>>;
 }
 
 pub struct DeipProposalRpcApiObj<State, Block> {
@@ -53,10 +53,7 @@ pub struct DeipProposalRpcApiObj<State, Block> {
 
 impl<State, Block> DeipProposalRpcApiObj<State, Block> {
     pub fn new(state: State) -> Self {
-        Self {
-            state,
-            _marker: Default::default(),
-        }
+        Self { state, _marker: Default::default() }
     }
 }
 
@@ -74,7 +71,7 @@ where
         &self,
         at: Option<HashOf<Block>>,
         id: ProposalId,
-    ) -> FutureResult<Option<types::DeipProposal<AccountId, Moment, Call>>> {
+    ) -> BoxFutureResult<Option<types::DeipProposal<AccountId, Moment, Call>>> {
         StorageMap::<Blake2_128Concat>::get_value(
             &self.state,
             at,
@@ -89,7 +86,7 @@ where
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<ProposalId>,
-    ) -> FutureResult<Vec<ListResult<ProposalId, types::DeipProposal<AccountId, Moment, Call>>>>
+    ) -> BoxFutureResult<Vec<ListResult<ProposalId, types::DeipProposal<AccountId, Moment, Call>>>>
     {
         StorageMap::<Blake2_128Concat>::get_list(
             &self.state,
@@ -107,7 +104,7 @@ where
         key: AccountId,
         count: u32,
         start_id: Option<ProposalId>,
-    ) -> FutureResult<Vec<ListResult<ProposalId, types::DeipProposal<AccountId, Moment, Call>>>>
+    ) -> BoxFutureResult<Vec<ListResult<ProposalId, types::DeipProposal<AccountId, Moment, Call>>>>
     {
         get_list_by_index::<Blake2_128Concat, Blake2_128Concat, _, _, _, _>(
             &self.state,

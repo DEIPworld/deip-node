@@ -1,54 +1,59 @@
 [package]
-authors = ['DEIP world <https://github.com/DEIPworld>']
-description = 'RPC for DEIP Proposals pallet'
-edition = '2018'
-homepage = 'https://deip.world/'
-license = 'Apache-2.0'
+authors = ["DEIP world <https://github.com/DEIPworld>"]
+description = "RPC for DEIP Proposals pallet"
+edition = "2018"
+homepage = "https://deip.world/"
+license = "Apache-2.0"
 name = "deip-proposal-rpc"
-repository = 'https://github.com/DEIPworld/deip-substrate'
-version = '3.0.0'
+repository = "https://github.com/DEIPworld/deip-substrate"
+version = "3.0.0"
 
 [package.metadata.docs.rs]
-targets = ['x86_64-unknown-linux-gnu']
+targets = ["x86_64-unknown-linux-gnu"]
 
 # alias "parity-scale-code" to "codec"
 [dependencies.codec]
 default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '2.0.0'
+features = ["derive"]
+package = "parity-scale-codec"
+version = "2.0.0"
 
 [dependencies.common_rpc]
 default-features = false
-package = 'common-deip-rpc'
+package = "common-deip-rpc"
 path = "../../deip_common/deip_rpc"
 
 [dependencies]
-frame-support = { default-features = false, version = '3.0.0' }
-sc-rpc-api = '0.9.0'
-sp-std = { default-features = false, version = '3.0.0' }
-sp-runtime = { version = '3.0.0', default-features = false }
-sp-core = { default-features = false, version = '3.0.0' }
-serde = { version = "1.0.123", optional = true, features = ["derive"]}
+serde = { version = "1.0.130", features = ["derive"], optional = true }
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sc-rpc-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-deip-proposal = { path = "../../pallets/deip_proposal", default-features = false }
-common-deip-call = { path = "../../deip_common/deip_call" }
+common-deip-call = { path = "../../deip_common/deip_call", default-features = false }
 
 # RPC deps:
-jsonrpc-core = "15.0"
-jsonrpc-core-client = "15.0"
-jsonrpc-derive = "15.0"
-sp-api = { version = '3.0', default-features = false}
-sp-blockchain = { version = '3.0', default-features = false}
+jsonrpc-core = "18.0"
+jsonrpc-core-client = "18.0"
+jsonrpc-derive = "18.0"
+sp-blockchain = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 
 [dev-dependencies]
-sp-io = { default-features = false, version = '3.0.0' }
-sp-runtime = { default-features = false, version = '3.0.0' }
+sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 
 [features]
-default = ['std']
+default = ["std"]
 std = [
-    'codec/std',
-    'sp-std/std',
-    'serde',
-    'pallet-deip-proposal/std'
+    "codec/std",
+    "serde",
+    "frame-support/std",
+    "sp-api/std",
+    "sp-core/std",
+    "sp-runtime/std",
+    "sp-std/std",
+    "pallet-deip-proposal/std",
+    "sp-io/std",
+    "common-deip-call/std",
 ]

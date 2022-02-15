@@ -1,0 +1,22 @@
+[package]
+authors = ["DEIP world <https://github.com/DEIPworld>"]
+description = "Traits to work with deip projects."
+edition = "2018"
+homepage = "https://deip.world/"
+license = "Apache-2.0"
+name = "deip-projects-info"
+repository = "https://github.com/DEIPworld/deip-canary-network"
+version = "3.0.0"
+
+[dependencies]
+scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+
+[features]
+default = ["std"]
+std = [
+    "scale-info/std",
+    "sp-std/std",
+    "frame-support/std",
+]

@@ -1,34 +1,33 @@
 use jsonrpc_core::{
-    futures::future::{self, Future},
-    futures::{self, stream, Stream},
+    futures::future::{self, Future, FutureExt},
+    futures_executor::block_on,
+    futures_util::{stream::FuturesOrdered, TryFutureExt, TryStreamExt},
+    BoxFuture,
 };
 
-pub use sp_core::{hashing::twox_128_into, storage::StorageData, storage::StorageKey};
+pub use sp_core::{
+    hashing::twox_128_into,
+    storage::{StorageData, StorageKey},
+};
 
 use frame_support::{ReversibleStorageHasher, StorageHasher};
 
 use codec::{Decode, Encode};
 
-use std::convert::TryFrom;
+use std::{convert::TryFrom, iter::FromIterator};
 
 pub mod error;
 pub use error::*;
 
 pub type HashOf<T> = <T as sp_runtime::traits::Block>::Hash;
-pub type FutureResult<T> = Box<dyn Future<Item = T, Error = RpcError> + Send>;
+pub type BoxFutureResult<T> = BoxFuture<Result<T, RpcError>>;
 
 pub fn prefix(pallet: &[u8], storage: &[u8]) -> Vec<u8> {
     let mut prefix = Vec::new();
     prefix.resize(32, 0u8);
 
-    twox_128_into(
-        pallet,
-        <&mut [u8; 16]>::try_from(&mut prefix[..16]).unwrap(),
-    );
-    twox_128_into(
-        storage,
-        <&mut [u8; 16]>::try_from(&mut prefix[16..]).unwrap(),
-    );
+    twox_128_into(pallet, <&mut [u8; 16]>::try_from(&mut prefix[..16]).unwrap());
+    twox_128_into(storage, <&mut [u8; 16]>::try_from(&mut prefix[16..]).unwrap());
 
     prefix
 }
@@ -52,7 +51,7 @@ impl<Hasher: StorageHasher> HashedKey<Hasher> {
 
 impl<Hasher: StorageHasher> HashedKeyTrait for HashedKey<Hasher> {
     fn as_ref(&self) -> &[u8] {
-        return self.0.as_ref();
+        self.0.as_ref()
     }
 }
 
@@ -96,7 +95,8 @@ where
 // This implementation is for case when index-map is used to get the
 // key which is used to retrieve data from the map, but the index key
 // should also be kept.
-impl<Key, Hasher, IndexKey> CompositeKeyTrait<Key, Hasher> for (Option<StorageData>, StorageKey, IndexKey)
+impl<Key, Hasher, IndexKey> CompositeKeyTrait<Key, Hasher>
+    for (Option<StorageData>, StorageKey, IndexKey)
 where
     Key: Decode,
     Hasher: StorageHasher + ReversibleStorageHasher,
@@ -160,66 +160,57 @@ pub fn get_value<R, State, Hash>(
     state: &State,
     key: StorageKey,
     at: Option<Hash>,
-) -> FutureResult<Option<R>>
+) -> BoxFutureResult<Option<R>>
 where
     R: 'static + Decode + GetError + Send,
     State: sc_rpc_api::state::StateApi<Hash>,
     Hash: Copy,
 {
-    Box::new(
-        state
-            .storage(key, at)
-            .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
-            .and_then(|d| match d {
-                None => future::ok(None),
-                Some(data) => match R::decode(&mut &data.0[..]) {
-                    Err(_) => {
-                        future::err(to_rpc_error(R::get_error(), Some(format!("{:?}", data))))
-                    }
-                    Ok(decoded) => future::ok(Some(decoded)),
-                },
-            }),
-    )
+    let fut = state
+        .storage(key, at)
+        .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
+        .and_then(|d| match d {
+            None => future::ok(None),
+            Some(data) => match R::decode(&mut &data.0[..]) {
+                Err(_) => future::err(to_rpc_error(R::get_error(), Some(format!("{:?}", data)))),
+                Ok(decoded) => future::ok(Some(decoded)),
+            },
+        });
+    fut.boxed()
 }
 
-pub fn get_list_by_keys<KeyValue, Hasher, State, BlockHash, KeyMap, T>(
+pub fn get_list_by_keys<KeyValue, Hasher, State, BlockHash, KeyMap, T, Item>(
     state: &State,
     at: Option<BlockHash>,
     prefix_key: StorageKey,
     count: u32,
     start_key: Option<StorageKey>,
     key_map: KeyMap,
-) -> FutureResult<Vec<ListResult<<T::Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType, KeyValue::Value>>>
+) -> BoxFutureResult<
+    Vec<ListResult<<Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType, KeyValue::Value>>,
+>
 where
     KeyValue: KeyValueInfo,
     Hasher: StorageHasher + ReversibleStorageHasher,
     State: sc_rpc_api::state::StateApi<BlockHash>,
     BlockHash: Copy,
     KeyMap: FnMut(StorageKey) -> T,
-    T: futures::future::IntoFuture<Error = RpcError>,
-    T::Item: 'static + Send + CompositeKeyTrait<KeyValue::Key, Hasher>,
-    T::Future: 'static + Send,
-    <T::Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType: 'static + Send,
+    T: Future<Output = Result<Item, RpcError>> + Send + 'static,
+    Item: CompositeKeyTrait<KeyValue::Key, Hasher> + 'static + Send,
+    <Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType: 'static + Send,
 {
-    let keys = match state
-        .storage_keys_paged(Some(prefix_key), count, start_key, at)
-        .wait()
-    {
+    let keys = match block_on(state.storage_keys_paged(Some(prefix_key), count, start_key, at)) {
         Ok(k) => k,
-        Err(e) => {
-            return Box::new(future::err(to_rpc_error(
-                Error::ScRpcApiError,
-                Some(format!("{:?}", e)),
-            )))
-        }
+        Err(e) =>
+            return future::err(to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e)))).boxed(),
     };
     if keys.is_empty() {
-        return Box::new(future::ok(vec![]));
+        return future::ok(vec![]).boxed()
     }
 
     let key_futures: Vec<_> = keys.into_iter().map(key_map).collect();
 
-    StorageMap::<Hasher>::get_list_by_keys::<KeyValue, _>(key_futures)
+    StorageMap::<Hasher>::get_list_by_keys::<KeyValue, _, _>(key_futures)
 }
 
 /// The function gets list of keys from the first map (i.e. index) and
@@ -229,7 +220,6 @@ where
 /// used for the first key in the second map.
 ///
 /// The index map has to be StorageDoubleMap.
-///
 pub fn get_list_by_index<IndexKeyHasher, Hasher, State, BlockHash, Key, KeyValue>(
     state: &State,
     at: Option<BlockHash>,
@@ -239,7 +229,7 @@ pub fn get_list_by_index<IndexKeyHasher, Hasher, State, BlockHash, Key, KeyValue
     count: u32,
     key: &Key,
     start_key: Option<KeyValue>,
-) -> FutureResult<Vec<ListResult<KeyValue::Key, KeyValue::Value>>>
+) -> BoxFutureResult<Vec<ListResult<KeyValue::Key, KeyValue::Value>>>
 where
     State: sc_rpc_api::state::StateApi<BlockHash>,
     BlockHash: Copy,
@@ -261,7 +251,7 @@ where
 
         state
             .storage(key.clone(), at)
-            .map(|v| (v, key))
+            .map_ok(|v| (v, key))
             .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
     };
 
@@ -270,7 +260,7 @@ where
     let start_key = start_key
         .map(|id| chain_key_hash_double_map(&prefix, &key, &HashedKey::<Hasher>::new(&id.key())));
 
-    get_list_by_keys::<KeyValue, Hasher, _, _, _, _>(
+    get_list_by_keys::<KeyValue, Hasher, _, _, _, _, _>(
         state,
         at,
         chain_key_hash_map(&prefix, &key),
@@ -318,7 +308,7 @@ impl<Hasher: StorageHasher + ReversibleStorageHasher> StorageMap<Hasher> {
         pallet: &[u8],
         map: &[u8],
         key: &Key,
-    ) -> FutureResult<Option<R>>
+    ) -> BoxFutureResult<Option<R>>
     where
         R: 'static + Decode + GetError + Send,
         State: sc_rpc_api::state::StateApi<BlockHash>,
@@ -335,7 +325,7 @@ impl<Hasher: StorageHasher + ReversibleStorageHasher> StorageMap<Hasher> {
         map: &[u8],
         count: u32,
         start_id: Option<KeyValue>,
-    ) -> FutureResult<Vec<ListResult<KeyValue::Key, KeyValue::Value>>>
+    ) -> BoxFutureResult<Vec<ListResult<KeyValue::Key, KeyValue::Value>>>
     where
         KeyValue: KeyValueInfo,
         State: sc_rpc_api::state::StateApi<BlockHash>,
@@ -348,11 +338,11 @@ impl<Hasher: StorageHasher + ReversibleStorageHasher> StorageMap<Hasher> {
         let map = |k: StorageKey| {
             state
                 .storage(k.clone(), at)
-                .map(|v| (v, k))
+                .map_ok(|v| (v, k))
                 .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
         };
 
-        get_list_by_keys::<KeyValue, Hasher, _, _, _, _>(
+        get_list_by_keys::<KeyValue, Hasher, _, _, _, _, _>(
             state,
             at,
             StorageKey(prefix),
@@ -362,19 +352,25 @@ impl<Hasher: StorageHasher + ReversibleStorageHasher> StorageMap<Hasher> {
         )
     }
 
-    pub fn get_list_by_keys<KeyValue, T>(
+    pub fn get_list_by_keys<KeyValue, T, Item>(
         keys: Vec<T>,
-    ) -> FutureResult<Vec<ListResult<<T::Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType, KeyValue::Value>>>
+    ) -> BoxFutureResult<
+        Vec<
+            ListResult<
+                <Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType,
+                KeyValue::Value,
+            >,
+        >,
+    >
     where
         KeyValue: KeyValueInfo,
-        T: futures::future::IntoFuture<Error = RpcError>,
-        T::Item: 'static + Send + CompositeKeyTrait<KeyValue::Key, Hasher>,
-        T::Future: 'static + Send,
-        <T::Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType: 'static + Send,
+        T: Future<Output = Result<Item, RpcError>> + Send + 'static,
+        Item: 'static + Send + CompositeKeyTrait<KeyValue::Key, Hasher>,
+        <Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType: 'static + Send,
     {
         let result = Vec::with_capacity(keys.len());
-        Box::new(
-            stream::futures_ordered(keys.into_iter()).fold(result, |mut result, kv| {
+        FuturesOrdered::from_iter(keys.into_iter())
+            .try_fold(result, |mut result, kv| {
                 let (value, composite_key) = kv.decompose();
                 let data = match value {
                     None => return future::err(to_rpc_error(Error::NoneForReturnedKey, None)),
@@ -382,12 +378,11 @@ impl<Hasher: StorageHasher + ReversibleStorageHasher> StorageMap<Hasher> {
                 };
 
                 let key = match composite_key {
-                    Err(data) => {
+                    Err(data) =>
                         return future::err(to_rpc_error(
                             KeyValue::KeyError::get_error(),
                             Some(format!("{:?}", &data)),
-                        ))
-                    }
+                        )),
                     Ok(k) => KeyWrapper::from(k),
                 };
 
@@ -399,10 +394,10 @@ impl<Hasher: StorageHasher + ReversibleStorageHasher> StorageMap<Hasher> {
                     Ok(value) => {
                         result.push(ListResult { key, value });
                         future::ok(result)
-                    }
+                    },
                 }
-            }),
-        )
+            })
+            .boxed()
     }
 }
 
@@ -420,7 +415,7 @@ impl<HasherFirst: StorageHasher, HasherSecond: StorageHasher>
         map: &[u8],
         key_first: &KeyFirst,
         key_second: &KeySecond,
-    ) -> FutureResult<Option<R>>
+    ) -> BoxFutureResult<Option<R>>
     where
         R: 'static + Decode + GetError + Send,
         State: sc_rpc_api::state::StateApi<BlockHash>,

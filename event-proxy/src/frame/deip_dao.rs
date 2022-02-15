@@ -1,24 +1,14 @@
+use serde::{
+    ser::{SerializeStruct, Serializer},
+    Serialize,
+};
 
-use substrate_subxt::system::System;
-use substrate_subxt::{module, Event};
+use crate::appchain_deip::deip_dao::events::{DaoAlterAuthority, DaoCreate, DaoMetadataUpdated};
 
-use sp_std::prelude::*;
-use codec::{Decode};
-use frame_support::{Parameter};
-use sp_runtime::traits::Member;
-
-use serde::{Serialize, ser::{Serializer, SerializeStruct}};
-
-#[module]
-pub trait DeipDao: System {
-    type Dao: Parameter + Member + Serialize;
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
-pub struct DaoCreateEvent<T: DeipDao>(T::Dao);
-impl<T: DeipDao> Serialize for DaoCreateEvent<T> {
+impl Serialize for DaoCreate {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_struct("DaoCreateEvent", 1)?;
         s.serialize_field("dao", &self.0)?;
@@ -26,11 +16,10 @@ impl<T: DeipDao> Serialize for DaoCreateEvent<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
-pub struct DaoAlterAuthorityEvent<T: DeipDao>(T::Dao);
-impl<T: DeipDao> Serialize for DaoAlterAuthorityEvent<T> {
+impl Serialize for DaoAlterAuthority {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_struct("DaoAlterAuthorityEvent", 1)?;
         s.serialize_field("dao", &self.0)?;
@@ -38,11 +27,10 @@ impl<T: DeipDao> Serialize for DaoAlterAuthorityEvent<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
-pub struct DaoMetadataUpdatedEvent<T: DeipDao>(T::Dao);
-impl<T: DeipDao> Serialize for DaoMetadataUpdatedEvent<T> {
+impl Serialize for DaoMetadataUpdated {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_struct("DaoMetadataUpdatedEvent", 1)?;
         s.serialize_field("dao", &self.0)?;

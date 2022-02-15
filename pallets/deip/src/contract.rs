@@ -1,12 +1,11 @@
-use crate::traits::DeipAssetSystem;
-use crate::*;
+use crate::{traits::DeipAssetSystem, *};
 
 use sp_runtime::{traits::Zero, Percent, SaturatedConversion};
 use sp_std::vec;
 
 pub type Id = H160;
 
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum Terms<Asset> {
@@ -16,7 +15,7 @@ pub enum Terms<Asset> {
 
 pub type TermsOf<T> = Terms<DeipAssetOf<T>>;
 
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum IndexTerms {
@@ -24,7 +23,7 @@ pub enum IndexTerms {
     GeneralContractAgreement,
 }
 
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum Agreement<AccountId, Hash, Moment, Asset> {
@@ -41,22 +40,24 @@ impl<AccountId, Hash, Moment, Asset> Default for Agreement<AccountId, Hash, Mome
     }
 }
 
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct License<AccountId, Hash, Moment, Asset> {
-    id: Id,
-    creator: AccountId,
-    licenser: AccountId,
-    licensee: AccountId,
-    hash: Hash,
-    activation_time: Option<Moment>,
-    expiration_time: Option<Moment>,
-    project_id: ProjectId,
-    price: Asset,
+    pub(crate) id: Id,
+    pub(crate) creator: AccountId,
+    pub(crate) licenser: AccountId,
+    pub(crate) licensee: AccountId,
+    pub(crate) hash: Hash,
+    pub(crate) activation_time: Option<Moment>,
+    pub(crate) expiration_time: Option<Moment>,
+    pub(crate) project_id: ProjectId,
+    pub(crate) price: Asset,
 }
 
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+pub type LicenseOf<T> = License<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>;
+
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum LicenseStatus<AccountId, Hash, Moment, Asset> {
@@ -66,19 +67,21 @@ pub enum LicenseStatus<AccountId, Hash, Moment, Asset> {
     Rejected(License<AccountId, Hash, Moment, Asset>),
 }
 
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct GeneralContract<AccountId, Hash, Moment> {
-    id: Id,
-    creator: AccountId,
-    parties: Vec<AccountId>,
-    hash: Hash,
-    activation_time: Option<Moment>,
-    expiration_time: Option<Moment>,
+    pub(crate) id: Id,
+    pub(crate) creator: AccountId,
+    pub(crate) parties: Vec<AccountId>,
+    pub(crate) hash: Hash,
+    pub(crate) activation_time: Option<Moment>,
+    pub(crate) expiration_time: Option<Moment>,
 }
 
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+pub type GeneralContractOf<T> = GeneralContract<AccountIdOf<T>, HashOf<T>, MomentOf<T>>;
+
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum GeneralContractStatus<AccountId, Hash, Moment> {
@@ -95,23 +98,16 @@ impl<T: Config> Module<T> {
         account: AccountIdOf<T>,
         id: Id,
         creator: AccountIdOf<T>,
-        parties: Vec<T::DeipAccountId>,
+        parties: Vec<T::AccountId>,
         hash: HashOf<T>,
         activation_time: Option<MomentOf<T>>,
         expiration_time: Option<MomentOf<T>>,
         terms: TermsOf<T>,
-    ) -> DispatchResult {
+    ) -> DispatchResultWithPostInfo {
         ensure!(account == creator, Error::<T>::NoPermission);
         ensure!(!parties.is_empty(), Error::<T>::ContractAgreementNoParties);
 
-        for (i, party) in parties.iter().enumerate() {
-            for other_party in parties.iter().skip(i + 1) {
-                ensure!(
-                    party != other_party,
-                    Error::<T>::ContractAgreementDuplicateParties
-                );
-            }
-        }
+        let mut parties = parties; parties.sort(); parties.dedup();
 
         let now = pallet_timestamp::Pallet::<T>::get();
         if let Some(s) = activation_time {
@@ -127,10 +123,7 @@ impl<T: Config> Module<T> {
                 Some(s) => s,
             };
 
-            ensure!(
-                activation_time < e,
-                Error::<T>::ContractAgreementEndTimeMustBeLaterStartTime
-            );
+            ensure!(activation_time < e, Error::<T>::ContractAgreementEndTimeMustBeLaterStartTime);
         }
 
         ensure!(
@@ -139,45 +132,51 @@ impl<T: Config> Module<T> {
         );
         match terms {
             Terms::LicenseAgreement { source, price } => Self::create_project_license(
-                id, creator, parties, hash, activation_time, expiration_time, source, price,
+                id,
+                creator,
+                parties,
+                hash,
+                activation_time,
+                expiration_time,
+                source,
+                price,
             ),
-            Terms::GeneralContractAgreement => {
-                Self::create_general_contract(id, creator, parties, hash, activation_time, expiration_time)
-            }
+            Terms::GeneralContractAgreement => Self::create_general_contract(
+                id,
+                creator,
+                parties,
+                hash,
+                activation_time,
+                expiration_time,
+            ),
         }
     }
 
     fn create_project_license(
         id: Id,
         creator: AccountIdOf<T>,
-        mut parties: Vec<T::DeipAccountId>,
+        mut parties: Vec<T::AccountId>,
         hash: HashOf<T>,
         activation_time: Option<MomentOf<T>>,
         expiration_time: Option<MomentOf<T>>,
         project_id: ProjectId,
         price: DeipAssetOf<T>,
-    ) -> DispatchResult {
-        ensure!(
-            price.amount() > &Zero::zero(),
-            Error::<T>::ContractAgreementFeeMustBePositive
-        );
+    ) -> DispatchResultWithPostInfo {
+        ensure!(price.amount() > &Zero::zero(), Error::<T>::ContractAgreementFeeMustBePositive);
 
-        ensure!(
-            parties.len() == 2,
-            Error::<T>::ContractAgreementLicenseTwoPartiesRequired
-        );
+        ensure!(parties.len() == 2, Error::<T>::ContractAgreementLicenseTwoPartiesRequired);
 
         let project =
             ProjectMap::<T>::try_get(project_id).map_err(|_| Error::<T>::NoSuchProject)?;
 
-        let second: AccountIdOf<T> = parties.pop().unwrap().into();
-        let first: AccountIdOf<T> = parties.pop().unwrap().into();
+        let second: AccountIdOf<T> = parties.pop().unwrap();
+        let first: AccountIdOf<T> = parties.pop().unwrap();
         let (licenser, licensee) = if first == project.team_id {
             (first, second)
         } else if second == project.team_id {
             (second, first)
         } else {
-            return Err(Error::<T>::ContractAgreementLicenseProjectTeamIsNotListedInParties.into());
+            return Err(Error::<T>::ContractAgreementLicenseProjectTeamIsNotListedInParties.into())
         };
 
         let license = License {
@@ -196,15 +195,15 @@ impl<T: Config> Module<T> {
         ContractAgreementIdByType::insert(IndexTerms::LicenseAgreement, id, ());
 
         Self::deposit_event(RawEvent::ContractAgreementCreated(id));
-
-        Ok(())
+        
+        Ok(Some(T::DeipWeightInfo::create_contract_agreement_project_license()).into())
     }
 
     pub(super) fn accept_contract_agreement_impl(
         account: AccountIdOf<T>,
         id: Id,
         party: AccountIdOf<T>,
-    ) -> DispatchResult {
+    ) -> DispatchResultWithPostInfo {
         ensure!(account == party, Error::<T>::NoPermission);
 
         let agreement = ContractAgreementMap::<T>::try_get(id)
@@ -237,14 +236,12 @@ impl<T: Config> Module<T> {
     fn accept_project_license(
         party: AccountIdOf<T>,
         status: LicenseStatus<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
-    ) -> DispatchResult {
+    ) -> DispatchResultWithPostInfo {
         match status {
-            LicenseStatus::Unsigned(license) => {
-                Self::accept_project_license_by_licenser(party, license)
-            }
-            LicenseStatus::SignedByLicenser(license) => {
-                Self::accept_project_license_by_licensee(party, license)
-            }
+            LicenseStatus::Unsigned(license) =>
+                Self::accept_project_license_by_licenser(party, license),
+            LicenseStatus::SignedByLicenser(license) =>
+                Self::accept_project_license_by_licensee(party, license),
             LicenseStatus::Signed(_) => Err(Error::<T>::ContractAgreementAlreadyAccepted.into()),
             LicenseStatus::Rejected(_) => Err(Error::<T>::ContractAgreementRejected.into()),
         }
@@ -253,7 +250,7 @@ impl<T: Config> Module<T> {
     fn accept_project_license_by_licenser(
         licenser: AccountIdOf<T>,
         license: License<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
-    ) -> DispatchResult {
+    ) -> DispatchResultWithPostInfo {
         ensure!(
             licenser == license.licenser,
             Error::<T>::ContractAgreementLicensePartyIsNotLicenser
@@ -275,13 +272,13 @@ impl<T: Config> Module<T> {
 
         Self::deposit_event(RawEvent::ContractAgreementAccepted(id, licenser));
 
-        Ok(())
+        Ok(Some(T::DeipWeightInfo::accept_contract_agreement_project_license_unsigned()).into())
     }
 
     fn accept_project_license_by_licensee(
         licensee: AccountIdOf<T>,
         license: License<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
-    ) -> DispatchResult {
+    ) -> DispatchResultWithPostInfo {
         ensure!(
             licensee == license.licensee,
             Error::<T>::ContractAgreementLicensePartyIsNotLicensee
@@ -314,7 +311,7 @@ impl<T: Config> Module<T> {
         Self::deposit_event(RawEvent::ContractAgreementAccepted(id, licensee));
         Self::deposit_event(RawEvent::ContractAgreementFinalized(id));
 
-        Ok(())
+        Ok(Some(T::DeipWeightInfo::accept_contract_agreement_project_license_signed_by_licenser()).into())
     }
 
     fn distribute_revenue(
@@ -333,16 +330,16 @@ impl<T: Config> Module<T> {
 
         let mut total_revenue: DeipAssetBalanceOf<T> = Zero::zero();
         let mut transfer_info = vec![];
-        let beneficiary_tokens = T::AssetSystem::get_project_nfts(project_id);
-        // simple model is used: if there are several (F-)NFT classes then
+        let beneficiary_tokens = T::AssetSystem::get_project_fts(project_id);
+        // simple model is used: if there are several (F-)FT classes then
         // the whole amount is distributed uniformly among the classes
         let token_count: u128 = beneficiary_tokens.len().saturated_into();
         for token in &beneficiary_tokens {
             let token_supply: u128 = T::AssetSystem::total_supply(token).saturated_into();
-            let token_balances = if let Some(balances) = T::AssetSystem::get_nft_balances(token) {
+            let token_balances = if let Some(balances) = T::AssetSystem::get_ft_balances(token) {
                 balances
             } else {
-                continue;
+                continue
             };
 
             for token_balance in &token_balances {
@@ -351,7 +348,7 @@ impl<T: Config> Module<T> {
                 let revenue: DeipAssetBalanceOf<T> =
                     (revenue / (token_supply * token_count)).saturated_into();
                 if revenue.is_zero() {
-                    continue;
+                    continue
                 }
 
                 transfer_info.push((revenue, token_balance.clone()));
@@ -377,15 +374,15 @@ impl<T: Config> Module<T> {
     fn create_general_contract(
         id: Id,
         creator: AccountIdOf<T>,
-        parties: Vec<T::DeipAccountId>,
+        parties: Vec<T::AccountId>,
         hash: HashOf<T>,
         activation_time: Option<MomentOf<T>>,
         expiration_time: Option<MomentOf<T>>,
-    ) -> DispatchResult {
+    ) -> DispatchResultWithPostInfo {
         let contract = GeneralContract {
             id,
             creator,
-            parties: parties.into_iter().map(|p| p.into()).collect(),
+            parties,
             hash,
             activation_time,
             expiration_time,
@@ -402,22 +399,19 @@ impl<T: Config> Module<T> {
 
         Self::deposit_event(RawEvent::ContractAgreementCreated(id));
 
-        Ok(())
+        Ok(Some(T::DeipWeightInfo::create_contract_agreement_general_contract()).into())
     }
 
     fn accept_general_contract(
         party: AccountIdOf<T>,
         status: GeneralContractStatus<AccountIdOf<T>, HashOf<T>, MomentOf<T>>,
-    ) -> DispatchResult {
+    ) -> DispatchResultWithPostInfo {
         match status {
             GeneralContractStatus::Rejected(_) => Err(Error::<T>::ContractAgreementRejected.into()),
-            GeneralContractStatus::Accepted(_) => {
-                Err(Error::<T>::ContractAgreementAlreadyAccepted.into())
-            }
-            GeneralContractStatus::PartiallyAccepted {
-                contract,
-                accepted_by,
-            } => Self::accept_general_contract_impl(party, contract, accepted_by),
+            GeneralContractStatus::Accepted(_) =>
+                Err(Error::<T>::ContractAgreementAlreadyAccepted.into()),
+            GeneralContractStatus::PartiallyAccepted { contract, accepted_by } =>
+                Self::accept_general_contract_impl(party, contract, accepted_by),
         }
     }
 
@@ -425,16 +419,10 @@ impl<T: Config> Module<T> {
         party: AccountIdOf<T>,
         contract: GeneralContract<AccountIdOf<T>, HashOf<T>, MomentOf<T>>,
         mut accepted_by: Vec<AccountIdOf<T>>,
-    ) -> DispatchResult {
-        ensure!(
-            !accepted_by.contains(&party),
-            Error::<T>::ContractAgreementAlreadyAcceptedByParty
-        );
+    ) -> DispatchResultWithPostInfo {
+        ensure!(!accepted_by.contains(&party), Error::<T>::ContractAgreementAlreadyAcceptedByParty);
 
-        ensure!(
-            contract.parties.contains(&party),
-            Error::<T>::ContractAgreementPartyIsNotListed
-        );
+        ensure!(contract.parties.contains(&party), Error::<T>::ContractAgreementPartyIsNotListed);
 
         accepted_by.push(party.clone());
         let id = contract.id;
@@ -446,6 +434,7 @@ impl<T: Config> Module<T> {
 
             Self::deposit_event(RawEvent::ContractAgreementAccepted(id, party));
             Self::deposit_event(RawEvent::ContractAgreementFinalized(id));
+            return Ok(Some(T::DeipWeightInfo::accept_contract_agreement_general_contract_finalized()).into())
         } else {
             ContractAgreementMap::<T>::insert(
                 id,
@@ -456,9 +445,8 @@ impl<T: Config> Module<T> {
             );
 
             Self::deposit_event(RawEvent::ContractAgreementAccepted(id, party));
+            return Ok(Some(T::DeipWeightInfo::accept_contract_agreement_general_contract_partially_accepted()).into())
         }
-
-        Ok(())
     }
 
     fn reject_general_contract(
@@ -467,14 +455,10 @@ impl<T: Config> Module<T> {
     ) -> DispatchResult {
         match status {
             GeneralContractStatus::Rejected(_) => Err(Error::<T>::ContractAgreementRejected.into()),
-            GeneralContractStatus::Accepted(_) => {
-                Err(Error::<T>::ContractAgreementAlreadyAccepted.into())
-            }
+            GeneralContractStatus::Accepted(_) =>
+                Err(Error::<T>::ContractAgreementAlreadyAccepted.into()),
 
-            GeneralContractStatus::PartiallyAccepted {
-                contract,
-                accepted_by,
-            } => {
+            GeneralContractStatus::PartiallyAccepted { contract, accepted_by } => {
                 ensure!(
                     !accepted_by.contains(&party),
                     Error::<T>::ContractAgreementAlreadyAcceptedByParty
@@ -494,7 +478,7 @@ impl<T: Config> Module<T> {
                 Self::deposit_event(RawEvent::ContractAgreementRejected(id, party));
 
                 Ok(())
-            }
+            },
         }
     }
 
@@ -513,7 +497,7 @@ impl<T: Config> Module<T> {
                 );
 
                 Self::reject_license_common(party, license)
-            }
+            },
 
             LicenseStatus::Unsigned(license) => {
                 ensure!(
@@ -522,7 +506,7 @@ impl<T: Config> Module<T> {
                 );
 
                 Self::reject_license_common(party, license)
-            }
+            },
         }
     }
 

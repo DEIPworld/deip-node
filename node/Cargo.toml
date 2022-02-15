@@ -1,208 +1,88 @@
 [package]
-authors = ['Octopus Network <hi@oct.network>']
-description = 'A minimal template for octopus appchain.'
-edition = '2018'
-homepage = 'https://oct.network/'
-license = 'Apache-2.0'
-name = 'appchain-deip'
+authors = ["Octopus Network <hi@oct.network>"]
+description = "A minimal template for octopus appchain."
+edition = "2018"
+homepage = "https://oct.network/"
+license = "Apache-2.0"
+name = "appchain-deip"
 publish = false
-repository = 'https://github.com/DEIPworld/deip-canary-network/'
-version = '3.0.0-monthly-2021-08'
-build = 'build.rs'
+repository = "https://github.com/DEIPworld/deip-canary-network/"
+version = "3.0.0-monthly-2021-08"
+build = "build.rs"
 
 [package.metadata.docs.rs]
-targets = ['x86_64-unknown-linux-gnu']
+targets = ["x86_64-unknown-linux-gnu"]
 
 [[bin]]
-name = 'appchain-deip'
-[build-dependencies.substrate-build-script-utils]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
+name = "appchain-deip"
 
-[dependencies.appchain-deip-runtime]
-path = '../runtime'
-version = '3.0.0-monthly-2021-08'
+[build-dependencies]
+substrate-build-script-utils = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 
 [dependencies]
-jsonrpc-core = '15.1.0'
-jsonrpc-pubsub = "15.1.0"
-structopt = '0.3.8'
-
-rand = "0.7.2"
-
-sc-chain-spec = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
-sc-consensus-babe-rpc = { version = "0.9.0", git = "https://github.com/paritytech/substrate.git" }
-sc-consensus-epochs = { version = "0.9.0", git = "https://github.com/paritytech/substrate.git" }
-sc-consensus-slots = { version = "0.9.0", git = "https://github.com/paritytech/substrate.git" }
-sc-consensus-uncles = { version = "0.9.0", git = "https://github.com/paritytech/substrate.git" }
-sc-finality-grandpa-rpc = { version = "0.9.0", git = "https://github.com/paritytech/substrate.git" }
-sc-network = { version = "0.9.0", git = "https://github.com/paritytech/substrate.git" }
-sc-sync-state-rpc = { version = "0.9.0", git = "https://github.com/paritytech/substrate.git" }
-sp-authorship = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
-sp-keystore = { version = "0.9.0", git = "https://github.com/paritytech/substrate.git" }
-pallet-im-online = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
-pallet-mmr-rpc = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
-sp-transaction-pool = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
-
-beefy-primitives = { version = "0.1.0", git = "https://github.com/octopus-network/grandpa-bridge-gadget", branch = "dev" }
-beefy-gadget = { version = "0.1.0", git = "https://github.com/octopus-network/grandpa-bridge-gadget", branch = "dev" }
-beefy-gadget-rpc = { version = "0.1.0", git = "https://github.com/octopus-network/grandpa-bridge-gadget", branch = "dev" }
-
-pallet-octopus-appchain = { git = "https://github.com/octopus-network/octopus-pallets", branch = "main" }
-pallet-octopus-lpos = { git = "https://github.com/octopus-network/octopus-pallets", branch = "main" }
-
-pallet-deip = { path = "../pallets/deip", version = "3.0.0"}
-pallet-deip-assets = { path = "../pallets/deip_assets", version = "3.0.0"}
-
-deip-proposal-rpc = { path = "../rpc/deip_proposal_rpc" }
+beefy-gadget = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+beefy-gadget-rpc = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+beefy-primitives = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 deip-assets-rpc = { path = "../rpc/deip_assets_rpc" }
 deip-dao-rpc = { path = "../rpc/deip_dao_rpc" }
+deip-proposal-rpc = { path = "../rpc/deip_proposal_rpc" }
 deip-rpc = { path = "../rpc/deip_rpc" }
 
-[dependencies.frame-benchmarking]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.1.0'
+frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+frame-benchmarking-cli = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+jsonrpc-core = "18.0.0"
+jsonrpc-pubsub = "18.0.0"
 
-[dependencies.frame-benchmarking-cli]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
+pallet-deip = { path = "../pallets/deip" }
+pallet-deip-assets = { path = "../pallets/deip_assets" }
+pallet-im-online = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+pallet-mmr-rpc = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 
-[dependencies.pallet-transaction-payment-rpc]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
+pallet-octopus-appchain = { git = "https://github.com/octopus-network/octopus-pallets.git", branch = "release-v0.9.13" }
+pallet-transaction-payment-rpc = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sc-basic-authorship = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sc-chain-spec = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sc-cli = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", features = ["wasmtime"] }
+sc-client-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sc-consensus = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sc-consensus-babe = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sc-consensus-babe-rpc = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sc-consensus-epochs = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sc-consensus-slots = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sc-consensus-uncles = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sc-executor = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", features = ["wasmtime"] }
+sc-finality-grandpa = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sc-finality-grandpa-rpc = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sc-keystore = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 
-[dependencies.sc-basic-authorship]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '0.9.0'
+sc-network = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sc-rpc = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sc-rpc-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sc-service = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", features = ["wasmtime"] }
+sc-sync-state-rpc = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sc-telemetry = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sc-transaction-pool = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sc-transaction-pool-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 
-[dependencies.sc-cli]
-features = ['wasmtime']
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '0.9.0'
+serde = { version = "1.0.130", features = ["derive"] }
+sp-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sp-authorship = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sp-block-builder = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sp-blockchain = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sp-consensus = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sp-consensus-babe = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sp-finality-grandpa = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sp-keystore = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sp-timestamp = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+sp-transaction-storage-proof = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+structopt = "0.3.25"
+substrate-frame-rpc-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 
-[dependencies.sc-client-api]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sc-consensus]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '0.9.0'
-
-[dependencies.sc-consensus-babe]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '0.9.0'
-
-[dependencies.sc-executor]
-features = ['wasmtime']
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '0.9.0'
-
-[dependencies.sc-finality-grandpa]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '0.9.0'
-
-[dependencies.sc-keystore]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sc-rpc]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sc-rpc-api]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '0.9.0'
-
-[dependencies.sc-service]
-features = ['wasmtime']
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '0.9.0'
-
-[dependencies.sc-telemetry]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sc-transaction-pool]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-# [dependencies.sc-transaction-pool-api]
-# git = 'https://github.com/paritytech/substrate.git'
-# tag = 'monthly-2021-08'
-# version = '3.0.0'
-
-[dependencies.sp-api]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sp-block-builder]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sp-blockchain]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sp-consensus]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '0.9.0'
-
-[dependencies.sp-consensus-babe]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '0.9.0'
-
-[dependencies.sp-core]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sp-finality-grandpa]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sp-inherents]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sp-runtime]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.sp-timestamp]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
-
-[dependencies.substrate-frame-rpc-system]
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '3.0.0'
+[dependencies.appchain-deip-runtime]
+path = "../runtime"
 
 [features]
 default = []
-runtime-benchmarks = ['appchain-deip-runtime/runtime-benchmarks']
+runtime-benchmarks = ["appchain-deip-runtime/runtime-benchmarks"]

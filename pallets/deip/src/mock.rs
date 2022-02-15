@@ -7,8 +7,8 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
 };
 
-use codec::{Encode, Decode};
-use serde::{Serialize, Deserialize};
+use codec::{Decode, Encode};
+use serde::{Deserialize, Serialize};
 
 use deip_assets_error::{ReserveError, UnreserveError};
 
@@ -111,12 +111,12 @@ impl pallet_deip::traits::DeipAssetSystem<u64> for Test {
         DeipAssets::total_supply(asset)
     }
 
-    fn get_project_nfts(id: &super::ProjectId) -> Vec<Self::AssetId> {
-        DeipAssets::get_project_nfts(id)
+    fn get_project_fts(id: &super::ProjectId) -> Vec<Self::AssetId> {
+        DeipAssets::get_project_fts(id)
     }
 
-    fn get_nft_balances(id: &Self::AssetId) -> Option<Vec<AccountId>> {
-        DeipAssets::get_nft_balances(id)
+    fn get_ft_balances(id: &Self::AssetId) -> Option<Vec<AccountId>> {
+        DeipAssets::get_ft_balances(id)
     }
 
     fn transactionally_transfer(
@@ -136,7 +136,9 @@ impl pallet_deip::traits::DeipAssetSystem<u64> for Test {
         DeipAssets::transactionally_reserve(account, id, security_tokens_on_sale, asset)
     }
 
-    fn transactionally_unreserve(id: super::InvestmentId) -> Result<(), UnreserveError<Self::AssetId>> {
+    fn transactionally_unreserve(
+        id: super::InvestmentId,
+    ) -> Result<(), UnreserveError<Self::AssetId>> {
         DeipAssets::transactionally_unreserve(id)
     }
 
@@ -204,7 +206,7 @@ parameter_types! {
     pub const WipePeriod: u64 = 10;
 }
 
-impl pallet_deip_assets::traits::DeipProjectsInfo<AccountId> for Test {
+impl DeipProjectsInfo<AccountId> for Test {
     type ProjectId = pallet_deip::ProjectId;
     type InvestmentId = pallet_deip::InvestmentId;
 
@@ -231,30 +233,16 @@ where
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    system::GenesisConfig::default()
-        .build_storage::<Test>()
-        .unwrap()
-        .into()
+    system::GenesisConfig::default().build_storage::<Test>().unwrap().into()
 }
 
 pub fn new_test_ext2() -> sp_io::TestExternalities {
-    let mut t = frame_system::GenesisConfig::default()
-        .build_storage::<Test>()
-        .unwrap();
+    let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
     pallet_balances::GenesisConfig::<Test> {
         balances: vec![
-            (
-                DEFAULT_ACCOUNT_ID,
-                (1000 * <ExistentialDeposit as Get<u64>>::get()).into(),
-            ),
-            (
-                ALICE_ACCOUNT_ID,
-                (2000 * <ExistentialDeposit as Get<u64>>::get()).into(),
-            ),
-            (
-                BOB_ACCOUNT_ID,
-                (2500 * <ExistentialDeposit as Get<u64>>::get()).into(),
-            ),
+            (DEFAULT_ACCOUNT_ID, (1000 * <ExistentialDeposit as Get<u64>>::get()).into()),
+            (ALICE_ACCOUNT_ID, (2000 * <ExistentialDeposit as Get<u64>>::get()).into()),
+            (BOB_ACCOUNT_ID, (2500 * <ExistentialDeposit as Get<u64>>::get()).into()),
         ],
     }
     .assimilate_storage(&mut t)

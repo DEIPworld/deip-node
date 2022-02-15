@@ -3,7 +3,7 @@ use super::*;
 /// Unique Review reference
 pub type Id = H160;
 
-#[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Vote<AccountId, Moment> {
@@ -13,24 +13,24 @@ pub struct Vote<AccountId, Moment> {
     voting_time: Moment,
 }
 
-#[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Review<Hash, AccountId> {
     /// Reference for external world and uniques control
-    external_id: Id,
+    pub(crate) external_id: Id,
     /// Reference to the Team
-    author: AccountId,
+    pub(crate) author: AccountId,
     /// Hash of content
-    content: Hash,
+    pub(crate) content: Hash,
     /// List of Domains aka tags Project matches
-    domains: Vec<DomainId>,
+    pub(crate) domains: Vec<DomainId>,
     /// Model number by which the evaluation is carried out
-    assessment_model: u32,
+    pub(crate) assessment_model: u32,
     /// percent in "50.00 %" format
-    weight: Vec<u8>,
+    pub(crate) weight: Vec<u8>,
     /// Reference to Project Content
-    project_content_external_id: ProjectContentId,
+    pub(crate) project_content_external_id: ProjectContentId,
 }
 
 impl<T: Config> Module<T> {
@@ -80,17 +80,11 @@ impl<T: Config> Module<T> {
         review_id: ReviewId,
         domain_id: DomainId,
     ) -> DispatchResult {
-        ensure!(
-            Domains::contains_key(domain_id),
-            Error::<T>::ReviewVoteNoSuchDomain
-        );
+        ensure!(Domains::contains_key(domain_id), Error::<T>::ReviewVoteNoSuchDomain);
 
         let review =
             ReviewMap::<T>::try_get(review_id).map_err(|_| Error::<T>::ReviewVoteNoSuchReview)?;
-        ensure!(
-            review.domains.contains(&domain_id),
-            Error::<T>::ReviewVoteUnrelatedDomain
-        );
+        ensure!(review.domains.contains(&domain_id), Error::<T>::ReviewVoteUnrelatedDomain);
 
         ensure!(
             !ReviewVoteMap::<T>::contains_key((review_id, account.clone(), domain_id)),
@@ -106,7 +100,11 @@ impl<T: Config> Module<T> {
 
         ReviewVoteMap::<T>::insert((review_id, account.clone(), domain_id), vote);
         VoteIdByReviewId::<T>::insert(review_id, (review_id, account.clone(), domain_id), ());
-        VoteIdByAccountId::<T>::insert(account.clone(), (review_id, account.clone(), domain_id), ());
+        VoteIdByAccountId::<T>::insert(
+            account.clone(),
+            (review_id, account.clone(), domain_id),
+            (),
+        );
 
         Self::deposit_event(RawEvent::ReviewUpvoted(review_id, account, domain_id));
 

@@ -1,14 +1,13 @@
-use crate::traits::DeipAssetSystem;
-use crate::*;
+use crate::{traits::DeipAssetSystem, *};
 use deip_assets_error::*;
 
 use sp_runtime::{
-    traits::{Saturating, Zero, AtLeast32BitUnsigned},
+    traits::{AtLeast32BitUnsigned, Saturating, Zero},
     SaturatedConversion,
 };
 
 use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
-use deip_transaction_ctx::{TransactionCtxT};
+use deip_transaction_ctx::TransactionCtxT;
 
 /// Unique InvestmentOpportunity ID reference
 pub type Id = H160;
@@ -17,7 +16,7 @@ pub type Id = H160;
 #[allow(type_alias_bounds)]
 pub type FundingModelOf<T: Config> = FundingModel<MomentOf<T>, DeipAssetOf<T>>;
 
-#[derive(Encode, Decode, Clone, Copy, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Encode, Decode, Clone, Copy, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum Status {
@@ -33,7 +32,7 @@ impl Default for Status {
     }
 }
 
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum FundingModel<Moment, Asset> {
@@ -50,7 +49,7 @@ pub enum FundingModel<Moment, Asset> {
 }
 
 /// The object represents a sale of tokens with various parameters.
-#[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct Info<Moment, AssetId, AssetBalance: Clone + AtLeast32BitUnsigned, CtxId> {
@@ -83,20 +82,16 @@ impl<T: Config> Module<T> {
         ensure!(account == creator, Error::<T>::NoPermission);
 
         match funding_model {
-            FundingModel::SimpleCrowdfunding {
-                start_time,
-                end_time,
-                soft_cap,
-                hard_cap,
-            } => Self::create_simple_crowdfunding(
-                account,
-                external_id,
-                start_time,
-                end_time,
-                soft_cap,
-                hard_cap,
-                shares,
-            ),
+            FundingModel::SimpleCrowdfunding { start_time, end_time, soft_cap, hard_cap } =>
+                Self::create_simple_crowdfunding(
+                    account,
+                    external_id,
+                    start_time,
+                    end_time,
+                    soft_cap,
+                    hard_cap,
+                    shares,
+                ),
         }
     }
 
@@ -120,10 +115,7 @@ impl<T: Config> Module<T> {
         );
 
         let asset_id = soft_cap.id();
-        ensure!(
-            asset_id == hard_cap.id(),
-            Error::<T>::InvestmentOpportunityCapDifferentAssets
-        );
+        ensure!(asset_id == hard_cap.id(), Error::<T>::InvestmentOpportunityCapDifferentAssets);
         ensure!(
             soft_cap.amount() > &Zero::zero(),
             Error::<T>::InvestmentOpportunitySoftCapMustBeGreaterOrEqualMinimum
@@ -133,16 +125,10 @@ impl<T: Config> Module<T> {
             Error::<T>::InvestmentOpportunityHardCapShouldBeGreaterOrEqualSoftCap
         );
 
-        ensure!(
-            !shares.is_empty(),
-            Error::<T>::InvestmentOpportunitySecurityTokenNotSpecified
-        );
+        ensure!(!shares.is_empty(), Error::<T>::InvestmentOpportunitySecurityTokenNotSpecified);
         let mut shares_to_reserve = Vec::with_capacity(shares.len());
         for token in &shares {
-            ensure!(
-                token.id() != asset_id,
-                Error::<T>::InvestmentOpportunityWrongAssetId
-            );
+            ensure!(token.id() != asset_id, Error::<T>::InvestmentOpportunityWrongAssetId);
 
             ensure!(
                 token.amount() > &Zero::zero(),
@@ -157,19 +143,19 @@ impl<T: Config> Module<T> {
             Error::<T>::InvestmentOpportunityAlreadyExists
         );
 
-        if let Err(e) =
-            T::AssetSystem::transactionally_reserve(&account, external_id, &shares_to_reserve, *asset_id)
-        {
+        if let Err(e) = T::AssetSystem::transactionally_reserve(
+            &account,
+            external_id,
+            &shares_to_reserve,
+            *asset_id,
+        ) {
             match e {
-                ReserveError::<DeipAssetIdOf<T>>::NotEnoughBalance => {
-                    return Err(Error::<T>::InvestmentOpportunityBalanceIsNotEnough.into())
-                }
-                ReserveError::<DeipAssetIdOf<T>>::AssetTransferFailed(_) => {
-                    return Err(Error::<T>::InvestmentOpportunityFailedToReserveAsset.into())
-                }
-                ReserveError::<DeipAssetIdOf<T>>::AlreadyReserved => {
-                    return Err(Error::<T>::InvestmentOpportunityAlreadyExists.into())
-                }
+                ReserveError::<DeipAssetIdOf<T>>::NotEnoughBalance =>
+                    return Err(Error::<T>::InvestmentOpportunityBalanceIsNotEnough.into()),
+                ReserveError::<DeipAssetIdOf<T>>::AssetTransferFailed(_) =>
+                    return Err(Error::<T>::InvestmentOpportunityFailedToReserveAsset.into()),
+                ReserveError::<DeipAssetIdOf<T>>::AlreadyReserved =>
+                    return Err(Error::<T>::InvestmentOpportunityAlreadyExists.into()),
             };
         }
 
@@ -209,7 +195,7 @@ impl<T: Config> Module<T> {
                 Self::update_status(&sale, Status::Finished);
                 Self::process_investments(&sale);
                 Ok(())
-            }
+            },
         }
     }
 
@@ -286,19 +272,19 @@ impl<T: Config> Module<T> {
         for (id, sale) in SimpleCrowdfundingMap::<T>::iter() {
             if sale.end_time <= now && matches!(sale.status, Status::Active) {
                 if sale.total_amount.0 < sale.soft_cap.0 {
-                    let call = Call::expire_crowdfunding(id);
-                    let submit = T::TransactionCtx::submit_transaction(call.into(), sale.created_ctx);
-                    
+                    let call = Call::expire_crowdfunding { sale_id: id };
+                    let submit = T::TransactionCtx::submit_postponed(call.into(), sale.created_ctx);
+
                     debug!("submit expire_crowdfunding: {}", submit.is_ok());
                 } else if sale.total_amount.0 >= sale.soft_cap.0 {
-                    let call = Call::finish_crowdfunding(id);
-                    let submit = T::TransactionCtx::submit_transaction(call.into(), sale.created_ctx);
+                    let call = Call::finish_crowdfunding { sale_id: id };
+                    let submit = T::TransactionCtx::submit_postponed(call.into(), sale.created_ctx);
                     debug!("submit finish_crowdfunding: {}", submit.is_ok());
                 }
             } else if sale.end_time > now {
                 if now >= sale.start_time && matches!(sale.status, Status::Inactive) {
-                    let call = Call::activate_crowdfunding(id);
-                    let submit = T::TransactionCtx::submit_transaction(call.into(), sale.created_ctx);
+                    let call = Call::activate_crowdfunding { sale_id: id };
+                    let submit = T::TransactionCtx::submit_postponed(call.into(), sale.created_ctx);
                     debug!("submit activate_crowdfunding: {}", submit.is_ok());
                 }
             }
@@ -342,20 +328,19 @@ impl<T: Config> Module<T> {
             let mut amount = asset.amount().clone();
 
             let mut iter = contributions.iter();
-            let (_, ref first_contribution) = iter
-                .next()
-                .expect("about to finish, but there are no contributors?");
+            let (_, ref first_contribution) =
+                iter.next().expect("about to finish, but there are no contributors?");
 
             for (_, ref contribution) in iter {
                 // similiar to frame_support::traits::Imbalance::ration
                 let token_amount = contribution
                     .amount
                     .saturated_into::<u128>()
-                    .saturating_mul(asset.amount().clone().saturated_into())
-                    / sale.total_amount.0.saturated_into::<u128>();
+                    .saturating_mul(asset.amount().clone().saturated_into()) /
+                    sale.total_amount.0.saturated_into::<u128>();
                 let token_amount: DeipAssetBalanceOf<T> = token_amount.saturated_into();
                 if token_amount.is_zero() {
-                    continue;
+                    continue
                 }
 
                 amount -= token_amount;
