@@ -120,25 +120,40 @@ pub fn development_config() -> Result<ChainSpec, String> {
                 wasm_binary,
                 // Initial PoA authorities
                 vec![
-                    authority_keys_from_seed("Alice", 100 * OCTS)
+                    authority_keys_from_seed("Alice", 10 * OCTS)
                 ],
                 // Sudo account
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 // Pre-funded accounts
-                get_endowed_accounts(),
+                vec![
+                    (
+                        get_account_id_from_seed::<sr25519::Public>("Alice"),
+                        10 * DEIP
+                    ),
+                    (
+                        AccountId::from_ss58check("5D7kG2UWD49rPvgjUjfghdYCJCNXoBdfC4LcyJe41D8fr6KU").unwrap(),
+                        40 * DEIP
+                    ),
+                ],
                 // Vestings
-                get_vesting_plans(),
+                vec![],
                 // Domains
-                get_domains(),
+                vec![
+                    DomainId::from_str("6225314ed224d2b25a22f01a34af16d3354d556c").unwrap(),
+                    /* generic */
+                ],
                 // Appchain
                 get_appchain_config(
                   // Appchain Relay Contract
-                  "octopus-anchor.testnet",
+                  "deip-test.registry.test_oct.testnet",
                   // Premined amount
-                  100_000 * DEIP,
+                  3_599_999_950 * DEIP,
                   // Era Payout
-                  109_589 * DEIP,
+                  328_767 * DEIP,
                 ),
+                // Ecosystem fund account
+                AccountId::from_ss58check("5FRvKQzZ4taefHzFt5fgQHKJQYRL8SsswcrXCuDogucQoDqz").unwrap(),
+                // Enable println
                 true,
             )
         },
@@ -170,26 +185,45 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                 wasm_binary,
                 // Initial PoA authorities
                 vec![
-                    authority_keys_from_seed("Alice", 100 * OCTS), 
-                    authority_keys_from_seed("Bob", 100 * OCTS)
+                    authority_keys_from_seed("Alice", 10 * OCTS), 
+                    authority_keys_from_seed("Bob", 10 * OCTS)
                 ],
                 // Sudo account
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 // Pre-funded accounts
-                get_endowed_accounts(),
+                vec![
+                    (
+                        get_account_id_from_seed::<sr25519::Public>("Alice"),
+                        10 * DEIP
+                    ),
+                    (
+                        get_account_id_from_seed::<sr25519::Public>("Bob"),
+                        10 * DEIP
+                    ),
+                    (
+                        AccountId::from_ss58check("5D7kG2UWD49rPvgjUjfghdYCJCNXoBdfC4LcyJe41D8fr6KU").unwrap(),
+                        30 * DEIP
+                    ),
+                ],
                 // Vestings
-                get_vesting_plans(),
+                vec![],
                 // Domains
-                get_domains(),
+                vec![
+                    DomainId::from_str("6225314ed224d2b25a22f01a34af16d3354d556c").unwrap(),
+                    /* generic */
+                ],
                 // Appchain
                 get_appchain_config(
                   // Appchain Relay Contract
-                  "octopus-anchor.testnet",
+                  "deip-test.registry.test_oct.testnet",
                   // Premined amount
-                  100_000 * DEIP,
+                  3_599_999_950 * DEIP,
                   // Era Payout
-                  109_589 * DEIP,
+                  328_767 * DEIP,
                 ),
+                // Ecosystem fund account
+                AccountId::from_ss58check("5FRvKQzZ4taefHzFt5fgQHKJQYRL8SsswcrXCuDogucQoDqz").unwrap(),
+                // Enable println
                 true,
             )
         },
@@ -210,11 +244,12 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 fn genesis(
     wasm_binary: &[u8],
     initial_authorities: Vec<(AccountId, BabeId, GrandpaId, ImOnlineId, BeefyId, OctopusId, Balance)>,
-    root_key: AccountId,
+    sudo_key: AccountId,
     endowed_accounts: Vec<(AccountId, u128)>,
     vesting_plans: Vec<(AccountId, u64, u64, u64, u64, u128, u128, bool)>,
     domains: Vec<DomainId>,
     appchain_config: (String, Balance, Balance),
+    ecosystem_fund_key: AccountId,
     _enable_println: bool,
 ) -> GenesisConfig {
 
@@ -254,7 +289,7 @@ fn genesis(
                 })
                 .collect::<Vec<_>>(),
         },
-        sudo: SudoConfig { key: root_key.clone() },
+        sudo: SudoConfig { key: sudo_key.clone() },
         babe: BabeConfig {
             authorities: vec![],
             epoch_config: Some(appchain_deip_runtime::BABE_GENESIS_EPOCH_CONFIG),
@@ -281,29 +316,7 @@ fn genesis(
         deip_portal: DeipPortalConfig {},
         deip_vesting: DeipVestingConfig { vesting: vesting_plans },
         deip_ecosystem_fund: DeipEcosystemFundConfig {
-            fee_recipient: get_account_id_from_seed::<sr25519::Public>("Ferdie")
+            fee_recipient: ecosystem_fund_key.clone()
         }
     }
-}
-
-pub fn get_domains() -> Vec<DomainId> {
-    vec![ 
-        DomainId::from_str("6225314ed224d2b25a22f01a34af16d3354d556c").unwrap(),
-        /* generic */
-    ]
-}
-
-pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
-    vec![
-        (
-            get_account_id_from_seed::<sr25519::Public>("Alice"),
-            1_000_000 * DEIP
-        )
-    ]
-}
-
-pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bool)> {
-    vec![
-
-    ]
 }
