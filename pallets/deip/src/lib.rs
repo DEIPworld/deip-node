@@ -727,16 +727,15 @@ decl_module! {
             Self::deposit_event(RawEvent::ProjectContnetCreated(account, content.external_id));
         }
 
-        /// Allow a user to create [NDA](./struct.Nda.html).
-        ///
-        /// The origin for this call must be _Signed_.
-        ///
-        /// - `end_date`: Unix Timestamp. Exparation date of contract
-        /// - `contract_hash`: Hash of the contract
-        /// - `maybe_start_date`: Optional. Unix Timestamp. Entry into force of the contract
-        /// - `parties`: List of involved Parties
-        /// - `projects`: List of involved Projects
-<<<<<<< HEAD
+        // /// Allow a user to create [NDA](./struct.Nda.html).
+        // ///
+        // /// The origin for this call must be _Signed_.
+        // ///
+        // /// - `end_date`: Unix Timestamp. Exparation date of contract
+        // /// - `contract_hash`: Hash of the contract
+        // /// - `maybe_start_date`: Optional. Unix Timestamp. Entry into force of the contract
+        // /// - `parties`: List of involved Parties
+        // /// - `projects`: List of involved Projects
         // #[weight = {
         //     let p = parties.len() as u32;
         //     T::DeipWeightInfo::create_project_nda(p)
@@ -801,81 +800,16 @@ decl_module! {
         //     Self::deposit_event(RawEvent::NdaCreated(contract_creator, external_id));
         //
         // }
-=======
-        #[weight = {
-            let p = parties.len() as u32;
-            T::DeipWeightInfo::create_project_nda(p)
-        }]
-        fn create_project_nda(origin,
-            external_id: NdaId,
-            end_date: T::Moment,
-            contract_hash: T::Hash,
-            maybe_start_date: Option<T::Moment>,
-            parties: Vec<T::DeipAccountId>,
-            projects: Vec<ProjectId>
-        ) {
-            let mut projects = projects;
-            projects.dedup();
-            let contract_creator = ensure_signed(origin)?;
-            let timestamp = pallet_timestamp::Pallet::<T>::get();
-
-            ensure!(end_date > timestamp, Error::<T>::NdaEndDateMustBeLaterCurrentMoment);
-
-            ensure!(projects.len() <= T::MaxNdaParties::get() as usize, Error::<T>::TooMuchNdaParties);
-            ensure!(parties.len() <= T::MaxNdaParties::get() as usize, Error::<T>::TooMuchNdaParties);
-
-            if let Some(start_date) = maybe_start_date {
-                ensure!(start_date >= timestamp, Error::<T>::NdaStartDateMustBeLaterOrEqualCurrentMoment);
-                ensure!(end_date > start_date, Error::<T>::NdaStartDateMustBeLessThanEndDate);
-            }
-
-            let parties: Vec<T::AccountId> = parties.into_iter().map(Into::into).collect();
-
-            projects.iter()
-                .try_for_each(|id| -> DispatchResult {
-                    let project = ProjectMap::<T>::get(id);
-
-                    ensure!(!project.external_id.is_zero(), Error::<T>::NoSuchProject);
-                    ensure!(parties.contains(&project.team_id), Error::<T>::TeamOfAllProjectsMustSpecifiedAsParty);
-
-                    Ok(())
-                })?;
-
-            let mut nda_list = Ndas::<T>::get();
-
-            let index_to_insert_nda = nda_list.binary_search_by_key(&external_id, |&(external_id, ..)| external_id)
-                .err().ok_or(Error::<T>::NdaAlreadyExists)?;
 
 
-            let nda = Nda {
-                contract_creator: contract_creator.clone(),
-                external_id,
-                end_date,
-                start_date: maybe_start_date,
-                contract_hash,
-                parties,
-                projects
-            };
-
-            nda_list.insert(index_to_insert_nda, (nda.external_id, contract_creator.clone()));
-            Ndas::<T>::put(nda_list);
-
-            NdaMap::<T>::insert(nda.external_id, nda);
-
-            // Emit an event that the NDA was created.
-            Self::deposit_event(RawEvent::NdaCreated(contract_creator, external_id));
-
-        }
->>>>>>> 644d132 (WIP: add impl of subxt::Config to Runtime)
-
-        /// Create [request](./struct.NdaAccessRequest.html) to access NDA content
-        ///
-        /// The origin for this call must be _Signed_.
-        ///
-        /// - `external_id`: Reference for external world and uniques control
-        /// - `nda_external_id`: Reference to NDA
-        /// - `encrypted_payload_hash`: Payload witch need to be decrypted
-        /// - `encrypted_payload_iv`: IV of encrypted payload
+        // /// Create [request](./struct.NdaAccessRequest.html) to access NDA content
+        // ///
+        // /// The origin for this call must be _Signed_.
+        // ///
+        // /// - `external_id`: Reference for external world and uniques control
+        // /// - `nda_external_id`: Reference to NDA
+        // /// - `encrypted_payload_hash`: Payload witch need to be decrypted
+        // /// - `encrypted_payload_iv`: IV of encrypted payload
         // #[weight = {
         //     T::DeipWeightInfo::create_nda_content_access_request()
         // }]
@@ -922,14 +856,13 @@ decl_module! {
         //
         // }
 
-        /// Fulfill NDA access request
-        ///
-        /// The origin for this call must be _Signed_.
-        ///
-        /// - `external_id`: Reference for external world and uniques control
-        /// - `encrypted_payload_encryption_key`: Ecrypted key witch can decrypt payload
-        /// - `proof_of_encrypted_payload_encryption_key`: Proof that requester has access to the encrypted data with his key
-<<<<<<< HEAD
+        // /// Fulfill NDA access request
+        // ///
+        // /// The origin for this call must be _Signed_.
+        // ///
+        // /// - `external_id`: Reference for external world and uniques control
+        // /// - `encrypted_payload_encryption_key`: Ecrypted key witch can decrypt payload
+        // /// - `proof_of_encrypted_payload_encryption_key`: Proof that requester has access to the encrypted data with his key
         // #[weight = {
         //     T::DeipWeightInfo::fulfill_nda_content_access_request()
         // }]
@@ -959,44 +892,12 @@ decl_module! {
         //     Self::deposit_event(RawEvent::NdaAccessRequestFulfilled(account, external_id));
         //
         // }
-=======
-        #[weight = {
-            T::DeipWeightInfo::fulfill_nda_content_access_request()
-        }]
-        fn fulfill_nda_content_access_request(
-            origin,
-            external_id: NdaAccessRequestId,
-            encrypted_payload_encryption_key: Vec<u8>,
-            proof_of_encrypted_payload_encryption_key: Vec<u8>,
-        ) {
-            let account = ensure_signed(origin)?;
 
-            NdaAccessRequestMap::<T>::mutate_exists(external_id, |maybe_nda_access_request| -> DispatchResult {
-                let mut nda_access_request = maybe_nda_access_request.as_mut().ok_or(Error::<T>::NoSuchNdaAccessRequest)?;
-
-                ensure!(nda_access_request.status == NdaAccessRequestStatus::Pending, Error::<T>::NdaAccessRequestAlreadyFinalized);
-                ensure!(NdaMap::<T>::contains_key(nda_access_request.nda_external_id), Error::<T>::NoSuchNda);
-
-                nda_access_request.status = NdaAccessRequestStatus::Fulfilled;
-                nda_access_request.grantor = Some(account.clone());
-                nda_access_request.encrypted_payload_encryption_key = Some(encrypted_payload_encryption_key);
-                nda_access_request.proof_of_encrypted_payload_encryption_key = Some(proof_of_encrypted_payload_encryption_key);
-
-                Ok(())
-            })?;
-
-            // Emit an event that the NDA was fulfilled.
-            Self::deposit_event(RawEvent::NdaAccessRequestFulfilled(account, external_id));
-
-        }
->>>>>>> 644d132 (WIP: add impl of subxt::Config to Runtime)
-
-        /// Reject NDA access request
-        ///
-        /// The origin for this call must be _Signed_.
-        ///
-        /// - `external_id`: Reference for external world and uniques control
-<<<<<<< HEAD
+        // /// Reject NDA access request
+        // ///
+        // /// The origin for this call must be _Signed_.
+        // ///
+        // /// - `external_id`: Reference for external world and uniques control
         // #[weight = {
         //     T::DeipWeightInfo::reject_nda_content_access_request()
         // }]
@@ -1022,33 +923,6 @@ decl_module! {
         //      Self::deposit_event(RawEvent::NdaAccessRequestRejected(account, external_id));
         //
         // }
-=======
-        #[weight = {
-            T::DeipWeightInfo::reject_nda_content_access_request()
-        }]
-        fn reject_nda_content_access_request(
-             origin,
-             external_id: NdaAccessRequestId,
-         ) {
-             let account = ensure_signed(origin)?;
-
-             NdaAccessRequestMap::<T>::mutate_exists(external_id, |maybe_nda_access_request| -> DispatchResult {
-                let mut nda_access_request = maybe_nda_access_request.as_mut().ok_or(Error::<T>::NoSuchNdaAccessRequest)?;
-
-
-                ensure!(nda_access_request.status == NdaAccessRequestStatus::Pending, Error::<T>::NdaAccessRequestAlreadyFinalized);
-                ensure!(NdaMap::<T>::contains_key(nda_access_request.nda_external_id), Error::<T>::NoSuchNda);
-
-                nda_access_request.status = NdaAccessRequestStatus::Rejected;
-
-                Ok(())
-             })?;
-
-             // Emit an event that the NDA was rejected.
-             Self::deposit_event(RawEvent::NdaAccessRequestRejected(account, external_id));
-
-        }
->>>>>>> 644d132 (WIP: add impl of subxt::Config to Runtime)
 
         /// Allow a user to create review.
         ///
