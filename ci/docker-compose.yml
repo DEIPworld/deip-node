@@ -20,7 +20,7 @@ services:
       - ALLOW_PLAINTEXT_LISTENER=yes
     depends_on:
       - zookeeper
- deip-event-proxy:
+  deip-event-proxy:
    image: "$LOCAL_REPO/$EVENT_PROXY_IMG"
    command: $EVENT_PROXY_BIN --config=/event-proxy.toml
    environment:
