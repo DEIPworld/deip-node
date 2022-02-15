@@ -1,12 +1,12 @@
 use codec::Decode;
 use frame_support::Parameter;
-use frame_system::Config;
 use sp_runtime::traits::Member;
 
 use serde::{
     ser::{SerializeStruct, Serializer},
     Serialize,
 };
+use subxt::Config;
 
 use crate::runtime_api::api::deip_proposal::events::{
     Approved, Expired, Resolved, RevokedApproval,
@@ -49,7 +49,12 @@ pub struct ProposedEvent<T: DeipProposal> {
     pub batch: T::ProposalBatch,
     pub proposal_id: T::ProposalId,
 }
-impl<T: DeipProposal> Serialize for ProposedEvent<T> {
+
+impl<T> Serialize for ProposedEvent<T>
+where
+    T: DeipProposal,
+    T::AccountId: Serialize,
+{
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
     where
         S: Serializer,

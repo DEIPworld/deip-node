@@ -5,6 +5,7 @@ mod events;
 mod frame;
 mod runtime;
 mod runtime_api;
+mod subxt_impl;
 // mod types;
 
 #[macro_use]
@@ -23,11 +24,11 @@ use app::{
     SubscriptionBuffer, SubscriptionBufferIn,
 };
 use config::OffchainConfig;
-use frame_system::Config;
 use futures::{
     stream::{FuturesOrdered, StreamExt},
     Future,
 };
+use subxt::Config;
 use tokio::sync::mpsc;
 
 use runtime_api::api as appchain_deip;
@@ -38,7 +39,7 @@ use runtime_api::api as appchain_deip;
 // )]
 // pub mod appchain_deip {}
 
-pub type RuntimeT = node_template_runtime::Runtime;
+pub type RuntimeT = appchain_deip::runtime_types::appchain_deip_runtime::Runtime;
 
 macro_rules! reset {
     ($actor_task_queue:ident, $_released_actor_queue:ident, $offchain_config:expr) => {

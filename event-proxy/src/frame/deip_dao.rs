@@ -1,17 +1,9 @@
-use frame_support::Parameter;
-use frame_system::Config;
-use sp_runtime::traits::Member;
-
 use serde::{
     ser::{SerializeStruct, Serializer},
     Serialize,
 };
 
 use crate::appchain_deip::deip_dao::events::{DaoAlterAuthority, DaoCreate, DaoMetadataUpdated};
-
-pub trait DeipDao: Config {
-    type Dao: Parameter + Member + Serialize;
-}
 
 impl Serialize for DaoCreate {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>

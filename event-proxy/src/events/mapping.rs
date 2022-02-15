@@ -6,7 +6,7 @@
 
 use node_template_runtime::{Event, Runtime};
 
-use crate::frame::{assets::Assets, deip::Deip, deip_dao::DeipDao, deip_proposal::DeipProposal};
+use crate::frame::deip_proposal::DeipProposal;
 
 use super::DomainEventData;
 
@@ -25,7 +25,7 @@ use super::DomainEventData;
 
 fn match_event<T>(e: &Event) -> DomainEventData<T>
 where
-    T: DeipProposal + Deip + DeipDao + Assets,
+    T: DeipProposal,
 {
     match e {
         Event::DeipDao(deip_dao_event) => match_event_deip_dao(deip_dao_event),
@@ -57,7 +57,7 @@ where
 
 fn match_event_deip_dao<T>(e: &pallet_deip_dao::Event<Runtime>) -> DomainEventData<T>
 where
-    T: DeipProposal + Deip + DeipDao + Assets,
+    T: DeipProposal,
 {
     use pallet_deip_dao::Event::*;
 
@@ -80,7 +80,7 @@ where
 
 fn match_event_deip_proposal<T>(e: &pallet_deip_proposal::Event<Runtime>) -> DomainEventData<T>
 where
-    T: DeipProposal + Deip + DeipDao + Assets,
+    T: DeipProposal,
 {
     use pallet_deip_proposal::Event::*;
 
@@ -113,7 +113,7 @@ fn match_event_deip_assets<T>(
     e: &pallet_deip_assets::pallet_assets::Event<Runtime>,
 ) -> DomainEventData<T>
 where
-    T: DeipProposal + Deip + DeipDao + Assets,
+    T: DeipProposal,
 {
     use pallet_deip_assets::pallet_assets::Event::*;
 
@@ -197,7 +197,7 @@ where
 
 fn match_event_deip<T>(e: &pallet_deip::Event<Runtime>) -> DomainEventData<T>
 where
-    T: DeipProposal + Deip + DeipDao + Assets,
+    T: DeipProposal,
 {
     use pallet_deip::RawEvent::*;
 

@@ -1,9 +1,4 @@
-use crate::{
-    frame::{self, deip_proposal::DeipProposal},
-    RuntimeT,
-};
-
-use pallet_deip_assets::pallet_assets;
+use crate::{frame::deip_proposal::DeipProposal, RuntimeT};
 
 use deip_call::WrappedCall;
 
@@ -45,40 +40,3 @@ impl DeipProposal for RuntimeT {
         deip_call::wrap_input_batch(batch)
     }
 }
-
-impl frame::deip::Deip for RuntimeT {
-    type DomainId = pallet_deip::DomainId;
-    type ProjectId = pallet_deip::ProjectId;
-    type Project = pallet_deip::Project<Self::Hash, Self::AccountId>;
-    type ReviewId = pallet_deip::ReviewId;
-    type Review = pallet_deip::Review<Self::Hash, Self::AccountId>;
-    type NdaId = pallet_deip::NdaId;
-    type NdaAccessRequestId = pallet_deip::NdaAccessRequestId;
-    type ProjectContentId = pallet_deip::ProjectContentId;
-    type InvestmentId = pallet_deip::InvestmentId;
-    type FundingModel = pallet_deip::FundingModelOf<RealRuntime>;
-    type ContractAgreementId = pallet_deip::ContractAgreementId;
-    type ContractAgreementTerms = pallet_deip::ContractAgreementTermsOf<RealRuntime>;
-}
-
-impl frame::deip_dao::DeipDao for RuntimeT {
-    type Dao = pallet_deip_dao::dao::DaoOf<RealRuntime>;
-}
-
-type AssetId = <RealRuntime as pallet_assets::Config>::AssetId;
-type Balance = <RealRuntime as pallet_assets::Config>::Balance;
-
-impl frame::assets::Assets for RuntimeT {
-    type AssetId = AssetId;
-    type Balance = Balance;
-}
-
-// impl frame::octopus_appchain::OctopusAppchain for RuntimeT {
-//     type Balance = <<RealRuntime as pallet_octopus_appchain::Config>::Currency as frame_support::traits::Currency<<RealRuntime as frame_system::Config>::AccountId>>::Balance;
-//     type AssetBalance = <<RealRuntime as pallet_octopus_appchain::Config>::Assets as frame_support::traits::fungibles::Inspect<<RealRuntime as frame_system::Config>::AccountId>>::Balance;
-//     type AssetId = <<RealRuntime as pallet_octopus_appchain::Config>::Assets as frame_support::traits::fungibles::Inspect<<RealRuntime as frame_system::Config>::AccountId>>::AssetId;
-// }
-
-// impl frame::octopus_lpos::OctopusLpos for RuntimeT {
-//     type EraIndex = pallet_octopus_lpos::EraIndex;
-// }

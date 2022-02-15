@@ -1,13 +1,9 @@
-use frame_system::Config;
-
-use sp_core::{
-    hashing::{self, twox_128},
-    storage::StorageKey,
-};
+use sp_core::hashing::{self, twox_128};
 
 use subxt::{
     rpc::{RpcError, Subscription},
-    BasicError, Client, ClientBuilder, EventsDecoder, Phase, RawEvent,
+    sp_core::storage::StorageKey,
+    BasicError, Client, ClientBuilder, Config, EventsDecoder, Phase, RawEvent,
 };
 use tokio::sync::mpsc;
 
