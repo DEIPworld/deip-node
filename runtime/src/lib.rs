@@ -721,6 +721,7 @@ pub type TransactionCtxId = pallet_deip_portal::TransactionCtxId<TransactionCtx>
 
 parameter_types! {
     pub const MaxNdaParties: u16 = 50;
+    pub const MaxInvestmentShares: u16 = 10;
 }
 
 impl pallet_deip::Config for Runtime {
@@ -731,6 +732,7 @@ impl pallet_deip::Config for Runtime {
     type AssetSystem = Self;
     type DeipWeightInfo = pallet_deip::Weights<Self>;
     type MaxNdaParties = MaxNdaParties;
+    type MaxInvestmentShares = MaxInvestmentShares;
 }
 
 parameter_types! {
