@@ -24,7 +24,7 @@ fn add_locks<T: Config>(who: &T::AccountId, n: u8) {
     for id in 0..n {
         let lock_id = [id; 8];
         let locked = 100u32;
-        let reasons = WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE;
+        let reasons = WithdrawReasons::TRANSACTION_PAYMENT | WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE | WithdrawReasons::FEE | WithdrawReasons::TIP;
         T::Currency::set_lock(lock_id, who, locked.into(), reasons);
     }
 }
