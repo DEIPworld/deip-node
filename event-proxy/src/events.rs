@@ -4,12 +4,14 @@ use std::fmt::Debug;
 use codec::Decode;
 use frame_support::pallet_prelude::Member;
 use serde::{ser::Serializer, Deserialize, Serialize};
-use subxt::{Config, Event};
-
-use sp_runtime::{
-    generic::Block,
-    traits::{Block as _Block, Header as _Header},
+use subxt::{
+    sp_runtime::{
+        generic::Block,
+        traits::{Block as _Block, Header as _Header},
+    },
+    Config, Event,
 };
+
 use subxt::RawEvent;
 
 use crate::{
@@ -17,12 +19,7 @@ use crate::{
         deip::events as deip_events, deip_dao::events as dao_events,
         deip_proposal::events as proposal_events, parity_tech_assets::events as assets_events,
     },
-    frame::{
-        assets::Assets,
-        deip::Deip,
-        deip_dao::DeipDao,
-        deip_proposal::{self, DeipProposal},
-    },
+    frame::deip_proposal::{self, DeipProposal},
 };
 
 mod mapping;
@@ -108,25 +105,23 @@ pub struct DomainEventMeta<Block> {
 
 pub type DomainEvent<T> = BaseEvent<DomainEventData<T>, DomainEventMeta<BlockMetadata<T>>>;
 
-impl<T: Config> From<DomainEvent<T>> for SpecializedEvent<T>
-where
-    T: Deip + DeipProposal + DeipDao + Assets,
-{
+impl<T: Config + DeipProposal> From<DomainEvent<T>> for SpecializedEvent<T> {
     fn from(source: DomainEvent<T>) -> Self {
         Self::Domain(source)
     }
 }
 
-impl<T: Config> From<InfrastructureEvent<T>> for SpecializedEvent<T>
-where
-    T: Deip + DeipProposal + DeipDao + Assets,
-{
+impl<T: Config + DeipProposal> From<InfrastructureEvent<T>> for SpecializedEvent<T> {
     fn from(source: InfrastructureEvent<T>) -> Self {
         Self::Infrastructure(source)
     }
 }
 
-impl<T: DeipProposal + Deip + DeipDao + Assets> Serialize for DomainEventData<T> {
+impl<T> Serialize for DomainEventData<T>
+where
+    T: DeipProposal,
+    T::AccountId: Serialize,
+{
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
     where
         S: Serializer,
@@ -197,7 +192,7 @@ impl<T: DeipProposal + Deip + DeipDao + Assets> Serialize for DomainEventData<T>
 }
 
 #[derive(Debug)]
-pub enum DomainEventData<T: DeipProposal + Deip + DeipDao + Assets> {
+pub enum DomainEventData<T: DeipProposal> {
     // DeipProposal:
     ProposalProposed(deip_proposal::ProposedEvent<T>),
     ProposalApproved(proposal_events::Approved),
@@ -265,7 +260,7 @@ pub fn known_domain_events<T>(
     portal_id: &PortalId,
 ) -> Result<Option<SpecializedEvent<T>>, codec::Error>
 where
-    T: DeipProposal + Deip + DeipDao + Assets + Debug + Config,
+    T: DeipProposal + Debug + Config,
     T::Extrinsic: Member + Send + Sync,
 {
     let (index, raw) = raw;

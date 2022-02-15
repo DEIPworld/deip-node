@@ -15,7 +15,7 @@ impl OffchainClient {
         Self { mock }
     }
     pub async fn get_last_known_block(&self) -> MaybeLastKnownBlock {
-        self.mock
+        self.mock.clone()
     }
 }
 

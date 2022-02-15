@@ -1,7 +1,3 @@
-use frame_support::Parameter;
-use frame_system::Config;
-use sp_runtime::traits::Member;
-
 use serde::{
     ser::{SerializeStruct, Serializer},
     Serialize,
@@ -15,21 +11,6 @@ use crate::appchain_deip::deip::events::{
     SimpleCrowdfundingActivated, SimpleCrowdfundingCreated, SimpleCrowdfundingExpired,
     SimpleCrowdfundingFinished,
 };
-
-pub trait Deip: Config {
-    type DomainId: Parameter + Member + Serialize;
-    type ProjectId: Parameter + Member + Serialize;
-    type Project: Parameter + Member + Serialize;
-    type ReviewId: Parameter + Member + Serialize;
-    type Review: Parameter + Member + Serialize;
-    type NdaId: Parameter + Member + Serialize;
-    type NdaAccessRequestId: Parameter + Member + Serialize;
-    type ProjectContentId: Parameter + Member + Serialize;
-    type InvestmentId: Parameter + Member + Serialize;
-    type FundingModel: Parameter + Member + Serialize;
-    type ContractAgreementId: Parameter + Member + Serialize;
-    type ContractAgreementTerms: Parameter + Member + Serialize;
-}
 
 const ACCOUNT_ID_KEY: &str = "account_id";
 

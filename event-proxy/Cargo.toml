@@ -12,9 +12,8 @@ version = "3.0.0"
 
 [dependencies]
 # substrate-subxt = { git = "https://github.com/DEIPworld/substrate-subxt.git", rev = "297bf5354de99df1ee34c54901d1c800957f5928" }
-#substrate-subxt = { path = "../../substrate-subxt" }
-# subxt = "0.17.0"
-subxt = { path = "../../subxt/subxt" }
+# subxt = { path = "../../subxt/subxt" }
+subxt = "0.17.0"
 jsonrpsee-ws-client = { version = "0.2.0", default-features = false, features = ["tokio1"] }
 rdkafka = { version = "=0.26.0", default_features = true, features = ["cmake-build"] }
 tokio = { version = "1", features = ["full"] }

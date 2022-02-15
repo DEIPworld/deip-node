@@ -1,14 +1,3 @@
-use frame_support::Parameter;
-use frame_system::Config;
-use sp_runtime::traits::Member;
-
-use serde::Serialize;
-
-pub trait Assets: Config {
-    type AssetId: Parameter + Member + Serialize;
-    type Balance: Parameter + Member + Serialize;
-}
-
 #[cfg(not(feature = "octopus"))]
 impl Serialize for ForceTransferred {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
