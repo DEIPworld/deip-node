@@ -19,7 +19,7 @@ impl<T: Config> Module<T> {
         account: T::AccountId,
         sale_id: InvestmentId,
         asset: DeipAssetOf<T>,
-    ) -> DispatchResult {
+    ) -> DispatchResultWithPostInfo {
         let sale = SimpleCrowdfundingMap::<T>::try_get(sale_id)
             .map_err(|_| Error::<T>::InvestingNotFound)?;
 
@@ -96,8 +96,9 @@ impl<T: Config> Module<T> {
 
         if is_hard_cap_reached {
             Self::finish_crowdfunding_by_id(sale_id).expect("finish; already found");
+            return Ok(Some(T::DeipWeightInfo::invest_hard_cap_reached()).into())
         }
 
-        Ok(())
+        Ok(Some(T::DeipWeightInfo::invest()).into())
     }
 }

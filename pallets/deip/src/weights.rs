@@ -34,6 +34,13 @@ use sp_std::marker::PhantomData;
 
 pub trait WeightInfo {
     fn create_project(d: u32) -> Weight;
+    fn create_investment_opportunity(s: u32) -> Weight;
+    fn activate_crowdfunding() -> Weight;
+    fn expire_crowdfunding_already_expired() -> Weight;
+    fn expire_crowdfunding() -> Weight;
+    fn finish_crowdfunding() -> Weight;
+    fn invest() -> Weight;
+    fn invest_hard_cap_reached() -> Weight;
     fn update_project() -> Weight;
     fn create_project_content(a: u32, r: u32) -> Weight;
     fn create_project_nda(p: u32) -> Weight;
@@ -42,7 +49,7 @@ pub trait WeightInfo {
     fn reject_nda_content_access_request() -> Weight;
     fn create_review(d: u32) -> Weight;
     fn upvote_review() -> Weight;
-    // fn add_domain() -> Weight;
+    fn add_domain() -> Weight;
     fn create_contract_agreement_project_license() -> Weight;
     fn create_contract_agreement_general_contract() -> Weight;
     fn accept_contract_agreement_project_license_unsigned() -> Weight;
@@ -59,16 +66,104 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
     // Storage: Deip ProjectMap (r:1 w:1)
     // Storage: Deip ProjectIdByTeamId (r:0 w:1)
     fn create_project(d: u32) -> Weight {
-        (45_940_000 as Weight)
-            // Standard Error: 111_000
-            .saturating_add((9_544_000 as Weight).saturating_mul(d as Weight))
+        (36_645_000 as Weight)
+            // Standard Error: 29_000
+            .saturating_add((6_632_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(T::DbWeight::get().reads(1 as Weight))
             .saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(d as Weight)))
             .saturating_add(T::DbWeight::get().writes(2 as Weight))
     }
+    // Storage: Timestamp Now (r:1 w:0)
+    // Storage: Deip SimpleCrowdfundingMap (r:1 w:1)
+    // Storage: Assets InvestmentMap (r:1 w:1)
+    // Storage: System Account (r:1 w:1)
+    // Storage: Assets AssetIdByDeipAssetId (r:2 w:0)
+    // Storage: ParityTechAssets Asset (r:1 w:1)
+    // Storage: ParityTechAssets Account (r:2 w:2)
+    // Storage: Assets InvestmentByAssetId (r:2 w:2)
+    // Storage: unknown [0x3a65787472696e7369635f696e646578] (r:1 w:0)
+    fn create_investment_opportunity(s: u32) -> Weight {
+        (0 as Weight)
+            // Standard Error: 43_194_000
+            .saturating_add((362_308_000 as Weight).saturating_mul(s as Weight))
+            .saturating_add(T::DbWeight::get().reads(6 as Weight))
+            .saturating_add(T::DbWeight::get().reads((6 as Weight).saturating_mul(s as Weight)))
+            .saturating_add(T::DbWeight::get().writes(4 as Weight))
+            .saturating_add(T::DbWeight::get().writes((4 as Weight).saturating_mul(s as Weight)))
+    }
+    // Storage: Deip SimpleCrowdfundingMap (r:1 w:1)
+    // Storage: Timestamp Now (r:1 w:0)
+    fn activate_crowdfunding() -> Weight {
+        (45_068_000 as Weight)
+            .saturating_add(T::DbWeight::get().reads(2 as Weight))
+            .saturating_add(T::DbWeight::get().writes(1 as Weight))
+    }
+    // Storage: Deip SimpleCrowdfundingMap (r:1 w:1)
+    fn expire_crowdfunding_already_expired() -> Weight {
+        (19_449_000 as Weight)
+            .saturating_add(T::DbWeight::get().reads(1 as Weight))
+            .saturating_add(T::DbWeight::get().writes(1 as Weight))
+    }
+    // Storage: Deip SimpleCrowdfundingMap (r:1 w:1)
+    // Storage: Timestamp Now (r:1 w:0)
+    // Storage: Deip InvestmentMap (r:1 w:0)
+    // Storage: Assets InvestmentMap (r:1 w:1)
+    // Storage: Assets InvestmentByAssetId (r:11 w:11)
+    // Storage: Assets AssetIdByDeipAssetId (r:22 w:0)
+    // Storage: ParityTechAssets Account (r:21 w:20)
+    // Storage: ParityTechAssets Asset (r:10 w:10)
+    // Storage: System Account (r:1 w:1)
+    // Storage: Assets ProjectIdByAssetId (r:10 w:0)
+    fn expire_crowdfunding() -> Weight {
+        (1_271_753_000 as Weight)
+            .saturating_add(T::DbWeight::get().reads(79 as Weight))
+            .saturating_add(T::DbWeight::get().writes(44 as Weight))
+    }
+    // Storage: Deip SimpleCrowdfundingMap (r:1 w:1)
+    // Storage: Deip InvestmentMap (r:1 w:1)
+    // Storage: Assets InvestmentMap (r:1 w:1)
+    // Storage: Assets AssetIdByDeipAssetId (r:22 w:0)
+    // Storage: ParityTechAssets Asset (r:11 w:11)
+    // Storage: ParityTechAssets Account (r:22 w:22)
+    // Storage: System Account (r:1 w:1)
+    // Storage: Assets ProjectIdByAssetId (r:11 w:0)
+    // Storage: Assets InvestmentByAssetId (r:11 w:11)
+    fn finish_crowdfunding() -> Weight {
+        (1_429_724_000 as Weight)
+            .saturating_add(T::DbWeight::get().reads(81 as Weight))
+            .saturating_add(T::DbWeight::get().writes(48 as Weight))
+    }
+    // Storage: Deip SimpleCrowdfundingMap (r:1 w:1)
+    // Storage: Assets InvestmentMap (r:1 w:0)
+    // Storage: Assets AssetIdByDeipAssetId (r:2 w:0)
+    // Storage: ParityTechAssets Asset (r:1 w:1)
+    // Storage: ParityTechAssets Account (r:2 w:2)
+    // Storage: System Account (r:1 w:1)
+    // Storage: Deip InvestmentMap (r:1 w:1)
+    // Storage: Timestamp Now (r:1 w:0)
+    fn invest() -> Weight {
+        (164_877_000 as Weight)
+            .saturating_add(T::DbWeight::get().reads(10 as Weight))
+            .saturating_add(T::DbWeight::get().writes(6 as Weight))
+    }
+    // Storage: Deip SimpleCrowdfundingMap (r:1 w:1)
+    // Storage: Assets InvestmentMap (r:1 w:1)
+    // Storage: Assets AssetIdByDeipAssetId (r:22 w:0)
+    // Storage: ParityTechAssets Asset (r:11 w:11)
+    // Storage: ParityTechAssets Account (r:22 w:22)
+    // Storage: System Account (r:1 w:1)
+    // Storage: Deip InvestmentMap (r:1 w:1)
+    // Storage: Timestamp Now (r:1 w:0)
+    // Storage: Assets ProjectIdByAssetId (r:11 w:0)
+    // Storage: Assets InvestmentByAssetId (r:11 w:11)
+    fn invest_hard_cap_reached() -> Weight {
+        (1_528_920_000 as Weight)
+            .saturating_add(T::DbWeight::get().reads(82 as Weight))
+            .saturating_add(T::DbWeight::get().writes(48 as Weight))
+    }
     // Storage: Deip ProjectMap (r:1 w:1)
     fn update_project() -> Weight {
-        (36_294_000 as Weight)
+        (28_574_000 as Weight)
             .saturating_add(T::DbWeight::get().reads(1 as Weight))
             .saturating_add(T::DbWeight::get().writes(1 as Weight))
     }
@@ -76,11 +171,11 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
     // Storage: Deip ProjectMap (r:1 w:0)
     // Storage: Deip ContentIdByProjectId (r:1 w:1)
     fn create_project_content(a: u32, r: u32) -> Weight {
-        (34_234_000 as Weight)
-            // Standard Error: 64_000
-            .saturating_add((871_000 as Weight).saturating_mul(a as Weight))
-            // Standard Error: 64_000
-            .saturating_add((8_656_000 as Weight).saturating_mul(r as Weight))
+        (0 as Weight)
+            // Standard Error: 652_000
+            .saturating_add((798_000 as Weight).saturating_mul(a as Weight))
+            // Standard Error: 652_000
+            .saturating_add((9_357_000 as Weight).saturating_mul(r as Weight))
             .saturating_add(T::DbWeight::get().reads(3 as Weight))
             .saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(r as Weight)))
             .saturating_add(T::DbWeight::get().writes(2 as Weight))
@@ -127,9 +222,9 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
     // Storage: Deip ReviewIdByProjectId (r:0 w:1)
     // Storage: Deip ReviewIdByContentId (r:0 w:1)
     fn create_review(d: u32) -> Weight {
-        (54_148_000 as Weight)
-            // Standard Error: 199_000
-            .saturating_add((9_477_000 as Weight).saturating_mul(d as Weight))
+        (44_425_000 as Weight)
+            // Standard Error: 22_000
+            .saturating_add((6_612_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(T::DbWeight::get().reads(2 as Weight))
             .saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(d as Weight)))
             .saturating_add(T::DbWeight::get().writes(4 as Weight))
@@ -141,23 +236,23 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
     // Storage: Deip VoteIdByReviewId (r:0 w:1)
     // Storage: Deip VoteIdByAccountId (r:0 w:1)
     fn upvote_review() -> Weight {
-        (87_332_000 as Weight)
+        (65_252_000 as Weight)
             .saturating_add(T::DbWeight::get().reads(4 as Weight))
             .saturating_add(T::DbWeight::get().writes(3 as Weight))
     }
     // Storage: Deip DomainCount (r:1 w:1)
     // Storage: Deip Domains (r:1 w:1)
-    // fn add_domain() -> Weight {
-    //     (46_126_000 as Weight)
-    //         .saturating_add(T::DbWeight::get().reads(2 as Weight))
-    //         .saturating_add(T::DbWeight::get().writes(2 as Weight))
-    // }
+    fn add_domain() -> Weight {
+        (46_126_000 as Weight)
+            .saturating_add(T::DbWeight::get().reads(2 as Weight))
+            .saturating_add(T::DbWeight::get().writes(2 as Weight))
+    }
     // Storage: Timestamp Now (r:1 w:0)
     // Storage: Deip ContractAgreementMap (r:1 w:1)
     // Storage: Deip ProjectMap (r:1 w:0)
     // Storage: Deip ContractAgreementIdByType (r:0 w:1)
     fn create_contract_agreement_project_license() -> Weight {
-        (62_469_000 as Weight)
+        (49_030_000 as Weight)
             .saturating_add(T::DbWeight::get().reads(3 as Weight))
             .saturating_add(T::DbWeight::get().writes(2 as Weight))
     }
@@ -165,14 +260,14 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
     // Storage: Deip ContractAgreementMap (r:1 w:1)
     // Storage: Deip ContractAgreementIdByType (r:0 w:1)
     fn create_contract_agreement_general_contract() -> Weight {
-        (54_880_000 as Weight)
+        (42_595_000 as Weight)
             .saturating_add(T::DbWeight::get().reads(2 as Weight))
             .saturating_add(T::DbWeight::get().writes(2 as Weight))
     }
     // Storage: Deip ContractAgreementMap (r:1 w:1)
     // Storage: Timestamp Now (r:1 w:0)
     fn accept_contract_agreement_project_license_unsigned() -> Weight {
-        (54_005_000 as Weight)
+        (40_842_000 as Weight)
             .saturating_add(T::DbWeight::get().reads(2 as Weight))
             .saturating_add(T::DbWeight::get().writes(1 as Weight))
     }
@@ -186,19 +281,19 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
     // Storage: Deip ProjectMap (r:1 w:0)
     // Storage: Assets ProjectIdByAssetId (r:1 w:0)
     fn accept_contract_agreement_project_license_signed_by_licenser() -> Weight {
-        (330_723_000 as Weight)
+        (197_721_000 as Weight)
             .saturating_add(T::DbWeight::get().reads(14 as Weight))
             .saturating_add(T::DbWeight::get().writes(4 as Weight))
     }
     // Storage: Deip ContractAgreementMap (r:1 w:1)
     fn accept_contract_agreement_general_contract_partially_accepted() -> Weight {
-        (47_963_000 as Weight)
+        (36_490_000 as Weight)
             .saturating_add(T::DbWeight::get().reads(1 as Weight))
             .saturating_add(T::DbWeight::get().writes(1 as Weight))
     }
     // Storage: Deip ContractAgreementMap (r:1 w:1)
     fn accept_contract_agreement_general_contract_finalized() -> Weight {
-        (61_951_000 as Weight)
+        (47_737_000 as Weight)
             .saturating_add(T::DbWeight::get().reads(1 as Weight))
             .saturating_add(T::DbWeight::get().writes(1 as Weight))
     }

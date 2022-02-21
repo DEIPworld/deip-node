@@ -6,7 +6,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use beefy_primitives::{crypto::AuthorityId as BeefyId, ValidatorSet};
+use beefy_primitives::{crypto::AuthorityId as BeefyId, mmr::MmrLeafVersion, ValidatorSet};
 pub use frame_support::{
     construct_runtime,
     pallet_prelude::{
@@ -39,10 +39,16 @@ use sp_api::{impl_runtime_apis, BlockT, NumberFor, RuntimeVersion};
 use sp_core::OpaqueMetadata;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-use sp_runtime::{create_runtime_str, generic::{self, Era}, impl_opaque_keys, traits::{
-    AccountIdLookup, BlakeTwo256, ConvertInto, Extrinsic, IdentifyAccount, Keccak256,
-    OpaqueKeys, SaturatedConversion, StaticLookup, Verify,
-}, ApplyExtrinsicResult, KeyTypeId, MultiSignature};
+use sp_runtime::{
+    create_runtime_str,
+    generic::{self, Era},
+    impl_opaque_keys,
+    traits::{
+        AccountIdLookup, BlakeTwo256, ConvertInto, Extrinsic, IdentifyAccount, Keccak256,
+        OpaqueKeys, SaturatedConversion, StaticLookup, Verify,
+    },
+    ApplyExtrinsicResult, KeyTypeId, MultiSignature,
+};
 pub use sp_runtime::{Perbill, Permill};
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -175,7 +181,6 @@ pub const EPOCH_DURATION_IN_SLOTS: u64 = {
 pub const MINUTES: BlockNumber = 60 / (SECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
-
 
 pub mod currency {
     use super::Balance;
@@ -527,8 +532,8 @@ impl pallet_mmr::Config for Runtime {
     const INDEXING_PREFIX: &'static [u8] = b"mmr";
     type Hashing = Keccak256;
     type Hash = MmrHash;
-    type LeafData = frame_system::Pallet<Self>;
-    type OnNewRoot = DepositLog;
+    type LeafData = pallet_beefy_mmr::Pallet<Self>;
+    type OnNewRoot = pallet_beefy_mmr::DepositBeefyDigest<Self>;
     type WeightInfo = ();
 }
 
@@ -645,6 +650,16 @@ impl pallet_beefy::Config for Runtime {
     type BeefyId = BeefyId;
 }
 
+parameter_types! {
+    pub LeafVersion: MmrLeafVersion = MmrLeafVersion::new(0,0);
+}
+
+impl pallet_beefy_mmr::Config for Runtime {
+    type LeafVersion = LeafVersion;
+    type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::BeefyEcdsaToEthereum;
+    type ParachainHeads = ();
+}
+
 pub struct OctopusAppCrypto;
 
 impl frame_system::offchain::AppCrypto<<Signature as Verify>::Signer, Signature>
@@ -721,6 +736,7 @@ pub type TransactionCtxId = pallet_deip_portal::TransactionCtxId<TransactionCtx>
 
 parameter_types! {
     pub const MaxNdaParties: u16 = 50;
+    pub const MaxInvestmentShares: u16 = 10;
 }
 
 impl pallet_deip::Config for Runtime {
@@ -731,6 +747,7 @@ impl pallet_deip::Config for Runtime {
     type AssetSystem = Self;
     type DeipWeightInfo = pallet_deip::Weights<Self>;
     type MaxNdaParties = MaxNdaParties;
+    type MaxInvestmentShares = MaxInvestmentShares;
 }
 
 parameter_types! {
@@ -916,6 +933,7 @@ construct_runtime!(
         ParityTechUniques: pallet_uniques::{Pallet, Storage, Event<T>},
         Mmr: pallet_mmr::{Pallet, Storage},
         Beefy: pallet_beefy::{Pallet, Config<T>},
+        MmrLeaf: pallet_beefy_mmr,
         Multisig: pallet_multisig::{Pallet, Call, Storage, Event<T>},
         Utility: pallet_utility::{Pallet, Call, Event},
         Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
