@@ -30,83 +30,36 @@ pub struct PortalUpdate<T: crate::Config + TypeInfo> {
     pub metadata: Option<PortalMetadata>,
 }
 
-impl<T: crate::Config> PortalModuleT<T, crate::PortalCtxOf<T>, crate::Call<T>> for T {}
-
-pub trait PortalModuleT<T: crate::Config, U, LocalCall>
-where
-    U: crate::PortalCtxT<
-        LocalCall,
-        PortalId = PortalId<T>,
-        Extrinsic = T::UncheckedExtrinsic,
-        Error = crate::Error<T>,
-        Delegate = PortalDelegate<T>,
-        BlockNumber = T::BlockNumber,
-    >,
-{
-    fn create_portal(
+impl<T: crate::Config> PortalT<T> for Portal<T> {
+    fn new(
+        id: PortalId<T>,
         owner: PortalOwner<T>,
         delegate: PortalDelegate<T>,
         metadata: PortalMetadata,
-    ) -> Result<(), crate::Error<T>> {
-        let portal_id = T::lookup_tenant(&owner)?;
-        T::Portal::not_exist(&portal_id)?;
-        let portal = T::Portal::new(portal_id, owner, delegate, metadata);
-        T::Portal::insert_owner_lookup(&portal);
-        T::Portal::insert_delegate_lookup(&portal);
-        T::Portal::insert_portal(portal);
-        Ok(())
+    ) -> Self {
+        Self { id, owner, delegate, metadata }
     }
 
-    fn update_portal(
-        owner: PortalOwner<T>,
-        update: PortalUpdate<T>,
-    ) -> Result<(), crate::Error<T>> {
-        let portal_id = T::Portal::lookup_owner(owner)?;
-        let mut portal = T::Portal::fetch_portal(&portal_id);
-        let PortalUpdate { delegate, metadata } = update;
-        let update_delegate = delegate.is_some();
-        let update_metadata = metadata.is_some();
-        portal.update_delegate(delegate).update_metadata(metadata);
-        if update_delegate {
-            T::Portal::insert_delegate_lookup(&portal);
-        }
-        if update_delegate || update_metadata {
-            T::Portal::insert_portal(portal);
-        }
-        Ok(())
+    fn id(&self) -> &PortalId<T> {
+        &self.id
+    }
+    fn owner(&self) -> &PortalOwner<T> {
+        &self.owner
+    }
+    fn delegate(&self) -> &PortalDelegate<T> {
+        &self.delegate
+    }
+    fn metadata(&self) -> &PortalMetadata {
+        &self.metadata
     }
 
-    fn schedule_tx(xt: U::Extrinsic, delegate: U::Delegate) -> Result<(), U::Error> {
-        U::current().schedule_extrinsic(xt, delegate)
+    fn set_delegate(&mut self, delegate: PortalDelegate<T>) -> &mut Self {
+        self.delegate = delegate;
+        self
     }
-
-    fn submit_scheduled_tx(at: T::BlockNumber) -> Result<Vec<()>, ()> {
-        U::submit_scheduled(at)
-    }
-
-    fn dispatch_scheduled_tx<D: Dispatchable>(
-        portal_id: PortalId<T>,
-        call: D,
-        origin: D::Origin,
-    ) -> Result<DispatchResultWithInfo<D::PostInfo>, U::Error> {
-        U::current().dispatch_scheduled(portal_id, call, origin)
-    }
-
-    fn exec_postponed_tx<D: Dispatchable>(
-        portal_id: PortalId<T>,
-        call: D,
-        origin: D::Origin,
-    ) -> DispatchResultWithInfo<D::PostInfo> {
-        U::current().dispatch(portal_id, call, origin)
-    }
-
-    #[cfg(not(feature = "runtime-benchmarks"))]
-    fn lookup_tenant(key: &PortalOwner<T>) -> Result<PortalId<T>, crate::Error<T>> {
-        T::TenantLookup::lookup(key).ok_or(OwnerIsNotATenant)
-    }
-    #[cfg(feature = "runtime-benchmarks")]
-    fn lookup_tenant(key: &PortalOwner<T>) -> Result<PortalId<T>, crate::Error<T>> {
-        Ok(<_>::default())
+    fn set_metadata(&mut self, metadata: PortalMetadata) -> &mut Self {
+        self.metadata = metadata;
+        self
     }
 }
 
@@ -163,38 +116,5 @@ pub trait PortalT<T: crate::Config>: Sized {
 
     fn fetch_portal(id: &PortalId<T>) -> T::Portal {
         PortalRepository::<T>::get(id).expect("Portal must exist")
-    }
-}
-
-impl<T: crate::Config> PortalT<T> for Portal<T> {
-    fn new(
-        id: PortalId<T>,
-        owner: PortalOwner<T>,
-        delegate: PortalDelegate<T>,
-        metadata: PortalMetadata,
-    ) -> Self {
-        Self { id, owner, delegate, metadata }
-    }
-
-    fn id(&self) -> &PortalId<T> {
-        &self.id
-    }
-    fn owner(&self) -> &PortalOwner<T> {
-        &self.owner
-    }
-    fn delegate(&self) -> &PortalDelegate<T> {
-        &self.delegate
-    }
-    fn metadata(&self) -> &PortalMetadata {
-        &self.metadata
-    }
-
-    fn set_delegate(&mut self, delegate: PortalDelegate<T>) -> &mut Self {
-        self.delegate = delegate;
-        self
-    }
-    fn set_metadata(&mut self, metadata: PortalMetadata) -> &mut Self {
-        self.metadata = metadata;
-        self
     }
 }

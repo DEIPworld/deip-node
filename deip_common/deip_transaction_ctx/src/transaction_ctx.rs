@@ -19,7 +19,7 @@ pub trait TransactionCtxT: Sized + Clone {
     fn block_number(&self) -> Self::BlockNumber;
     fn extrinsic_id(&self) -> Self::ExtrinsicId;
     fn id(&self) -> TransactionCtxId<Self>;
-    fn extrinsic_data(&self, decode: bool) -> Vec<u8>;
+    fn extrinsic_data(&self) -> Vec<u8>;
 }
 
 /// Id of a context that transaction executed in
@@ -60,16 +60,13 @@ impl<T: frame_system::Config + TypeInfo> TransactionCtxT for TransactionCtx<T> {
     }
 
     /// Data of the current extrinsic.
-    fn extrinsic_data(&self, decode: bool) -> Vec<u8> {
+    fn extrinsic_data(&self) -> Vec<u8> {
         let mut key = Vec::with_capacity(40);
         key.extend(twox_128(b"System"));
         key.extend(twox_128(b"ExtrinsicData"));
         key.extend(self.extrinsic_id().twox_64_concat());
         let encoded = sp_io::storage::get(&key[..]).unwrap();
-        if decode {
-            return Vec::<u8>::decode(&mut &encoded[..]).unwrap()
-        }
-        encoded
+        Vec::<u8>::decode(&mut &encoded[..]).unwrap()
     }
 }
 
@@ -103,8 +100,8 @@ macro_rules! ctx_t {
                 TransactionCtxId { block_number, extrinsic_id }
             }
 
-            fn extrinsic_data(&self, decode: bool) -> Vec<u8> {
-                self.0.extrinsic_data(decode)
+            fn extrinsic_data(&self) -> Vec<u8> {
+                self.0.extrinsic_data()
             }
         }
     };
