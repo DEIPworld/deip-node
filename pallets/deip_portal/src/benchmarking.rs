@@ -1,6 +1,6 @@
 #![cfg(feature = "runtime-benchmarks")]
 
-use super::{*, portal::*};
+use super::{*, module::*};
 use frame_system::{RawOrigin, EventRecord};
 use frame_system::Config as Sys;
 use frame_support::{ensure, traits::Get};
@@ -54,7 +54,7 @@ benchmarks! {
         let id = *portal.id();
         assert_eq!(PortalRepository::<T>::get(id).unwrap(), portal)
     }
-    
+
     update {
         let portal = init_portal::<T>();
         let mut portal = create_portal::<T>(portal);
@@ -71,7 +71,7 @@ benchmarks! {
         portal.update_delegate(delegate).update_metadata(metadata);
         assert_eq!(PortalRepository::<T>::get(id).unwrap(), portal)
     }
-    
+
     // schedule {
     //     let portal = init_portal::<T>();
     //     let mut portal = create_portal::<T>(portal);
