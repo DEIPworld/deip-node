@@ -116,7 +116,7 @@ where
                 &no_prefix[key_encoded_size..],
             );
 
-            let key = chain_key_hash_map(&prefix(b"Assets", b"Asset"), &key_hashed);
+            let key = chain_key_hash_map(&prefix(b"ParityTechAssets", b"Asset"), &key_hashed);
 
             self.state
                 .storage(key.clone(), at)
@@ -124,7 +124,7 @@ where
                 .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
         };
 
-        let index_prefix = prefix(b"DeipAssets", b"AssetIdByDeipAssetId");
+        let index_prefix = prefix(b"Assets", b"AssetIdByDeipAssetId");
         let index_key = HashedKey::<Identity>::unsafe_from_encoded(&key_encoded);
 
         let prefix_key = chain_key_hash_map(&index_prefix, &index_key);
