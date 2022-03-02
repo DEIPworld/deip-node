@@ -24,6 +24,9 @@ use common_rpc::{
 mod types;
 use types::*;
 
+const PARITYTECH_PALLET_ASSETS: &[u8] = b"ParityTechAssets";
+const DEIP_PALLET_ASSETS: &[u8] = b"Assets";
+
 #[rpc]
 pub trait DeipAssetsRpc<BlockHash, AssetId, Balance, AccountId, DepositBalance, Extra, DeipAssetId>
 where
@@ -116,7 +119,7 @@ where
                 &no_prefix[key_encoded_size..],
             );
 
-            let key = chain_key_hash_map(&prefix(b"ParityTechAssets", b"Asset"), &key_hashed);
+            let key = chain_key_hash_map(&prefix(PARITYTECH_PALLET_ASSETS, b"Asset"), &key_hashed);
 
             self.state
                 .storage(key.clone(), at)
@@ -124,7 +127,7 @@ where
                 .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
         };
 
-        let index_prefix = prefix(b"Assets", b"AssetIdByDeipAssetId");
+        let index_prefix = prefix(DEIP_PALLET_ASSETS, b"AssetIdByDeipAssetId");
         let index_key = HashedKey::<Identity>::unsafe_from_encoded(&key_encoded);
 
         let prefix_key = chain_key_hash_map(&index_prefix, &index_key);
@@ -149,7 +152,7 @@ where
     ) -> BoxFutureResult<
         Vec<ListResult<(DeipAssetId, AssetId), AssetDetails<Balance, AccountId, DepositBalance>>>,
     > {
-        let index_prefix = prefix(b"DeipAssets", b"AssetIdByDeipAssetId");
+        let index_prefix = prefix(DEIP_PALLET_ASSETS, b"AssetIdByDeipAssetId");
         let start_key = start_id.map(|(index_id, id)| {
             chain_key_hash_double_map(
                 &index_prefix,
@@ -191,7 +194,7 @@ where
             let key_hashed =
                 HashedKeyRef::<'_, Blake2_128Concat>::unsafe_from_hashed(&no_prefix[len..]);
 
-            let key = chain_key_hash_map(&prefix(b"Assets", b"Asset"), &key_hashed);
+            let key = chain_key_hash_map(&prefix(PARITYTECH_PALLET_ASSETS, b"Asset"), &key_hashed);
 
             self.state
                 .storage(key.clone(), at)
@@ -217,7 +220,7 @@ where
         count: u32,
         start_id: Option<(DeipAssetId, AccountId)>,
     ) -> BoxFutureResult<Vec<AssetBalanceWithIds<DeipAssetId, Balance, AccountId, Extra>>> {
-        let prefix = prefix(b"Assets", b"Account");
+        let prefix = prefix(PARITYTECH_PALLET_ASSETS, b"Account");
 
         let fut = async {
             let start_key = match start_id {
@@ -225,7 +228,7 @@ where
                 Some((asset, account)) => {
                     let index_hashed = HashedKey::<Identity>::new(&asset);
                     let prefix_key = chain_key_hash_map(
-                        &crate::prefix(b"DeipAssets", b"AssetIdByDeipAssetId"),
+                        &crate::prefix(DEIP_PALLET_ASSETS, b"AssetIdByDeipAssetId"),
                         &index_hashed,
                     );
                     let mut keys = self
@@ -290,7 +293,7 @@ where
                     &no_prefix[..len - remaining_len],
                 );
                 let prefix_key = chain_key_hash_map(
-                    &crate::prefix(b"DeipAssets", b"DeipAssetIdByAssetId"),
+                    &crate::prefix(DEIP_PALLET_ASSETS, b"DeipAssetIdByAssetId"),
                     &key_hashed,
                 );
                 state
@@ -401,7 +404,7 @@ where
     ) -> BoxFutureResult<Option<AssetBalance<Balance, Extra>>> {
         let index_hashed = HashedKey::<Identity>::new(&asset);
         let prefix_key =
-            chain_key_hash_map(&prefix(b"DeipAssets", b"AssetIdByDeipAssetId"), &index_hashed);
+            chain_key_hash_map(&prefix(DEIP_PALLET_ASSETS, b"AssetIdByDeipAssetId"), &index_hashed);
         let mut keys = match block_on(self.state.storage_keys_paged(Some(prefix_key), 1, None, at))
         {
             Ok(k) => k,
@@ -423,7 +426,7 @@ where
         get_value(
             &self.state,
             chain_key_hash_double_map(
-                &prefix(b"Assets", b"Account"),
+                &prefix(PARITYTECH_PALLET_ASSETS, b"Account"),
                 &key_hashed,
                 &HashedKey::<Blake2_128Concat>::new(&owner),
             ),
@@ -441,7 +444,7 @@ where
         // work with index
         let index_hashed = HashedKey::<Identity>::new(&asset);
         let prefix_key =
-            chain_key_hash_map(&prefix(b"DeipAssets", b"AssetIdByDeipAssetId"), &index_hashed);
+            chain_key_hash_map(&prefix(DEIP_PALLET_ASSETS, b"AssetIdByDeipAssetId"), &index_hashed);
         let mut keys = match block_on(self.state.storage_keys_paged(Some(prefix_key), 1, None, at))
         {
             Ok(k) => k,
@@ -462,7 +465,7 @@ where
         let asset_hashed =
             HashedKeyRef::<'_, Blake2_128Concat>::unsafe_from_hashed(&no_prefix[len..]);
 
-        let prefix = prefix(b"Assets", b"Account");
+        let prefix = prefix(PARITYTECH_PALLET_ASSETS, b"Account");
 
         let start_key = start_id.map(|account_id| {
             StorageKey(
