@@ -24,6 +24,10 @@ use common_rpc::{
 mod types;
 use types::*;
 
+/// Names of pallets in construct_runtime!.
+const PARITYTECH_PALLET_UNIQUES: &[u8] = b"ParityTechUniques";
+const DEIP_PALLET_UNIQUES: &[u8] = b"Uniques";
+
 #[rpc]
 pub trait DeipUniquesRpc<
     BlockHash,
@@ -68,7 +72,7 @@ pub trait DeipUniquesRpc<
     ) -> BoxFutureResult<Vec<ClassInstanceWithIds<DeipClassId, InstanceId, AccountId, Extra>>>;
 
     #[rpc(name = "uniques_getClassInstanceByOwner")]
-    fn get_class_balance_by_owner(
+    fn get_class_instance_by_owner(
         &self,
         at: Option<BlockHash>,
         owner: AccountId,
@@ -108,8 +112,9 @@ impl<State, Block, ClassId, InstanceId, AccountId, DepositBalance, Extra, DeipCl
     > for DeipUniquesRpcObj<State, Block>
 where
     ClassId: 'static + Codec + Send,
+    InstanceId: Codec + Send + 'static,
     DeipClassId: 'static + Send + Codec + Clone,
-    AccountId: 'static + Codec + Send,
+    AccountId: Codec + Send + 'static,
     DepositBalance: 'static + Send + Encode + Decode + AtLeast32BitUnsigned + Clone,
     Extra: 'static + Send + Decode,
     State: sc_rpc_api::state::StateApi<HashOf<Block>>,
@@ -130,7 +135,7 @@ where
                 &no_prefix[key_encoded_size..],
             );
 
-            let key = chain_key_hash_map(&prefix(b"ParityTechUniques", b"Class"), &key_hashed);
+            let key = chain_key_hash_map(&prefix(PARITYTECH_PALLET_UNIQUES, b"Class"), &key_hashed);
 
             self.state
                 .storage(key.clone(), at)
@@ -138,12 +143,12 @@ where
                 .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))
         };
 
-        let index_prefix = prefix(b"Uniques", b"NftClassIdByDeipNftClassId");
+        let index_prefix = prefix(DEIP_PALLET_UNIQUES, b"NftClassIdByDeipNftClassId");
         let index_key = HashedKey::<Identity>::unsafe_from_encoded(&key_encoded);
 
         let prefix_key = chain_key_hash_map(&index_prefix, &index_key);
         get_list_by_keys::<
-            types::ClassKeyValue<ClassId, AccountId, DepositBalance>,
+            ClassKeyValue<ClassId, AccountId, DepositBalance>,
             Identity,
             _,
             _,
@@ -163,13 +168,11 @@ where
     ) -> BoxFutureResult<
         Vec<ListResult<(DeipClassId, ClassId), ClassDetails<AccountId, DepositBalance>>>,
     > {
-        let index_prefix = prefix(b"Uniques", b"NftClassIdByDeipNftClassId");
+        let index_prefix = prefix(DEIP_PALLET_UNIQUES, b"NftClassIdByDeipNftClassId");
         let start_key = start_id.map(|(index_id, id)| {
-            chain_key_hash_double_map(
-                &index_prefix,
-                &HashedKey::<Identity>::new(&index_id),
-                &HashedKey::<Blake2_128Concat>::new(&id),
-            )
+            let key_first = HashedKey::<Identity>::new(&index_id);
+            let key_second = HashedKey::<Blake2_128Concat>::new(&id);
+            chain_key_hash_double_map(&index_prefix, &key_first, &key_second)
         });
 
         let map = |k: StorageKey| -> BoxFutureResult<(
@@ -183,29 +186,26 @@ where
             let input = &mut &*no_prefix;
             let index_key = match DeipClassId::decode(input) {
                 Ok(k) => k,
-                Err(_) => {
-                    let rpc_error = to_rpc_error(
-                        Error::DeipClassIdDecodeFailed,
-                        Some(format!("{:?}", no_prefix)),
-                    );
+                Err(e) => {
+                    let data = format!("{:?}: {}", no_prefix, e);
+                    let rpc_error = to_rpc_error(Error::DeipClassIdDecodeFailed, Some(data));
                     return future::err(rpc_error).boxed()
                 },
             };
 
             let len = match Input::remaining_len(input).ok().flatten() {
                 Some(l) => l,
-                None =>
-                    return future::err(to_rpc_error(
-                        Error::DeipClassIdRemainingLengthFailed,
-                        Some(format!("{:?}", input)),
-                    ))
-                    .boxed(),
+                None => {
+                    let data = format!("{:?}", input);
+                    let rpc_err = to_rpc_error(Error::DeipClassIdRemainingLengthFailed, Some(data));
+                    return future::err(rpc_err).boxed()
+                },
             };
 
             let key_hashed =
                 HashedKeyRef::<'_, Blake2_128Concat>::unsafe_from_hashed(&no_prefix[len..]);
 
-            let key = chain_key_hash_map(&prefix(b"Uniques", b"Class"), &key_hashed);
+            let key = chain_key_hash_map(&prefix(PARITYTECH_PALLET_UNIQUES, b"Class"), &key_hashed);
 
             self.state
                 .storage(key.clone(), at)
@@ -215,7 +215,7 @@ where
         };
 
         get_list_by_keys::<
-            types::ClassKeyValue<ClassId, Balance, AccountId, DepositBalance>,
+            ClassKeyValue<ClassId, AccountId, DepositBalance>,
             Blake2_128Concat,
             _,
             _,
@@ -225,23 +225,21 @@ where
         >(&self.state, at, StorageKey(index_prefix), count, start_key, map)
     }
 
-    fn get_class_balance_list(
+    fn get_class_instance_list(
         &self,
         at: Option<HashOf<Block>>,
         count: u32,
         start_id: Option<(DeipClassId, AccountId)>,
-    ) -> BoxFutureResult<Vec<ClassInstanceWithIds<DeipClassId, Balance, AccountId, Extra>>> {
-        let prefix = prefix(b"Uniques", b"Account");
+    ) -> BoxFutureResult<Vec<ClassInstanceWithIds<DeipClassId, InstanceId, AccountId, Extra>>> {
+        let storage_prefix = prefix(PARITYTECH_PALLET_UNIQUES, b"Account");
 
         let fut = async {
             let start_key = match start_id {
                 None => None,
                 Some((class, account)) => {
                     let index_hashed = HashedKey::<Identity>::new(&class);
-                    let prefix_key = chain_key_hash_map(
-                        &crate::prefix(b"DeipUniques", b"ClassIdByDeipClassId"),
-                        &index_hashed,
-                    );
+                    let storage_prefix = prefix(DEIP_PALLET_UNIQUES, b"NftClassIdByDeipNftClassId");
+                    let prefix_key = chain_key_hash_map(&storage_prefix, &index_hashed);
                     let mut keys = self
                         .state
                         .storage_keys_paged(Some(prefix_key), 1, None, at)
@@ -261,7 +259,7 @@ where
                     );
 
                     Some(chain_key_hash_double_map(
-                        &prefix,
+                        &storage_prefix,
                         &key_hashed,
                         &HashedKey::<Blake2_128Concat>::new(&account),
                     ))
@@ -270,7 +268,7 @@ where
 
             let state = &self.state;
             let keys = state
-                .storage_keys_paged(Some(StorageKey(prefix)), count, start_key, at)
+                .storage_keys_paged(Some(StorageKey(storage_prefix)), count, start_key, at)
                 .await
                 .map_err(|e| to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e))))?;
             if keys.is_empty() {
@@ -294,19 +292,15 @@ where
                 })?;
                 let remaining_len =
                     Input::remaining_len(no_prefix_no_hash).ok().flatten().ok_or_else(|| {
-                        to_rpc_error(
-                            Error::ClassIdRemainingLengthFailed,
-                            Some(format!("{:?}", no_prefix_no_hash)),
-                        )
+                        let data = Some(format!("{:?}", no_prefix_no_hash));
+                        to_rpc_error(Error::ClassIdRemainingLengthFailed, data)
                     })?;
 
                 let key_hashed = HashedKeyRef::<'_, Blake2_128Concat>::unsafe_from_hashed(
                     &no_prefix[..len - remaining_len],
                 );
-                let prefix_key = chain_key_hash_map(
-                    &crate::prefix(b"DeipUniques", b"DeipClassIdByClassId"),
-                    &key_hashed,
-                );
+                let storage_prefix = prefix(DEIP_PALLET_UNIQUES, b"DeipClassIdByClassId");
+                let prefix_key = chain_key_hash_map(&storage_prefix, &key_hashed);
                 state
                     .storage_keys_paged(Some(prefix_key), 1, None, at)
                     .await
@@ -324,23 +318,22 @@ where
                     Some(d) => d,
                 };
 
-                let index_key = match index_key {
-                    Some(k) => k,
-                    None => return Err(to_rpc_error(Error::DeipClassIdInverseIndexFailed, None)),
+                let index_key = if let Some(key) = index_key {
+                    key
+                } else {
+                    return Err(to_rpc_error(Error::DeipClassIdInverseIndexFailed, None))
                 };
 
                 let no_prefix = &index_key.0[32..];
                 let len = no_prefix.len();
                 let no_prefix_no_hash = &mut Blake2_128Concat::reverse(no_prefix);
 
-                match ClassId::skip(no_prefix_no_hash) {
-                    Ok(_) => (),
-                    Err(_) =>
-                        return Err(to_rpc_error(
-                            Error::ClassIdDecodeFailed,
-                            Some(format!("{:?}", &index_key.0)),
-                        )),
-                };
+                if let Err(e) = ClassId::skip(no_prefix_no_hash) {
+                    return Err(to_rpc_error(
+                        Error::ClassIdDecodeFailed,
+                        Some(format!("{:?}: {}", &index_key.0, e)),
+                    ))
+                }
                 let remaining_len = match Input::remaining_len(no_prefix_no_hash).ok().flatten() {
                     Some(l) => l,
                     None =>
@@ -352,10 +345,10 @@ where
 
                 let no_prefix = Identity::reverse(&no_prefix[len - remaining_len..]);
                 let class = match DeipClassId::decode(&mut &*no_prefix) {
-                    Err(_) =>
+                    Err(e) =>
                         return Err(to_rpc_error(
                             Error::DeipClassIdDecodeFailed,
-                            Some(format!("{:?}", &key.0)),
+                            Some(format!("{:?}: {}", &key.0, e)),
                         )),
                     Ok(id) => id,
                 };
@@ -391,7 +384,7 @@ where
                     Ok(id) => id,
                 };
 
-                match ClassInstance::<Balance, Extra>::decode(&mut &data.0[..]) {
+                match ClassInstance::<InstanceId, Extra>::decode(&mut &data.0[..]) {
                     Err(_) => Err(to_rpc_error(
                         Error::ClassInstanceDecodeFailed,
                         Some(format!("{:?}", data)),
@@ -403,19 +396,18 @@ where
                 }
             })
         };
-        let res = block_on(fut); //@TODO remove block_on
-        future::ready(res).boxed()
+        future::ready(block_on(fut)).boxed() //@TODO remove block_on
     }
 
-    fn get_class_balance_by_owner(
+    fn get_class_instance_by_owner(
         &self,
         at: Option<HashOf<Block>>,
         owner: AccountId,
         class: DeipClassId,
-    ) -> BoxFutureResult<Option<ClassInstance<Balance, Extra>>> {
+    ) -> BoxFutureResult<Option<ClassInstance<InstanceId, Extra>>> {
         let index_hashed = HashedKey::<Identity>::new(&class);
-        let prefix_key =
-            chain_key_hash_map(&prefix(b"DeipUniques", b"ClassIdByDeipClassId"), &index_hashed);
+        let storage_prefix = prefix(DEIP_PALLET_UNIQUES, b"ClassIdByDeipClassId");
+        let prefix_key = chain_key_hash_map(&storage_prefix, &index_hashed);
         let mut keys = match block_on(self.state.storage_keys_paged(Some(prefix_key), 1, None, at))
         {
             Ok(k) => k,
@@ -434,15 +426,10 @@ where
             &no_prefix[index_hashed.as_ref().len()..],
         );
 
-        get_value(
-            &self.state,
-            chain_key_hash_double_map(
-                &prefix(b"Uniques", b"Account"),
-                &key_hashed,
-                &HashedKey::<Blake2_128Concat>::new(&owner),
-            ),
-            at,
-        )
+        let storage_prefix = prefix(PARITYTECH_PALLET_UNIQUES, b"Account");
+        let key_second = HashedKey::<Blake2_128Concat>::new(&owner);
+        let key = chain_key_hash_double_map(&storage_prefix, &key_hashed, &key_second);
+        get_value(&self.state, key, at)
     }
 
     fn get_class_balance_list_by_class(
@@ -451,11 +438,13 @@ where
         class: DeipClassId,
         count: u32,
         start_id: Option<AccountId>,
-    ) -> BoxFutureResult<Vec<ClassInstanceWithOwner<Balance, AccountId, Extra>>> {
+    ) -> BoxFutureResult<Vec<ClassInstanceWithOwner<InstanceId, AccountId, Extra>>> {
         // work with index
         let index_hashed = HashedKey::<Identity>::new(&class);
-        let prefix_key =
-            chain_key_hash_map(&prefix(b"DeipUniques", b"ClassIdByDeipClassId"), &index_hashed);
+        let prefix_key = chain_key_hash_map(
+            &prefix(DEIP_PALLET_UNIQUES, b"ClassIdByDeipClassId"),
+            &index_hashed,
+        );
         let mut keys = match block_on(self.state.storage_keys_paged(Some(prefix_key), 1, None, at))
         {
             Ok(k) => k,
@@ -476,7 +465,7 @@ where
         let class_hashed =
             HashedKeyRef::<'_, Blake2_128Concat>::unsafe_from_hashed(&no_prefix[len..]);
 
-        let prefix = prefix(b"Uniques", b"Account");
+        let prefix = prefix(PARITYTECH_PALLET_UNIQUES, b"Account");
 
         let start_key = start_id.map(|account_id| {
             StorageKey(
@@ -537,7 +526,7 @@ where
                     Ok(id) => id,
                 };
 
-                match ClassInstance::<Balance, Extra>::decode(&mut &data.0[..]) {
+                match ClassInstance::<InstanceId, Extra>::decode(&mut &data.0[..]) {
                     Err(_) => future::err(to_rpc_error(
                         Error::ClassInstanceDecodeFailed,
                         Some(format!("{:?}", data)),

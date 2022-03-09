@@ -15,7 +15,10 @@ impl common_rpc::GetError for ClassIdError {
 // copied from pallet_uniques since struct members are not public
 #[derive(Decode, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ClassDetails<AccountId, DepositBalance> {
+pub struct ClassDetails<AccountId, DepositBalance>
+where
+    DepositBalance: AtLeast32BitUnsigned + Clone,
+{
     /// Can change `owner`, `issuer`, `freezer` and `admin` accounts.
     pub(super) owner: AccountId,
     /// Can mint tokens.
@@ -39,8 +42,7 @@ pub struct ClassDetails<AccountId, DepositBalance> {
     pub(super) is_frozen: bool,
 }
 
-impl<Balance, AccountId, DepositBalance> common_rpc::GetError
-    for ClassDetails<AccountId, DepositBalance>
+impl<AccountId, DepositBalance> common_rpc::GetError for ClassDetails<AccountId, DepositBalance>
 where
     AccountId: Decode,
     DepositBalance: Clone + Decode + AtLeast32BitUnsigned,
@@ -84,13 +86,13 @@ pub struct ClassInstance<InstanceId: Decode, Extra: Decode> {
 
 impl<InstanceId: Decode, Extra: Decode> common_rpc::GetError for ClassInstance<InstanceId, Extra> {
     fn get_error() -> common_rpc::Error {
-        common_rpc::Error::ClassBalanceDecodeFailed
+        common_rpc::Error::ClassInstanceDecodeFailed
     }
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct ClassInstanceWithIds<ClassId, InstanceId, AccountId, Extra: Decode> {
+pub struct ClassInstanceWithIds<ClassId, InstanceId: Decode, AccountId, Extra: Decode> {
     pub class: ClassId,
     pub account: AccountId,
     #[serde(flatten)]
@@ -99,7 +101,7 @@ pub struct ClassInstanceWithIds<ClassId, InstanceId, AccountId, Extra: Decode> {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct ClassInstanceWithOwner<InstanceId, AccountId, Extra: Decode> {
+pub struct ClassInstanceWithOwner<InstanceId: Decode, AccountId, Extra: Decode> {
     pub account: AccountId,
     #[serde(flatten)]
     pub balance: ClassInstance<InstanceId, Extra>,
