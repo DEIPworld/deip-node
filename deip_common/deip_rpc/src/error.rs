@@ -45,6 +45,13 @@ pub enum Error {
     DeipAssetIdRemainingLengthFailed = 36,
     DeipAssetIdInverseIndexFailed = 37,
     AssetIdRemainingLengthFailed = 38,
+    ClassIdDecodeFailed = 39,
+    DeipClassIdDecodeFailed = 40,
+    DeipClassIdRemainingLengthFailed = 41,
+    ClassIdRemainingLengthFailed = 42,
+    DeipClassIdInverseIndexFailed = 43,
+    ClassInstanceDecodeFailed = 44,
+    ClassDetailsDecodeFailed = 45,
 }
 
 impl From<Error> for RpcErrorCode {

@@ -124,6 +124,7 @@ dependencies = [
  "deip-dao-rpc",
  "deip-proposal-rpc",
  "deip-rpc",
+ "deip-uniques-rpc",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "jsonrpc-core",
@@ -1534,6 +1535,26 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "deip-uniques-rpc"
+version = "3.0.0"
+dependencies = [
+ "common-deip-rpc",
+ "deip_serializable_u128",
+ "frame-support",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "pallet-deip-assets",
+ "parity-scale-codec",
+ "sc-rpc-api",
+ "serde",
+ "sp-blockchain",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
 ]
 
 [[package]]

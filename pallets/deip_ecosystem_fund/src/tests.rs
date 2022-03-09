@@ -2,7 +2,7 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
-use super::{Call as RawCall, Event as RawEvent, *};
+use super::{Call as RawCall, *};
 use crate as pallet_deip_dao;
 
 use sp_std::prelude::*;
@@ -17,7 +17,7 @@ frame_support::construct_runtime!(
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
         System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-        DeipDao: pallet_deip_dao::{Pallet, Call, Storage, Event<T>, Config},
+        DeipDao: pallet_deip_dao::{Pallet, Call, Storage, Config<T>},
     }
 );
 
