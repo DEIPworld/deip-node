@@ -391,7 +391,7 @@ pub fn new_full_base(
         key_store: keystore.clone(),
         network: network.clone(),
         signed_commitment_sender: beefy_link,
-        min_block_delta: 4,
+        min_block_delta: 8,
         prometheus_registry: prometheus_registry.clone(),
     };
 
