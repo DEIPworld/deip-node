@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use appchain_deip_runtime::{
     opaque::Block, AccountId, AssetBalance, AssetExtra, AssetId, Balance, BlockNumber, DeipAssetId,
-    Hash, Index, Moment, TransactionCtxId,
+    Hash, Index, InstanceId, Moment, NftClassId, TransactionCtxId,
 };
 use sc_client_api::{
     AuxStore, BlockBackend, BlockchainEvents, ExecutorProvider, ProofProvider, StorageProvider,
@@ -212,6 +212,19 @@ where
         AssetExtra,
         DeipAssetId,
     >::to_delegate(deip_assets_rpc::DeipAssetsRpcObj::<
+        sc_rpc::state::State<Block, C>,
+        Block,
+    >::new(state)));
+
+    io.extend_with(deip_uniques_rpc::DeipUniquesRpc::<
+        <Block as BlockT>::Hash,
+        NftClassId,
+        InstanceId,
+        AccountId,
+        Balance,
+        AssetExtra,
+        DeipAssetId,
+    >::to_delegate(deip_uniques_rpc::DeipUniquesRpcObj::<
         sc_rpc::state::State<Block, C>,
         Block,
     >::new(state)));
