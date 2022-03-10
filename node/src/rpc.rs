@@ -216,6 +216,9 @@ where
         Block,
     >::new(state)));
 
+    let subscriptions = SubscriptionManager::new(Arc::new(subscription_executor.clone()));
+    let (state, _) = sc_rpc::state::new_full(client.clone(), subscriptions, deny_unsafe, None);
+
     io.extend_with(deip_uniques_rpc::DeipUniquesRpc::<
         <Block as BlockT>::Hash,
         NftClassId,

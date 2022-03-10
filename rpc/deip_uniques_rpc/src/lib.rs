@@ -16,8 +16,8 @@ use sp_core::storage::StorageKey;
 use frame_support::{Blake2_128Concat, Identity, ReversibleStorageHasher, StorageHasher};
 
 use common_rpc::{
-    chain_key_hash_double_map, chain_key_hash_map, get_list_by_keys, get_value, prefix,
-    to_rpc_error, BoxFutureResult, Error, HashOf, HashedKey, HashedKeyRef, HashedKeyTrait,
+    chain_key_hash_double_map, chain_key_hash_map, get_list_by_keys, get_value, get_value_and_map,
+    prefix, to_rpc_error, BoxFutureResult, Error, HashOf, HashedKey, HashedKeyRef, HashedKeyTrait,
     ListResult,
 };
 
@@ -80,7 +80,7 @@ pub trait DeipUniquesRpc<
     ) -> BoxFutureResult<Option<ClassInstance<InstanceId, Extra>>>;
 
     #[rpc(name = "uniques_getClassInstanceListByClass")]
-    fn get_class_balance_list_by_class(
+    fn get_class_instance_list_by_class(
         &self,
         at: Option<BlockHash>,
         class: DeipClassId,
@@ -129,14 +129,8 @@ where
         let key_encoded_size = key_encoded.len();
 
         let map = |k: StorageKey| {
-            // below we retrieve key in the other map from the index map key
-            let no_prefix = Identity::reverse(&k.0[32..]);
-            let key_hashed = HashedKeyRef::<'_, Blake2_128Concat>::unsafe_from_hashed(
-                &no_prefix[key_encoded_size..],
-            );
-
+            let key_hashed = HashedKey::<Blake2_128Concat>::unsafe_from_encoded(&k.0);
             let key = chain_key_hash_map(&prefix(PARITYTECH_PALLET_UNIQUES, b"Class"), &key_hashed);
-
             self.state
                 .storage(key.clone(), at)
                 .map_ok(|v| (v, key))
@@ -147,7 +141,7 @@ where
         let index_key = HashedKey::<Identity>::unsafe_from_encoded(&key_encoded);
 
         let prefix_key = chain_key_hash_map(&index_prefix, &index_key);
-        get_list_by_keys::<
+        get_value_and_map::<
             ClassKeyValue<ClassId, AccountId, DepositBalance>,
             Identity,
             _,
@@ -155,7 +149,7 @@ where
             _,
             _,
             _,
-        >(&self.state, at, prefix_key, 1, None, map)
+        >(&self.state, at, prefix_key, map)
         .map_ok(|mut v| v.pop().map(|item| item.value))
         .boxed()
     }
@@ -432,7 +426,7 @@ where
         get_value(&self.state, key, at)
     }
 
-    fn get_class_balance_list_by_class(
+    fn get_class_instance_list_by_class(
         &self,
         at: Option<HashOf<Block>>,
         class: DeipClassId,
