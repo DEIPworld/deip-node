@@ -46,6 +46,8 @@ pub use transaction_ctx::*;
 #[doc(hidden)]
 pub use deip_transaction_ctx::*;
 
+use sp_core::crypto::KeyTypeId;
+
 #[frame_support::pallet]
 #[doc(hidden)]
 pub mod pallet {
@@ -74,7 +76,7 @@ pub mod pallet {
     use super::*;
     use crate::weights::WeightInfo;
 
-    use frame_system::offchain::SendTransactionTypes;
+    use frame_system::offchain::{SendTransactionTypes, CreateSignedTransaction, AppCrypto};
     use sp_runtime::traits::Extrinsic;
     use sp_std::fmt::Debug;
 
@@ -107,7 +109,10 @@ pub mod pallet {
         type UncheckedExtrinsic: Parameter
             + PartialEq
             + frame_support::traits::ExtrinsicCall
-            + Extrinsic<Call = <Self as Config>::Call>
+            + Extrinsic<
+                  Call = <Self as Config>::Call,
+                  SignaturePayload = <Self::Extrinsic as Extrinsic>::SignaturePayload
+              >
             + TypeInfo;
 
         type DeipPortalWeightInfo: WeightInfo;
@@ -221,7 +226,10 @@ pub mod pallet {
         }
 
         #[pallet::weight((
-            10_000,
+            {
+                let s = xt.encode().len() as u32;
+                T::DeipPortalWeightInfo::sign(s)
+            },
             DispatchClass::Normal,
             Pays::Yes
         ))]
@@ -236,7 +244,7 @@ pub mod pallet {
         }
 
         #[pallet::weight((
-            10_000,
+            T::DeipPortalWeightInfo::exec() + call.get_dispatch_info().weight,
             DispatchClass::Normal,
             Pays::Yes
         ))]
@@ -250,7 +258,7 @@ pub mod pallet {
         }
 
         #[pallet::weight((
-            10_000,
+            T::DeipPortalWeightInfo::exec_postponed() + call.get_dispatch_info().weight,
             DispatchClass::Normal,
             Pays::Yes
         ))]
@@ -260,8 +268,9 @@ pub mod pallet {
             call: Box<<T as Config>::Call>,
         ) -> DispatchResultWithPostInfo
         {
-            ensure_none(origin)?;
-            T::exec_postponed_tx(portal_id, *call, RawOrigin::None.into())
+            #[cfg(not(feature = "runtime-benchmarks"))]
+            ensure_none(origin.clone())?;
+            T::exec_postponed_tx(portal_id, *call, origin)
         }
     }
 

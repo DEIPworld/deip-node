@@ -36,20 +36,54 @@ use sp_std::marker::PhantomData;
 pub trait WeightInfo {
     fn create() -> Weight;
     fn update() -> Weight;
+    fn sign(s: u32) -> Weight;
+    fn exec() -> Weight;
+    fn exec_postponed() -> Weight;
 }
 
 /// Weight functions for pallet_deip_portal.
 pub struct Weights<T>(PhantomData<T>);
 
 impl<T: frame_system::Config> WeightInfo for Weights<T> {
+    // Storage: DeipPortal PortalRepository (r:1 w:1)
+    // Storage: DeipPortal OwnerLookup (r:0 w:1)
+    // Storage: DeipPortal DelegateLookup (r:0 w:1)
     fn create() -> Weight {
-        (37_888_000 as Weight)
+        (11_470_000 as Weight)
             .saturating_add(T::DbWeight::get().reads(1 as Weight))
             .saturating_add(T::DbWeight::get().writes(3 as Weight))
     }
+    // Storage: DeipPortal OwnerLookup (r:1 w:0)
+    // Storage: DeipPortal PortalRepository (r:1 w:1)
+    // Storage: DeipPortal DelegateLookup (r:0 w:1)
     fn update() -> Weight {
-        (48_439_000 as Weight)
+        (14_730_000 as Weight)
             .saturating_add(T::DbWeight::get().reads(2 as Weight))
             .saturating_add(T::DbWeight::get().writes(2 as Weight))
+    }
+    // Storage: DeipPortal DelegateLookup (r:1 w:0)
+    // Storage: DeipPortal SignedTx (r:1 w:1)
+    fn sign(s: u32) -> Weight {
+        (14_200_000 as Weight)
+            // Standard Error: 0
+            .saturating_add((1_000 as Weight).saturating_mul(s as Weight))
+            .saturating_add(T::DbWeight::get().reads(2 as Weight))
+            .saturating_add(T::DbWeight::get().writes(1 as Weight))
+    }
+    // Storage: unknown [0x3a65787472696e7369635f696e646578] (r:1 w:0)
+    // Storage: System ExtrinsicData (r:1 w:0)
+    // Storage: DeipPortal SignedTx (r:1 w:0)
+    // Storage: DeipPortal PortalTagOfTransaction (r:1 w:1)
+    fn exec() -> Weight {
+        (38_870_000 as Weight)
+            .saturating_add(T::DbWeight::get().reads(4 as Weight))
+            .saturating_add(T::DbWeight::get().writes(1 as Weight))
+    }
+    // Storage: unknown [0x3a65787472696e7369635f696e646578] (r:1 w:0)
+    // Storage: DeipPortal PortalTagOfTransaction (r:1 w:1)
+    fn exec_postponed() -> Weight {
+        (13_240_000 as Weight)
+            .saturating_add(T::DbWeight::get().reads(2 as Weight))
+            .saturating_add(T::DbWeight::get().writes(1 as Weight))
     }
 }
