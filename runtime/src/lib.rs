@@ -135,7 +135,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 101,
+    spec_version: 102,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -158,7 +158,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 /// `SLOT_DURATION` should have the same value.
 ///
 /// <https://research.web3.foundation/en/latest/polkadot/block-production/Babe.html#-6.-practical-results>
-pub const MILLISECS_PER_BLOCK: Moment = 3000;
+pub const MILLISECS_PER_BLOCK: Moment = 6000;
 pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
 
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
