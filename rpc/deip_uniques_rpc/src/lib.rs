@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 use jsonrpc_core::{
     futures::{future, FutureExt, TryFutureExt},
     futures_executor::block_on,
