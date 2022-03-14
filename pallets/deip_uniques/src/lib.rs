@@ -32,7 +32,7 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config:
-        frame_system::Config + pallet_uniques::Config<ClassId = Self::UniquesNftClassId>
+        frame_system::Config + pallet_uniques::Config<ClassId = Self::NftClassId>
     {
         /// Deip class id.
         type DeipNftClassId: Parameter + Copy;
@@ -44,7 +44,7 @@ pub mod pallet {
         type ProjectId: Parameter;
 
         /// Type of `pallet_uniques::Config::ClassId`.
-        type UniquesNftClassId: Parameter + CheckedAdd + Default + One + Copy + PartialOrd;
+        type NftClassId: Parameter + CheckedAdd + Default + One + Copy + PartialOrd;
 
         /// Additional project info.
         type ProjectsInfo: DeipProjectsInfo<Self::AccountId>;
@@ -90,14 +90,23 @@ pub mod pallet {
         OptionQuery,
     >;
 
+    /// Storage for matching Deip class id and origin `pallet_uniques` class id.
+    #[pallet::storage]
+    pub type DeipNftClassIdByNftClassId<T: Config> = StorageMap<
+        _,
+        Identity,
+        <T as pallet_uniques::Config>::ClassId,
+        DeipNftClassIdOf<T>,
+        OptionQuery,
+    >;
+
     /// Storage for next NFT origin class id.
     #[pallet::storage]
-    pub(super) type NextNftClassId<T> =
-        StorageValue<_, <T as Config>::UniquesNftClassId, ValueQuery>;
+    pub(super) type NextNftClassId<T> = StorageValue<_, <T as Config>::NftClassId, ValueQuery>;
 
     /// Storage with projects ids.
     #[pallet::storage]
-    pub(super) type ProjectIdByNftClassId<T> =
+    pub(super) type ProjectIdByDeipNftClassId<T> =
         StorageMap<_, Identity, DeipNftClassIdOf<T>, DeipProjectIdOf<T>, OptionQuery>;
 
     /// Storage with assets classes ant accounts which hold corresponding asset.
@@ -138,7 +147,19 @@ pub mod pallet {
             class: T::ClassId,
             witness: DestroyWitness,
         ) -> DispatchResultWithPostInfo {
-            UniquesPallet::<T>::destroy(origin, class, witness)
+            let res = UniquesPallet::<T>::destroy(origin, class, witness);
+            // If asset was destroyed, clean storages
+            if res.is_ok() {
+                let deip_class_id =
+                    DeipNftClassIdByNftClassId::<T>::mutate_exists(class, |v| v.take());
+                // ClassId is unique, so entries can be safely removed.
+                if let Some(key) = deip_class_id {
+                    NftClassIdByDeipNftClassId::<T>::mutate_exists(key, |v| *v = None);
+                    ProjectIdByDeipNftClassId::<T>::mutate_exists(key, |v| *v = None);
+                    NftBalanceMap::<T>::mutate_exists(key, |v| *v = None);
+                }
+            }
+            res
         }
 
         /// Mint an asset instance of a particular class.
@@ -345,7 +366,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             // If id belongs to project, refuse to destroy.
             ensure!(
-                !ProjectIdByNftClassId::<T>::contains_key(class),
+                !ProjectIdByDeipNftClassId::<T>::contains_key(class),
                 Error::<T>::ProjectSecurityTokenCannotBeDestroyed
             );
 
@@ -377,7 +398,7 @@ pub mod pallet {
             let result = call.dispatch_bypass_filter(origin)?;
 
             // If project id exists for class id.
-            if ProjectIdByNftClassId::<T>::contains_key(class) {
+            if ProjectIdByDeipNftClassId::<T>::contains_key(class) {
                 // Check balance map for the class id.
                 NftBalanceMap::<T>::mutate_exists(class, |maybe| {
                     let account = owner.into();
@@ -404,7 +425,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             // If id belongs to project, refuse to burn.
             ensure!(
-                !ProjectIdByNftClassId::<T>::contains_key(class),
+                !ProjectIdByDeipNftClassId::<T>::contains_key(class),
                 Error::<T>::ProjectSecurityTokenCannotBeBurned
             );
 
@@ -444,7 +465,7 @@ pub mod pallet {
             let ok = call.dispatch_bypass_filter(origin)?;
 
             // If project id exists for class id.
-            if ProjectIdByNftClassId::<T>::contains_key(class) {
+            if ProjectIdByDeipNftClassId::<T>::contains_key(class) {
                 NftBalanceMap::<T>::mutate_exists(class, |maybe| {
                     let account = dest.into();
                     if let Some(balances) = maybe.as_mut() {
@@ -483,7 +504,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             // If id belongs to project, refuse to freeze.
             ensure!(
-                !ProjectIdByNftClassId::<T>::contains_key(class),
+                !ProjectIdByDeipNftClassId::<T>::contains_key(class),
                 Error::<T>::ProjectSecurityTokenCannotBeFrozen
             );
 
@@ -520,7 +541,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             // If id belongs to project, refuse to freeze.
             ensure!(
-                !ProjectIdByNftClassId::<T>::contains_key(class),
+                !ProjectIdByDeipNftClassId::<T>::contains_key(class),
                 Error::<T>::ProjectSecurityTokenCannotBeFrozen
             );
 
@@ -705,9 +726,7 @@ pub mod pallet {
 
     impl<T: Config> Pallet<T> {
         /// Convert DeipNftClassId to origin class id.
-        fn deip_to_origin_class_id(
-            class: DeipNftClassIdOf<T>,
-        ) -> Result<T::UniquesNftClassId, Error<T>> {
+        fn deip_to_origin_class_id(class: DeipNftClassIdOf<T>) -> Result<T::NftClassId, Error<T>> {
             NftClassIdByDeipNftClassId::<T>::get(class)
                 .ok_or(Error::<T>::DeipNftClassIdDoesNotExist)
         }
@@ -717,10 +736,7 @@ pub mod pallet {
             class: DeipNftClassIdOf<T>,
             admin: T::DeipAccountId,
             project_id: Option<DeipProjectIdOf<T>>,
-            call: impl FnOnce(
-                T::UniquesNftClassId,
-                <T::Lookup as StaticLookup>::Source,
-            ) -> UniquesCall<T>,
+            call: impl FnOnce(T::NftClassId, <T::Lookup as StaticLookup>::Source) -> UniquesCall<T>,
         ) -> DispatchResultWithPostInfo {
             // If project id is provided ensure that admin is in team.
             if let Some(project_id) = project_id.as_ref() {
@@ -756,7 +772,7 @@ pub mod pallet {
 
             // IF project id is provided add id to projects map.
             if let Some(project_id) = project_id {
-                ProjectIdByNftClassId::<T>::insert(class, project_id);
+                ProjectIdByDeipNftClassId::<T>::insert(class, project_id);
                 // ??? @TODO
                 // AssetIdByProjectId::<T>::mutate_exists(project_id, |tokens| {
                 //     match tokens.as_mut() {
