@@ -641,7 +641,7 @@ impl pallet_deip_uniques::Config for Runtime {
     type DeipNftClassId = DeipNftClassId;
     type DeipAccountId = deip_account::DeipAccountId<<Self as frame_system::Config>::AccountId>;
     type ProjectId = pallet_deip::ProjectId;
-    type UniquesNftClassId = <Self as pallet_uniques::Config>::ClassId;
+    type NftClassId = <Self as pallet_uniques::Config>::ClassId;
     type ProjectsInfo = Self;
     type MaxOriginClassId = MaxOriginClassId;
 }
