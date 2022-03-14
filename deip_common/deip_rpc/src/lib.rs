@@ -250,50 +250,6 @@ where
     }
 }
 
-pub fn get_values_paged_and_map<KeyValue, Hasher, State, BlockHash, KeyMap, T, Item>(
-    state: &State,
-    at: Option<BlockHash>,
-    prefix_key: StorageKey,
-    count: u32,
-    start_key: Option<StorageKey>,
-    key_map: KeyMap,
-) -> BoxFutureResult<
-    Option<
-        Vec<
-            ListResult<
-                <Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType,
-                KeyValue::Value,
-            >,
-        >,
-    >,
->
-where
-    KeyValue: KeyValueInfo,
-    Hasher: StorageHasher + ReversibleStorageHasher,
-    State: StateApi<BlockHash>,
-    BlockHash: Copy,
-    KeyMap: FnMut(StorageKey) -> T,
-    T: Future<Output = Result<Item, RpcError>> + Send + 'static,
-    Item: CompositeKeyTrait<KeyValue::Key, Hasher> + 'static + Send,
-    <Item as CompositeKeyTrait<KeyValue::Key, Hasher>>::KeyType: 'static + Send,
-{
-    let keys = match block_on(state.storage_keys_paged(Some(prefix_key), count, start_key, at)) {
-        Ok(k) => k,
-        Err(e) =>
-            return future::err(to_rpc_error(Error::ScRpcApiError, Some(format!("{:?}", e)))).boxed(),
-    };
-    frame_support::log::error!("keys.len(): {}", keys.len());
-    if keys.is_empty() {
-        return future::ok(None).boxed()
-    }
-
-    let key_futures: Vec<_> = keys.into_iter().map(key_map).collect();
-
-    StorageMap::<Hasher>::get_list_by_keys::<KeyValue, _, _>(key_futures)
-        .map_ok(Some)
-        .boxed()
-}
-
 /// The function gets list of keys from the first map (i.e. index) and
 /// then retrieves the data from the second map (storage itself).
 ///

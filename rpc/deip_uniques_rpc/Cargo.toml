@@ -23,6 +23,7 @@ package = "common-deip-rpc"
 path = "../../deip_common/deip_rpc"
 
 [dependencies]
+lazy_static = "1.4"
 serde = { version = "1.0.130", features = ["derive"], optional = true }
 frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
