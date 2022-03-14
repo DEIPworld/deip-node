@@ -540,7 +540,7 @@ impl pallet_mmr::Config for Runtime {
 parameter_types! {
     pub const AssetDeposit: Balance = 100 * currency::UNITS;
     pub const ApprovalDeposit: Balance = 1 * currency::UNITS;
-    pub const StringLimit: u32 = 50;
+    pub const StringLimit: u32 = 200;
     pub const MetadataDepositBase: Balance = 10 * currency::UNITS;
     pub const MetadataDepositPerByte: Balance = 1 * currency::UNITS;
 }
