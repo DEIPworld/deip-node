@@ -540,7 +540,7 @@ impl pallet_mmr::Config for Runtime {
 parameter_types! {
     pub const AssetDeposit: Balance = 100 * currency::UNITS;
     pub const ApprovalDeposit: Balance = 1 * currency::UNITS;
-    pub const StringLimit: u32 = 50;
+    pub const StringLimit: u32 = 200;
     pub const MetadataDepositBase: Balance = 10 * currency::UNITS;
     pub const MetadataDepositPerByte: Balance = 1 * currency::UNITS;
 }
@@ -641,7 +641,7 @@ impl pallet_deip_uniques::Config for Runtime {
     type DeipNftClassId = DeipNftClassId;
     type DeipAccountId = deip_account::DeipAccountId<<Self as frame_system::Config>::AccountId>;
     type ProjectId = pallet_deip::ProjectId;
-    type UniquesNftClassId = <Self as pallet_uniques::Config>::ClassId;
+    type NftClassId = <Self as pallet_uniques::Config>::ClassId;
     type ProjectsInfo = Self;
     type MaxOriginClassId = MaxOriginClassId;
 }
@@ -1308,10 +1308,6 @@ impl_runtime_apis! {
 
         fn get_review(id: &pallet_deip::ReviewId) -> Option<pallet_deip::ReviewOf<crate::Runtime>> {
             Deip::get_review(id)
-        }
-
-        fn get_investment_opportunity(id: &InvestmentId) -> Option<pallet_deip::SimpleCrowdfundingOf<crate::Runtime>> {
-            Deip::get_investment_opportunity(id)
         }
 
         fn get_contract_agreement(id: &pallet_deip::ContractAgreementId) -> Option<pallet_deip::ContractAgreementOf<crate::Runtime>> {

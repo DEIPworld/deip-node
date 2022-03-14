@@ -141,28 +141,6 @@ where
         review_id: ReviewId,
     ) -> Result<Option<Review<Hash, AccountId>>>;
 
-    #[rpc(name = "deip_getInvestmentOpportunity")]
-    fn get_investment_opportunity(
-        &self,
-        at: Option<BlockHash>,
-        id: InvestmentId,
-    ) -> Result<Option<SimpleCrowdfunding<Moment, AssetId, AssetBalance, TransactionCtx>>>;
-
-    #[rpc(name = "deip_getInvestmentOpportunityList")]
-    fn get_investment_opportunity_list(
-        &self,
-        at: Option<BlockHash>,
-        count: u32,
-        start_id: Option<InvestmentId>,
-    ) -> BoxFutureResult<
-        Vec<
-            ListResult<
-                InvestmentId,
-                SimpleCrowdfunding<Moment, AssetId, AssetBalance, TransactionCtx>,
-            >,
-        >,
-    >;
-
     #[rpc(name = "deip_getContractAgreement")]
     fn get_contract_agreement(
         &self,
@@ -505,43 +483,6 @@ where
         let runtime_api_result = api.get_review(&at, &id);
         runtime_api_result
             .map_err(|e| to_rpc_error(Error::ReviewApiGetFailed, Some(format!("{:?}", e))))
-    }
-
-    fn get_investment_opportunity(
-        &self,
-        at: Option<HashOf<Block>>,
-        id: InvestmentId,
-    ) -> Result<Option<SimpleCrowdfunding<Moment, AssetId, AssetBalance, TransactionCtx>>> {
-        let api = self.client.runtime_api();
-        let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
-
-        let runtime_api_result = api.get_investment_opportunity(&at, &id);
-        runtime_api_result.map_err(|e| {
-            to_rpc_error(Error::InvestmentOpportunityApiGetFailed, Some(format!("{:?}", e)))
-        })
-    }
-
-    fn get_investment_opportunity_list(
-        &self,
-        at: Option<HashOf<Block>>,
-        count: u32,
-        start_id: Option<InvestmentId>,
-    ) -> BoxFutureResult<
-        Vec<
-            ListResult<
-                InvestmentId,
-                SimpleCrowdfunding<Moment, AssetId, AssetBalance, TransactionCtx>,
-            >,
-        >,
-    > {
-        StorageMap::<Identity>::get_list(
-            &self.state,
-            at,
-            b"Deip",
-            b"SimpleCrowdfundingMap",
-            count,
-            start_id.map(types::InvestmentOpportunityKeyValue::new),
-        )
     }
 
     fn get_contract_agreement(

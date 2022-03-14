@@ -31,6 +31,8 @@ sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polka
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+# Benchmarking deps:
+sp-application-crypto = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
 
 # alias "parity-scale-code" to "codec"
 [dependencies.codec]
@@ -44,12 +46,15 @@ sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "po
 
 [features]
 default = ["std"]
-runtime-benchmarks = ["frame-benchmarking"]
+runtime-benchmarks = [
+    "frame-benchmarking",
+    "sp-application-crypto",
+]
 std = [
     "codec/std",
     "frame-support/std",
     "frame-system/std",
-    "sp-std/std", 
+    "sp-std/std",
     "sp-io/std",
     "serde",
     "sp-api/std",
@@ -57,4 +62,5 @@ std = [
     "deip-tenant/std",
     "frame-benchmarking/std",
     "sp-core/std",
+    "sp-application-crypto/std",
 ]

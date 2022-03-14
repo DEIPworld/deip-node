@@ -25,7 +25,6 @@ beefy-gadget-rpc = { git = "https://github.com/paritytech/substrate.git", branch
 beefy-primitives = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 deip-assets-rpc = { path = "../rpc/deip_assets_rpc" }
 deip-dao-rpc = { path = "../rpc/deip_dao_rpc" }
-deip-proposal-rpc = { path = "../rpc/deip_proposal_rpc" }
 deip-rpc = { path = "../rpc/deip_rpc" }
 deip-uniques-rpc = { path = "../rpc/deip_uniques_rpc" }
 

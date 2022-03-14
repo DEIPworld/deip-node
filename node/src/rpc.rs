@@ -190,19 +190,6 @@ where
     let subscriptions = SubscriptionManager::new(Arc::new(subscription_executor.clone()));
     let (state, _) = sc_rpc::state::new_full(client.clone(), subscriptions, deny_unsafe, None);
 
-    io.extend_with(deip_proposal_rpc::DeipProposalRpcApi::<
-        <Block as BlockT>::Hash,
-        AccountId,
-        Moment,
-        deip_proposal_rpc::Call<appchain_deip_runtime::Call>,
-    >::to_delegate(deip_proposal_rpc::DeipProposalRpcApiObj::<
-        sc_rpc::state::State<Block, C>,
-        Block,
-    >::new(state)));
-
-    let subscriptions = SubscriptionManager::new(Arc::new(subscription_executor.clone()));
-    let (state, _) = sc_rpc::state::new_full(client.clone(), subscriptions, deny_unsafe, None);
-
     io.extend_with(deip_assets_rpc::DeipAssetsRpc::<
         <Block as BlockT>::Hash,
         AssetId,
@@ -212,6 +199,22 @@ where
         AssetExtra,
         DeipAssetId,
     >::to_delegate(deip_assets_rpc::DeipAssetsRpcObj::<
+        sc_rpc::state::State<Block, C>,
+        Block,
+    >::new(state)));
+
+    let subscriptions = SubscriptionManager::new(Arc::new(subscription_executor.clone()));
+    let (state, _) = sc_rpc::state::new_full(client.clone(), subscriptions, deny_unsafe, None);
+
+    io.extend_with(deip_uniques_rpc::DeipUniquesRpc::<
+        <Block as BlockT>::Hash,
+        NftClassId,
+        InstanceId,
+        AccountId,
+        Balance,
+        AssetExtra,
+        DeipAssetId,
+    >::to_delegate(deip_uniques_rpc::DeipUniquesRpcObj::<
         sc_rpc::state::State<Block, C>,
         Block,
     >::new(state)));
