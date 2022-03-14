@@ -141,28 +141,6 @@ where
         review_id: ReviewId,
     ) -> Result<Option<Review<Hash, AccountId>>>;
 
-    #[rpc(name = "deip_getInvestmentOpportunity")]
-    fn get_investment_opportunity(
-        &self,
-        at: Option<BlockHash>,
-        id: InvestmentId,
-    ) -> Result<Option<SimpleCrowdfunding<Moment, AssetId, AssetBalance, TransactionCtx>>>;
-
-    #[rpc(name = "deip_getInvestmentOpportunityList")]
-    fn get_investment_opportunity_list(
-        &self,
-        at: Option<BlockHash>,
-        count: u32,
-        start_id: Option<InvestmentId>,
-    ) -> BoxFutureResult<
-        Vec<
-            ListResult<
-                InvestmentId,
-                SimpleCrowdfunding<Moment, AssetId, AssetBalance, TransactionCtx>,
-            >,
-        >,
-    >;
-
     #[rpc(name = "deip_getContractAgreement")]
     fn get_contract_agreement(
         &self,
