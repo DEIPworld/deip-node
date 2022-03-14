@@ -1310,10 +1310,6 @@ impl_runtime_apis! {
             Deip::get_review(id)
         }
 
-        fn get_investment_opportunity(id: &InvestmentId) -> Option<pallet_deip::SimpleCrowdfundingOf<crate::Runtime>> {
-            Deip::get_investment_opportunity(id)
-        }
-
         fn get_contract_agreement(id: &pallet_deip::ContractAgreementId) -> Option<pallet_deip::ContractAgreementOf<crate::Runtime>> {
             Deip::get_contract_agreement(id)
         }
