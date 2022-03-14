@@ -105,6 +105,7 @@ pub struct InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance, Transact
 }
 
 impl<Moment, AssetId, AssetBalance, TransactionCtx> InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance, TransactionCtx> {
+    #[allow(dead_code)]
     pub fn new(id: super::InvestmentId) -> Self {
         Self {
             id,
