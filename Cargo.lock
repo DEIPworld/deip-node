@@ -122,7 +122,6 @@ dependencies = [
  "beefy-primitives",
  "deip-assets-rpc",
  "deip-dao-rpc",
- "deip-proposal-rpc",
  "deip-rpc",
  "deip-uniques-rpc",
  "frame-benchmarking",
@@ -1460,28 +1459,6 @@ version = "3.0.0"
 dependencies = [
  "frame-support",
  "scale-info",
- "sp-std",
-]
-
-[[package]]
-name = "deip-proposal-rpc"
-version = "3.0.0"
-dependencies = [
- "common-deip-call",
- "common-deip-rpc",
- "frame-support",
- "jsonrpc-core",
- "jsonrpc-core-client",
- "jsonrpc-derive",
- "pallet-deip-proposal",
- "parity-scale-codec",
- "sc-rpc-api",
- "serde",
- "sp-api",
- "sp-blockchain",
- "sp-core",
- "sp-io",
- "sp-runtime",
  "sp-std",
 ]
 
