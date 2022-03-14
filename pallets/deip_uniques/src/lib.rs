@@ -147,6 +147,13 @@ pub mod pallet {
             class: T::ClassId,
             witness: DestroyWitness,
         ) -> DispatchResultWithPostInfo {
+            // If id belongs to project, refuse to destroy.
+            if let Some(deip_class) = DeipNftClassIdByNftClassId::<T>::get(class) {
+                ensure!(
+                    !ProjectIdByDeipNftClassId::<T>::contains_key(deip_class),
+                    Error::<T>::ProjectSecurityTokenCannotBeDestroyed
+                );
+            }
             let res = UniquesPallet::<T>::destroy(origin, class, witness);
             // If asset was destroyed, clean storages
             if res.is_ok() {
@@ -155,7 +162,6 @@ pub mod pallet {
                 // ClassId is unique, so entries can be safely removed.
                 if let Some(key) = deip_class_id {
                     NftClassIdByDeipNftClassId::<T>::mutate_exists(key, |v| *v = None);
-                    ProjectIdByDeipNftClassId::<T>::mutate_exists(key, |v| *v = None);
                     NftBalanceMap::<T>::mutate_exists(key, |v| *v = None);
                 }
             }
@@ -374,7 +380,15 @@ pub mod pallet {
 
             // Dispatch destroy call to origin pallet.
             let call = pallet_uniques::Call::<T>::destroy { class: origin_class_id, witness };
-            call.dispatch_bypass_filter(origin)
+            let res = call.dispatch_bypass_filter(origin);
+
+            if res.is_ok() {
+                DeipNftClassIdByNftClassId::<T>::mutate_exists(origin_class_id, |v| *v = None);
+                NftClassIdByDeipNftClassId::<T>::mutate_exists(class, |v| *v = None);
+                NftBalanceMap::<T>::mutate_exists(class, |v| *v = None);
+            }
+
+            res
         }
 
         #[pallet::weight(T::WeightInfo::mint())]
@@ -769,6 +783,7 @@ pub mod pallet {
 
             // Insert id to map.
             NftClassIdByDeipNftClassId::<T>::insert(class, new_class_id);
+            DeipNftClassIdByNftClassId::<T>::insert(new_class_id, class);
 
             // IF project id is provided add id to projects map.
             if let Some(project_id) = project_id {
