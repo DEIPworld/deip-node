@@ -3,8 +3,8 @@ use appchain_deip_runtime::{
     opaque::Block, opaque::SessionKeys, Balance, BeefyConfig, ImOnlineConfig, OctopusAppchainConfig,
     AccountId, AssetsConfig, BabeConfig, DeipConfig, DeipDaoConfig,
     DeipPortalConfig, DeipProposalConfig, DeipVestingConfig, GenesisConfig, GrandpaConfig,
-    ParityTechBalancesConfig, Signature, SudoConfig, SystemConfig, UniquesConfig, SessionConfig, 
-    OctopusLposConfig, WASM_BINARY, DeipEcosystemFundConfig,
+    ParityTechBalancesConfig, Signature, SudoConfig, SystemConfig, UniquesConfig, SessionConfig,
+    OctopusLposConfig, WASM_BINARY, DeipEcosystemFundConfig, DeipInvestmentOpportunityConfig,
 };
 
 use sc_chain_spec::ChainSpecExtension;
@@ -188,7 +188,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                 wasm_binary,
                 // Initial PoA authorities
                 vec![
-                    authority_keys_from_seed("Alice", 10 * OCTS), 
+                    authority_keys_from_seed("Alice", 10 * OCTS),
                     authority_keys_from_seed("Bob", 10 * OCTS)
                 ],
                 // Sudo account
@@ -316,6 +316,7 @@ fn genesis(
         deip_vesting: DeipVestingConfig { vesting: vesting_plans },
         deip_ecosystem_fund: DeipEcosystemFundConfig {
             fee_recipient: ecosystem_fund_key.clone()
-        }
+        },
+        deip_investment_opportunity: DeipInvestmentOpportunityConfig {},
     }
 }

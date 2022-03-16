@@ -341,126 +341,6 @@ benchmarks! {
         ).into());
     }
 
-    create_investment_opportunity {
-        let s in 1 .. 10;
-        let crowdfunding = init_simple_crowdfunding::<T>(1, s as u8);
-        let PreSimpleCrowdfunding::<T> {
-            investment,
-            funding_model,
-            shares
-        } = pre_simple_crowdfunding::<T>(crowdfunding, whitelisted_caller());
-
-        let external_id = investment.sale_id.clone();
-
-    }: _(RawOrigin::Signed(investment.owner.clone()),
-            external_id,
-            investment.owner.clone().into(),
-            shares,
-            funding_model)
-    verify {
-        assert_last_event::<T>(Event::<T>::SimpleCrowdfundingCreated(
-            external_id
-        ).into());
-    }
-
-    activate_crowdfunding {
-        let crowdfunding = init_simple_crowdfunding::<T>(1, 10);
-        let pre_crowdfunding =
-            pre_simple_crowdfunding::<T>(crowdfunding, whitelisted_caller());
-        let crowdfunding =
-            _create_investment_opportunity::<T>(pre_crowdfunding);
-
-    }: _(RawOrigin::None, crowdfunding.external_id)
-    verify {
-        assert_last_event::<T>(Event::<T>::SimpleCrowdfundingActivated(
-            crowdfunding.external_id
-        ).into());
-    }
-
-    expire_crowdfunding_already_expired {
-        let crowdfunding = init_simple_crowdfunding::<T>(1, 10);
-        let pre_crowdfunding =
-            pre_simple_crowdfunding::<T>(crowdfunding, whitelisted_caller());
-        let crowdfunding =
-            _create_investment_opportunity::<T>(pre_crowdfunding);
-        let crowdfunding = _activate_crowdfunding::<T>(crowdfunding);
-        let crowdfunding = set_crowdfunding_end_time::<T>(crowdfunding, now::<T>());
-        let crowdfunding = _expire_crowdfunding::<T>(crowdfunding);
-
-    }: expire_crowdfunding(RawOrigin::None, crowdfunding.external_id)
-    verify {}
-
-    expire_crowdfunding {
-        let crowdfunding = init_simple_crowdfunding::<T>(1, 10);
-        let pre_crowdfunding =
-            pre_simple_crowdfunding::<T>(crowdfunding, whitelisted_caller());
-        let crowdfunding =
-            _create_investment_opportunity::<T>(pre_crowdfunding);
-        let crowdfunding = _activate_crowdfunding::<T>(crowdfunding);
-        let crowdfunding = set_crowdfunding_end_time::<T>(crowdfunding, now::<T>());
-
-    }: _(RawOrigin::None, crowdfunding.external_id)
-    verify {
-        assert_last_event::<T>(Event::<T>::SimpleCrowdfundingExpired(
-            crowdfunding.external_id
-        ).into());
-    }
-
-    finish_crowdfunding {
-        let crowdfunding = init_simple_crowdfunding::<T>(1, 10);
-        let pre_crowdfunding =
-            pre_simple_crowdfunding::<T>(crowdfunding, whitelisted_caller());
-        let crowdfunding =
-            _create_investment_opportunity::<T>(pre_crowdfunding);
-        let crowdfunding = _activate_crowdfunding::<T>(crowdfunding);
-        _invest::<T>(&crowdfunding, whitelisted_caller());
-
-    }: _(RawOrigin::None, crowdfunding.external_id)
-    verify {
-        assert_last_event::<T>(Event::<T>::SimpleCrowdfundingFinished(
-            crowdfunding.external_id
-        ).into());
-    }
-
-    invest {
-        let crowdfunding = init_simple_crowdfunding::<T>(1, 10);
-        let pre_crowdfunding =
-            pre_simple_crowdfunding::<T>(crowdfunding, whitelisted_caller());
-        let crowdfunding =
-            _create_investment_opportunity::<T>(pre_crowdfunding);
-        let crowdfunding = _activate_crowdfunding::<T>(crowdfunding);
-        let investor: T::AccountId = whitelisted_caller();
-
-    }: _(RawOrigin::Signed(investor.clone()),
-            crowdfunding.external_id,
-            DeipAssetOf::<T>::new(crowdfunding.asset_id, crowdfunding.soft_cap.0)
-            )
-    verify {
-        assert_last_event::<T>(Event::<T>::Invested(
-            crowdfunding.external_id,
-            investor,
-        ).into());
-    }
-
-    invest_hard_cap_reached {
-        let crowdfunding = init_simple_crowdfunding::<T>(1, 10);
-        let pre_crowdfunding =
-            pre_simple_crowdfunding::<T>(crowdfunding, whitelisted_caller());
-        let crowdfunding =
-            _create_investment_opportunity::<T>(pre_crowdfunding);
-        let crowdfunding = _activate_crowdfunding::<T>(crowdfunding);
-        let investor: T::AccountId = whitelisted_caller();
-
-    }: invest(RawOrigin::Signed(investor.clone()),
-            crowdfunding.external_id,
-            DeipAssetOf::<T>::new(crowdfunding.asset_id, crowdfunding.hard_cap.0)
-            )
-    verify {
-        assert_last_event::<T>(Event::<T>::SimpleCrowdfundingFinished(
-            crowdfunding.external_id,
-        ).into());
-    }
-
     update_project {
         let project = init_project::<T>(0, 0);
         let project = _create_project::<T>(project);
@@ -689,7 +569,7 @@ benchmarks! {
 
         let terms = init_license_agreement::<T>(
             &project,
-            T::AssetSystem::asset_id([38; 20].as_slice())
+            T::asset_id([38; 20].as_slice())
         );
         let parties = Parties::<T>::license_agreement(&project, init_member::<T>(99));
         let agreement = init_contract_agreement::<T>(1, terms, parties);
@@ -751,7 +631,7 @@ benchmarks! {
 
         let terms = init_license_agreement::<T>(
             &project,
-            T::AssetSystem::asset_id([38; 20].as_slice())
+            T::asset_id([38; 20].as_slice())
         );
         let parties = Parties::<T>::license_agreement(&project, init_member::<T>(99));
         let agreement = init_contract_agreement::<T>(1, terms, parties);
@@ -778,7 +658,7 @@ benchmarks! {
 
         let terms = init_license_agreement::<T>(
             &project,
-            T::AssetSystem::asset_id([38; 20].as_slice())
+            T::asset_id([38; 20].as_slice())
         );
         let parties = Parties::<T>::license_agreement(&project, init_member::<T>(99));
         let agreement = init_contract_agreement::<T>(1, terms, parties);
@@ -871,12 +751,12 @@ benchmarks! {
 
 fn init_license_agreement<T: Config + DeipAssetsConfig>(
     source: &ProjectOf<T>,
-    asset_id: crate::DeipAssetIdOf<T>
+    asset_id: crate::investment_opportunity::DeipAssetId<T>
 ) -> TermsOf<T>
 {
     TermsOf::<T>::LicenseAgreement {
         source: source.external_id,
-        price: DeipAssetOf::<T>::new(
+        price: DeipAsset::<T>::new(
             asset_id,
             <_>::from(200u16)
         ),
@@ -1062,7 +942,6 @@ fn as_partially_accepted_contract<T: Config>(
 
 use sp_runtime::traits::Bounded;
 use deip_asset_system::AssetIdInitT;
-use crate::traits::DeipAssetSystem;
 
 fn _add_balance<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
     party: T::AccountId,
@@ -1134,254 +1013,4 @@ fn _issue_asset<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
         beneficiary.into(),
         amount
     )
-}
-
-fn init_investment_opportunity<T: Config>(idx: u8) -> InvestmentOf<T> {
-    let sale_id: InvestmentId = InvestmentId::from([idx; 20]);
-    let owner: T::AccountId = whitelisted_caller();
-    let amount = DeipAssetBalanceOf::<T>::from(200u16);
-    let time = T::Moment::from(1u16).mul(T::BlockNumber::from(10u16));
-    InvestmentOf::<T> {
-        sale_id,
-        owner,
-        amount,
-        time,
-    }
-}
-
-fn init_funding_model<T: Config>(investment: &InvestmentOf<T>) -> FundingModelOf<T> {
-    let start_time: T::Moment = now::<T>();
-    let end_time: T::Moment = start_time + investment.time;
-
-    let asset_id = T::AssetSystem::asset_id([1u8; 20].as_slice());
-
-    let soft_cap = DeipAssetOf::<T>::new(asset_id, DeipAssetBalanceOf::<T>::from(100u16));
-    let hard_cap = DeipAssetOf::<T>::new(asset_id, DeipAssetBalanceOf::<T>::from(200u16));
-    FundingModelOf::<T>::SimpleCrowdfunding {
-        start_time,
-        end_time,
-        soft_cap,
-        hard_cap
-    }
-}
-
-fn _create_simple_crowdfunding<T: Config>(
-    investment: InvestmentOf<T>,
-    funding_model: FundingModelOf<T>,
-    shares: Vec<DeipAssetOf<T>>,
-) -> Result<SimpleCrowdfundingOf<T>, DispatchError>
-{
-    let InvestmentOf::<T> {
-        sale_id,
-        owner,
-        amount: _,
-        time: _
-    } = investment;
-    Pallet::<T>::create_investment_opportunity(
-        RawOrigin::Signed(owner.clone()).into(),
-        sale_id,
-        owner.into(),
-        shares,
-        funding_model
-    )?;
-    Ok(SimpleCrowdfundingMap::<T>::get(sale_id))
-}
-
-type CrowdfundingBalance<T> = SerializableAtLeast32BitUnsigned<DeipAssetBalanceOf<T>>;
-
-fn init_simple_crowdfunding<T: Config + BalancesConfig + DeipAssetsConfig>(
-    idx: u8,
-    shares: u8,
-) -> SimpleCrowdfundingOf<T>
-{
-    let created_ctx: TransactionCtxId<TransactionCtxOf<T>> =
-        Default::default();
-
-    let external_id: InvestmentId =
-        InvestmentId::from([idx; 20]);
-
-    let start_time: T::Moment
-        = now::<T>();
-
-    use sp_runtime::traits::{One, Zero};
-    let end_time: T::Moment =
-        start_time + T::Moment::one().mul(T::BlockNumber::from(10u16));
-
-    let status: SimpleCrowdfundingStatus =
-        SimpleCrowdfundingStatus::Active;
-
-    let asset_id: crate::DeipAssetIdOf<T> =
-        T::AssetSystem::asset_id(external_id.as_bytes());
-
-    let share_ratio = 5u16;
-    let shares: Vec<DeipAssetOf<T>> =
-        (1..shares+1).map(|i| {
-            DeipAssetOf::<T>::new(
-                T::AssetSystem::asset_id([idx+i; 20].as_slice()),
-                DeipAssetBalanceOf::<T>::from(i as u16 * share_ratio * 2)
-            )
-        }).collect();
-
-    let total_amount = shares.iter()
-        .map(|x| DeipAssetBalanceOf::<T>::from(*x.amount()))
-        .fold(DeipAssetBalanceOf::<T>::zero(), |acc,  x| acc + x);
-    let soft_cap = total_amount - DeipAssetBalanceOf::<T>::from(share_ratio);
-    let hard_cap = total_amount;
-
-    let total_amount: CrowdfundingBalance<T> =
-        SerializableAtLeast32BitUnsigned(total_amount);
-
-    let soft_cap: CrowdfundingBalance<T> =
-        SerializableAtLeast32BitUnsigned(soft_cap);
-
-    let hard_cap: CrowdfundingBalance<T> =
-        SerializableAtLeast32BitUnsigned(hard_cap);
-
-    SimpleCrowdfundingOf::<T> {
-        created_ctx,
-        external_id,
-        start_time,
-        end_time,
-        status,
-        asset_id,
-        total_amount,
-        soft_cap,
-        hard_cap,
-        shares,
-    }
-}
-
-struct PreSimpleCrowdfunding<T: Config> {
-    investment: InvestmentOf<T>,
-    funding_model: FundingModelOf<T>,
-    shares: Vec<DeipAssetOf<T>>,
-}
-
-fn pre_simple_crowdfunding<T: Config + DeipAssetsConfig + BalancesConfig>(
-    crowdfunding: SimpleCrowdfundingOf<T>,
-    investment_owner: T::AccountId,
-) -> PreSimpleCrowdfunding<T>
-{
-    let SimpleCrowdfundingOf::<T> {
-        created_ctx: _,
-        external_id,
-        start_time,
-        end_time,
-        status: _,
-        asset_id,
-        total_amount,
-        soft_cap,
-        hard_cap,
-        shares,
-    } = crowdfunding;
-
-    use sp_runtime::traits::{Zero, One};
-    _create_asset::<T>(
-        T::AssetIdInit::asset_id(external_id.as_bytes()),
-        investment_owner.clone(),
-        <_>::one()
-    ).unwrap();
-    _issue_asset::<T>(
-        T::AssetIdInit::asset_id(external_id.as_bytes()),
-        investment_owner.clone(),
-        investment_owner.clone(),
-        <T as AssetsConfig>::Balance::from(unsafe { TryInto::<u16>::try_into(total_amount.0).unwrap_unchecked() }),
-    ).unwrap();
-
-    shares.iter().for_each(|x| {
-        _create_asset::<T>(
-            T::AssetIdInit::asset_id(x.id().as_ref()),
-            investment_owner.clone(),
-            <_>::one()
-        ).unwrap();
-        _issue_asset::<T>(
-            T::AssetIdInit::asset_id(x.id().as_ref()),
-            investment_owner.clone(),
-            investment_owner.clone(),
-            <T as AssetsConfig>::Balance::from(unsafe { TryInto::<u16>::try_into(*x.amount()).unwrap_unchecked() }),
-        ).unwrap();
-    });
-
-    let investment = InvestmentOf::<T> {
-        sale_id: external_id,
-        owner: investment_owner,
-        amount: total_amount.0,
-        time: end_time - start_time,
-    };
-    let funding_model = FundingModelOf::<T>::SimpleCrowdfunding {
-        start_time,
-        end_time,
-        soft_cap: DeipAssetOf::<T>::new(asset_id, soft_cap.0),
-        hard_cap: DeipAssetOf::<T>::new(asset_id, hard_cap.0),
-    };
-    PreSimpleCrowdfunding::<T> {
-        investment,
-        funding_model,
-        shares
-    }
-}
-
-fn _create_investment_opportunity<T: Config>(
-    crowdfunding: PreSimpleCrowdfunding<T>
-) -> SimpleCrowdfundingOf<T>
-{
-    let PreSimpleCrowdfunding::<T> {
-        investment,
-        funding_model,
-        shares,
-    } = crowdfunding;
-    let external_id = investment.sale_id.clone();
-    Pallet::<T>::create_investment_opportunity(
-        RawOrigin::Signed(investment.owner.clone()).into(),
-        external_id,
-        investment.owner.clone().into(),
-        shares,
-        funding_model
-    ).unwrap();
-    SimpleCrowdfundingMap::<T>::get(external_id)
-}
-
-fn _activate_crowdfunding<T: Config>(
-    crowdfunding: SimpleCrowdfundingOf<T>
-) -> SimpleCrowdfundingOf<T>
-{
-    Pallet::<T>::activate_crowdfunding(
-        RawOrigin::None.into(),
-        crowdfunding.external_id
-    ).unwrap();
-    SimpleCrowdfundingMap::<T>::get(crowdfunding.external_id)
-}
-
-fn _expire_crowdfunding<T: Config>(
-    crowdfunding: SimpleCrowdfundingOf<T>,
-) -> SimpleCrowdfundingOf<T>
-{
-    Pallet::<T>::expire_crowdfunding(
-        RawOrigin::None.into(),
-        crowdfunding.external_id,
-    ).unwrap();
-    SimpleCrowdfundingMap::<T>::get(crowdfunding.external_id)
-}
-
-fn set_crowdfunding_end_time<T: Config>(
-    mut crowdfunding: SimpleCrowdfundingOf<T>,
-    end_time: T::Moment,
-) -> SimpleCrowdfundingOf<T>
-{
-    let external_id = crowdfunding.external_id;
-    crowdfunding.end_time = end_time;
-    SimpleCrowdfundingMap::<T>::insert(external_id, crowdfunding);
-    SimpleCrowdfundingMap::<T>::get(external_id)
-}
-
-fn _invest<T: Config>(
-    crowdfunding: &SimpleCrowdfundingOf<T>,
-    owner: T::AccountId,
-)
-{
-    Pallet::<T>::invest(
-        RawOrigin::Signed(owner).into(),
-        crowdfunding.external_id,
-        DeipAssetOf::<T>::new(crowdfunding.asset_id, crowdfunding.soft_cap.0)
-    ).unwrap();
 }

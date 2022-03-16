@@ -178,7 +178,7 @@ where
         AccountId,
         Hash,
         Moment,
-        super::DeipAsset<AssetId, AssetBalance>,
+        pallet_deip::investment_opportunity::Asset<AssetId, AssetBalance>,
     >;
     type ValueError = AgreementError;
 

@@ -45,18 +45,18 @@ use frame_support::{
     decl_error, decl_event, decl_module, decl_storage,
     dispatch::{DispatchResult, Parameter},
     ensure,
-    log::debug,
     pallet_prelude::*,
     storage::{IterableStorageDoubleMap, IterableStorageMap},
     traits::{Currency, ReservableCurrency},
     StorageMap,
+    weights::Weight,
 };
 use frame_system::{self as system, ensure_none, ensure_signed, offchain::SendTransactionTypes};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 pub use sp_core::{H160, H256};
 use sp_runtime::{
-    traits::{Member, ValidateUnsigned},
+    traits::{Member},
     RuntimeDebug,
 };
 use sp_std::vec::Vec;
@@ -69,20 +69,11 @@ mod tests;
 
 pub mod api;
 
-mod investment_opportunity;
-use investment_opportunity::Status as SimpleCrowdfundingStatus;
-pub use investment_opportunity::{
-    FundingModel, FundingModelOf, Id as InvestmentId, Info as SimpleCrowdfunding,
-};
-
-mod contribution;
-use contribution::Contribution as Investment;
+pub mod investment_opportunity;
+use investment_opportunity::*;
 
 mod review;
 pub use review::{Id as ReviewId, Review, Vote as DeipReviewVote};
-
-mod asset;
-pub use asset::Asset as DeipAsset;
 
 pub mod contract;
 pub use contract::{
@@ -90,19 +81,15 @@ pub use contract::{
     IndexTerms as ContractAgreementIndexTerms, TermsOf as ContractAgreementTermsOf,
 };
 
-use deip_transaction_ctx::{PortalCtxT, TransactionCtxId};
-
-pub mod traits;
+use deip_transaction_ctx::{PortalCtxT};
 
 pub mod benchmarking;
 pub mod weights;
 use system::pallet_prelude::OriginFor;
 pub use weights::{WeightInfo, Weights};
 
-/// A maximum number of Domains. When domains reaches this number, no new domains can be added.
+/// A maximum number of Domains. When trait Condomains reaches this number, no new domains can be added.
 pub const MAX_DOMAINS: u32 = 100;
-
-const NON_LOCAL: u8 = 100;
 
 /// Possible statuses of Project inherited from Project Content type
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
@@ -139,7 +126,10 @@ impl Default for ProjectContentType {
 
 /// Configuration trait. Pallet depends on frame_system and pallet_timestamp.
 pub trait Config:
-    frame_system::Config + pallet_timestamp::Config + SendTransactionTypes<Call<Self>>
+    frame_system::Config +
+    pallet_timestamp::Config +
+    SendTransactionTypes<Call<Self>> +
+    deip_asset_system::DeipAssetSystem<Self::AccountId, ProjectId, InvestmentId>
 {
     type TransactionCtx: PortalCtxT<Call<Self>>;
 
@@ -150,12 +140,9 @@ pub trait Config:
 
     type Currency: ReservableCurrency<Self::AccountId>;
 
-    type AssetSystem: traits::DeipAssetSystem<Self::AccountId>;
-
     type DeipWeightInfo: WeightInfo;
 
     type MaxNdaParties: Get<u16>;
-    type MaxInvestmentShares: Get<u16>;
 }
 
 /// Unique Project ID reference
@@ -178,21 +165,8 @@ pub type ReviewOf<T> = Review<HashOf<T>, AccountIdOf<T>>;
 pub type NdaOf<T> = Nda<HashOf<T>, AccountIdOf<T>, MomentOf<T>>;
 pub type NdaAccessRequestOf<T> = NdaAccessRequest<HashOf<T>, AccountIdOf<T>>;
 pub type ProjectContentOf<T> = ProjectContent<HashOf<T>, AccountIdOf<T>>;
-pub type SimpleCrowdfundingOf<T> = SimpleCrowdfunding<
-    MomentOf<T>,
-    DeipAssetIdOf<T>,
-    DeipAssetBalanceOf<T>,
-    TransactionCtxId<TransactionCtxOf<T>>,
->;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
-pub type InvestmentOf<T> = Investment<AccountIdOf<T>, DeipAssetBalanceOf<T>, MomentOf<T>>;
-pub type DeipAssetIdOf<T> =
-    <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::AssetId;
-pub type DeipAssetBalanceOf<T> =
-    <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::Balance;
-pub type DeipAssetOf<T> = DeipAsset<DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 type DeipReviewVoteOf<T> = DeipReviewVote<AccountIdOf<T>, MomentOf<T>>;
-type TransactionCtxOf<T> = <T as Config>::TransactionCtx;
 
 /// PPossible project domains
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq, TypeInfo)]
@@ -432,10 +406,14 @@ decl_error! {
 
         // ==== General =====
 
+        /// Deprecated call (see call docs)
+        DeprecatedCall,
+
         /// Access Forbiten
         NoPermission,
 
         // Investment opportunity errors
+        // (DEPRECATED, moved to DeipInvestmentOpportunity)
         InvestmentOpportunityStartTimeMustBeLaterOrEqualCurrentMoment,
         InvestmentOpportunityEndTimeMustBeLaterStartTime,
         InvestmentOpportunitySoftCapMustBeGreaterOrEqualMinimum,
@@ -482,16 +460,36 @@ decl_error! {
     }
 }
 
+/// Storage version.
+#[derive(Encode, Decode, Eq, PartialEq, TypeInfo)]
+pub enum StorageVersion {
+    /// Initial version.
+    V1,
+    /// Separate investment_opportunity.
+    V2,
+}
+
 decl_storage! {
     trait Store for Module<T: Config> as Deip {
+        /// Should be used in conjunction with `on_runtime_upgrade` to ensure an upgrade is executed
+        /// once, even if the code is not removed in time.
+        pub PalletStorageVersion get(fn pallet_storage_version)
+            build(|_| StorageVersion::V2): StorageVersion = StorageVersion::V1;
+
         ProjectMap: map hasher(identity) ProjectId => ProjectOf<T>;
 
         ProjectIdByTeamId: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(identity) ProjectId => ();
 
+        /// (DEPRECATED, moved to DeipInvestmentOpportunity)
         SimpleCrowdfundingMap: map hasher(identity) InvestmentId => SimpleCrowdfundingOf<T>;
+        /// Migrate key hasher
+        SimpleCrowdfundings: map hasher(blake2_128_concat) InvestmentId => SimpleCrowdfundingOf<T>;
 
+        /// (DEPRECATED, moved to DeipInvestmentOpportunity)
         /// Contains various contributions from DAOs
-        InvestmentMap: map hasher(identity) InvestmentId => Vec<(T::AccountId, InvestmentOf<T>)>;
+        InvestmentMap: map hasher(identity) InvestmentId => Vec<(T::AccountId, Investment<T>)>;
+        /// Migrate key hasher
+        Investments: map hasher(blake2_128_concat) InvestmentId => Vec<(T::AccountId, Investment<T>)>;
 
         ProjectContentMap: map hasher(identity) ProjectContentId => ProjectContentOf<T>;
         ContentIdByProjectId: double_map hasher(identity) ProjectId, hasher(identity) ProjectContentId => ();
@@ -539,6 +537,57 @@ decl_module! {
         // Events must be initialized if they are used by the pallet.
         fn deposit_event() = default;
 
+        fn on_runtime_upgrade() -> Weight {
+            if Module::<T>::pallet_storage_version() == StorageVersion::V1 {
+                use frame_support::storage::migration::move_storage_from_pallet;
+                use core::convert::TryInto;
+
+                let mut reads: usize = 0;
+                let mut writes: usize = 0;
+                SimpleCrowdfundingMap::<T>::drain().for_each(|(k, v)| {
+                    reads += 1;
+                    SimpleCrowdfundings::<T>::insert(k, v);
+                    writes += 1;
+                });
+
+                let mut reads_investments: usize = 0;
+                let mut writes_investments: usize = 0;
+                InvestmentMap::<T>::drain().for_each(|(k, v)| {
+                    reads_investments += 1;
+                    Investments::<T>::insert(k, v);
+                    writes_investments += 1;
+                });
+
+                move_storage_from_pallet(
+                    "SimpleCrowdfundings".as_bytes(),
+                    "Deip".as_bytes(),
+                    "DeipInvestmentOpportunity".as_bytes()
+                );
+                reads *= 2;
+                writes *= 2;
+
+                move_storage_from_pallet(
+                    "Investments".as_bytes(),
+                    "Deip".as_bytes(),
+                    "DeipInvestmentOpportunity".as_bytes()
+                );
+                reads_investments *= 2;
+                writes_investments *= 2;
+
+                PalletStorageVersion::put(StorageVersion::V2);
+                let writes_version: usize = 1;
+
+                let reads_total: usize = reads + reads_investments;
+                let reads_total: Weight = reads_total.try_into().unwrap_or(Weight::MAX);
+
+                let writes_total: usize = writes + writes_investments + writes_version;
+                let writes_total: Weight = writes_total.try_into().unwrap_or(Weight::MAX);
+
+                return T::DbWeight::get().reads_writes(reads_total, writes_total)
+            }
+            0
+        }
+
         /// Allow a user to create project.
         ///
         /// The origin for this call must be _Signed_.
@@ -582,6 +631,7 @@ decl_module! {
             Self::deposit_event(RawEvent::ProjectCreated(account, project));
         }
 
+        /// (DEPRECATED, moved to DeipInvestmentOpportunity)
         /// Allows DAO to create an investment opportunity.
         ///
         /// The origin for this call must be _Signed_.
@@ -590,45 +640,43 @@ decl_module! {
         /// - `project_id`: id of the project which tokens are intended to sale.
         /// - `investment_type`: specifies type of created investment opportunity. For possible
         /// variants and details see [`FundingModel`].
-        #[weight = {
-            let s = shares.len() as u32;
-            T::DeipWeightInfo::create_investment_opportunity(s)
-        }]
+        #[weight = 10_000]
+        #[allow(unused_variables)]
         fn create_investment_opportunity(origin,
             external_id: InvestmentId,
             creator: T::DeipAccountId,
-            shares: Vec<DeipAssetOf<T>>,
+            shares: Vec<DeipAsset<T>>,
             funding_model: FundingModelOf<T>,
         ) -> DispatchResult {
-            let account = ensure_signed(origin)?;
-            Self::create_investment_opportunity_impl(account, external_id, creator.into(), shares, funding_model)
+            let _account = ensure_signed(origin)?;
+            Err(Error::<T>::DeprecatedCall)?
         }
 
-        #[weight = {
-            T::DeipWeightInfo::activate_crowdfunding()
-        }]
+        /// (DEPRECATED, moved to DeipInvestmentOpportunity)
+        #[weight = 10_000]
+        #[allow(unused_variables)]
         fn activate_crowdfunding(origin, sale_id: InvestmentId) -> DispatchResult {
             ensure_none(origin)?;
-            Self::activate_crowdfunding_impl(sale_id)
+            Err(Error::<T>::DeprecatedCall)?
         }
 
-        #[weight = {
-            T::DeipWeightInfo::expire_crowdfunding_already_expired()
-                .max(T::DeipWeightInfo::expire_crowdfunding())
-        }]
+        /// (DEPRECATED, moved to DeipInvestmentOpportunity)
+        #[weight = 10_000]
+        #[allow(unused_variables)]
         fn expire_crowdfunding(origin, sale_id: InvestmentId) -> DispatchResultWithPostInfo {
             ensure_none(origin)?;
-            Self::expire_crowdfunding_impl(sale_id)
+            Err(Error::<T>::DeprecatedCall)?
         }
 
-        #[weight = {
-            T::DeipWeightInfo::finish_crowdfunding()
-        }]
+        /// (DEPRECATED, moved to DeipInvestmentOpportunity)
+        #[weight = 10_000]
+        #[allow(unused_variables)]
         fn finish_crowdfunding(origin, sale_id: InvestmentId) -> DispatchResult {
             ensure_none(origin)?;
-            Self::finish_crowdfunding_impl(sale_id)
+            Err(Error::<T>::DeprecatedCall)?
         }
 
+        /// (DEPRECATED, moved to DeipInvestmentOpportunity)
         /// Allows DAO to invest to an opportunity.
         ///
         /// The origin for this call must be _Signed_.
@@ -636,16 +684,14 @@ decl_module! {
         /// - `id`: identifier of the investment opportunity
         /// - `amount`: amount of units to invest. The account should have enough funds on
         ///     the balance. This amount is reserved until the investment finished or expired
-        #[weight = {
-            T::DeipWeightInfo::invest()
-                .max(T::DeipWeightInfo::invest_hard_cap_reached())
-        }]
+        #[weight = 10_000]
+        #[allow(unused_variables)]
         fn invest(origin,
             id: InvestmentId,
-            asset: DeipAssetOf<T>
+            asset: DeipAsset<T>
         ) -> DispatchResultWithPostInfo {
-            let account = ensure_signed(origin)?;
-            Self::invest_to_crowdfunding_impl(account, id, asset)
+            let _account = ensure_signed(origin)?;
+            Err(Error::<T>::DeprecatedCall)?
         }
 
         /// Allow a user to update project.
@@ -928,7 +974,7 @@ decl_module! {
         //
         //         ensure!(nda_access_request.status == NdaAccessRequestStatus::Pending, Error::<T>::NdaAccessRequestAlreadyFinalized);
         //         ensure!(NdaMap::<T>::contains_key(nda_access_request.nda_external_id), Error::<T>::NoSuchNda);
-        //
+        //MomentOf
         //         nda_access_request.status = NdaAccessRequestStatus::Rejected;
         //
         //         Ok(())
@@ -1042,67 +1088,6 @@ decl_module! {
             if !sp_io::offchain::is_validator() {
                 return;
             }
-
-            Self::process_investment_opportunities_offchain();
-        }
-    }
-}
-
-impl<T: Config> ValidateUnsigned for Module<T> {
-    type Call = Call<T>;
-
-    /// Validate unsigned call to this module.
-    ///
-    /// By default unsigned transactions are disallowed, but implementing the validator
-    /// here we make sure that some particular calls (the ones produced by offchain worker)
-    /// are being whitelisted and marked as valid.
-    fn validate_unsigned(source: TransactionSource, call: &Self::Call) -> TransactionValidity {
-        // Firstly let's check that we get the local transaction.
-        if !matches!(source, TransactionSource::Local | TransactionSource::InBlock) {
-            return InvalidTransaction::Custom(NON_LOCAL).into()
-        }
-
-        match call {
-            Call::activate_crowdfunding { sale_id: id } => {
-                let sale = SimpleCrowdfundingMap::<T>::try_get(id)
-                    .map_err(|_| InvalidTransaction::Stale)?;
-                if !matches!(sale.status, SimpleCrowdfundingStatus::Inactive) {
-                    return InvalidTransaction::Stale.into()
-                }
-
-                ValidTransaction::with_tag_prefix("DeipOffchainWorker")
-                    .propagate(false)
-                    .longevity(5)
-                    .and_provides((b"activate_crowdfunding", *id))
-                    .build()
-            },
-            Call::expire_crowdfunding { sale_id: id } => {
-                let sale = SimpleCrowdfundingMap::<T>::try_get(id)
-                    .map_err(|_| InvalidTransaction::Stale)?;
-                if !matches!(sale.status, SimpleCrowdfundingStatus::Active) {
-                    return InvalidTransaction::Stale.into()
-                }
-
-                ValidTransaction::with_tag_prefix("DeipOffchainWorker")
-                    .propagate(false)
-                    .longevity(5)
-                    .and_provides((b"expire_crowdfunding", *id))
-                    .build()
-            },
-            Call::finish_crowdfunding { sale_id: id } => {
-                let sale = SimpleCrowdfundingMap::<T>::try_get(id)
-                    .map_err(|_| InvalidTransaction::Stale)?;
-                if !matches!(sale.status, SimpleCrowdfundingStatus::Active) {
-                    return InvalidTransaction::Stale.into()
-                }
-
-                ValidTransaction::with_tag_prefix("DeipOffchainWorker")
-                    .propagate(false)
-                    .longevity(5)
-                    .and_provides((b"finish_crowdfunding", *id))
-                    .build()
-            },
-            _ => InvalidTransaction::Call.into(),
         }
     }
 }

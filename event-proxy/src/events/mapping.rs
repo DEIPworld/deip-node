@@ -36,6 +36,8 @@ where
             match_event_deip_proposal(deip_proposal_event)
         }
 
+        Event::DeipInvestmentOpportunity(e) => match_event_deip_investment_opportunity(e),
+
         Event::ParityTechAssets(assets_event) => match_event_deip_assets(assets_event),
 
         Event::ParityTechUniques(..)
@@ -49,9 +51,9 @@ where
         | Event::Grandpa(_)
         | Event::ParityTechBalances(_)
         | Event::Sudo(_)
-        // | Event::template(_)
         | Event::DeipVesting(_)
-        | Event::Multisig(_) => unreachable!(),
+        | Event::Multisig(_)
+        => unreachable!(),
     }
 }
 
@@ -277,5 +279,36 @@ where
             // deip::ContractAgreementRejectedEvent
             unimplemented!()
         },
+    }
+}
+
+fn match_event_deip_investment_opportunity<T>(e: &pallet_deip_investment_opportunity::Event<Runtime>) -> DomainEventData<T>
+where
+    T: DeipProposal,
+{
+    use pallet_deip_investment_opportunity::Event::*;
+
+    match e {
+        SimpleCrowdfundingCreated(..) => {
+            // deip::SimpleCrowdfundingCreatedEvent
+            unimplemented!()
+        },
+        SimpleCrowdfundingActivated(..) => {
+            // deip::SimpleCrowdfundingActivatedEvent
+            unimplemented!()
+        },
+        SimpleCrowdfundingFinished(..) => {
+            // deip::SimpleCrowdfundingFinishedEvent
+            unimplemented!()
+        },
+        SimpleCrowdfundingExpired(..) => {
+            // deip::SimpleCrowdfundingExpiredEvent
+            unimplemented!()
+        },
+        Invested(..) => {
+            // deip::InvestedEvent
+            unimplemented!()
+        },
+        __Ignore { .. } => unreachable!(),
     }
 }

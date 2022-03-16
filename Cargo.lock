@@ -203,6 +203,7 @@ dependencies = [
  "pallet-deip-balances",
  "pallet-deip-dao",
  "pallet-deip-ecosystem-fund",
+ "pallet-deip-investment-opportunity",
  "pallet-deip-portal",
  "pallet-deip-proposal",
  "pallet-deip-uniques",
@@ -1034,6 +1035,7 @@ dependencies = [
  "pallet-deip",
  "pallet-deip-assets",
  "pallet-deip-dao",
+ "pallet-deip-investment-opportunity",
  "pallet-deip-proposal",
  "parity-scale-codec",
  "scale-info",
@@ -1402,9 +1404,14 @@ dependencies = [
 name = "deip-asset-system"
 version = "0.1.0"
 dependencies = [
+ "deip-assets-error",
+ "deip_serializable_u128",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
  "sp-io",
  "sp-runtime",
  "sp-std",
@@ -1638,6 +1645,7 @@ name = "draft"
 version = "0.1.0"
 dependencies = [
  "frame-support",
+ "pallet-timestamp",
  "parity-scale-codec",
  "rustc-hex",
 ]
@@ -4372,6 +4380,31 @@ dependencies = [
  "scale-info",
  "serde",
  "sp-core",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-deip-investment-opportunity"
+version = "3.0.0"
+dependencies = [
+ "deip-asset-system",
+ "deip-projects-info",
+ "deip-transaction-ctx",
+ "deip_serializable_u128",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-assets",
+ "pallet-balances",
+ "pallet-deip-assets",
+ "pallet-timestamp",
+ "pallet-transaction-payment",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
  "sp-runtime",
  "sp-std",
 ]
