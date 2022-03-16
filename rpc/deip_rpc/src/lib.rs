@@ -3,6 +3,7 @@ use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 pub use pallet_deip::api::DeipApi as DeipStorageRuntimeApi;
 use pallet_deip::*;
+use pallet_deip::investment_opportunity::*;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{
@@ -147,7 +148,7 @@ where
         at: Option<BlockHash>,
         id: ContractAgreementId,
     ) -> Result<
-        Option<contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>>,
+        Option<contract::Agreement<AccountId, Hash, Moment, Asset<AssetId, AssetBalance>>>,
     >;
 
     #[rpc(name = "deip_getContractAgreementList")]
@@ -160,7 +161,7 @@ where
         Vec<
             ListResult<
                 ContractAgreementId,
-                contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>,
+                contract::Agreement<AccountId, Hash, Moment, Asset<AssetId, AssetBalance>>,
             >,
         >,
     >;
@@ -176,7 +177,7 @@ where
         Vec<
             ListResult<
                 ContractAgreementId,
-                contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>,
+                contract::Agreement<AccountId, Hash, Moment, Asset<AssetId, AssetBalance>>,
             >,
         >,
     >;
@@ -490,7 +491,7 @@ where
         at: Option<HashOf<Block>>,
         id: ContractAgreementId,
     ) -> Result<
-        Option<contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>>,
+        Option<contract::Agreement<AccountId, Hash, Moment, Asset<AssetId, AssetBalance>>>,
     > {
         let api = self.client.runtime_api();
         let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
@@ -509,7 +510,7 @@ where
         Vec<
             ListResult<
                 ContractAgreementId,
-                contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>,
+                contract::Agreement<AccountId, Hash, Moment, Asset<AssetId, AssetBalance>>,
             >,
         >,
     > {
@@ -533,7 +534,7 @@ where
         Vec<
             ListResult<
                 ContractAgreementId,
-                contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>,
+                contract::Agreement<AccountId, Hash, Moment, Asset<AssetId, AssetBalance>>,
             >,
         >,
     > {

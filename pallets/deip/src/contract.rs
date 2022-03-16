@@ -1,4 +1,4 @@
-use crate::{traits::DeipAssetSystem, *};
+use crate::*;
 
 use sp_runtime::{traits::Zero, Percent, SaturatedConversion};
 use sp_std::vec;
@@ -13,7 +13,7 @@ pub enum Terms<Asset> {
     GeneralContractAgreement,
 }
 
-pub type TermsOf<T> = Terms<DeipAssetOf<T>>;
+pub type TermsOf<T> = Terms<DeipAsset<T>>;
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -32,7 +32,7 @@ pub enum Agreement<AccountId, Hash, Moment, Asset> {
     GeneralContract(GeneralContractStatus<AccountId, Hash, Moment>),
 }
 
-pub type AgreementOf<T> = Agreement<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>;
+pub type AgreementOf<T> = Agreement<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAsset<T>>;
 
 impl<AccountId, Hash, Moment, Asset> Default for Agreement<AccountId, Hash, Moment, Asset> {
     fn default() -> Self {
@@ -55,7 +55,7 @@ pub struct License<AccountId, Hash, Moment, Asset> {
     pub(crate) price: Asset,
 }
 
-pub type LicenseOf<T> = License<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>;
+pub type LicenseOf<T> = License<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAsset<T>>;
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -160,7 +160,7 @@ impl<T: Config> Module<T> {
         activation_time: Option<MomentOf<T>>,
         expiration_time: Option<MomentOf<T>>,
         project_id: ProjectId,
-        price: DeipAssetOf<T>,
+        price: DeipAsset<T>,
     ) -> DispatchResultWithPostInfo {
         ensure!(price.amount() > &Zero::zero(), Error::<T>::ContractAgreementFeeMustBePositive);
 
@@ -195,7 +195,7 @@ impl<T: Config> Module<T> {
         ContractAgreementIdByType::insert(IndexTerms::LicenseAgreement, id, ());
 
         Self::deposit_event(RawEvent::ContractAgreementCreated(id));
-        
+
         Ok(Some(T::DeipWeightInfo::create_contract_agreement_project_license()).into())
     }
 
@@ -235,7 +235,7 @@ impl<T: Config> Module<T> {
 
     fn accept_project_license(
         party: AccountIdOf<T>,
-        status: LicenseStatus<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
+        status: LicenseStatus<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAsset<T>>,
     ) -> DispatchResultWithPostInfo {
         match status {
             LicenseStatus::Unsigned(license) =>
@@ -249,7 +249,7 @@ impl<T: Config> Module<T> {
 
     fn accept_project_license_by_licenser(
         licenser: AccountIdOf<T>,
-        license: License<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
+        license: License<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAsset<T>>,
     ) -> DispatchResultWithPostInfo {
         ensure!(
             licenser == license.licenser,
@@ -277,7 +277,7 @@ impl<T: Config> Module<T> {
 
     fn accept_project_license_by_licensee(
         licensee: AccountIdOf<T>,
-        license: License<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
+        license: License<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAsset<T>>,
     ) -> DispatchResultWithPostInfo {
         ensure!(
             licensee == license.licensee,
@@ -316,36 +316,36 @@ impl<T: Config> Module<T> {
 
     fn distribute_revenue(
         from: &AccountIdOf<T>,
-        asset: &DeipAssetIdOf<T>,
-        fee: &DeipAssetBalanceOf<T>,
+        asset: &DeipAssetId<T>,
+        fee: &DeipAssetBalance<T>,
         distribute_percent: Percent,
         project_id: &ProjectId,
     ) -> DispatchResult {
         ensure!(
-            T::AssetSystem::account_balance(&from, &asset) >= *fee,
+            T::account_balance(&from, &asset) >= *fee,
             Error::<T>::ContractAgreementLicenseNotEnoughBalance
         );
 
         let fee_to_distribute = distribute_percent.mul_floor(*fee);
 
-        let mut total_revenue: DeipAssetBalanceOf<T> = Zero::zero();
+        let mut total_revenue: DeipAssetBalance<T> = Zero::zero();
         let mut transfer_info = vec![];
-        let beneficiary_tokens = T::AssetSystem::get_project_fts(project_id);
+        let beneficiary_tokens = T::get_project_fts(project_id);
         // simple model is used: if there are several (F-)FT classes then
         // the whole amount is distributed uniformly among the classes
         let token_count: u128 = beneficiary_tokens.len().saturated_into();
         for token in &beneficiary_tokens {
-            let token_supply: u128 = T::AssetSystem::total_supply(token).saturated_into();
-            let token_balances = if let Some(balances) = T::AssetSystem::get_ft_balances(token) {
+            let token_supply: u128 = T::total_supply(token).saturated_into();
+            let token_balances = if let Some(balances) = T::get_ft_balances(token) {
                 balances
             } else {
                 continue
             };
 
             for token_balance in &token_balances {
-                let balance = T::AssetSystem::account_balance(&token_balance, token);
+                let balance = T::account_balance(&token_balance, token);
                 let revenue: u128 = (fee_to_distribute * balance).saturated_into();
-                let revenue: DeipAssetBalanceOf<T> =
+                let revenue: DeipAssetBalance<T> =
                     (revenue / (token_supply * token_count)).saturated_into();
                 if revenue.is_zero() {
                     continue
@@ -364,7 +364,7 @@ impl<T: Config> Module<T> {
         }
 
         ensure!(
-            T::AssetSystem::transactionally_transfer(from, *asset, &transfer_info).is_ok(),
+            T::transactionally_transfer(from, *asset, &transfer_info).is_ok(),
             Error::<T>::ContractAgreementLicenseFailedToChargeFee
         );
 
@@ -484,7 +484,7 @@ impl<T: Config> Module<T> {
 
     fn reject_license(
         party: AccountIdOf<T>,
-        status: LicenseStatus<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
+        status: LicenseStatus<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAsset<T>>,
     ) -> DispatchResult {
         match status {
             LicenseStatus::Rejected(_) => Err(Error::<T>::ContractAgreementRejected.into()),
@@ -512,7 +512,7 @@ impl<T: Config> Module<T> {
 
     fn reject_license_common(
         party: AccountIdOf<T>,
-        license: License<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAssetOf<T>>,
+        license: License<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAsset<T>>,
     ) -> DispatchResult {
         let now = pallet_timestamp::Pallet::<T>::get();
         ensure!(

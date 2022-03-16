@@ -51,6 +51,13 @@ impl Serialize for WrappedCall<Call> {
         match &self.0 {
             Call::Deip(deip_call) => Self::serialize_deip_call(deip_call, serializer),
 
+            Call::DeipInvestmentOpportunity(deip_investment_opportunity_call) => {
+                Self::serialize_deip_investment_opportunity_call(
+                    deip_investment_opportunity_call,
+                    serializer
+                )
+            },
+
             Call::DeipProposal(deip_proposal_call) =>
                 Self::serialize_deip_proposal_call(deip_proposal_call, serializer),
 
@@ -76,7 +83,8 @@ impl Serialize for WrappedCall<Call> {
             Call::ImOnline(_) |
             Call::Utility(_) |
             Call::Multisig(_) |
-            Call::DeipVesting(_) => CallObject {
+            Call::DeipVesting(_)
+            => CallObject {
                 module: "unsupported_module",
                 call: "unsupported_call",
                 args: &UnsupportedCallArgs {},
@@ -318,6 +326,61 @@ impl WrappedCall<Call> {
             .serialize(serializer),
 
             __PhantomItem(..) => unreachable!(),
+        }
+    }
+
+    fn serialize_deip_investment_opportunity_call<S>(
+        deip_call: &pallet_deip_investment_opportunity::Call<Runtime>,
+        serializer: S,
+    ) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        use pallet_deip_investment_opportunity::Call::*;
+
+        match deip_call {
+            create_investment_opportunity { external_id, creator, shares, funding_model } =>
+                CallObject {
+                    module: "deip",
+                    call: "create_investment_opportunity",
+                    args: &DeipCreateInvestmentOpportunityCallArgs {
+                        external_id,
+                        creator,
+                        shares,
+                        funding_model,
+                    },
+                }
+                .serialize(serializer),
+
+            activate_crowdfunding { sale_id } => CallObject {
+                module: "deip",
+                call: "activate_crowdfunding",
+                args: &DeipActivateCrowdfundingCallArgs { sale_id },
+            }
+            .serialize(serializer),
+
+            expire_crowdfunding { sale_id } => CallObject {
+                module: "deip",
+                call: "expire_crowdfunding",
+                args: &DeipExpireCrowdfundingCallArgs { sale_id },
+            }
+            .serialize(serializer),
+
+            finish_crowdfunding { sale_id } => CallObject {
+                module: "deip",
+                call: "finish_crowdfunding",
+                args: &DeipFinishCrowdfundingCallArgs { sale_id },
+            }
+            .serialize(serializer),
+
+            invest { id, asset } => CallObject {
+                module: "deip",
+                call: "invest",
+                args: &DeipInvestCallArgs { id, amount: asset },
+            }
+            .serialize(serializer),
+
+            __Ignore(..) => unreachable!(),
         }
     }
 
