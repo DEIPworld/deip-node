@@ -170,7 +170,7 @@ pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
 
 // NOTE: Currently it is not possible to change the epoch duration after the chain has started.
 //       Attempting to do so will brick block production.
-pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 10 * MINUTES;
+pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 4 * HOURS;
 pub const EPOCH_DURATION_IN_SLOTS: u64 = {
     const SLOT_FILL_RATE: f64 = MILLISECS_PER_BLOCK as f64 / SLOT_DURATION as f64;
 
@@ -406,7 +406,7 @@ impl pallet_babe::Config for Runtime {
 }
 
 parameter_types! {
-    pub const UncleGenerations: BlockNumber = 5;
+    pub const UncleGenerations: BlockNumber = 0;
 }
 
 impl pallet_authorship::Config for Runtime {
@@ -611,10 +611,10 @@ parameter_types! {
     pub const DepositPerByte: Balance = 10 * currency::UNITS;
 
     /// The maximum length of an attribute key.
-    pub const KeyLimit: u32 = 50;
+    pub const KeyLimit: u32 = 100;
 
     /// The maximum length of an attribute value.
-    pub const ValueLimit: u32 = 50;
+    pub const ValueLimit: u32 = 200;
 
     /// Greater class ids will be reserved for `deip_*` calls.
     pub const MaxOriginClassId: NftClassId = NftClassId::MAX / 2;
@@ -672,8 +672,8 @@ impl frame_system::offchain::AppCrypto<<Signature as Verify>::Signer, Signature>
 
 parameter_types! {
     pub const OctopusAppchainPalletId: PalletId = PalletId(*b"py/octps");
-    pub const GracePeriod: u32 = 5;
-    pub const UnsignedPriority: u64 = 1 << 20;
+    pub const GracePeriod: u32 = 10;
+    pub const UnsignedPriority: u64 = 1 << 21;
     pub const RequestEventLimit: u32 = 10;
     pub const UpwardMessagesLimit: u32 = 10;
 }
@@ -700,7 +700,7 @@ parameter_types! {
         pub const SessionsPerEra: sp_staking::SessionIndex = 6;
         pub const BondingDuration: pallet_octopus_lpos::EraIndex = 24 * 28;
 //         pub OffchainRepeat: BlockNumber = 5;
-        pub const BlocksPerEra: u32 = EPOCH_DURATION_IN_BLOCKS * 6 / (SECS_PER_BLOCK as u32);
+        pub const BlocksPerEra: u32 = EPOCH_DURATION_IN_BLOCKS * 6;
 }
 
 impl pallet_octopus_lpos::Config for Runtime {
