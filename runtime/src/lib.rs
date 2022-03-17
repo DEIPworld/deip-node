@@ -611,10 +611,10 @@ parameter_types! {
     pub const DepositPerByte: Balance = 10 * currency::UNITS;
 
     /// The maximum length of an attribute key.
-    pub const KeyLimit: u32 = 50;
+    pub const KeyLimit: u32 = 100;
 
     /// The maximum length of an attribute value.
-    pub const ValueLimit: u32 = 50;
+    pub const ValueLimit: u32 = 200;
 
     /// Greater class ids will be reserved for `deip_*` calls.
     pub const MaxOriginClassId: NftClassId = NftClassId::MAX / 2;
