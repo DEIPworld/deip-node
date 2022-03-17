@@ -266,6 +266,11 @@ pub fn new_full_base(
 
     config.network.extra_sets.push(grandpa::grandpa_peers_set_config());
     config.network.extra_sets.push(beefy_gadget::beefy_peers_set_config());
+    let warp_sync = Arc::new(grandpa::warp_proof::NetworkProvider::new(
+        backend.clone(),
+        import_setup.1.shared_authority_set().clone(),
+        Vec::default(),
+    ));
 
     #[cfg(feature = "cli")]
     config.network.request_response_protocols.push(
@@ -285,7 +290,7 @@ pub fn new_full_base(
             spawn_handle: task_manager.spawn_handle(),
             import_queue,
             block_announce_validator_builder: None,
-            warp_sync: None, // @TODO check correct value
+            warp_sync: Some(warp_sync),
         })?;
 
     if config.offchain_worker.enabled {
@@ -360,7 +365,14 @@ pub fn new_full_base(
                             slot_duration,
                         );
 
-                    Ok((timestamp, slot, uncles))
+                    let storage_proof =
+                        sp_transaction_storage_proof::registration::new_data_provider(
+                            &*client_clone,
+                            &parent,
+                        )?;
+
+                    // Ok((timestamp, slot, uncles))
+                    Ok((timestamp, slot, uncles, storage_proof))
                 }
             },
             force_authoring,
