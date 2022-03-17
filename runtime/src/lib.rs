@@ -908,6 +908,11 @@ impl pallet_deip_vesting::Config for Runtime {
     type VestingWeightInfo = pallet_deip_vesting::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_deip_f_nft::Config for Runtime {
+    type Event = Event;
+    type PayloadId = u32;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -940,8 +945,9 @@ construct_runtime!(
         Multisig: pallet_multisig::{Pallet, Call, Storage, Event<T>},
         Utility: pallet_utility::{Pallet, Call, Event},
         Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config},
-        DeipAssets: pallet_deip_assets::{Pallet, Storage, Config<T>},
-        DeipUniques: pallet_deip_uniques::{Pallet, Storage, Config<T>},
+        DeipAssets: pallet_deip_assets::{Pallet, Call, Storage, Config<T>},
+        DeipFNft: pallet_deip_f_nft,
+        DeipUniques: pallet_deip_uniques::{Pallet, Call, Storage, Config<T>},
         DeipProposal: pallet_deip_proposal::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
         DeipDao: pallet_deip_dao::{Pallet, Call, Storage, Event<T>, Config},
         DeipPortal: pallet_deip_portal::{Pallet, Call, Storage, Config, ValidateUnsigned},
