@@ -135,12 +135,8 @@ pub fn development_config() -> Result<ChainSpec, String> {
                 vec![
                     (
                         get_account_id_from_seed::<sr25519::Public>("Alice"),
-                        10 * DEIP
-                    ),
-                    (
-                        AccountId::from_ss58check("5D7kG2UWD49rPvgjUjfghdYCJCNXoBdfC4LcyJe41D8fr6KU").unwrap(),
-                        40 * DEIP
-                    ),
+                        3_600_000_000 * DEIP
+                    )
                 ],
                 // Vestings
                 vec![],
@@ -154,12 +150,12 @@ pub fn development_config() -> Result<ChainSpec, String> {
                   // Appchain Relay Contract
                   "deip-test.registry.test_oct.testnet",
                   // Premined amount
-                  3_599_999_950 * DEIP,
+                  0 * DEIP,
                   // Era Payout
                   328_767 * DEIP,
                 ),
                 // Ecosystem fund account
-                AccountId::from_ss58check("5FRvKQzZ4taefHzFt5fgQHKJQYRL8SsswcrXCuDogucQoDqz").unwrap(),
+                get_account_id_from_seed::<sr25519::Public>("Eve"),
                 // Enable println
                 true,
             )
@@ -201,15 +197,11 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                 vec![
                     (
                         get_account_id_from_seed::<sr25519::Public>("Alice"),
-                        10 * DEIP
+                        1_800_000_000 * DEIP
                     ),
                     (
                         get_account_id_from_seed::<sr25519::Public>("Bob"),
-                        10 * DEIP
-                    ),
-                    (
-                        AccountId::from_ss58check("5D7kG2UWD49rPvgjUjfghdYCJCNXoBdfC4LcyJe41D8fr6KU").unwrap(),
-                        30 * DEIP
+                        1_800_000_000 * DEIP
                     ),
                 ],
                 // Vestings
@@ -224,12 +216,12 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                   // Appchain Relay Contract
                   "deip-test.registry.test_oct.testnet",
                   // Premined amount
-                  3_599_999_950 * DEIP,
+                  0 * DEIP,
                   // Era Payout
                   328_767 * DEIP,
                 ),
                 // Ecosystem fund account
-                AccountId::from_ss58check("5FRvKQzZ4taefHzFt5fgQHKJQYRL8SsswcrXCuDogucQoDqz").unwrap(),
+                get_account_id_from_seed::<sr25519::Public>("Eve"),
                 // Enable println
                 true,
             )
