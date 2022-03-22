@@ -76,7 +76,9 @@ pub type AssetBalance = u128;
 pub type AssetExtra = ();
 
 /// Identifier for the class of the NFT asset.
-pub type NftClassId = u32; // ??? what is class id right type
+pub type NftClassId = u32;
+
+pub type PayloadAssetId = pallet_deip_f_nft::types::PayloadAssetId<AssetId, NftClassId>;
 
 /// Deip indentifier for the class of the NFT asset.
 pub type DeipNftClassId = H160;
@@ -911,6 +913,7 @@ impl pallet_deip_vesting::Config for Runtime {
 impl pallet_deip_f_nft::Config for Runtime {
     type Event = Event;
     type PayloadId = u32;
+    type PayloadAssetId = PayloadAssetId;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

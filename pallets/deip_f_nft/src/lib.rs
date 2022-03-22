@@ -2,7 +2,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod traits;
-mod types;
+pub mod types;
 
 pub use pallet::*;
 
@@ -16,6 +16,7 @@ pub mod pallet {
         Blake2_128Concat, Parameter,
     };
     use frame_system::{ensure_signed, pallet_prelude::OriginFor};
+    use sp_std::{vec, vec::Vec};
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
@@ -36,6 +37,8 @@ pub mod pallet {
         Created { id: T::PayloadId, creator: T::AccountId },
         /// Asset was added to payload.
         AssetAdded { target: T::PayloadId, asset: T::PayloadAssetId },
+        /// Asset was removed from payload.
+        AssetRemoved { source: T::PayloadId, asset: T::PayloadAssetId },
     }
 
     #[pallet::error]
@@ -44,10 +47,12 @@ pub mod pallet {
         InUse,
         /// The given ID is uknown.
         Unknown,
-        /// Origin should be a creator of the payload.
+        /// Origin should be a creator (owner) of the payload.
         WrongOrigin,
         /// PayloadAsset already is in the payload.
         AlreadyExists,
+        /// PayloadAsset is not in the Payload.
+        NotInPayload,
     }
 
     #[pallet::storage]
@@ -86,6 +91,9 @@ pub mod pallet {
             asset: T::PayloadAssetId,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
+
+            // asset.lock()?;
+
             let details = Payload::<T>::try_get(target.clone()).map_err(|_| Error::<T>::Unknown)?;
             ensure!(origin == details.owner, Error::<T>::WrongOrigin);
             PayloadContainers::<T>::mutate(target.clone(), |assets| -> DispatchResult {
@@ -100,6 +108,32 @@ pub mod pallet {
 
             let event = Event::AssetAdded { target, asset };
             Self::deposit_event(event);
+            Ok(())
+        }
+
+        #[pallet::weight(1)]
+        pub fn remove_asset(
+            origin: OriginFor<T>,
+            source: T::PayloadId,
+            asset: T::PayloadAssetId,
+        ) -> DispatchResult {
+            let origin = ensure_signed(origin)?;
+            let details = Payload::<T>::try_get(source.clone()).map_err(|_| Error::<T>::Unknown)?;
+            ensure!(origin == details.owner, Error::<T>::WrongOrigin);
+            PayloadContainers::<T>::mutate(source.clone(), |assets| {
+                if let Some(assets) = assets {
+                    let index =
+                        assets.iter().position(|v| v == &asset).ok_or(Error::<T>::NotInPayload)?;
+                    assets.remove(index);
+                    Ok(())
+                } else {
+                    Err(Error::<T>::NotInPayload)
+                }
+            })?;
+
+            let event = Event::AssetRemoved { source, asset };
+            Self::deposit_event(event);
+
             Ok(())
         }
     }
