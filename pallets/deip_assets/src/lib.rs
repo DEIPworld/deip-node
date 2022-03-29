@@ -313,6 +313,10 @@ pub mod pallet {
     pub(super) type FtBalanceMap<T: Config> =
         StorageMap<_, Identity, DeipAssetIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
 
+    #[pallet::storage]
+    pub(super) type LockedAssets<T: Config> =
+        StorageMap<_, Identity, <T as Config>::AssetsAssetId, (), OptionQuery>;
+
     #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq, TypeInfo)]
     pub(super) struct AssetMetadata<U8> {
         name: Vec<U8>,
@@ -653,6 +657,28 @@ pub mod pallet {
             let call =
                 pallet_assets::Call::<T>::set_metadata { id: asset_id, name, symbol, decimals };
             call.dispatch_bypass_filter(origin)
+        }
+
+        pub fn lock_asset(id: <T as Config>::AssetsAssetId) -> LockResult {
+            LockedAssets::<T>::mutate_exists(id, |maybe_asset| {
+                if maybe_asset.is_some() {
+                    Err(LockError::AlreadyLocked)
+                } else {
+                    *maybe_asset = Some(());
+                    Ok(())
+                }
+            })
+        }
+
+        pub fn unlock_asset(id: <T as Config>::AssetsAssetId) -> LockResult {
+            LockedAssets::<T>::mutate_exists(id, |maybe_asset| {
+                if maybe_asset.is_none() {
+                    Err(LockError::NotLocked)
+                } else {
+                    *maybe_asset = None;
+                    Ok(())
+                }
+            })
         }
     }
 

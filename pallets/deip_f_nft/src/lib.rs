@@ -8,7 +8,11 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use crate::types::PayloadDetails;
+    use crate::{
+        traits::{GetToken, Lock as LockTrait},
+        types::PayloadDetails,
+    };
+    use deip_asset_lock::Result as LockResult;
     use frame_support::{
         dispatch::DispatchResult,
         ensure,
@@ -19,7 +23,9 @@ pub mod pallet {
     use sp_std::{vec, vec::Vec};
 
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config:
+        frame_system::Config + pallet_deip_assets::Config + pallet_deip_uniques::Config
+    {
         /// The overarching event type.
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
@@ -27,7 +33,8 @@ pub mod pallet {
         type PayloadId: Parameter;
 
         /// Identifier for a payload asset.
-        type PayloadAssetId: Parameter;
+        type PayloadAssetId: Parameter
+            + GetToken<<Self as pallet_deip_assets::Config>::AssetsAssetId, Self::ClassId>;
     }
 
     #[pallet::event]
@@ -92,7 +99,7 @@ pub mod pallet {
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
 
-            // asset.lock()?;
+            Self::lock(&asset).unwrap();
 
             let details = Payload::<T>::try_get(target.clone()).map_err(|_| Error::<T>::Unknown)?;
             ensure!(origin == details.owner, Error::<T>::WrongOrigin);
@@ -135,6 +142,21 @@ pub mod pallet {
             Self::deposit_event(event);
 
             Ok(())
+        }
+    }
+
+    impl<T: Config> Pallet<T>
+    where
+        T: pallet_deip_assets::Config + pallet_deip_uniques::Config,
+    {
+        fn lock(asset: &T::PayloadAssetId) -> LockResult {
+            if let Some(id) = asset.ft_asset_id() {
+                pallet_deip_assets::Pallet::<T>::lock_asset(*id)
+            } else if let Some(id) = asset.nft_class_id() {
+                pallet_deip_uniques::Pallet::<T>::lock_asset(*id)
+            } else {
+                todo!()
+            }
         }
     }
 }

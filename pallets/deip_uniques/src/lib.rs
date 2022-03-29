@@ -6,14 +6,15 @@ pub use pallet_uniques;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use deip_projects_info::DeipProjectsInfo;
     #[cfg(feature = "std")]
     use frame_support::traits::GenesisBuild;
 
+    use deip_asset_lock::{Error as LockError, Lockable, Result as LockResult};
+    use deip_projects_info::DeipProjectsInfo;
     use frame_support::{
         dispatch::{DispatchResult, DispatchResultWithPostInfo, UnfilteredDispatchable, Weight},
         ensure,
-        pallet_prelude::{OptionQuery, StorageMap, StorageValue, ValueQuery},
+        pallet_prelude::{OptionQuery, StorageDoubleMap, StorageMap, StorageValue, ValueQuery},
         sp_runtime::traits::{CheckedAdd, One, StaticLookup},
         traits::{Get, Hooks},
         Blake2_128Concat, BoundedVec, Identity, Parameter,
@@ -208,6 +209,11 @@ pub mod pallet {
     #[pallet::storage]
     pub(super) type NftBalanceMap<T: Config> =
         StorageMap<_, Identity, DeipNftClassIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
+
+    /// Storage with locked uniques.
+    #[pallet::storage]
+    pub(super) type LockedAssets<T: Config> =
+        StorageMap<_, Identity, <T as Config>::NftClassId, (), OptionQuery>;
 
     #[pallet::error]
     pub enum Error<T> {
@@ -577,6 +583,28 @@ pub mod pallet {
             DeipNftClassIdByNftClassIdV1::<T>::insert(new_class_id, class);
 
             Ok(post_dispatch_info)
+        }
+
+        pub fn lock_asset(class: <T as Config>::NftClassId) -> LockResult {
+            LockedAssets::<T>::mutate_exists(class, |maybe_asset| {
+                if maybe_asset.is_some() {
+                    Err(LockError::AlreadyLocked)
+                } else {
+                    *maybe_asset = Some(());
+                    Ok(())
+                }
+            })
+        }
+
+        pub fn unlock_asset(class: <T as Config>::NftClassId) -> LockResult {
+            LockedAssets::<T>::mutate_exists(class, |maybe_asset| {
+                if maybe_asset.is_none() {
+                    Err(LockError::NotLocked)
+                } else {
+                    *maybe_asset = None;
+                    Ok(())
+                }
+            })
         }
     }
 }
