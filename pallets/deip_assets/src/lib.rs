@@ -42,6 +42,7 @@ pub use pallet::*;
 #[frame_support::pallet]
 #[doc(hidden)]
 pub mod pallet {
+    use deip_asset_lock::{Error as LockError, Result as LockResult};
     use frame_support::{
         pallet_prelude::{
             ensure, Blake2_128Concat, Decode, DispatchResultWithPostInfo, Encode, Get, Hooks,
@@ -315,7 +316,7 @@ pub mod pallet {
 
     #[pallet::storage]
     pub(super) type LockedAssets<T: Config> =
-        StorageMap<_, Identity, <T as Config>::AssetsAssetId, (), OptionQuery>;
+        StorageMap<_, Blake2_128Concat, <T as Config>::AssetsAssetId, (), OptionQuery>;
 
     #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq, TypeInfo)]
     pub(super) struct AssetMetadata<U8> {

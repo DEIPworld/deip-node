@@ -9,23 +9,25 @@ pub struct PayloadDetails<AccountId> {
 }
 
 #[derive(Debug, Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]
-pub enum PayloadAssetId<AssetId, ClassId> {
+pub enum PayloadAssetId<AssetId, ClassId, InstanceId> {
     Ft(AssetId),
-    Nft(ClassId),
+    Nft { class: ClassId, instance: InstanceId },
 }
 
-impl<AssetId, ClassId> GetToken<AssetId, ClassId> for PayloadAssetId<AssetId, ClassId> {
-    fn nft_class_id(&self) -> Option<&ClassId> {
-        if let Self::Nft(id) = self {
+impl<AssetId, ClassId, InstanceId> GetToken<AssetId, ClassId, InstanceId>
+    for PayloadAssetId<AssetId, ClassId, InstanceId>
+{
+    fn ft_asset_id(&self) -> Option<&AssetId> {
+        if let Self::Ft(id) = self {
             Some(id)
         } else {
             None
         }
     }
 
-    fn ft_asset_id(&self) -> Option<&AssetId> {
-        if let Self::Ft(id) = self {
-            Some(id)
+    fn nft_class_id(&self) -> Option<(&ClassId, &InstanceId)> {
+        if let Self::Nft { class, instance } = self {
+            Some((class, instance))
         } else {
             None
         }

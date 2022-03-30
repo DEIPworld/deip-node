@@ -17,6 +17,7 @@ frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "
 pallet-uniques = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 
+deip-asset-lock = { path = "../../deip_common/deip_asset_lock", default-features = false }
 deip-projects-info = { path = "../../deip_common/deip_projects_info", default-features = false }
 
 [features]
@@ -28,4 +29,5 @@ std = [
     "frame-system/std",
     "pallet-uniques/std",
     "sp-std/std",
+    "deip-asset-lock/std",
 ]

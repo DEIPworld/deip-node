@@ -78,13 +78,13 @@ pub type AssetExtra = ();
 /// Identifier for the class of the NFT asset.
 pub type NftClassId = u32;
 
-pub type PayloadAssetId = pallet_deip_f_nft::types::PayloadAssetId<AssetId, NftClassId>;
+pub type PayloadAssetId = pallet_deip_f_nft::types::PayloadAssetId<AssetId, NftClassId, InstanceId>;
 
 /// Deip indentifier for the class of the NFT asset.
 pub type DeipNftClassId = H160;
 
 /// The type used to identify a unique asset within an asset class.
-pub type InstanceId = u32; // ??? correct type
+pub type InstanceId = u32;
 
 /// Type used for expressing timestamp.
 pub type Moment = u64;

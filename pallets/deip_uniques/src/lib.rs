@@ -9,7 +9,7 @@ pub mod pallet {
     #[cfg(feature = "std")]
     use frame_support::traits::GenesisBuild;
 
-    use deip_asset_lock::{Error as LockError, Lockable, Result as LockResult};
+    use deip_asset_lock::{Error as LockError, Result as LockResult};
     use deip_projects_info::DeipProjectsInfo;
     use frame_support::{
         dispatch::{DispatchResult, DispatchResultWithPostInfo, UnfilteredDispatchable, Weight},
@@ -212,8 +212,15 @@ pub mod pallet {
 
     /// Storage with locked uniques.
     #[pallet::storage]
-    pub(super) type LockedAssets<T: Config> =
-        StorageMap<_, Identity, <T as Config>::NftClassId, (), OptionQuery>;
+    pub(super) type LockedAssets<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        <T as Config>::NftClassId,
+        Blake2_128Concat,
+        T::InstanceId,
+        (),
+        OptionQuery,
+    >;
 
     #[pallet::error]
     pub enum Error<T> {
@@ -585,8 +592,15 @@ pub mod pallet {
             Ok(post_dispatch_info)
         }
 
-        pub fn lock_asset(class: <T as Config>::NftClassId) -> LockResult {
-            LockedAssets::<T>::mutate_exists(class, |maybe_asset| {
+        pub fn lock_asset(
+            origin: T::AccountId,
+            class: <T as Config>::NftClassId,
+            instance: T::InstanceId,
+        ) -> LockResult {
+            let owner =
+                UniquesPallet::<T>::owner(class, instance).ok_or(LockError::AssetNotFound)?;
+            ensure!(origin == owner, LockError::AccountDoesNotHaveAsset);
+            LockedAssets::<T>::mutate_exists(class, instance, |maybe_asset| {
                 if maybe_asset.is_some() {
                     Err(LockError::AlreadyLocked)
                 } else {
@@ -596,8 +610,11 @@ pub mod pallet {
             })
         }
 
-        pub fn unlock_asset(class: <T as Config>::NftClassId) -> LockResult {
-            LockedAssets::<T>::mutate_exists(class, |maybe_asset| {
+        pub fn unlock_asset(
+            class: <T as Config>::NftClassId,
+            instance: T::InstanceId,
+        ) -> LockResult {
+            LockedAssets::<T>::mutate_exists(class, instance, |maybe_asset| {
                 if maybe_asset.is_none() {
                     Err(LockError::NotLocked)
                 } else {

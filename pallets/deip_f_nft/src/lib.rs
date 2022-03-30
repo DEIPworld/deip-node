@@ -8,14 +8,12 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use crate::{
-        traits::{GetToken, Lock as LockTrait},
-        types::PayloadDetails,
-    };
+    use crate::{traits::GetToken, types::PayloadDetails};
     use deip_asset_lock::Result as LockResult;
     use frame_support::{
         dispatch::DispatchResult,
         ensure,
+        log::error,
         pallet_prelude::{IsType, StorageMap},
         Blake2_128Concat, Parameter,
     };
@@ -34,7 +32,11 @@ pub mod pallet {
 
         /// Identifier for a payload asset.
         type PayloadAssetId: Parameter
-            + GetToken<<Self as pallet_deip_assets::Config>::AssetsAssetId, Self::ClassId>;
+            + GetToken<
+                <Self as pallet_deip_assets::Config>::AssetsAssetId,
+                Self::ClassId,
+                Self::InstanceId,
+            >;
     }
 
     #[pallet::event]
@@ -60,6 +62,8 @@ pub mod pallet {
         AlreadyExists,
         /// PayloadAsset is not in the Payload.
         NotInPayload,
+        /// Asset lock failed.
+        AssetLockFailed,
     }
 
     #[pallet::storage]
@@ -99,7 +103,10 @@ pub mod pallet {
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
 
-            Self::lock(&asset).unwrap();
+            Self::lock(origin.clone(), &asset).map_err(|e| {
+                error!("❗️❗️❗️ asset lock failed: {:?}", e);
+                Error::<T>::AssetLockFailed
+            })?;
 
             let details = Payload::<T>::try_get(target.clone()).map_err(|_| Error::<T>::Unknown)?;
             ensure!(origin == details.owner, Error::<T>::WrongOrigin);
@@ -149,11 +156,11 @@ pub mod pallet {
     where
         T: pallet_deip_assets::Config + pallet_deip_uniques::Config,
     {
-        fn lock(asset: &T::PayloadAssetId) -> LockResult {
+        fn lock(origin: T::AccountId, asset: &T::PayloadAssetId) -> LockResult {
             if let Some(id) = asset.ft_asset_id() {
                 pallet_deip_assets::Pallet::<T>::lock_asset(*id)
-            } else if let Some(id) = asset.nft_class_id() {
-                pallet_deip_uniques::Pallet::<T>::lock_asset(*id)
+            } else if let Some((class, instance)) = asset.nft_class_id() {
+                pallet_deip_uniques::Pallet::<T>::lock_asset(origin, *class, *instance)
             } else {
                 todo!()
             }
