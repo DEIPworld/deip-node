@@ -26,7 +26,7 @@ use frame_system::{
     limits::{BlockLength, BlockWeights},
     EnsureRoot,
 };
-pub use pallet_balances::Call as BalancesCall;
+pub use paritytech_balances::Call as BalancesCall;
 use pallet_deip::{InvestmentId, ProjectId, H160};
 use pallet_grandpa::{
     fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
@@ -292,7 +292,7 @@ impl frame_system::Config for Runtime {
     /// What to do if an account is fully reaped from the system.
     type OnKilledAccount = ();
     /// The data to be stored in an account.
-    type AccountData = pallet_balances::AccountData<Balance>;
+    type AccountData = paritytech_balances::AccountData<Balance>;
     /// Weight information for the extrinsics of this pallet.
     type SystemWeightInfo = ();
     /// This is used as an identifier of the chain. 42 is the generic substrate prefix.
@@ -339,7 +339,7 @@ parameter_types! {
     pub const MaxReserves: u32 = 50;
 }
 
-impl pallet_balances::Config for Runtime {
+impl paritytech_balances::Config for Runtime {
     type MaxLocks = MaxLocks;
     type MaxReserves = MaxReserves;
     type ReserveIdentifier = [u8; 8];
@@ -350,7 +350,7 @@ impl pallet_balances::Config for Runtime {
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
-    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = paritytech_balances::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -594,7 +594,7 @@ impl pallet_deip_assets::Config for Runtime {
     type WipePeriod = WipePeriod;
 }
 
-impl pallet_deip_balances::Config for Runtime {}
+impl balances::Config for Runtime {}
 
 parameter_types! {
     /// The basic amount of funds that must be reserved for an asset class.
@@ -917,7 +917,7 @@ construct_runtime!(
         Babe: pallet_babe,
         Timestamp: pallet_timestamp,
         Authorship: pallet_authorship,
-        Balances: pallet_deip_balances,
+        DeipBalances: balances::{Pallet, Storage, Call },
         TransactionPayment: pallet_transaction_payment,
         OctopusAppchain: pallet_octopus_appchain::{Pallet, Call, Storage, Config<T>, Event<T>, ValidateUnsigned},
         OctopusLpos: pallet_octopus_lpos,
@@ -929,7 +929,7 @@ construct_runtime!(
         Historical: pallet_session_historical::{Pallet},
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage},
         ParityTechAssets: pallet_assets::{Pallet, Storage, Event<T>},
-        ParityTechBalances: pallet_balances::{Pallet, Storage, Event<T>, Config<T>},
+        Balances: paritytech_balances::{Pallet, Storage, Event<T>, Config<T>},
         ParityTechUniques: pallet_uniques::{Pallet, Storage, Event<T>},
         Mmr: pallet_mmr::{Pallet, Storage},
         Beefy: pallet_beefy::{Pallet, Config<T>},
