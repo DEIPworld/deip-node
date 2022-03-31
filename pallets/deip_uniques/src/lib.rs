@@ -10,12 +10,22 @@ pub mod pallet {
     #[cfg(feature = "std")]
     use frame_support::traits::GenesisBuild;
 
-    use frame_support::{dispatch::{DispatchResult, DispatchResultWithPostInfo, UnfilteredDispatchable, Vec}, ensure, pallet_prelude::{OptionQuery, StorageMap, StorageValue, ValueQuery}, sp_runtime::traits::{CheckedAdd, One, StaticLookup}, traits::Get, BoundedVec, Identity, Parameter, Blake2_128Concat};
+    use frame_support::{
+        dispatch::{DispatchResult, DispatchResultWithPostInfo, UnfilteredDispatchable},
+        ensure,
+        pallet_prelude::{OptionQuery, StorageMap, StorageValue, ValueQuery},
+        sp_runtime::traits::{CheckedAdd, One, StaticLookup},
+        traits::{Get, Hooks},
+        BoundedVec, Identity, Parameter,
+        Blake2_128Concat
+    };
+    use frame_support::dispatch::Weight;
     use frame_system::{ensure_signed, pallet_prelude::OriginFor};
+    use frame_system::pallet_prelude::BlockNumberFor;
     use pallet_uniques::{
         Call as UniquesCall, DestroyWitness, Pallet as UniquesPallet, WeightInfo,
     };
-    use sp_std::vec;
+    use sp_std::prelude::*;
 
     // Helper types.
     type DeipNftClassIdOf<T> = <T as Config>::DeipNftClassId;
@@ -46,8 +56,8 @@ pub mod pallet {
         type MaxOriginClassId: Get<Self::ClassId>;
     }
 
-    use frame_support::traits::StorageVersion;
-    use frame_support::dispatch::{GetStorageVersion, Weight};
+    use frame_support::traits::{StorageVersion, GetStorageVersion};
+
     pub const V0: StorageVersion = StorageVersion::new(0);
     pub const V1: StorageVersion = StorageVersion::new(1);
 
@@ -56,18 +66,41 @@ pub mod pallet {
     #[pallet::storage_version(V1)]
     pub struct Pallet<T>(_);
 
-    use frame_support::traits::Hooks;
-    use frame_system::pallet_prelude::BlockNumberFor;
+    fn count_items(pallet_name: &[u8], storage_name: &[u8]) -> usize
+    {
+        use frame_support::storage::{storage_prefix, PrefixIterator};
+        let prefix = storage_prefix(pallet_name, storage_name);
+        PrefixIterator::<()>::new(
+            prefix.to_vec(),
+            prefix.to_vec(),
+            |_key, _value| Ok(()),
+        ).count()
+    }
 
     #[doc(hidden)]
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_runtime_upgrade() -> Weight {
             use core::convert::TryInto;
+            use frame_support::storage::migration::move_storage_from_pallet;
             if Pallet::<T>::on_chain_storage_version() == V0
                 && Pallet::<T>::current_storage_version() == V1
             {
                 let mut reads: usize = 0;
+                for x in &[
+                    "NftClassIdByDeipNftClassId",
+                    "DeipNftClassIdByNftClassId",
+                    "NextNftClassId",
+                    "ProjectIdByDeipNftClassId",
+                    "NftBalanceMap",
+                ] {
+                    reads += count_items(b"Uniques", x.as_bytes());
+                    move_storage_from_pallet(
+                        x.as_bytes(),
+                        "Uniques".as_bytes(),
+                        "DeipUniques".as_bytes()
+                    );
+                }
                 NftClassIdByDeipNftClassId::<T>::drain()
                     .map(|x| { reads += 1; x })
                     .for_each(|(k, v)| { NftClassIdByDeipNftClassIdV1::<T>::insert(k, v); });
@@ -80,6 +113,21 @@ pub mod pallet {
                 NftBalanceMap::<T>::drain()
                     .map(|x| { reads += 1; x })
                     .for_each(|(k, v)| { NftBalanceMapV1::<T>::insert(k, v); });
+                for x in &[
+                    "Class",
+                    "Account",
+                    "Asset",
+                    "ClassMetadataOf",
+                    "InstanceMetadataOf",
+                    "Attribute",
+                ] {
+                    reads += count_items(b"ParityTechUniques", x.as_bytes());
+                    move_storage_from_pallet(
+                        x.as_bytes(),
+                        "ParityTechUniques".as_bytes(),
+                        "Uniques".as_bytes()
+                    );
+                }
                 let reads: Weight = reads.try_into().unwrap_or(Weight::MAX);
                 return T::DbWeight::get().reads_writes(reads, reads);
             }
@@ -184,226 +232,6 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        /// Issue a new class of non-fungible assets from a public origin.
-        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::create())]
-        pub fn create(
-            origin: OriginFor<T>,
-            class: <T as pallet_uniques::Config>::ClassId,
-            admin: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            ensure!(class <= T::MaxOriginClassId::get(), pallet_uniques::Error::<T>::InUse);
-
-            UniquesPallet::<T>::create(origin, class, admin)
-        }
-
-        /// Destroy a class of fungible assets.
-        #[pallet::weight(pallet_uniques::Call::<T>::destroy{class: *class, witness: *witness}.get_dispatch_info().weight)]
-        pub fn destroy(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            witness: DestroyWitness,
-        ) -> DispatchResultWithPostInfo {
-            // If id belongs to project, refuse to destroy.
-            if let Some(deip_class) = DeipNftClassIdByNftClassIdV1::<T>::get(class) {
-                ensure!(
-                    !ProjectIdByDeipNftClassIdV1::<T>::contains_key(deip_class),
-                    Error::<T>::ProjectSecurityTokenCannotBeDestroyed
-                );
-            }
-            let res = UniquesPallet::<T>::destroy(origin, class, witness);
-            // If asset was destroyed, clean storages
-            if res.is_ok() {
-                let deip_class_id =
-                    DeipNftClassIdByNftClassIdV1::<T>::mutate_exists(class, |v| v.take());
-                // ClassId is unique, so entries can be safely removed.
-                if let Some(key) = deip_class_id {
-                    NftClassIdByDeipNftClassIdV1::<T>::mutate_exists(key, |v| *v = None);
-                    NftBalanceMapV1::<T>::mutate_exists(key, |v| *v = None);
-                }
-            }
-            res
-        }
-
-        /// Mint an asset instance of a particular class.
-        #[pallet::weight(T::WeightInfo::mint())]
-        pub fn mint(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instance: T::InstanceId,
-            owner: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::mint(origin, class, instance, owner)
-        }
-
-        /// Destroy a single asset instance.
-        #[pallet::weight(T::WeightInfo::burn())]
-        pub fn burn(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instance: T::InstanceId,
-            check_owner: Option<<T::Lookup as StaticLookup>::Source>,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::burn(origin, class, instance, check_owner)
-        }
-
-        /// Move an asset from the sender account to another.
-        #[pallet::weight(T::WeightInfo::transfer())]
-        pub fn transfer(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instance: T::InstanceId,
-            dest: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::transfer(origin, class, instance, dest)
-        }
-
-        /// Reevaluate the deposits on some assets.
-        #[pallet::weight(T::WeightInfo::redeposit(instances.len() as u32))]
-        pub fn redeposit(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instances: Vec<T::InstanceId>,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::redeposit(origin, class, instances)
-        }
-
-        /// Disallow further unprivileged transfer of an asset instance.
-        #[pallet::weight(T::WeightInfo::freeze())]
-        pub fn freeze(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instance: T::InstanceId,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::freeze(origin, class, instance)
-        }
-
-        /// Re-allow unprivileged transfer of an asset instance.
-        #[pallet::weight(T::WeightInfo::thaw())]
-        pub fn thaw(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instance: T::InstanceId,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::thaw(origin, class, instance)
-        }
-
-        /// Disallow further unprivileged transfers for a whole asset class.
-        #[pallet::weight(T::WeightInfo::freeze_class())]
-        pub fn freeze_class(origin: OriginFor<T>, class: T::ClassId) -> DispatchResult {
-            UniquesPallet::<T>::freeze_class(origin, class)
-        }
-
-        /// Re-allow unprivileged transfers for a whole asset class.
-        #[pallet::weight(T::WeightInfo::thaw_class())]
-        pub fn thaw_class(origin: OriginFor<T>, class: T::ClassId) -> DispatchResult {
-            UniquesPallet::<T>::thaw_class(origin, class)
-        }
-
-        /// Change the Owner of an asset class.
-        #[pallet::weight(T::WeightInfo::transfer_ownership())]
-        pub fn transfer_ownership(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            owner: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::transfer_ownership(origin, class, owner)
-        }
-
-        /// Change the Issuer, Admin and Freezer of an asset class.
-        #[pallet::weight(T::WeightInfo::set_team())]
-        pub fn set_team(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            issuer: <T::Lookup as StaticLookup>::Source,
-            admin: <T::Lookup as StaticLookup>::Source,
-            freezer: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::set_team(origin, class, issuer, admin, freezer)
-        }
-
-        /// Approve an instance to be transferred by a delegated third-party account.
-        #[pallet::weight(T::WeightInfo::approve_transfer())]
-        pub fn approve_transfer(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instance: T::InstanceId,
-            delegate: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::approve_transfer(origin, class, instance, delegate)
-        }
-
-        /// Cancel the prior approval for the transfer of an asset by a delegate.
-        #[pallet::weight(T::WeightInfo::cancel_approval())]
-        pub fn cancel_approval(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instance: T::InstanceId,
-            maybe_check_delegate: Option<<T::Lookup as StaticLookup>::Source>,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::cancel_approval(origin, class, instance, maybe_check_delegate)
-        }
-
-        /// Set an attribute for an asset class or instance.
-        #[pallet::weight(T::WeightInfo::set_attribute())]
-        pub fn set_attribute(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            maybe_instance: Option<T::InstanceId>,
-            key: BoundedVec<u8, T::KeyLimit>,
-            value: BoundedVec<u8, T::ValueLimit>,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::set_attribute(origin, class, maybe_instance, key, value)
-        }
-
-        /// Set an attribute for an asset class or instance.
-        #[pallet::weight(T::WeightInfo::clear_attribute())]
-        pub fn clear_attribute(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            maybe_instance: Option<T::InstanceId>,
-            key: BoundedVec<u8, T::KeyLimit>,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::clear_attribute(origin, class, maybe_instance, key)
-        }
-
-        /// Set the metadata for an asset instance.
-        #[pallet::weight(T::WeightInfo::set_metadata())]
-        pub fn set_metadata(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instance: T::InstanceId,
-            data: BoundedVec<u8, T::StringLimit>,
-            is_frozen: bool,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::set_metadata(origin, class, instance, data, is_frozen)
-        }
-
-        /// Clear the metadata for an asset instance.
-        #[pallet::weight(T::WeightInfo::clear_metadata())]
-        pub fn clear_metadata(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instance: T::InstanceId,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::clear_metadata(origin, class, instance)
-        }
-
-        /// Set the metadata for an asset class.
-        #[pallet::weight(T::WeightInfo::set_class_metadata())]
-        pub fn set_class_metadata(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            data: BoundedVec<u8, T::StringLimit>,
-            is_frozen: bool,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::set_class_metadata(origin, class, data, is_frozen)
-        }
-
-        /// Clear the metadata for an asset class.
-        #[pallet::weight(T::WeightInfo::clear_class_metadata())]
-        pub fn clear_class_metadata(origin: OriginFor<T>, class: T::ClassId) -> DispatchResult {
-            UniquesPallet::<T>::clear_class_metadata(origin, class)
-        }
 
         #[pallet::weight(T::WeightInfo::create())]
         pub fn deip_create(

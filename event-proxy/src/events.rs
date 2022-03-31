@@ -18,7 +18,7 @@ use crate::{
     appchain_deip::{
         deip::events as deip_events, deip_dao::events as dao_events,
         deip_investment_opportunity::events as deip_investment_opportunity_events,
-        deip_proposal::events as proposal_events, parity_tech_assets::events as assets_events,
+        deip_proposal::events as proposal_events, assets::events as assets_events,
     },
     frame::deip_proposal::{self, DeipProposal},
 };

@@ -14,26 +14,26 @@ pub mod api {
     pub enum Event {
         #[codec(index = 0)]
         System(system::Event),
-        #[codec(index = 6)]
-        OctopusAppchain(octopus_appchain::Event),
+        #[codec(index = 4)]
+        Balances(balances::Event),
         #[codec(index = 7)]
-        OctopusLpos(octopus_lpos::Event),
+        OctopusAppchain(octopus_appchain::Event),
         #[codec(index = 8)]
-        OctopusUpwardMessages(octopus_upward_messages::Event),
+        OctopusLpos(octopus_lpos::Event),
         #[codec(index = 9)]
-        Session(session::Event),
+        OctopusUpwardMessages(octopus_upward_messages::Event),
         #[codec(index = 10)]
-        Grandpa(grandpa::Event),
+        Session(session::Event),
         #[codec(index = 11)]
-        Sudo(sudo::Event),
+        Grandpa(grandpa::Event),
         #[codec(index = 12)]
+        Sudo(sudo::Event),
+        #[codec(index = 13)]
         ImOnline(im_online::Event),
-        #[codec(index = 15)]
-        ParityTechAssets(parity_tech_assets::Event),
         #[codec(index = 16)]
-        ParityTechBalances(parity_tech_balances::Event),
+        Assets(assets::Event),
         #[codec(index = 17)]
-        ParityTechUniques(parity_tech_uniques::Event),
+        Uniques(uniques::Event),
         #[codec(index = 21)]
         Multisig(multisig::Event),
         #[codec(index = 22)]
@@ -1135,9 +1135,6 @@ pub mod api {
                 }
             }
         }
-    }
-    pub mod balances {
-        use super::{root_mod, runtime_types};
     }
     pub mod transaction_payment {
         use super::{root_mod, runtime_types};
@@ -2856,7 +2853,7 @@ pub mod api {
             }
         }
     }
-    pub mod parity_tech_assets {
+    pub mod assets {
         use super::{root_mod, runtime_types};
         pub type Event = runtime_types::pallet_assets::pallet::Event;
         pub mod events {
@@ -3449,7 +3446,7 @@ pub mod api {
             }
         }
     }
-    pub mod parity_tech_balances {
+    pub mod balances {
         use super::{root_mod, runtime_types};
         pub type Event = runtime_types::pallet_balances::pallet::Event;
         pub mod events {
@@ -3814,7 +3811,7 @@ pub mod api {
             }
         }
     }
-    pub mod parity_tech_uniques {
+    pub mod uniques {
         use super::{root_mod, runtime_types};
         pub type Event = runtime_types::pallet_uniques::pallet::Event;
         pub mod events {
@@ -6190,487 +6187,6 @@ pub mod api {
             }
         }
     }
-    pub mod assets {
-        use super::{root_mod, runtime_types};
-        pub mod storage {
-            use super::runtime_types;
-            pub struct AssetIdByDeipAssetId<'a>(
-                pub &'a runtime_types::primitive_types::H160,
-                pub &'a ::core::primitive::u32,
-            );
-            impl ::subxt::StorageEntry for AssetIdByDeipAssetId<'_> {
-                const PALLET: &'static str = "Assets";
-                const STORAGE: &'static str = "AssetIdByDeipAssetId";
-                type Value = ();
-                fn key(&self) -> ::subxt::StorageEntryKey {
-                    ::subxt::StorageEntryKey::Map(vec![
-                        ::subxt::StorageMapKey::new(&self.0, ::subxt::StorageHasher::Identity),
-                        ::subxt::StorageMapKey::new(
-                            &self.1,
-                            ::subxt::StorageHasher::Blake2_128Concat,
-                        ),
-                    ])
-                }
-            }
-            pub struct DeipAssetIdByAssetId<'a>(
-                pub &'a ::core::primitive::u32,
-                pub &'a runtime_types::primitive_types::H160,
-            );
-            impl ::subxt::StorageEntry for DeipAssetIdByAssetId<'_> {
-                const PALLET: &'static str = "Assets";
-                const STORAGE: &'static str = "DeipAssetIdByAssetId";
-                type Value = ();
-                fn key(&self) -> ::subxt::StorageEntryKey {
-                    ::subxt::StorageEntryKey::Map(vec![
-                        ::subxt::StorageMapKey::new(
-                            &self.0,
-                            ::subxt::StorageHasher::Blake2_128Concat,
-                        ),
-                        ::subxt::StorageMapKey::new(&self.1, ::subxt::StorageHasher::Identity),
-                    ])
-                }
-            }
-            pub struct NextAssetId;
-            impl ::subxt::StorageEntry for NextAssetId {
-                const PALLET: &'static str = "Assets";
-                const STORAGE: &'static str = "NextAssetId";
-                type Value = ::core::primitive::u32;
-                fn key(&self) -> ::subxt::StorageEntryKey {
-                    ::subxt::StorageEntryKey::Plain
-                }
-            }
-            pub struct AssetIdByProjectId<'a>(pub &'a runtime_types::primitive_types::H160);
-            impl ::subxt::StorageEntry for AssetIdByProjectId<'_> {
-                const PALLET: &'static str = "Assets";
-                const STORAGE: &'static str = "AssetIdByProjectId";
-                type Value = ::std::vec::Vec<runtime_types::primitive_types::H160>;
-                fn key(&self) -> ::subxt::StorageEntryKey {
-                    ::subxt::StorageEntryKey::Map(vec![::subxt::StorageMapKey::new(
-                        &self.0,
-                        ::subxt::StorageHasher::Identity,
-                    )])
-                }
-            }
-            pub struct ProjectIdByAssetId<'a>(pub &'a runtime_types::primitive_types::H160);
-            impl ::subxt::StorageEntry for ProjectIdByAssetId<'_> {
-                const PALLET: &'static str = "Assets";
-                const STORAGE: &'static str = "ProjectIdByAssetId";
-                type Value = runtime_types::primitive_types::H160;
-                fn key(&self) -> ::subxt::StorageEntryKey {
-                    ::subxt::StorageEntryKey::Map(vec![::subxt::StorageMapKey::new(
-                        &self.0,
-                        ::subxt::StorageHasher::Identity,
-                    )])
-                }
-            }
-            pub struct InvestmentByAssetId<'a>(pub &'a runtime_types::primitive_types::H160);
-            impl ::subxt::StorageEntry for InvestmentByAssetId<'_> {
-                const PALLET: &'static str = "Assets";
-                const STORAGE: &'static str = "InvestmentByAssetId";
-                type Value = ::std::vec::Vec<runtime_types::primitive_types::H160>;
-                fn key(&self) -> ::subxt::StorageEntryKey {
-                    ::subxt::StorageEntryKey::Map(vec![::subxt::StorageMapKey::new(
-                        &self.0,
-                        ::subxt::StorageHasher::Identity,
-                    )])
-                }
-            }
-            pub struct InvestmentMap<'a>(pub &'a runtime_types::primitive_types::H160);
-            impl ::subxt::StorageEntry for InvestmentMap<'_> {
-                const PALLET: &'static str = "Assets";
-                const STORAGE: &'static str = "InvestmentMap";
-                type Value = runtime_types::pallet_deip_assets::pallet::Investment<
-                    ::subxt::sp_core::crypto::AccountId32,
-                    runtime_types::primitive_types::H160,
-                >;
-                fn key(&self) -> ::subxt::StorageEntryKey {
-                    ::subxt::StorageEntryKey::Map(vec![::subxt::StorageMapKey::new(
-                        &self.0,
-                        ::subxt::StorageHasher::Identity,
-                    )])
-                }
-            }
-            pub struct FtBalanceMap<'a>(pub &'a runtime_types::primitive_types::H160);
-            impl ::subxt::StorageEntry for FtBalanceMap<'_> {
-                const PALLET: &'static str = "Assets";
-                const STORAGE: &'static str = "FtBalanceMap";
-                type Value = ::std::vec::Vec<::subxt::sp_core::crypto::AccountId32>;
-                fn key(&self) -> ::subxt::StorageEntryKey {
-                    ::subxt::StorageEntryKey::Map(vec![::subxt::StorageMapKey::new(
-                        &self.0,
-                        ::subxt::StorageHasher::Identity,
-                    )])
-                }
-            }
-            pub struct AssetMetadataMap<'a>(pub &'a runtime_types::primitive_types::H160);
-            impl ::subxt::StorageEntry for AssetMetadataMap<'_> {
-                const PALLET: &'static str = "Assets";
-                const STORAGE: &'static str = "AssetMetadataMap";
-                type Value =
-                    runtime_types::pallet_deip_assets::pallet::AssetMetadata<::core::primitive::u8>;
-                fn key(&self) -> ::subxt::StorageEntryKey {
-                    ::subxt::StorageEntryKey::Map(vec![::subxt::StorageMapKey::new(
-                        &self.0,
-                        ::subxt::StorageHasher::Identity,
-                    )])
-                }
-            }
-            pub struct StorageApi<'a, T: ::subxt::Config> {
-                client: &'a ::subxt::Client<T>,
-            }
-            impl<'a, T: ::subxt::Config> StorageApi<'a, T> {
-                pub fn new(client: &'a ::subxt::Client<T>) -> Self {
-                    Self { client }
-                }
-                pub async fn asset_id_by_deip_asset_id(
-                    &self,
-                    _0: &runtime_types::primitive_types::H160,
-                    _1: &::core::primitive::u32,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<::core::option::Option<()>, ::subxt::BasicError>
-                {
-                    let entry = AssetIdByDeipAssetId(_0, _1);
-                    self.client.storage().fetch(&entry, hash).await
-                }
-                pub async fn asset_id_by_deip_asset_id_iter(
-                    &self,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::subxt::KeyIter<'a, T, AssetIdByDeipAssetId<'a>>,
-                    ::subxt::BasicError,
-                > {
-                    self.client.storage().iter(hash).await
-                }
-                pub async fn deip_asset_id_by_asset_id(
-                    &self,
-                    _0: &::core::primitive::u32,
-                    _1: &runtime_types::primitive_types::H160,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<::core::option::Option<()>, ::subxt::BasicError>
-                {
-                    let entry = DeipAssetIdByAssetId(_0, _1);
-                    self.client.storage().fetch(&entry, hash).await
-                }
-                pub async fn deip_asset_id_by_asset_id_iter(
-                    &self,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::subxt::KeyIter<'a, T, DeipAssetIdByAssetId<'a>>,
-                    ::subxt::BasicError,
-                > {
-                    self.client.storage().iter(hash).await
-                }
-                pub async fn next_asset_id(
-                    &self,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<::core::primitive::u32, ::subxt::BasicError>
-                {
-                    let entry = NextAssetId;
-                    self.client.storage().fetch_or_default(&entry, hash).await
-                }
-                pub async fn asset_id_by_project_id(
-                    &self,
-                    _0: &runtime_types::primitive_types::H160,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::core::option::Option<::std::vec::Vec<runtime_types::primitive_types::H160>>,
-                    ::subxt::BasicError,
-                > {
-                    let entry = AssetIdByProjectId(_0);
-                    self.client.storage().fetch(&entry, hash).await
-                }
-                pub async fn asset_id_by_project_id_iter(
-                    &self,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::subxt::KeyIter<'a, T, AssetIdByProjectId<'a>>,
-                    ::subxt::BasicError,
-                > {
-                    self.client.storage().iter(hash).await
-                }
-                pub async fn project_id_by_asset_id(
-                    &self,
-                    _0: &runtime_types::primitive_types::H160,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::core::option::Option<runtime_types::primitive_types::H160>,
-                    ::subxt::BasicError,
-                > {
-                    let entry = ProjectIdByAssetId(_0);
-                    self.client.storage().fetch(&entry, hash).await
-                }
-                pub async fn project_id_by_asset_id_iter(
-                    &self,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::subxt::KeyIter<'a, T, ProjectIdByAssetId<'a>>,
-                    ::subxt::BasicError,
-                > {
-                    self.client.storage().iter(hash).await
-                }
-                pub async fn investment_by_asset_id(
-                    &self,
-                    _0: &runtime_types::primitive_types::H160,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::core::option::Option<::std::vec::Vec<runtime_types::primitive_types::H160>>,
-                    ::subxt::BasicError,
-                > {
-                    let entry = InvestmentByAssetId(_0);
-                    self.client.storage().fetch(&entry, hash).await
-                }
-                pub async fn investment_by_asset_id_iter(
-                    &self,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::subxt::KeyIter<'a, T, InvestmentByAssetId<'a>>,
-                    ::subxt::BasicError,
-                > {
-                    self.client.storage().iter(hash).await
-                }
-                pub async fn investment_map(
-                    &self,
-                    _0: &runtime_types::primitive_types::H160,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::core::option::Option<
-                        runtime_types::pallet_deip_assets::pallet::Investment<
-                            ::subxt::sp_core::crypto::AccountId32,
-                            runtime_types::primitive_types::H160,
-                        >,
-                    >,
-                    ::subxt::BasicError,
-                > {
-                    let entry = InvestmentMap(_0);
-                    self.client.storage().fetch(&entry, hash).await
-                }
-                pub async fn investment_map_iter(
-                    &self,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::subxt::KeyIter<'a, T, InvestmentMap<'a>>,
-                    ::subxt::BasicError,
-                > {
-                    self.client.storage().iter(hash).await
-                }
-                pub async fn ft_balance_map(
-                    &self,
-                    _0: &runtime_types::primitive_types::H160,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::core::option::Option<::std::vec::Vec<::subxt::sp_core::crypto::AccountId32>>,
-                    ::subxt::BasicError,
-                > {
-                    let entry = FtBalanceMap(_0);
-                    self.client.storage().fetch(&entry, hash).await
-                }
-                pub async fn ft_balance_map_iter(
-                    &self,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::subxt::KeyIter<'a, T, FtBalanceMap<'a>>,
-                    ::subxt::BasicError,
-                > {
-                    self.client.storage().iter(hash).await
-                }
-                pub async fn asset_metadata_map(
-                    &self,
-                    _0: &runtime_types::primitive_types::H160,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::core::option::Option<
-                        runtime_types::pallet_deip_assets::pallet::AssetMetadata<
-                            ::core::primitive::u8,
-                        >,
-                    >,
-                    ::subxt::BasicError,
-                > {
-                    let entry = AssetMetadataMap(_0);
-                    self.client.storage().fetch(&entry, hash).await
-                }
-                pub async fn asset_metadata_map_iter(
-                    &self,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::subxt::KeyIter<'a, T, AssetMetadataMap<'a>>,
-                    ::subxt::BasicError,
-                > {
-                    self.client.storage().iter(hash).await
-                }
-            }
-        }
-        pub mod constants {
-            use super::runtime_types;
-            pub struct ConstantsApi;
-            impl ConstantsApi {
-                pub fn wipe_period(
-                    &self,
-                ) -> ::core::result::Result<::core::primitive::u32, ::subxt::BasicError>
-                {
-                    Ok(::subxt::codec::Decode::decode(&mut &[64u8, 56u8, 0u8, 0u8][..])?)
-                }
-            }
-        }
-    }
-    pub mod uniques {
-        use super::{root_mod, runtime_types};
-        pub mod storage {
-            use super::runtime_types;
-            pub struct NftClassIdByDeipNftClassId<'a>(pub &'a runtime_types::primitive_types::H160);
-            impl ::subxt::StorageEntry for NftClassIdByDeipNftClassId<'_> {
-                const PALLET: &'static str = "Uniques";
-                const STORAGE: &'static str = "NftClassIdByDeipNftClassId";
-                type Value = ::core::primitive::u32;
-                fn key(&self) -> ::subxt::StorageEntryKey {
-                    ::subxt::StorageEntryKey::Map(vec![::subxt::StorageMapKey::new(
-                        &self.0,
-                        ::subxt::StorageHasher::Identity,
-                    )])
-                }
-            }
-            pub struct DeipNftClassIdByNftClassId<'a>(pub &'a ::core::primitive::u32);
-            impl ::subxt::StorageEntry for DeipNftClassIdByNftClassId<'_> {
-                const PALLET: &'static str = "Uniques";
-                const STORAGE: &'static str = "DeipNftClassIdByNftClassId";
-                type Value = runtime_types::primitive_types::H160;
-                fn key(&self) -> ::subxt::StorageEntryKey {
-                    ::subxt::StorageEntryKey::Map(vec![::subxt::StorageMapKey::new(
-                        &self.0,
-                        ::subxt::StorageHasher::Identity,
-                    )])
-                }
-            }
-            pub struct NextNftClassId;
-            impl ::subxt::StorageEntry for NextNftClassId {
-                const PALLET: &'static str = "Uniques";
-                const STORAGE: &'static str = "NextNftClassId";
-                type Value = ::core::primitive::u32;
-                fn key(&self) -> ::subxt::StorageEntryKey {
-                    ::subxt::StorageEntryKey::Plain
-                }
-            }
-            pub struct ProjectIdByDeipNftClassId<'a>(pub &'a runtime_types::primitive_types::H160);
-            impl ::subxt::StorageEntry for ProjectIdByDeipNftClassId<'_> {
-                const PALLET: &'static str = "Uniques";
-                const STORAGE: &'static str = "ProjectIdByDeipNftClassId";
-                type Value = runtime_types::primitive_types::H160;
-                fn key(&self) -> ::subxt::StorageEntryKey {
-                    ::subxt::StorageEntryKey::Map(vec![::subxt::StorageMapKey::new(
-                        &self.0,
-                        ::subxt::StorageHasher::Identity,
-                    )])
-                }
-            }
-            pub struct NftBalanceMap<'a>(pub &'a runtime_types::primitive_types::H160);
-            impl ::subxt::StorageEntry for NftBalanceMap<'_> {
-                const PALLET: &'static str = "Uniques";
-                const STORAGE: &'static str = "NftBalanceMap";
-                type Value = ::std::vec::Vec<::subxt::sp_core::crypto::AccountId32>;
-                fn key(&self) -> ::subxt::StorageEntryKey {
-                    ::subxt::StorageEntryKey::Map(vec![::subxt::StorageMapKey::new(
-                        &self.0,
-                        ::subxt::StorageHasher::Identity,
-                    )])
-                }
-            }
-            pub struct StorageApi<'a, T: ::subxt::Config> {
-                client: &'a ::subxt::Client<T>,
-            }
-            impl<'a, T: ::subxt::Config> StorageApi<'a, T> {
-                pub fn new(client: &'a ::subxt::Client<T>) -> Self {
-                    Self { client }
-                }
-                pub async fn nft_class_id_by_deip_nft_class_id(
-                    &self,
-                    _0: &runtime_types::primitive_types::H160,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::core::option::Option<::core::primitive::u32>,
-                    ::subxt::BasicError,
-                > {
-                    let entry = NftClassIdByDeipNftClassId(_0);
-                    self.client.storage().fetch(&entry, hash).await
-                }
-                pub async fn nft_class_id_by_deip_nft_class_id_iter(
-                    &self,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::subxt::KeyIter<'a, T, NftClassIdByDeipNftClassId<'a>>,
-                    ::subxt::BasicError,
-                > {
-                    self.client.storage().iter(hash).await
-                }
-                pub async fn deip_nft_class_id_by_nft_class_id(
-                    &self,
-                    _0: &::core::primitive::u32,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::core::option::Option<runtime_types::primitive_types::H160>,
-                    ::subxt::BasicError,
-                > {
-                    let entry = DeipNftClassIdByNftClassId(_0);
-                    self.client.storage().fetch(&entry, hash).await
-                }
-                pub async fn deip_nft_class_id_by_nft_class_id_iter(
-                    &self,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::subxt::KeyIter<'a, T, DeipNftClassIdByNftClassId<'a>>,
-                    ::subxt::BasicError,
-                > {
-                    self.client.storage().iter(hash).await
-                }
-                pub async fn next_nft_class_id(
-                    &self,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<::core::primitive::u32, ::subxt::BasicError>
-                {
-                    let entry = NextNftClassId;
-                    self.client.storage().fetch_or_default(&entry, hash).await
-                }
-                pub async fn project_id_by_deip_nft_class_id(
-                    &self,
-                    _0: &runtime_types::primitive_types::H160,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::core::option::Option<runtime_types::primitive_types::H160>,
-                    ::subxt::BasicError,
-                > {
-                    let entry = ProjectIdByDeipNftClassId(_0);
-                    self.client.storage().fetch(&entry, hash).await
-                }
-                pub async fn project_id_by_deip_nft_class_id_iter(
-                    &self,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::subxt::KeyIter<'a, T, ProjectIdByDeipNftClassId<'a>>,
-                    ::subxt::BasicError,
-                > {
-                    self.client.storage().iter(hash).await
-                }
-                pub async fn nft_balance_map(
-                    &self,
-                    _0: &runtime_types::primitive_types::H160,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::core::option::Option<::std::vec::Vec<::subxt::sp_core::crypto::AccountId32>>,
-                    ::subxt::BasicError,
-                > {
-                    let entry = NftBalanceMap(_0);
-                    self.client.storage().fetch(&entry, hash).await
-                }
-                pub async fn nft_balance_map_iter(
-                    &self,
-                    hash: ::core::option::Option<T::Hash>,
-                ) -> ::core::result::Result<
-                    ::subxt::KeyIter<'a, T, NftBalanceMap<'a>>,
-                    ::subxt::BasicError,
-                > {
-                    self.client.storage().iter(hash).await
-                }
-            }
-        }
-    }
     pub mod deip_proposal {
         use super::{root_mod, runtime_types};
         pub type Event = runtime_types::pallet_deip_proposal::pallet::Event;
@@ -7619,7 +7135,7 @@ pub mod api {
                 #[codec(index = 3)]
                 Authorship(runtime_types::pallet_authorship::pallet::Call),
                 #[codec(index = 4)]
-                Balances(runtime_types::pallet_deip_balances::pallet::Call),
+                Balances(runtime_types::pallet_balances::pallet::Call),
                 #[codec(index = 6)]
                 OctopusAppchain(runtime_types::pallet_octopus_appchain::pallet::Call),
                 #[codec(index = 7)]
@@ -7634,25 +7150,25 @@ pub mod api {
                 Sudo(runtime_types::pallet_sudo::pallet::Call),
                 #[codec(index = 12)]
                 ImOnline(runtime_types::pallet_im_online::pallet::Call),
-                #[codec(index = 21)]
+                #[codec(index = 20)]
                 Multisig(runtime_types::pallet_multisig::pallet::Call),
-                #[codec(index = 22)]
+                #[codec(index = 21)]
                 Utility(runtime_types::pallet_utility::pallet::Call),
-                #[codec(index = 23)]
+                #[codec(index = 22)]
                 Deip(runtime_types::pallet_deip::Call),
+                #[codec(index = 23)]
+                DeipAssets(runtime_types::pallet_deip_assets::pallet::Call),
                 #[codec(index = 24)]
-                Assets(runtime_types::pallet_deip_assets::pallet::Call),
+                DeipUniques(runtime_types::pallet_deip_uniques::pallet::Call),
                 #[codec(index = 25)]
-                Uniques(runtime_types::pallet_deip_uniques::pallet::Call),
-                #[codec(index = 26)]
                 DeipProposal(runtime_types::pallet_deip_proposal::pallet::Call),
-                #[codec(index = 27)]
+                #[codec(index = 26)]
                 DeipDao(runtime_types::pallet_deip_dao::pallet::Call),
-                #[codec(index = 28)]
+                #[codec(index = 27)]
                 DeipPortal(runtime_types::pallet_deip_portal::pallet::Call),
-                #[codec(index = 29)]
+                #[codec(index = 28)]
                 DeipVesting(runtime_types::pallet_deip_vesting::pallet::Call),
-                #[codec(index = 31)]
+                #[codec(index = 30)]
                 DeipInvestmentOpportunity(
                     runtime_types::pallet_deip_investment_opportunity::pallet::Call,
                 ),
@@ -7669,6 +7185,8 @@ pub mod api {
             pub enum Event {
                 #[codec(index = 0)]
                 System(runtime_types::frame_system::pallet::Event),
+                #[codec(index = 4)]
+                Balances(runtime_types::pallet_balances::pallet::Event),
                 #[codec(index = 6)]
                 OctopusAppchain(runtime_types::pallet_octopus_appchain::pallet::Event),
                 #[codec(index = 7)]
@@ -7684,16 +7202,14 @@ pub mod api {
                 #[codec(index = 12)]
                 ImOnline(runtime_types::pallet_im_online::pallet::Event),
                 #[codec(index = 15)]
-                ParityTechAssets(runtime_types::pallet_assets::pallet::Event),
+                Assets(runtime_types::pallet_assets::pallet::Event),
                 #[codec(index = 16)]
-                ParityTechBalances(runtime_types::pallet_balances::pallet::Event),
-                #[codec(index = 17)]
-                ParityTechUniques(runtime_types::pallet_uniques::pallet::Event),
-                #[codec(index = 21)]
+                Uniques(runtime_types::pallet_uniques::pallet::Event),
+                #[codec(index = 20)]
                 Multisig(runtime_types::pallet_multisig::pallet::Event),
-                #[codec(index = 22)]
+                #[codec(index = 21)]
                 Utility(runtime_types::pallet_utility::pallet::Event),
-                #[codec(index = 23)]
+                #[codec(index = 22)]
                 Deip(
                     runtime_types::pallet_deip::RawEvent<
                         ::subxt::sp_core::crypto::AccountId32,
@@ -7707,13 +7223,13 @@ pub mod api {
                         >,
                     >,
                 ),
-                #[codec(index = 26)]
+                #[codec(index = 25)]
                 DeipProposal(runtime_types::pallet_deip_proposal::pallet::Event),
-                #[codec(index = 27)]
+                #[codec(index = 26)]
                 DeipDao(runtime_types::pallet_deip_dao::pallet::Event),
-                #[codec(index = 29)]
+                #[codec(index = 28)]
                 DeipVesting(runtime_types::pallet_deip_vesting::pallet::Event),
-                #[codec(index = 31)]
+                #[codec(index = 30)]
                 DeipInvestmentOpportunity(
                     runtime_types::pallet_deip_investment_opportunity::pallet::Event,
                 ),
@@ -8799,6 +8315,54 @@ pub mod api {
                     PartialEq,
                     scale_info :: TypeInfo,
                 )]
+                pub enum Call {
+                    #[codec(index = 0)]
+                    transfer {
+                        dest: ::subxt::sp_runtime::MultiAddress<
+                            ::subxt::sp_core::crypto::AccountId32,
+                            (),
+                        >,
+                        #[codec(compact)]
+                        value: ::core::primitive::u128,
+                    },
+                    #[codec(index = 1)]
+                    transfer_all {
+                        dest: ::subxt::sp_runtime::MultiAddress<
+                            ::subxt::sp_core::crypto::AccountId32,
+                            (),
+                        >,
+                        keep_alive: ::core::primitive::bool,
+                    },
+                    #[codec(index = 2)]
+                    set_balance {
+                        who: ::subxt::sp_runtime::MultiAddress<
+                            ::subxt::sp_core::crypto::AccountId32,
+                            (),
+                        >,
+                        #[codec(compact)]
+                        new_free: ::core::primitive::u128,
+                        #[codec(compact)]
+                        new_reserved: ::core::primitive::u128,
+                    },
+                    #[codec(index = 3)]
+                    transfer_keep_alive {
+                        dest: ::subxt::sp_runtime::MultiAddress<
+                            ::subxt::sp_core::crypto::AccountId32,
+                            (),
+                        >,
+                        #[codec(compact)]
+                        value: ::core::primitive::u128,
+                    },
+                }
+                #[derive(
+                    :: subxt :: codec :: Encode,
+                    :: subxt :: codec :: Decode,
+                    Debug,
+                    Clone,
+                    Eq,
+                    PartialEq,
+                    scale_info :: TypeInfo,
+                )]
                 pub enum Error {
                     #[codec(index = 0)]
                     VestingBalance,
@@ -9811,7 +9375,7 @@ pub mod api {
                         amount: ::core::primitive::u128,
                     },
                     #[codec(index = 17)]
-                    deip_create_asset {
+                    deip_create {
                         id: runtime_types::primitive_types::H160,
                         admin: runtime_types::appchain_deip_runtime::deip_account::DeipAccountId<
                             ::subxt::sp_core::crypto::AccountId32,
@@ -9826,7 +9390,7 @@ pub mod api {
                         witness: runtime_types::pallet_assets::types::DestroyWitness,
                     },
                     #[codec(index = 19)]
-                    deip_issue_asset {
+                    deip_mint {
                         id: runtime_types::primitive_types::H160,
                         beneficiary:
                             runtime_types::appchain_deip_runtime::deip_account::DeipAccountId<
@@ -9963,60 +9527,6 @@ pub mod api {
                     pub creator: _0,
                     pub assets: ::std::vec::Vec<_1>,
                     pub asset_id: _1,
-                }
-            }
-        }
-        pub mod pallet_deip_balances {
-            use super::runtime_types;
-            pub mod pallet {
-                use super::runtime_types;
-                #[derive(
-                    :: subxt :: codec :: Encode,
-                    :: subxt :: codec :: Decode,
-                    Debug,
-                    Clone,
-                    Eq,
-                    PartialEq,
-                    scale_info :: TypeInfo,
-                )]
-                pub enum Call {
-                    #[codec(index = 0)]
-                    transfer {
-                        dest: ::subxt::sp_runtime::MultiAddress<
-                            ::subxt::sp_core::crypto::AccountId32,
-                            (),
-                        >,
-                        #[codec(compact)]
-                        value: ::core::primitive::u128,
-                    },
-                    #[codec(index = 1)]
-                    transfer_all {
-                        dest: ::subxt::sp_runtime::MultiAddress<
-                            ::subxt::sp_core::crypto::AccountId32,
-                            (),
-                        >,
-                        keep_alive: ::core::primitive::bool,
-                    },
-                    #[codec(index = 2)]
-                    set_balance {
-                        who: ::subxt::sp_runtime::MultiAddress<
-                            ::subxt::sp_core::crypto::AccountId32,
-                            (),
-                        >,
-                        #[codec(compact)]
-                        new_free: ::core::primitive::u128,
-                        #[codec(compact)]
-                        new_reserved: ::core::primitive::u128,
-                    },
-                    #[codec(index = 3)]
-                    transfer_keep_alive {
-                        dest: ::subxt::sp_runtime::MultiAddress<
-                            ::subxt::sp_core::crypto::AccountId32,
-                            (),
-                        >,
-                        #[codec(compact)]
-                        value: ::core::primitive::u128,
-                    },
                 }
             }
         }
@@ -13669,14 +13179,14 @@ pub mod api {
         pub fn im_online(&self) -> im_online::constants::ConstantsApi {
             im_online::constants::ConstantsApi
         }
-        pub fn parity_tech_assets(&self) -> parity_tech_assets::constants::ConstantsApi {
-            parity_tech_assets::constants::ConstantsApi
+        pub fn parity_tech_assets(&self) -> assets::constants::ConstantsApi {
+            assets::constants::ConstantsApi
         }
-        pub fn parity_tech_balances(&self) -> parity_tech_balances::constants::ConstantsApi {
-            parity_tech_balances::constants::ConstantsApi
+        pub fn parity_tech_balances(&self) -> balances::constants::ConstantsApi {
+            balances::constants::ConstantsApi
         }
-        pub fn parity_tech_uniques(&self) -> parity_tech_uniques::constants::ConstantsApi {
-            parity_tech_uniques::constants::ConstantsApi
+        pub fn parity_tech_uniques(&self) -> uniques::constants::ConstantsApi {
+            uniques::constants::ConstantsApi
         }
         pub fn multisig(&self) -> multisig::constants::ConstantsApi {
             multisig::constants::ConstantsApi
@@ -13752,14 +13262,14 @@ pub mod api {
         ) -> randomness_collective_flip::storage::StorageApi<'a, T> {
             randomness_collective_flip::storage::StorageApi::new(self.client)
         }
-        pub fn parity_tech_assets(&self) -> parity_tech_assets::storage::StorageApi<'a, T> {
-            parity_tech_assets::storage::StorageApi::new(self.client)
+        pub fn parity_tech_assets(&self) -> assets::storage::StorageApi<'a, T> {
+            assets::storage::StorageApi::new(self.client)
         }
-        pub fn parity_tech_balances(&self) -> parity_tech_balances::storage::StorageApi<'a, T> {
-            parity_tech_balances::storage::StorageApi::new(self.client)
+        pub fn parity_tech_balances(&self) -> balances::storage::StorageApi<'a, T> {
+            balances::storage::StorageApi::new(self.client)
         }
-        pub fn parity_tech_uniques(&self) -> parity_tech_uniques::storage::StorageApi<'a, T> {
-            parity_tech_uniques::storage::StorageApi::new(self.client)
+        pub fn parity_tech_uniques(&self) -> uniques::storage::StorageApi<'a, T> {
+            uniques::storage::StorageApi::new(self.client)
         }
         pub fn mmr(&self) -> mmr::storage::StorageApi<'a, T> {
             mmr::storage::StorageApi::new(self.client)

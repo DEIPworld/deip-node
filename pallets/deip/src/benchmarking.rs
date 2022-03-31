@@ -108,7 +108,7 @@ fn create_project_asset<T: Config + AssetsConfig + DeipAssetsConfig + BalancesCo
         <T as BalancesConfig>::Balance::max_value(),
         <T as BalancesConfig>::Balance::from(0u16),
     ).unwrap();
-    DeipAssets::<T>::deip_create_asset(
+    DeipAssets::<T>::deip_create(
         RawOrigin::Signed(project.team_id.clone()).into(),
         T::AssetIdInit::asset_id(project.external_id.as_bytes()),
         project.team_id.clone().into(),
@@ -958,7 +958,7 @@ fn _add_balance<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
     let asset_admin: <T as DeipAssetsConfig>::DeipAccountId = party.clone().into();
     let min_balance = <T as AssetsConfig>::Balance::from(200u16);
 
-    DeipAssets::<T>::deip_create_asset(
+    DeipAssets::<T>::deip_create(
         RawOrigin::Signed(party.clone()).into(),
         asset_id.clone(),
         asset_admin.clone(),
@@ -966,7 +966,7 @@ fn _add_balance<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
         None
     ).unwrap();
 
-    DeipAssets::<T>::deip_issue_asset(
+    DeipAssets::<T>::deip_mint(
         RawOrigin::Signed(party.clone()).into(),
         asset_id,
         asset_admin,
@@ -991,7 +991,7 @@ fn _create_asset<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
 
     let asset_admin: <T as DeipAssetsConfig>::DeipAccountId = admin.clone().into();
 
-    DeipAssets::<T>::deip_create_asset(
+    DeipAssets::<T>::deip_create(
         RawOrigin::Signed(admin).into(),
         asset_id,
         asset_admin,
@@ -1000,14 +1000,14 @@ fn _create_asset<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
     )
 }
 
-fn _issue_asset<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
+fn _mint<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
     asset_id: pallet_deip_assets::DeipAssetIdOf<T>,
     admin: T::AccountId,
     beneficiary: T::AccountId,
     amount: <T as AssetsConfig>::Balance,
 ) -> DispatchResultWithPostInfo
 {
-    DeipAssets::<T>::deip_issue_asset(
+    DeipAssets::<T>::deip_mint(
         RawOrigin::Signed(admin).into(),
         asset_id,
         beneficiary.into(),
