@@ -36,12 +36,11 @@ log = { version = "0.4.14", default-features = false }
 pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-authorship = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-babe = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-balances = { git = "https://github.com/DEIPworld/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-beefy = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-beefy-mmr = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-deip = { path = "../pallets/deip", default-features = false }
 pallet-deip-assets = { path = "../pallets/deip_assets", default-features = false }
-pallet-deip-balances = { path = "../pallets/deip_balances", default-features = false }
 pallet-deip-dao = { path = "../pallets/deip_dao", default-features = false }
 pallet-deip-portal = { path = "../pallets/deip_portal", default-features = false }
 pallet-deip-proposal = { path = "../pallets/deip_proposal", default-features = false }
@@ -147,7 +146,6 @@ std = [
     "deip-assets-error/std",
     "pallet-deip/std",
     "pallet-deip-assets/std",
-    "pallet-deip-balances/std",
     "pallet-deip-dao/std",
     "pallet-deip-portal/std",
     "pallet-deip-proposal/std",

@@ -592,10 +592,10 @@ impl WrappedCall<Call> {
                 CallObject::new(module, call, args).serialize(serializer)
             },
 
-            deip_create_asset { id, admin, min_balance, project_id } => CallObject {
+            deip_create { id, admin, min_balance, project_id } => CallObject {
                 module,
-                call: "deip_create_asset",
-                args: &DeipAssetsCreateAssetCallArgs::new(id, admin, min_balance, project_id),
+                call: "deip_create",
+                args: &DeipAssetsCreateCallArgs::new(id, admin, min_balance, project_id),
             }
             .serialize(serializer),
 
@@ -606,10 +606,10 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            deip_issue_asset { id, beneficiary, amount } => CallObject {
+            deip_mint { id, beneficiary, amount } => CallObject {
                 module,
-                call: "deip_issue_asset",
-                args: &DeipAssetsIssueAssetCallArgs::new(id, beneficiary, amount),
+                call: "deip_mint",
+                args: &DeipAssetsMintCallArgs::new(id, beneficiary, amount),
             }
             .serialize(serializer),
 
@@ -765,13 +765,13 @@ impl<A, B, C: Clone + AtLeast32BitUnsigned> DeipAssetsBurnCallArgs<A, B, C> {
 }
 
 #[derive(Serialize)]
-struct DeipAssetsIssueAssetCallArgs<A, B, C: Clone + AtLeast32BitUnsigned> {
+struct DeipAssetsMintCallArgs<A, B, C: Clone + AtLeast32BitUnsigned> {
     id: A,
     beneficiary: B,
     amount: SerializableAtLeast32BitUnsigned<C>,
 }
 
-impl<A, B, C: Clone + AtLeast32BitUnsigned> DeipAssetsIssueAssetCallArgs<A, B, C> {
+impl<A, B, C: Clone + AtLeast32BitUnsigned> DeipAssetsMintCallArgs<A, B, C> {
     fn new(id: A, beneficiary: B, amount: &C) -> Self {
         Self { id, beneficiary, amount: SerializableAtLeast32BitUnsigned(amount.clone()) }
     }
@@ -784,14 +784,14 @@ struct DeipAssetsDestroyCallArgs<A, B> {
 }
 
 #[derive(Serialize)]
-struct DeipAssetsCreateAssetCallArgs<A, B, D: Clone + AtLeast32BitUnsigned, E> {
+struct DeipAssetsCreateCallArgs<A, B, D: Clone + AtLeast32BitUnsigned, E> {
     id: A,
     admin: B,
     min_balance: SerializableAtLeast32BitUnsigned<D>,
     project_id: E,
 }
 
-impl<A, B, D: Clone + AtLeast32BitUnsigned, E> DeipAssetsCreateAssetCallArgs<A, B, D, E> {
+impl<A, B, D: Clone + AtLeast32BitUnsigned, E> DeipAssetsCreateCallArgs<A, B, D, E> {
     fn new(id: A, admin: B, min_balance: &D, project_id: E) -> Self {
         Self {
             id,

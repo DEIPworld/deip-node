@@ -7619,7 +7619,7 @@ pub mod api {
                 #[codec(index = 3)]
                 Authorship(runtime_types::pallet_authorship::pallet::Call),
                 #[codec(index = 4)]
-                Balances(runtime_types::pallet_deip_balances::pallet::Call),
+                Balances(runtime_types::pallet_balances::pallet::Call),
                 #[codec(index = 6)]
                 OctopusAppchain(runtime_types::pallet_octopus_appchain::pallet::Call),
                 #[codec(index = 7)]
@@ -7634,25 +7634,25 @@ pub mod api {
                 Sudo(runtime_types::pallet_sudo::pallet::Call),
                 #[codec(index = 12)]
                 ImOnline(runtime_types::pallet_im_online::pallet::Call),
-                #[codec(index = 21)]
+                #[codec(index = 20)]
                 Multisig(runtime_types::pallet_multisig::pallet::Call),
-                #[codec(index = 22)]
+                #[codec(index = 21)]
                 Utility(runtime_types::pallet_utility::pallet::Call),
-                #[codec(index = 23)]
+                #[codec(index = 22)]
                 Deip(runtime_types::pallet_deip::Call),
+                #[codec(index = 23)]
+                DeipAssets(runtime_types::pallet_deip_assets::pallet::Call),
                 #[codec(index = 24)]
-                Assets(runtime_types::pallet_deip_assets::pallet::Call),
+                DeipUniques(runtime_types::pallet_deip_uniques::pallet::Call),
                 #[codec(index = 25)]
-                Uniques(runtime_types::pallet_deip_uniques::pallet::Call),
-                #[codec(index = 26)]
                 DeipProposal(runtime_types::pallet_deip_proposal::pallet::Call),
-                #[codec(index = 27)]
+                #[codec(index = 26)]
                 DeipDao(runtime_types::pallet_deip_dao::pallet::Call),
-                #[codec(index = 28)]
+                #[codec(index = 27)]
                 DeipPortal(runtime_types::pallet_deip_portal::pallet::Call),
-                #[codec(index = 29)]
+                #[codec(index = 28)]
                 DeipVesting(runtime_types::pallet_deip_vesting::pallet::Call),
-                #[codec(index = 31)]
+                #[codec(index = 30)]
                 DeipInvestmentOpportunity(
                     runtime_types::pallet_deip_investment_opportunity::pallet::Call,
                 ),
@@ -7669,6 +7669,8 @@ pub mod api {
             pub enum Event {
                 #[codec(index = 0)]
                 System(runtime_types::frame_system::pallet::Event),
+                #[codec(index = 4)]
+                Balances(runtime_types::pallet_balances::pallet::Event),
                 #[codec(index = 6)]
                 OctopusAppchain(runtime_types::pallet_octopus_appchain::pallet::Event),
                 #[codec(index = 7)]
@@ -7684,16 +7686,14 @@ pub mod api {
                 #[codec(index = 12)]
                 ImOnline(runtime_types::pallet_im_online::pallet::Event),
                 #[codec(index = 15)]
-                ParityTechAssets(runtime_types::pallet_assets::pallet::Event),
+                Assets(runtime_types::pallet_assets::pallet::Event),
                 #[codec(index = 16)]
-                ParityTechBalances(runtime_types::pallet_balances::pallet::Event),
-                #[codec(index = 17)]
-                ParityTechUniques(runtime_types::pallet_uniques::pallet::Event),
-                #[codec(index = 21)]
+                Uniques(runtime_types::pallet_uniques::pallet::Event),
+                #[codec(index = 20)]
                 Multisig(runtime_types::pallet_multisig::pallet::Event),
-                #[codec(index = 22)]
+                #[codec(index = 21)]
                 Utility(runtime_types::pallet_utility::pallet::Event),
-                #[codec(index = 23)]
+                #[codec(index = 22)]
                 Deip(
                     runtime_types::pallet_deip::RawEvent<
                         ::subxt::sp_core::crypto::AccountId32,
@@ -7707,13 +7707,13 @@ pub mod api {
                         >,
                     >,
                 ),
-                #[codec(index = 26)]
+                #[codec(index = 25)]
                 DeipProposal(runtime_types::pallet_deip_proposal::pallet::Event),
-                #[codec(index = 27)]
+                #[codec(index = 26)]
                 DeipDao(runtime_types::pallet_deip_dao::pallet::Event),
-                #[codec(index = 29)]
+                #[codec(index = 28)]
                 DeipVesting(runtime_types::pallet_deip_vesting::pallet::Event),
-                #[codec(index = 31)]
+                #[codec(index = 30)]
                 DeipInvestmentOpportunity(
                     runtime_types::pallet_deip_investment_opportunity::pallet::Event,
                 ),
@@ -9811,7 +9811,7 @@ pub mod api {
                         amount: ::core::primitive::u128,
                     },
                     #[codec(index = 17)]
-                    deip_create_asset {
+                    deip_create {
                         id: runtime_types::primitive_types::H160,
                         admin: runtime_types::appchain_deip_runtime::deip_account::DeipAccountId<
                             ::subxt::sp_core::crypto::AccountId32,
@@ -9826,7 +9826,7 @@ pub mod api {
                         witness: runtime_types::pallet_assets::types::DestroyWitness,
                     },
                     #[codec(index = 19)]
-                    deip_issue_asset {
+                    deip_mint {
                         id: runtime_types::primitive_types::H160,
                         beneficiary:
                             runtime_types::appchain_deip_runtime::deip_account::DeipAccountId<
@@ -9963,60 +9963,6 @@ pub mod api {
                     pub creator: _0,
                     pub assets: ::std::vec::Vec<_1>,
                     pub asset_id: _1,
-                }
-            }
-        }
-        pub mod pallet_deip_balances {
-            use super::runtime_types;
-            pub mod pallet {
-                use super::runtime_types;
-                #[derive(
-                    :: subxt :: codec :: Encode,
-                    :: subxt :: codec :: Decode,
-                    Debug,
-                    Clone,
-                    Eq,
-                    PartialEq,
-                    scale_info :: TypeInfo,
-                )]
-                pub enum Call {
-                    #[codec(index = 0)]
-                    transfer {
-                        dest: ::subxt::sp_runtime::MultiAddress<
-                            ::subxt::sp_core::crypto::AccountId32,
-                            (),
-                        >,
-                        #[codec(compact)]
-                        value: ::core::primitive::u128,
-                    },
-                    #[codec(index = 1)]
-                    transfer_all {
-                        dest: ::subxt::sp_runtime::MultiAddress<
-                            ::subxt::sp_core::crypto::AccountId32,
-                            (),
-                        >,
-                        keep_alive: ::core::primitive::bool,
-                    },
-                    #[codec(index = 2)]
-                    set_balance {
-                        who: ::subxt::sp_runtime::MultiAddress<
-                            ::subxt::sp_core::crypto::AccountId32,
-                            (),
-                        >,
-                        #[codec(compact)]
-                        new_free: ::core::primitive::u128,
-                        #[codec(compact)]
-                        new_reserved: ::core::primitive::u128,
-                    },
-                    #[codec(index = 3)]
-                    transfer_keep_alive {
-                        dest: ::subxt::sp_runtime::MultiAddress<
-                            ::subxt::sp_core::crypto::AccountId32,
-                            (),
-                        >,
-                        #[codec(compact)]
-                        value: ::core::primitive::u128,
-                    },
                 }
             }
         }

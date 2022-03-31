@@ -571,7 +571,7 @@ pub mod pallet {
             Ok(ok)
         }
 
-        fn deip_create_asset_impl(
+        fn deip_create_impl(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             admin: T::AccountId,
@@ -619,7 +619,7 @@ pub mod pallet {
             Ok(post_dispatch_info)
         }
 
-        fn deip_issue_asset_impl(
+        fn deip_mint_impl(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             beneficiary: T::AccountId,
@@ -688,177 +688,16 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        #[pallet::weight(AssetsWeightInfoOf::<T>::create())]
-        pub fn create(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            admin: <T::Lookup as StaticLookup>::Source,
-            min_balance: AssetsBalanceOf<T>,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::create(origin, id, admin, min_balance)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::destroy(0, 0, 0))] // @TODO replace with actual coeff
-        pub fn destroy(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            witness: DestroyWitness,
-        ) -> DispatchResultWithPostInfo {
-            pallet_assets::Pallet::<T>::destroy(origin, id, witness)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::mint())]
-        pub fn mint(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            beneficiary: <T::Lookup as StaticLookup>::Source,
-            amount: AssetsBalanceOf<T>,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::mint(origin, id, beneficiary, amount)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::burn())]
-        pub fn burn(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            who: <T::Lookup as StaticLookup>::Source,
-            amount: AssetsBalanceOf<T>,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::burn(origin, id, who, amount)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::transfer())]
-        pub fn transfer(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            target: <T::Lookup as StaticLookup>::Source,
-            amount: AssetsBalanceOf<T>,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::transfer(origin, id, target, amount)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::transfer_keep_alive())]
-        pub fn transfer_keep_alive(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            target: <T::Lookup as StaticLookup>::Source,
-            amount: AssetsBalanceOf<T>,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::transfer_keep_alive(origin, id, target, amount)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::freeze())]
-        pub fn freeze(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            who: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::freeze(origin, id, who)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::thaw())]
-        pub fn thaw(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            who: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::thaw(origin, id, who)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::freeze_asset())]
-        pub fn freeze_asset(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::freeze_asset(origin, id)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::thaw_asset())]
-        pub fn thaw_asset(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::thaw_asset(origin, id)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::transfer_ownership())]
-        pub fn transfer_ownership(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            owner: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::transfer_ownership(origin, id, owner)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::set_team())]
-        pub fn set_team(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            issuer: <T::Lookup as StaticLookup>::Source,
-            admin: <T::Lookup as StaticLookup>::Source,
-            freezer: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::set_team(origin, id, issuer, admin, freezer)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::set_metadata(name.len() as u32, symbol.len() as u32))]
-        pub fn set_metadata(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            name: Vec<u8>,
-            symbol: Vec<u8>,
-            decimals: u8,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::set_metadata(origin, id, name, symbol, decimals)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::clear_metadata())]
-        pub fn clear_metadata(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::clear_metadata(origin, id)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::approve_transfer())]
-        pub fn approve_transfer(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            delegate: <T::Lookup as StaticLookup>::Source,
-            amount: AssetsBalanceOf<T>,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::approve_transfer(origin, id, delegate, amount)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::cancel_approval())]
-        pub fn cancel_approval(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            delegate: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::cancel_approval(origin, id, delegate)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::transfer_approved())]
-        pub fn transfer_approved(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            owner: <T::Lookup as StaticLookup>::Source,
-            destination: <T::Lookup as StaticLookup>::Source,
-            amount: AssetsBalanceOf<T>,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::transfer_approved(origin, id, owner, destination, amount)
-        }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::create())]
-        pub fn deip_create_asset(
+        pub fn deip_create(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             admin: T::DeipAccountId,
             min_balance: AssetsBalanceOf<T>,
             project_id: Option<DeipProjectIdOf<T>>,
         ) -> DispatchResultWithPostInfo {
-            Self::deip_create_asset_impl(origin, id, admin.into(), min_balance, project_id)
+            Self::deip_create_impl(origin, id, admin.into(), min_balance, project_id)
         }
 
         #[pallet::weight((10_000, Pays::No))]
@@ -882,13 +721,13 @@ pub mod pallet {
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::mint())]
-        pub fn deip_issue_asset(
+        pub fn deip_mint(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             beneficiary: T::DeipAccountId,
             #[pallet::compact] amount: AssetsBalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            Self::deip_issue_asset_impl(origin, id, beneficiary.into(), amount)
+            Self::deip_mint_impl(origin, id, beneficiary.into(), amount)
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::burn())]
