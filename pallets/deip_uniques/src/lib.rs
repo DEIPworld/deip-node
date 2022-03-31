@@ -232,6 +232,8 @@ pub mod pallet {
         ProjectSecurityTokenCannotBeDestroyed,
         ProjectSecurityTokenCannotBeBurned,
         ProjectSecurityTokenCannotBeFrozen,
+        NftClassHasLockedInstances,
+        NftIsLocked,
     }
 
     #[pallet::call]
@@ -257,6 +259,9 @@ pub mod pallet {
             witness: DestroyWitness,
         ) -> DispatchResultWithPostInfo {
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
+
+            let is_locked = LockedAssets::<T>::iter_key_prefix(origin_class_id).count() != 0;
+            ensure!(is_locked, Error::<T>::NftClassHasLockedInstances);
 
             // Dispatch destroy call to origin pallet.
             let call = pallet_uniques::Call::<T>::destroy { class: origin_class_id, witness };
@@ -300,6 +305,9 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
+            let is_locked = LockedAssets::<T>::contains_key(origin_class_id, instance);
+            ensure!(is_locked, Error::<T>::NftIsLocked);
+
             // Convert target to source.
             let check_owner_source =
                 check_owner.map(|owner| <T::Lookup as StaticLookup>::unlookup(owner.into()));
@@ -324,6 +332,9 @@ pub mod pallet {
             let dest_source = <T::Lookup as StaticLookup>::unlookup(dest.into());
 
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
+
+            let is_locked = LockedAssets::<T>::contains_key(origin_class_id, instance);
+            ensure!(is_locked, Error::<T>::NftIsLocked);
 
             // Dispatch call to origin pallet.
             let call = pallet_uniques::Call::<T>::transfer {
@@ -416,6 +427,9 @@ pub mod pallet {
             let owner_source = <T::Lookup as StaticLookup>::unlookup(owner.into());
 
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
+
+            let is_locked = LockedAssets::<T>::iter_key_prefix(origin_class_id).count() != 0;
+            ensure!(is_locked, Error::<T>::NftIsLocked);
 
             // Dispatch call to origin pallet.
             let call = UniquesCall::<T>::transfer_ownership {
