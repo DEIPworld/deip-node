@@ -60,15 +60,15 @@ impl<T: Config> Module<T> {
             project_content_external_id,
         };
 
-        ensure!(!ReviewMap::<T>::contains_key(review.external_id), Error::<T>::ReviewAlreadyExists);
+        ensure!(!ReviewMapV1::<T>::contains_key(review.external_id), Error::<T>::ReviewAlreadyExists);
 
-        let content = ProjectContentMap::<T>::try_get(review.project_content_external_id)
+        let content = ProjectContentMapV1::<T>::try_get(review.project_content_external_id)
             .map_err(|_| Error::<T>::NoSuchProjectContent)?;
 
-        ReviewMap::<T>::insert(review.external_id, review.clone());
-        ReviewIdByProjectId::insert(content.project_external_id, review.external_id, ());
-        ReviewIdByContentId::insert(content.external_id, review.external_id, ());
-        ReviewIdByAccountId::<T>::insert(review.author.clone(), review.external_id, ());
+        ReviewMapV1::<T>::insert(review.external_id, review.clone());
+        ReviewIdByProjectIdV1::insert(content.project_external_id, review.external_id, ());
+        ReviewIdByContentIdV1::insert(content.external_id, review.external_id, ());
+        ReviewIdByAccountIdV1::<T>::insert(review.author.clone(), review.external_id, ());
 
         Self::deposit_event(RawEvent::ReviewCreated(account, review));
 
@@ -83,7 +83,7 @@ impl<T: Config> Module<T> {
         ensure!(Domains::contains_key(domain_id), Error::<T>::ReviewVoteNoSuchDomain);
 
         let review =
-            ReviewMap::<T>::try_get(review_id).map_err(|_| Error::<T>::ReviewVoteNoSuchReview)?;
+            ReviewMapV1::<T>::try_get(review_id).map_err(|_| Error::<T>::ReviewVoteNoSuchReview)?;
         ensure!(review.domains.contains(&domain_id), Error::<T>::ReviewVoteUnrelatedDomain);
 
         ensure!(
@@ -99,7 +99,7 @@ impl<T: Config> Module<T> {
         };
 
         ReviewVoteMap::<T>::insert((review_id, account.clone(), domain_id), vote);
-        VoteIdByReviewId::<T>::insert(review_id, (review_id, account.clone(), domain_id), ());
+        VoteIdByReviewIdV1::<T>::insert(review_id, (review_id, account.clone(), domain_id), ());
         VoteIdByAccountId::<T>::insert(
             account.clone(),
             (review_id, account.clone(), domain_id),

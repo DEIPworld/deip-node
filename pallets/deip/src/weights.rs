@@ -63,8 +63,8 @@ pub struct Weights<T>(PhantomData<T>);
 
 impl<T: frame_system::Config> WeightInfo for Weights<T> {
     // Storage: Deip Domains (r:1 w:0)
-    // Storage: Deip ProjectMap (r:1 w:1)
-    // Storage: Deip ProjectIdByTeamId (r:0 w:1)
+    // Storage: Deip ProjectMapV1 (r:1 w:1)
+    // Storage: Deip ProjectIdByTeamIdV1 (r:0 w:1)
     fn create_project(d: u32) -> Weight {
         (36_645_000 as Weight)
             // Standard Error: 29_000
@@ -161,15 +161,15 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
             .saturating_add(T::DbWeight::get().reads(82 as Weight))
             .saturating_add(T::DbWeight::get().writes(48 as Weight))
     }
-    // Storage: Deip ProjectMap (r:1 w:1)
+    // Storage: Deip ProjectMapV1 (r:1 w:1)
     fn update_project() -> Weight {
         (28_574_000 as Weight)
             .saturating_add(T::DbWeight::get().reads(1 as Weight))
             .saturating_add(T::DbWeight::get().writes(1 as Weight))
     }
-    // Storage: Deip ProjectContentMap (r:51 w:1)
-    // Storage: Deip ProjectMap (r:1 w:0)
-    // Storage: Deip ContentIdByProjectId (r:1 w:1)
+    // Storage: Deip ProjectContentMapV1 (r:51 w:1)
+    // Storage: Deip ProjectMapV1 (r:1 w:0)
+    // Storage: Deip ContentIdByProjectIdV1 (r:1 w:1)
     fn create_project_content(a: u32, r: u32) -> Weight {
         (0 as Weight)
             // Standard Error: 652_000
@@ -182,8 +182,8 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
     }
     // Storage: Timestamp Now (r:1 w:0)
     // Storage: Deip Ndas (r:1 w:1)
-    // Storage: Deip NdaMap (r:0 w:1)
-    // Storage: Deip ProjectMap (r:1 w:0)
+    // Storage: Deip NdaMapV1 (r:0 w:1)
+    // Storage: Deip ProjectMapV1 (r:1 w:0)
     fn create_project_nda(p: u32) -> Weight {
         (71_768_000 as Weight)
             // Standard Error: 60_000
@@ -193,34 +193,34 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
             .saturating_add(T::DbWeight::get().writes(2 as Weight))
     }
     // Storage: Timestamp Now (r:1 w:0)
-    // Storage: Deip NdaMap (r:1 w:0)
+    // Storage: Deip NdaMapV1 (r:1 w:0)
     // Storage: Deip NdaAccessRequests (r:1 w:1)
-    // Storage: Deip NdaAccessRequestMap (r:0 w:1)
+    // Storage: Deip NdaAccessRequestMapV1 (r:0 w:1)
     fn create_nda_content_access_request() -> Weight {
         (60_406_000 as Weight)
             .saturating_add(T::DbWeight::get().reads(3 as Weight))
             .saturating_add(T::DbWeight::get().writes(2 as Weight))
     }
-    // Storage: Deip NdaAccessRequestMap (r:1 w:1)
-    // Storage: Deip NdaMap (r:1 w:0)
+    // Storage: Deip NdaAccessRequestMapV1 (r:1 w:1)
+    // Storage: Deip NdaMapV1 (r:1 w:0)
     fn fulfill_nda_content_access_request() -> Weight {
         (51_652_000 as Weight)
             .saturating_add(T::DbWeight::get().reads(2 as Weight))
             .saturating_add(T::DbWeight::get().writes(1 as Weight))
     }
-    // Storage: Deip NdaAccessRequestMap (r:1 w:1)
-    // Storage: Deip NdaMap (r:1 w:0)
+    // Storage: Deip NdaAccessRequestMapV1 (r:1 w:1)
+    // Storage: Deip NdaMapV1 (r:1 w:0)
     fn reject_nda_content_access_request() -> Weight {
         (50_083_000 as Weight)
             .saturating_add(T::DbWeight::get().reads(2 as Weight))
             .saturating_add(T::DbWeight::get().writes(1 as Weight))
     }
     // Storage: Deip Domains (r:1 w:0)
-    // Storage: Deip ReviewMap (r:1 w:1)
-    // Storage: Deip ProjectContentMap (r:1 w:0)
-    // Storage: Deip ReviewIdByAccountId (r:0 w:1)
-    // Storage: Deip ReviewIdByProjectId (r:0 w:1)
-    // Storage: Deip ReviewIdByContentId (r:0 w:1)
+    // Storage: Deip ReviewMapV1 (r:1 w:1)
+    // Storage: Deip ProjectContentMapV1 (r:1 w:0)
+    // Storage: Deip ReviewIdByAccountIdV1 (r:0 w:1)
+    // Storage: Deip ReviewIdByProjectIdV1 (r:0 w:1)
+    // Storage: Deip ReviewIdByContentIdV1 (r:0 w:1)
     fn create_review(d: u32) -> Weight {
         (44_425_000 as Weight)
             // Standard Error: 22_000
@@ -230,10 +230,10 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
             .saturating_add(T::DbWeight::get().writes(4 as Weight))
     }
     // Storage: Deip Domains (r:1 w:0)
-    // Storage: Deip ReviewMap (r:1 w:0)
+    // Storage: Deip ReviewMapV1 (r:1 w:0)
     // Storage: Deip ReviewVoteMap (r:1 w:1)
     // Storage: Timestamp Now (r:1 w:0)
-    // Storage: Deip VoteIdByReviewId (r:0 w:1)
+    // Storage: Deip VoteIdByReviewIdV1 (r:0 w:1)
     // Storage: Deip VoteIdByAccountId (r:0 w:1)
     fn upvote_review() -> Weight {
         (65_252_000 as Weight)
@@ -249,7 +249,7 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
     }
     // Storage: Timestamp Now (r:1 w:0)
     // Storage: Deip ContractAgreementMap (r:1 w:1)
-    // Storage: Deip ProjectMap (r:1 w:0)
+    // Storage: Deip ProjectMapV1 (r:1 w:0)
     // Storage: Deip ContractAgreementIdByType (r:0 w:1)
     fn create_contract_agreement_project_license() -> Weight {
         (49_030_000 as Weight)
@@ -278,7 +278,7 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
     // Storage: Assets AssetIdByProjectId (r:1 w:0)
     // Storage: ParityTechAssets Asset (r:2 w:1)
     // Storage: Assets FtBalanceMap (r:1 w:0)
-    // Storage: Deip ProjectMap (r:1 w:0)
+    // Storage: Deip ProjectMapV1 (r:1 w:0)
     // Storage: Assets ProjectIdByAssetId (r:1 w:0)
     fn accept_contract_agreement_project_license_signed_by_licenser() -> Weight {
         (197_721_000 as Weight)

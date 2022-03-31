@@ -221,10 +221,10 @@ fn add_project() {
     new_test_ext().execute_with(|| {
         let (project_id, project, _, team) = create_ok_project(None);
 
-        let project_stored = ProjectMap::<Test>::get(project_id);
+        let project_stored = ProjectMapV1::<Test>::get(project_id);
 
         assert!(
-            <ProjectMap<Test>>::contains_key(project_id),
+            <ProjectMapV1<Test>>::contains_key(project_id),
             "Project Map did not contain the project, value was `{}`",
             project_id
         );
@@ -232,8 +232,8 @@ fn add_project() {
         assert_eq!(project, project_stored);
 
         assert!(
-            ProjectIdByTeamId::<Test>::contains_key(team, project_id),
-            "ProjectIdByTeamId did not contain project, value was `{}`",
+            ProjectIdByTeamIdV1::<Test>::contains_key(team, project_id),
+            "ProjectIdByTeamIdV1 did not contain project, value was `{}`",
             project_id
         );
     })
@@ -292,7 +292,7 @@ fn update_project() {
             Some(true)
         ));
 
-        let project_stored = ProjectMap::<Test>::get(project_id);
+        let project_stored = ProjectMapV1::<Test>::get(project_id);
 
         assert_eq!(project_stored.description, new_description);
         assert_eq!(project_stored.is_private, true);
@@ -352,14 +352,14 @@ fn create_project_content() {
         ));
 
         assert!(
-            <ProjectContentMap<Test>>::contains_key(project_content_id),
+            <ProjectContentMapV1<Test>>::contains_key(project_content_id),
             "Project Content Map did not contain key, value was `{}`",
             project_content_id
         );
 
         assert!(
-            ContentIdByProjectId::contains_key(project_id, project_content_id),
-            "ContentIdByProjectId does not contain the key: `{}`, `{}`",
+            ContentIdByProjectIdV1::contains_key(project_id, project_content_id),
+            "ContentIdByProjectIdV1 does not contain the key: `{}`, `{}`",
             project_id,
             project_content_id
         );
@@ -402,14 +402,14 @@ fn create_project_content_with_references() {
         ));
 
         assert!(
-            <ProjectContentMap<Test>>::contains_key(project_content_with_reference_id),
+            <ProjectContentMapV1<Test>>::contains_key(project_content_with_reference_id),
             "Project Content Map did not contain key, value was `{}`",
             project_content_with_reference_id
         );
 
         assert!(
-            ContentIdByProjectId::contains_key(project_id, project_content_with_reference_id),
-            "ContentIdByProjectId does not contain the key: `{}`, `{}`",
+            ContentIdByProjectIdV1::contains_key(project_id, project_content_with_reference_id),
+            "ContentIdByProjectIdV1 does not contain the key: `{}`, `{}`",
             project_id,
             project_content_with_reference_id
         );
@@ -562,10 +562,10 @@ fn create_project_nda() {
         let (project_nda_id, expected_nda) = create_ok_nda();
 
         let nda_list = Ndas::<Test>::get();
-        let nda_stored = NdaMap::<Test>::get(project_nda_id);
+        let nda_stored = NdaMapV1::<Test>::get(project_nda_id);
 
         assert!(
-            <NdaMap<Test>>::contains_key(project_nda_id),
+            <NdaMapV1<Test>>::contains_key(project_nda_id),
             "NDA Map did not contain key, value was `{}`",
             project_nda_id
         );
@@ -746,10 +746,10 @@ fn create_nda_content_access_request() {
             create_ok_nda_content_access_request(project_nda_id);
 
         let nda_list = NdaAccessRequests::<Test>::get();
-        let nda_stored = NdaAccessRequestMap::<Test>::get(access_request_id);
+        let nda_stored = NdaAccessRequestMapV1::<Test>::get(access_request_id);
 
         assert!(
-            <NdaAccessRequestMap<Test>>::contains_key(access_request_id),
+            <NdaAccessRequestMapV1<Test>>::contains_key(access_request_id),
             "NDA request Map did not contain key, value was `{}`",
             access_request_id
         );
@@ -825,7 +825,7 @@ fn fulfill_nda_content_access_request() {
             proof_of_encrypted_payload_encryption_key.clone()
         ));
 
-        let nda_stored = NdaAccessRequestMap::<Test>::get(access_request_id);
+        let nda_stored = NdaAccessRequestMapV1::<Test>::get(access_request_id);
 
         let expected_nda_request = NdaAccessRequest {
             status: NdaAccessRequestStatus::Fulfilled,
@@ -902,7 +902,7 @@ fn reject_nda_content_access_request() {
             access_request_id.clone(),
         ));
 
-        let nda_stored = NdaAccessRequestMap::<Test>::get(access_request_id);
+        let nda_stored = NdaAccessRequestMapV1::<Test>::get(access_request_id);
 
         let expected_nda_request =
             NdaAccessRequest { status: NdaAccessRequestStatus::Rejected, ..nda_request };

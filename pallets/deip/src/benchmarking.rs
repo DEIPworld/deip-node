@@ -95,7 +95,7 @@ fn _create_project<T: Config>(project: ProjectOf<T>) -> ProjectOf<T> {
         description,
         domains
     ).unwrap();
-    ProjectMap::<T>::get(external_id)
+    ProjectMapV1::<T>::get(external_id)
 }
 
 fn create_project_asset<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
@@ -174,7 +174,7 @@ fn _create_project_content<T: Config>(
         authors,
         references
     ).unwrap();
-    ProjectContentMap::<T>::get(external_id)
+    ProjectContentMapV1::<T>::get(external_id)
 }
 
 fn create_reference_project<T: Config>(project_idx: u8) -> ProjectContentOf<T> {
@@ -230,7 +230,7 @@ fn now<T: Config>() -> T::Moment {
 //         parties.into_iter().map(Into::into).collect(),
 //         projects
 //     ).unwrap();
-//     NdaMap::<T>::get(external_id)
+//     NdaMapV1::<T>::get(external_id)
 // }
 
 // fn init_nda_content_access_request<T: Config>(idx: u8, nda: &NdaOf<T>) -> NdaAccessRequestOf<T>
@@ -271,7 +271,7 @@ fn now<T: Config>() -> T::Moment {
 //         encrypted_payload_hash,
 //         encrypted_payload_iv
 //     ).unwrap();
-//     NdaAccessRequestMap::<T>::get(external_id)
+//     NdaAccessRequestMapV1::<T>::get(external_id)
 // }
 
 fn init_review<T: Config>(
@@ -319,7 +319,7 @@ fn _create_review<T: Config>(review: ReviewOf<T>) -> ReviewOf<T>
         weight,
         project_content_external_id
     ).unwrap();
-    ReviewMap::<T>::get(external_id)
+    ReviewMapV1::<T>::get(external_id)
 }
 
 benchmarks! {

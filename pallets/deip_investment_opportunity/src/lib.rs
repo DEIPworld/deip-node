@@ -89,9 +89,14 @@ pub mod pallet {
 
     }
 
+    use frame_support::traits::StorageVersion;
+    use frame_support::dispatch::GetStorageVersion;
+    pub const V1: StorageVersion = StorageVersion::new(1);
+
     #[doc(hidden)]
     #[pallet::pallet]
     #[pallet::generate_store(pub(super) trait Store)]
+    #[pallet::storage_version(V1)]
     pub struct Pallet<T>(_);
 
     #[doc(hidden)]
@@ -119,7 +124,7 @@ pub mod pallet {
 
             match call {
                 Call::activate_crowdfunding { sale_id: id } => {
-                    let sale = SimpleCrowdfundings::<T>::try_get(id)
+                    let sale = SimpleCrowdfundingMapV1::<T>::try_get(id)
                         .map_err(|_| InvalidTransaction::Stale)?;
                     if !matches!(sale.status, SimpleCrowdfundingStatus::Inactive) {
                         return InvalidTransaction::Stale.into()
@@ -132,7 +137,7 @@ pub mod pallet {
                         .build()
                 },
                 Call::expire_crowdfunding { sale_id: id } => {
-                    let sale = SimpleCrowdfundings::<T>::try_get(id)
+                    let sale = SimpleCrowdfundingMapV1::<T>::try_get(id)
                         .map_err(|_| InvalidTransaction::Stale)?;
                     if !matches!(sale.status, SimpleCrowdfundingStatus::Active) {
                         return InvalidTransaction::Stale.into()
@@ -145,7 +150,7 @@ pub mod pallet {
                         .build()
                 },
                 Call::finish_crowdfunding { sale_id: id } => {
-                    let sale = SimpleCrowdfundings::<T>::try_get(id)
+                    let sale = SimpleCrowdfundingMapV1::<T>::try_get(id)
                         .map_err(|_| InvalidTransaction::Stale)?;
                     if !matches!(sale.status, SimpleCrowdfundingStatus::Active) {
                         return InvalidTransaction::Stale.into()
@@ -306,14 +311,14 @@ pub mod pallet {
     use crate::module::{Investment, SimpleCrowdfundingOf};
 
     #[pallet::storage]
-    pub type Investments<T: Config> = StorageMap<_,
+    pub type InvestmentMapV1<T: Config> = StorageMap<_,
         Blake2_128Concat,
         InvestmentId,
         Vec<(T::AccountId, Investment<T>)>
     >;
 
     #[pallet::storage]
-    pub type SimpleCrowdfundings<T: Config> = StorageMap<_,
+    pub type SimpleCrowdfundingMapV1<T: Config> = StorageMap<_,
         Blake2_128Concat,
         InvestmentId,
         SimpleCrowdfundingOf<T>,
