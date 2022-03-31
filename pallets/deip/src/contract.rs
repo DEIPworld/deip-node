@@ -167,7 +167,7 @@ impl<T: Config> Module<T> {
         ensure!(parties.len() == 2, Error::<T>::ContractAgreementLicenseTwoPartiesRequired);
 
         let project =
-            ProjectMap::<T>::try_get(project_id).map_err(|_| Error::<T>::NoSuchProject)?;
+            ProjectMapV1::<T>::try_get(project_id).map_err(|_| Error::<T>::NoSuchProject)?;
 
         let second: AccountIdOf<T> = parties.pop().unwrap();
         let first: AccountIdOf<T> = parties.pop().unwrap();
@@ -359,7 +359,7 @@ impl<T: Config> Module<T> {
 
         if total_revenue < *fee {
             // transfer the rest to the project team
-            let project = ProjectMap::<T>::get(*project_id);
+            let project = ProjectMapV1::<T>::get(*project_id);
             transfer_info.push((*fee - total_revenue, project.team_id.clone()));
         }
 

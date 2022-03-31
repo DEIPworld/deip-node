@@ -21,7 +21,7 @@ use crate::{Config, Error, Event, Call, Pallet};
 use deip_asset_system::{DeipAssetSystem, ReserveError, UnreserveError};
 pub use deip_asset_system::investment_opportunity::*;
 pub use deip_asset_system::asset::*;
-use crate::{SimpleCrowdfundings, Investments};
+use crate::{SimpleCrowdfundingMapV1, InvestmentMapV1};
 use crate::weights::WeightInfo;
 
 pub type DeipAssetId<T: Config> =
@@ -119,7 +119,7 @@ impl<T: Config> Pallet<T> {
         }
 
         ensure!(
-            !SimpleCrowdfundings::<T>::contains_key(external_id),
+            !SimpleCrowdfundingMapV1::<T>::contains_key(external_id),
             Error::<T>::AlreadyExists
         );
 
@@ -151,7 +151,7 @@ impl<T: Config> Pallet<T> {
             ..Default::default()
         };
 
-        SimpleCrowdfundings::<T>::insert(external_id, new_token_sale);
+        SimpleCrowdfundingMapV1::<T>::insert(external_id, new_token_sale);
 
         Self::deposit_event(Event::<T>::SimpleCrowdfundingCreated(external_id));
 
@@ -159,7 +159,7 @@ impl<T: Config> Pallet<T> {
     }
 
     pub(super) fn collect_funds(sale_id: InvestmentId, amount: DeipAssetBalance<T>) -> Result<(), ()> {
-        SimpleCrowdfundings::<T>::mutate_exists(sale_id, |sale| -> Result<(), ()> {
+        SimpleCrowdfundingMapV1::<T>::mutate_exists(sale_id, |sale| -> Result<(), ()> {
             match sale.as_mut() {
                 Some(s) => s.total_amount.0 = amount.saturating_add(s.total_amount.0),
                 None => return Err(()),
@@ -169,7 +169,7 @@ impl<T: Config> Pallet<T> {
     }
 
     pub(super) fn finish_crowdfunding_by_id(sale_id: InvestmentId) -> Result<(), ()> {
-        match SimpleCrowdfundings::<T>::try_get(sale_id) {
+        match SimpleCrowdfundingMapV1::<T>::try_get(sale_id) {
             Err(_) => Err(()),
             Ok(sale) => {
                 Self::update_status(&sale, SimpleCrowdfundingStatus::Finished);
@@ -180,7 +180,7 @@ impl<T: Config> Pallet<T> {
     }
 
     pub(super) fn activate_crowdfunding_impl(sale_id: InvestmentId) -> DispatchResult {
-        SimpleCrowdfundings::<T>::mutate_exists(sale_id, |maybe_sale| -> DispatchResult {
+        SimpleCrowdfundingMapV1::<T>::mutate_exists(sale_id, |maybe_sale| -> DispatchResult {
             let sale = match maybe_sale.as_mut() {
                 None => return Err(Error::<T>::NotFound.into()),
                 Some(s) => s,
@@ -203,7 +203,7 @@ impl<T: Config> Pallet<T> {
     }
 
     pub(super) fn expire_crowdfunding_impl(sale_id: InvestmentId) -> DispatchResultWithPostInfo {
-        SimpleCrowdfundings::<T>::mutate_exists(sale_id, |maybe_sale| -> DispatchResultWithPostInfo {
+        SimpleCrowdfundingMapV1::<T>::mutate_exists(sale_id, |maybe_sale| -> DispatchResultWithPostInfo {
             let sale = match maybe_sale.as_mut() {
                 None => return Err(Error::<T>::NotFound.into()),
                 Some(s) => s,
@@ -228,7 +228,7 @@ impl<T: Config> Pallet<T> {
     }
 
     pub(super) fn finish_crowdfunding_impl(sale_id: InvestmentId) -> DispatchResult {
-        SimpleCrowdfundings::<T>::mutate_exists(sale_id, |maybe_sale| -> DispatchResult {
+        SimpleCrowdfundingMapV1::<T>::mutate_exists(sale_id, |maybe_sale| -> DispatchResult {
             let sale = match maybe_sale.as_mut() {
                 None => return Err(Error::<T>::NotFound.into()),
                 Some(s) => s,
@@ -250,7 +250,7 @@ impl<T: Config> Pallet<T> {
 
     pub(super) fn process_investment_opportunities_offchain() {
         let now = pallet_timestamp::Pallet::<T>::get();
-        for (id, sale) in SimpleCrowdfundings::<T>::iter() {
+        for (id, sale) in SimpleCrowdfundingMapV1::<T>::iter() {
             if sale.end_time <= now && matches!(sale.status, SimpleCrowdfundingStatus::Active) {
                 if sale.total_amount.0 < sale.soft_cap.0 {
                     let call = Call::<T>::expire_crowdfunding { sale_id: id };
@@ -273,14 +273,14 @@ impl<T: Config> Pallet<T> {
     }
 
     fn update_status(sale: &SimpleCrowdfundingOf<T>, new_status: SimpleCrowdfundingStatus) {
-        SimpleCrowdfundings::<T>::mutate_exists(sale.external_id, |maybe_sale| -> () {
+        SimpleCrowdfundingMapV1::<T>::mutate_exists(sale.external_id, |maybe_sale| -> () {
             let sale = maybe_sale.as_mut().expect("we keep collections in sync");
             sale.status = new_status;
         });
     }
 
     fn refund(sale: &SimpleCrowdfundingOf<T>) {
-        if let Ok(ref c) = Investments::<T>::try_get(sale.external_id) {
+        if let Ok(ref c) = InvestmentMapV1::<T>::try_get(sale.external_id) {
             for (_, ref contribution) in c {
                 T::transfer_from_reserved(
                     sale.external_id,
@@ -292,7 +292,7 @@ impl<T: Config> Pallet<T> {
 
                 frame_system::Pallet::<T>::dec_consumers(&contribution.owner);
             }
-            Investments::<T>::remove(sale.external_id);
+            InvestmentMapV1::<T>::remove(sale.external_id);
         }
 
         T::transactionally_unreserve(sale.external_id)
@@ -302,7 +302,7 @@ impl<T: Config> Pallet<T> {
     }
 
     fn process_investments(sale: &SimpleCrowdfundingOf<T>) {
-        let contributions = Investments::<T>::try_get(sale.external_id)
+        let contributions = InvestmentMapV1::<T>::try_get(sale.external_id)
             .expect("about to finish, but there are no contributions?");
 
         for asset in &sale.shares {
@@ -352,7 +352,7 @@ impl<T: Config> Pallet<T> {
         for (_, ref contribution) in contributions {
             frame_system::Pallet::<T>::dec_consumers(&contribution.owner);
         }
-        Investments::<T>::remove(sale.external_id);
+        InvestmentMapV1::<T>::remove(sale.external_id);
 
         Self::deposit_event(Event::SimpleCrowdfundingFinished(sale.external_id));
     }
@@ -362,7 +362,7 @@ impl<T: Config> Pallet<T> {
         sale_id: InvestmentId,
         asset: DeipAsset<T>,
     ) -> DispatchResultWithPostInfo {
-        let sale = SimpleCrowdfundings::<T>::try_get(sale_id)
+        let sale = SimpleCrowdfundingMapV1::<T>::try_get(sale_id)
             .map_err(|_| Error::<T>::InvestingNotFound)?;
 
         ensure!(
@@ -386,7 +386,7 @@ impl<T: Config> Pallet<T> {
             Error::<T>::InvestingNotEnoughFunds
         );
 
-        Investments::<T>::mutate_exists(sale_id, |contributions| {
+        InvestmentMapV1::<T>::mutate_exists(sale_id, |contributions| {
             let mut_contributions = match contributions.as_mut() {
                 None => {
                     // If the account executes the extrinsic then it exists, so it should have at least one provider

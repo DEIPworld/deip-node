@@ -296,7 +296,7 @@ fn _create_simple_crowdfunding<T: Config>(
         shares,
         funding_model
     )?;
-    Ok(SimpleCrowdfundings::<T>::get(sale_id).unwrap())
+    Ok(SimpleCrowdfundingMapV1::<T>::get(sale_id).unwrap())
 }
 
 type CrowdfundingBalance<T> = SerializableAtLeast32BitUnsigned<DeipAssetBalance<T>>;
@@ -450,7 +450,7 @@ fn _create_investment_opportunity<T: Config>(
         shares,
         funding_model
     ).unwrap();
-    SimpleCrowdfundings::<T>::get(external_id).unwrap()
+    SimpleCrowdfundingMapV1::<T>::get(external_id).unwrap()
 }
 
 fn _activate_crowdfunding<T: Config>(
@@ -461,7 +461,7 @@ fn _activate_crowdfunding<T: Config>(
         RawOrigin::None.into(),
         crowdfunding.external_id
     ).unwrap();
-    SimpleCrowdfundings::<T>::get(crowdfunding.external_id).unwrap()
+    SimpleCrowdfundingMapV1::<T>::get(crowdfunding.external_id).unwrap()
 }
 
 fn _expire_crowdfunding<T: Config>(
@@ -472,7 +472,7 @@ fn _expire_crowdfunding<T: Config>(
         RawOrigin::None.into(),
         crowdfunding.external_id,
     ).unwrap();
-    SimpleCrowdfundings::<T>::get(crowdfunding.external_id).unwrap()
+    SimpleCrowdfundingMapV1::<T>::get(crowdfunding.external_id).unwrap()
 }
 
 fn set_crowdfunding_end_time<T: Config>(
@@ -482,8 +482,8 @@ fn set_crowdfunding_end_time<T: Config>(
 {
     let external_id = crowdfunding.external_id;
     crowdfunding.end_time = end_time;
-    SimpleCrowdfundings::<T>::insert(external_id, crowdfunding);
-    SimpleCrowdfundings::<T>::get(external_id).unwrap()
+    SimpleCrowdfundingMapV1::<T>::insert(external_id, crowdfunding);
+    SimpleCrowdfundingMapV1::<T>::get(external_id).unwrap()
 }
 
 fn _invest<T: Config>(

@@ -46,7 +46,7 @@ use frame_support::{
     dispatch::{DispatchResult, Parameter},
     ensure,
     pallet_prelude::*,
-    storage::{IterableStorageDoubleMap, IterableStorageMap},
+    storage::{IterableStorageDoubleMap},
     traits::{Currency, ReservableCurrency},
     StorageMap,
     weights::Weight,
@@ -235,7 +235,7 @@ pub struct Nda<Hash, AccountId, Moment> {
     contract_hash: Hash,
     /// Involved Parties
     parties: Vec<AccountId>,
-    /// Involved Projects
+    /// Involved ProjectMapV1
     projects: Vec<ProjectId>,
 }
 
@@ -285,7 +285,7 @@ decl_event! {
         Project = ProjectOf<T>,
         Review = ReviewOf<T>,
     {
-        // ==== Projects ====
+        // ==== ProjectMapV1 ====
 
         /// Event emitted when a project has been created. [BelongsTo, Project]
         ProjectCreated(AccountId, Project),
@@ -339,7 +339,7 @@ decl_event! {
 // Errors inform users that something went wrong.
 decl_error! {
     pub enum Error for Module<T: Config> {
-        // ==== Projects ====
+        // ==== ProjectMapV1 ====
 
         /// The project does not exist.
         NoSuchProject,
@@ -464,9 +464,9 @@ decl_error! {
 #[derive(Encode, Decode, Eq, PartialEq, TypeInfo)]
 pub enum StorageVersion {
     /// Initial version.
-    V1,
+    V0,
     /// Separate investment_opportunity.
-    V2,
+    V1,
 }
 
 decl_storage! {
@@ -474,45 +474,70 @@ decl_storage! {
         /// Should be used in conjunction with `on_runtime_upgrade` to ensure an upgrade is executed
         /// once, even if the code is not removed in time.
         pub PalletStorageVersion get(fn pallet_storage_version)
-            build(|_| StorageVersion::V2): StorageVersion = StorageVersion::V1;
+            build(|_| StorageVersion::V1): StorageVersion = StorageVersion::V0;
 
         ProjectMap: map hasher(identity) ProjectId => ProjectOf<T>;
+        // Migrate key hasher
+        ProjectMapV1: map hasher(blake2_128_concat) ProjectId => ProjectOf<T>;
 
         ProjectIdByTeamId: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(identity) ProjectId => ();
+        // Migrate key hasher
+        ProjectIdByTeamIdV1: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(blake2_128_concat) ProjectId => ();
 
         /// (DEPRECATED, moved to DeipInvestmentOpportunity)
         SimpleCrowdfundingMap: map hasher(identity) InvestmentId => SimpleCrowdfundingOf<T>;
-        /// Migrate key hasher
-        SimpleCrowdfundings: map hasher(blake2_128_concat) InvestmentId => SimpleCrowdfundingOf<T>;
+        // Migrate key hasher
+        SimpleCrowdfundingMapV1: map hasher(blake2_128_concat) InvestmentId => SimpleCrowdfundingOf<T>;
 
         /// (DEPRECATED, moved to DeipInvestmentOpportunity)
         /// Contains various contributions from DAOs
         InvestmentMap: map hasher(identity) InvestmentId => Vec<(T::AccountId, Investment<T>)>;
-        /// Migrate key hasher
-        Investments: map hasher(blake2_128_concat) InvestmentId => Vec<(T::AccountId, Investment<T>)>;
+        // Migrate key hasher
+        InvestmentMapV1: map hasher(blake2_128_concat) InvestmentId => Vec<(T::AccountId, Investment<T>)>;
 
         ProjectContentMap: map hasher(identity) ProjectContentId => ProjectContentOf<T>;
+        // Migrate key hasher
+        ProjectContentMapV1: map hasher(blake2_128_concat) ProjectContentId => ProjectContentOf<T>;
         ContentIdByProjectId: double_map hasher(identity) ProjectId, hasher(identity) ProjectContentId => ();
+        // Migrate key hasher
+        ContentIdByProjectIdV1: double_map hasher(blake2_128_concat) ProjectId, hasher(blake2_128_concat) ProjectContentId => ();
 
         /// NDA list, guarantees uniquest and provides NDA listing
         Ndas get(fn nda_list): Vec<(ProjectId, T::AccountId)>;
         /// Map to NDA Info
-        NdaMap get(fn nda): map hasher(identity) NdaId => NdaOf<T>;
+        NdaMap: map hasher(identity) NdaId => NdaOf<T>;
+        // Migrate key hasher
+        NdaMapV1 get(fn nda): map hasher(blake2_128_concat) NdaId => NdaOf<T>;
 
         /// NDA Access Requests list, guarantees uniquest and provides NDA Access Requests listing
         NdaAccessRequests get(fn nda_requests): Vec<(NdaAccessRequestId, NdaId, T::AccountId)>;
         /// Map to NDA Access Requests Info
-        NdaAccessRequestMap get(fn nda_request): map hasher(identity) NdaAccessRequestId => NdaAccessRequestOf<T>;
+        NdaAccessRequestMap: map hasher(identity) NdaAccessRequestId => NdaAccessRequestOf<T>;
+        // Migrate key hasher
+        NdaAccessRequestMapV1 get(fn nda_request): map hasher(blake2_128_concat) NdaAccessRequestId => NdaAccessRequestOf<T>;
 
         ReviewMap: map hasher(identity) ReviewId => ReviewOf<T>;
+        // Migrate key hasher
+        ReviewMapV1: map hasher(blake2_128_concat) ReviewId => ReviewOf<T>;
 
         ReviewIdByProjectId: double_map hasher(identity) ProjectId, hasher(identity) ReviewId => ();
+        // Migrate key hasher
+        ReviewIdByProjectIdV1: double_map hasher(blake2_128_concat) ProjectId, hasher(blake2_128_concat) ReviewId => ();
+
         ReviewIdByContentId: double_map hasher(identity) ProjectContentId, hasher(identity) ReviewId => ();
+        // Migrate key hasher
+        ReviewIdByContentIdV1: double_map hasher(blake2_128_concat) ProjectContentId, hasher(blake2_128_concat) ReviewId => ();
+
         ReviewIdByAccountId: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(identity) ReviewId => ();
+        // Migrate key hasher
+        ReviewIdByAccountIdV1: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(blake2_128_concat) ReviewId => ();
 
         ReviewVoteMap: map hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => DeipReviewVoteOf<T>;
 
         VoteIdByReviewId: double_map hasher(identity) ReviewId, hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => ();
+        // Migrate key hasher
+        VoteIdByReviewIdV1: double_map hasher(blake2_128_concat) ReviewId, hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => ();
+
         VoteIdByAccountId: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => ();
 
         // The set of all Domains.
@@ -523,6 +548,156 @@ decl_storage! {
 
         ContractAgreementMap: map hasher(blake2_128_concat) ContractAgreementId => ContractAgreementOf<T>;
         ContractAgreementIdByType: double_map hasher(twox_64_concat) ContractAgreementIndexTerms, hasher(blake2_128_concat) ContractAgreementId => ();
+    }
+}
+
+mod v1 {
+    use core::convert::TryInto;
+    use super::{Config, StorageVersion, PalletStorageVersion};
+    use frame_support::weights::Weight;
+    use frame_support::traits::Get;
+    use frame_support::storage::{
+        StorageMap, IterableStorageMap, StorageValue, StorageDoubleMap,
+        IterableStorageDoubleMap
+    };
+
+    pub(crate) fn set_storage_version<T: Config>() -> Weight {
+        PalletStorageVersion::put(StorageVersion::V1);
+        T::DbWeight::get().writes(1)
+    }
+
+    pub(crate) fn migrate_investment_opportunity<T: Config>() -> Weight
+    {
+        use frame_support::storage::migration::move_storage_from_pallet;
+        use super::{InvestmentMapV1, InvestmentMap, SimpleCrowdfundingMap, SimpleCrowdfundingMapV1};
+
+        let mut reads: usize = 0;
+        let mut writes: usize = 0;
+        SimpleCrowdfundingMap::<T>::drain().for_each(|(k, v)| {
+            reads += 1;
+            SimpleCrowdfundingMapV1::<T>::insert(k, v);
+            writes += 1;
+        });
+
+        let mut reads_investments: usize = 0;
+        let mut writes_investments: usize = 0;
+        InvestmentMap::<T>::drain().for_each(|(k, v)| {
+            reads_investments += 1;
+            InvestmentMapV1::<T>::insert(k, v);
+            writes_investments += 1;
+        });
+
+        move_storage_from_pallet(
+            "SimpleCrowdfundingMapV1".as_bytes(),
+            "Deip".as_bytes(),
+            "DeipInvestmentOpportunity".as_bytes()
+        );
+        reads *= 2;
+        writes *= 2;
+
+        move_storage_from_pallet(
+            "InvestmentMapV1".as_bytes(),
+            "Deip".as_bytes(),
+            "DeipInvestmentOpportunity".as_bytes()
+        );
+        reads_investments *= 2;
+        writes_investments *= 2;
+
+        let reads_total: usize = reads + reads_investments;
+        let reads_total: Weight = reads_total.try_into().unwrap_or(Weight::MAX);
+
+        let writes_total: usize = writes + writes_investments;
+        let writes_total: Weight = writes_total.try_into().unwrap_or(Weight::MAX);
+
+        return T::DbWeight::get().reads_writes(reads_total, writes_total)
+    }
+
+    pub(crate) fn migrate_projects_hasher<T: Config>() -> Weight
+    {
+        use super::{ProjectMap, ProjectMapV1};
+        use super::{ProjectIdByTeamId, ProjectIdByTeamIdV1};
+        let mut reads: usize = 0;
+        ProjectMap::<T>::drain().for_each(|(k, v)| {
+            reads += 1;
+            ProjectMapV1::<T>::insert(k, v);
+        });
+        ProjectIdByTeamId::<T>::drain().for_each(|(k, k2, v)| {
+            reads += 1;
+            ProjectIdByTeamIdV1::<T>::insert(k, k2, v);
+        });
+        let reads = reads.try_into().unwrap_or(Weight::MAX);
+        T::DbWeight::get().reads_writes(reads, reads)
+    }
+
+    pub(crate) fn migrate_project_contents_hasher<T: Config>() -> Weight
+    {
+        use super::{
+            ProjectContentMap, ProjectContentMapV1,
+            ContentIdByProjectId, ContentIdByProjectIdV1
+        };
+        let mut reads: usize = 0;
+        ProjectContentMap::<T>::drain().for_each(|(k, v)| {
+            reads += 1;
+            ProjectContentMapV1::<T>::insert(k, v);
+        });
+        ContentIdByProjectId::drain().for_each(|(k, k2, v)| {
+            reads += 1;
+            ContentIdByProjectIdV1::insert(k, k2, v);
+        });
+        let reads = reads.try_into().unwrap_or(Weight::MAX);
+        T::DbWeight::get().reads_writes(reads, reads)
+    }
+
+    pub(crate) fn migrate_nda_hasher<T: Config>() -> Weight
+    {
+        use super::{
+            NdaMap, NdaMapV1,
+            NdaAccessRequestMap, NdaAccessRequestMapV1
+        };
+        let mut reads: usize = 0;
+        NdaMap::<T>::drain().for_each(|(k, v)| {
+            reads += 1;
+            NdaMapV1::<T>::insert(k, v);
+        });
+        NdaAccessRequestMap::<T>::drain().for_each(|(k, v)| {
+            reads += 1;
+            NdaAccessRequestMapV1::<T>::insert(k, v);
+        });
+        let reads = reads.try_into().unwrap_or(Weight::MAX);
+        T::DbWeight::get().reads_writes(reads, reads)
+    }
+
+    pub(crate) fn migrate_reviews_hasher<T: Config>() -> Weight
+    {
+        use super::{ReviewMap, ReviewMapV1};
+        use super::{ReviewIdByProjectIdV1, ReviewIdByProjectId};
+        use super::{ReviewIdByContentIdV1, ReviewIdByContentId};
+        use super::{ReviewIdByAccountIdV1, ReviewIdByAccountId};
+        use super::{VoteIdByReviewIdV1, VoteIdByReviewId};
+
+        let mut reads: usize = 0;
+        ReviewMap::<T>::drain().for_each(|(k, v)| {
+            reads += 1;
+            ReviewMapV1::<T>::insert(k, v);
+        });
+        ReviewIdByProjectId::drain().for_each(|(k, k2, v)| {
+            reads += 1;
+            ReviewIdByProjectIdV1::insert(k, k2, v);
+        });
+        ReviewIdByContentId::drain().for_each(|(k, k2, v)| {
+            reads += 1;
+            ReviewIdByContentIdV1::insert(k, k2, v);
+        });
+        ReviewIdByAccountId::<T>::drain().for_each(|(k, k2, v)| {
+            reads += 1;
+            ReviewIdByAccountIdV1::<T>::insert(k, k2, v);
+        });
+        VoteIdByReviewId::<T>::drain().for_each(|(k, k2, v)| {
+            reads += 1;
+            VoteIdByReviewIdV1::<T>::insert(k, k2, v);
+        });
+        let reads = reads.try_into().unwrap_or(Weight::MAX);
+        T::DbWeight::get().reads_writes(reads, reads)
     }
 }
 
@@ -538,52 +713,14 @@ decl_module! {
         fn deposit_event() = default;
 
         fn on_runtime_upgrade() -> Weight {
-            if Module::<T>::pallet_storage_version() == StorageVersion::V1 {
-                use frame_support::storage::migration::move_storage_from_pallet;
-                use core::convert::TryInto;
-
-                let mut reads: usize = 0;
-                let mut writes: usize = 0;
-                SimpleCrowdfundingMap::<T>::drain().for_each(|(k, v)| {
-                    reads += 1;
-                    SimpleCrowdfundings::<T>::insert(k, v);
-                    writes += 1;
-                });
-
-                let mut reads_investments: usize = 0;
-                let mut writes_investments: usize = 0;
-                InvestmentMap::<T>::drain().for_each(|(k, v)| {
-                    reads_investments += 1;
-                    Investments::<T>::insert(k, v);
-                    writes_investments += 1;
-                });
-
-                move_storage_from_pallet(
-                    "SimpleCrowdfundings".as_bytes(),
-                    "Deip".as_bytes(),
-                    "DeipInvestmentOpportunity".as_bytes()
-                );
-                reads *= 2;
-                writes *= 2;
-
-                move_storage_from_pallet(
-                    "Investments".as_bytes(),
-                    "Deip".as_bytes(),
-                    "DeipInvestmentOpportunity".as_bytes()
-                );
-                reads_investments *= 2;
-                writes_investments *= 2;
-
-                PalletStorageVersion::put(StorageVersion::V2);
-                let writes_version: usize = 1;
-
-                let reads_total: usize = reads + reads_investments;
-                let reads_total: Weight = reads_total.try_into().unwrap_or(Weight::MAX);
-
-                let writes_total: usize = writes + writes_investments + writes_version;
-                let writes_total: Weight = writes_total.try_into().unwrap_or(Weight::MAX);
-
-                return T::DbWeight::get().reads_writes(reads_total, writes_total)
+            if Module::<T>::pallet_storage_version() == StorageVersion::V0 {
+                let mut weight = v1::migrate_investment_opportunity::<T>();
+                weight += v1::migrate_projects_hasher::<T>();
+                weight += v1::migrate_project_contents_hasher::<T>();
+                weight += v1::migrate_nda_hasher::<T>();
+                weight += v1::migrate_reviews_hasher::<T>();
+                weight += v1::set_storage_version::<T>();
+                return weight;
             }
             0
         }
@@ -623,10 +760,10 @@ decl_module! {
                 ensure!(Domains::contains_key(&domain), Error::<T>::DomainNotExists);
             }
 
-            ensure!(!ProjectMap::<T>::contains_key(project.external_id), Error::<T>::ProjectAlreadyExists);
+            ensure!(!ProjectMapV1::<T>::contains_key(project.external_id), Error::<T>::ProjectAlreadyExists);
 
-            ProjectMap::<T>::insert(project.external_id, project.clone());
-            ProjectIdByTeamId::<T>::insert(project.team_id.clone(), project.external_id, ());
+            ProjectMapV1::<T>::insert(project.external_id, project.clone());
+            ProjectIdByTeamIdV1::<T>::insert(project.team_id.clone(), project.external_id, ());
 
             Self::deposit_event(RawEvent::ProjectCreated(account, project));
         }
@@ -710,7 +847,7 @@ decl_module! {
             // https://substrate.dev/docs/en/knowledgebase/runtime/origin
             let account = ensure_signed(origin)?;
 
-            ProjectMap::<T>::mutate_exists(project_id, |maybe_project| -> DispatchResult {
+            ProjectMapV1::<T>::mutate_exists(project_id, |maybe_project| -> DispatchResult {
                 let project = maybe_project.as_mut().ok_or(Error::<T>::NoSuchProject)?;
 
                 ensure!(project.team_id == account, Error::<T>::NoPermission);
@@ -766,9 +903,9 @@ decl_module! {
                 references
             };
 
-            ensure!(!ProjectContentMap::<T>::contains_key(&content.external_id), Error::<T>::ProjectContentAlreadyExists);
+            ensure!(!ProjectContentMapV1::<T>::contains_key(&content.external_id), Error::<T>::ProjectContentAlreadyExists);
 
-            let project = ProjectMap::<T>::get(content.project_external_id);
+            let project = ProjectMapV1::<T>::get(content.project_external_id);
 
             ensure!(!project.external_id.is_zero(), Error::<T>::NoSuchProject);
             ensure!(project.team_id == content.team_id, Error::<T>::ProjectNotBelongToTeam);
@@ -777,13 +914,13 @@ decl_module! {
             if let Some(references) = &content.references {
                 let is_all_references_exists = references
                     .iter()
-                    .all(|&reference| ProjectContentMap::<T>::contains_key(reference));
+                    .all(|&reference| ProjectContentMapV1::<T>::contains_key(reference));
 
                 ensure!(is_all_references_exists, Error::<T>::NoSuchReference);
             }
 
-            ProjectContentMap::<T>::insert(content.external_id, content.clone());
-            ContentIdByProjectId::insert(content.project_external_id, content.external_id, ());
+            ProjectContentMapV1::<T>::insert(content.external_id, content.clone());
+            ContentIdByProjectIdV1::insert(content.project_external_id, content.external_id, ());
 
             Self::deposit_event(RawEvent::ProjectContnetCreated(account, content.external_id));
         }
@@ -796,7 +933,7 @@ decl_module! {
         // /// - `contract_hash`: Hash of the contract
         // /// - `maybe_start_date`: Optional. Unix Timestamp. Entry into force of the contract
         // /// - `parties`: List of involved Parties
-        // /// - `projects`: List of involved Projects
+        // /// - `projects`: List of involved ProjectMapV1
         // #[weight = {
         //     let p = parties.len() as u32;
         //     T::DeipWeightInfo::create_project_nda(p)
@@ -828,7 +965,7 @@ decl_module! {
         //
         //     projects.iter()
         //         .try_for_each(|id| -> DispatchResult {
-        //             let project = ProjectMap::<T>::get(id);
+        //             let project = ProjectMapV1::<T>::get(id);
         //
         //             ensure!(!project.external_id.is_zero(), Error::<T>::NoSuchProject);
         //             ensure!(parties.contains(&project.team_id), Error::<T>::TeamOfAllProjectsMustSpecifiedAsParty);
@@ -855,7 +992,7 @@ decl_module! {
         //     nda_list.insert(index_to_insert_nda, (nda.external_id, contract_creator.clone()));
         //     Ndas::<T>::put(nda_list);
         //
-        //     NdaMap::<T>::insert(nda.external_id, nda);
+        //     NdaMapV1::<T>::insert(nda.external_id, nda);
         //
         //     // Emit an event that the NDA was created.
         //     Self::deposit_event(RawEvent::NdaCreated(contract_creator, external_id));
@@ -884,7 +1021,7 @@ decl_module! {
         //     let account = ensure_signed(origin)?;
         //     let timestamp = pallet_timestamp::Pallet::<T>::get();
         //
-        //     let nda = NdaMap::<T>::get(nda_external_id);
+        //     let nda = NdaMapV1::<T>::get(nda_external_id);
         //
         //     ensure!(!nda.external_id.is_zero(), Error::<T>::NoSuchNda);
         //     ensure!(nda.start_date <= Some(timestamp), Error::<T>::NdaContractIsNotActiveYet);
@@ -909,7 +1046,7 @@ decl_module! {
         //     nda_requests.insert(index_to_insert_nda_request, (external_id, nda_external_id, account.clone()));
         //     NdaAccessRequests::<T>::put(nda_requests);
         //
-        //     NdaAccessRequestMap::<T>::insert(nda_request.external_id, nda_request);
+        //     NdaAccessRequestMapV1::<T>::insert(nda_request.external_id, nda_request);
         //
         //     // Emit an event that the NDA was created.
         //     Self::deposit_event(RawEvent::NdaAccessRequestCreated(account, external_id));
@@ -935,11 +1072,11 @@ decl_module! {
         // ) {
         //     let account = ensure_signed(origin)?;
         //
-        //     NdaAccessRequestMap::<T>::mutate_exists(external_id, |maybe_nda_access_request| -> DispatchResult {
+        //     NdaAccessRequestMapV1::<T>::mutate_exists(external_id, |maybe_nda_access_request| -> DispatchResult {
         //         let mut nda_access_request = maybe_nda_access_request.as_mut().ok_or(Error::<T>::NoSuchNdaAccessRequest)?;
         //
         //         ensure!(nda_access_request.status == NdaAccessRequestStatus::Pending, Error::<T>::NdaAccessRequestAlreadyFinalized);
-        //         ensure!(NdaMap::<T>::contains_key(nda_access_request.nda_external_id), Error::<T>::NoSuchNda);
+        //         ensure!(NdaMapV1::<T>::contains_key(nda_access_request.nda_external_id), Error::<T>::NoSuchNda);
         //
         //         nda_access_request.status = NdaAccessRequestStatus::Fulfilled;
         //         nda_access_request.grantor = Some(account.clone());
@@ -968,12 +1105,12 @@ decl_module! {
         //  ) {
         //      let account = ensure_signed(origin)?;
         //
-        //      NdaAccessRequestMap::<T>::mutate_exists(external_id, |maybe_nda_access_request| -> DispatchResult {
+        //      NdaAccessRequestMapV1::<T>::mutate_exists(external_id, |maybe_nda_access_request| -> DispatchResult {
         //         let mut nda_access_request = maybe_nda_access_request.as_mut().ok_or(Error::<T>::NoSuchNdaAccessRequest)?;
         //
         //
         //         ensure!(nda_access_request.status == NdaAccessRequestStatus::Pending, Error::<T>::NdaAccessRequestAlreadyFinalized);
-        //         ensure!(NdaMap::<T>::contains_key(nda_access_request.nda_external_id), Error::<T>::NoSuchNda);
+        //         ensure!(NdaMapV1::<T>::contains_key(nda_access_request.nda_external_id), Error::<T>::NoSuchNda);
         //MomentOf
         //         nda_access_request.status = NdaAccessRequestStatus::Rejected;
         //
@@ -1094,17 +1231,17 @@ decl_module! {
 
 impl<T: Config> Module<T> {
     fn is_project_finished(project_id: &ProjectId) -> bool {
-        ContentIdByProjectId::iter_prefix(project_id)
-            .map(|(k, _)| ProjectContentMap::<T>::get(k))
+        ContentIdByProjectIdV1::iter_prefix(project_id)
+            .map(|(k, _)| ProjectContentMapV1::<T>::get(k))
             .any(|c| c.content_type == ProjectContentType::FinalResult)
     }
 
     pub fn get_project(project_id: &ProjectId) -> Option<ProjectOf<T>> {
-        ProjectMap::<T>::try_get(project_id).ok()
+        ProjectMapV1::<T>::try_get(project_id).ok()
     }
 
     pub fn try_get_project_team(id: &ProjectId) -> Option<AccountIdOf<T>> {
-        match ProjectMap::<T>::try_get(*id) {
+        match ProjectMapV1::<T>::try_get(*id) {
             Err(_) => None,
             Ok(project) => Some(project.team_id),
         }
@@ -1115,15 +1252,15 @@ impl<T: Config> Module<T> {
     }
 
     pub fn get_project_content(id: &ProjectContentId) -> Option<ProjectContentOf<T>> {
-        ProjectContentMap::<T>::try_get(id).ok()
+        ProjectContentMapV1::<T>::try_get(id).ok()
     }
 
     pub fn get_nda(nda_id: &NdaId) -> Option<NdaOf<T>> {
-        NdaMap::<T>::try_get(nda_id).ok()
+        NdaMapV1::<T>::try_get(nda_id).ok()
     }
 
     pub fn get_review(id: &ReviewId) -> Option<ReviewOf<T>> {
-        ReviewMap::<T>::try_get(id).ok()
+        ReviewMapV1::<T>::try_get(id).ok()
     }
 
     pub fn get_investment_opportunity(id: &InvestmentId) -> Option<SimpleCrowdfundingOf<T>> {

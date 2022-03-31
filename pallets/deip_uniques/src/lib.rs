@@ -10,14 +10,7 @@ pub mod pallet {
     #[cfg(feature = "std")]
     use frame_support::traits::GenesisBuild;
 
-    use frame_support::{
-        dispatch::{DispatchResult, DispatchResultWithPostInfo, UnfilteredDispatchable, Vec},
-        ensure,
-        pallet_prelude::{OptionQuery, StorageMap, StorageValue, ValueQuery},
-        sp_runtime::traits::{CheckedAdd, One, StaticLookup},
-        traits::Get,
-        BoundedVec, Identity, Parameter,
-    };
+    use frame_support::{dispatch::{DispatchResult, DispatchResultWithPostInfo, UnfilteredDispatchable, Vec}, ensure, pallet_prelude::{OptionQuery, StorageMap, StorageValue, ValueQuery}, sp_runtime::traits::{CheckedAdd, One, StaticLookup}, traits::Get, BoundedVec, Identity, Parameter, Blake2_128Concat};
     use frame_system::{ensure_signed, pallet_prelude::OriginFor};
     use pallet_uniques::{
         Call as UniquesCall, DestroyWitness, Pallet as UniquesPallet, WeightInfo,
@@ -53,9 +46,46 @@ pub mod pallet {
         type MaxOriginClassId: Get<Self::ClassId>;
     }
 
+    use frame_support::traits::StorageVersion;
+    use frame_support::dispatch::{GetStorageVersion, Weight};
+    pub const V0: StorageVersion = StorageVersion::new(0);
+    pub const V1: StorageVersion = StorageVersion::new(1);
+
     #[pallet::pallet]
     #[pallet::generate_store(pub(super) trait Store)]
+    #[pallet::storage_version(V1)]
     pub struct Pallet<T>(_);
+
+    use frame_support::traits::Hooks;
+    use frame_system::pallet_prelude::BlockNumberFor;
+
+    #[doc(hidden)]
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_runtime_upgrade() -> Weight {
+            use core::convert::TryInto;
+            if Pallet::<T>::on_chain_storage_version() == V0
+                && Pallet::<T>::current_storage_version() == V1
+            {
+                let mut reads: usize = 0;
+                NftClassIdByDeipNftClassId::<T>::drain()
+                    .map(|x| { reads += 1; x })
+                    .for_each(|(k, v)| { NftClassIdByDeipNftClassIdV1::<T>::insert(k, v); });
+                DeipNftClassIdByNftClassId::<T>::drain()
+                    .map(|x| { reads += 1; x })
+                    .for_each(|(k, v)| { DeipNftClassIdByNftClassIdV1::<T>::insert(k, v); });
+                ProjectIdByDeipNftClassId::<T>::drain()
+                    .map(|x| { reads += 1; x })
+                    .for_each(|(k, v)| { ProjectIdByDeipNftClassIdV1::<T>::insert(k, v); });
+                NftBalanceMap::<T>::drain()
+                    .map(|x| { reads += 1; x })
+                    .for_each(|(k, v)| { NftBalanceMapV1::<T>::insert(k, v); });
+                let reads: Weight = reads.try_into().unwrap_or(Weight::MAX);
+                return T::DbWeight::get().reads_writes(reads, reads);
+            }
+            0
+        }
+    }
 
     #[pallet::genesis_config]
     pub struct GenesisConfig<T> {
@@ -89,12 +119,30 @@ pub mod pallet {
         <T as pallet_uniques::Config>::ClassId,
         OptionQuery,
     >;
+    // Migrate key hasher:
+    #[pallet::storage]
+    pub type NftClassIdByDeipNftClassIdV1<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        DeipNftClassIdOf<T>,
+        <T as pallet_uniques::Config>::ClassId,
+        OptionQuery,
+    >;
 
     /// Storage for matching Deip class id and origin `pallet_uniques` class id.
     #[pallet::storage]
     pub type DeipNftClassIdByNftClassId<T: Config> = StorageMap<
         _,
         Identity,
+        <T as pallet_uniques::Config>::ClassId,
+        DeipNftClassIdOf<T>,
+        OptionQuery,
+    >;
+    // Migrate key hasher:
+    #[pallet::storage]
+    pub type DeipNftClassIdByNftClassIdV1<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
         <T as pallet_uniques::Config>::ClassId,
         DeipNftClassIdOf<T>,
         OptionQuery,
@@ -108,11 +156,19 @@ pub mod pallet {
     #[pallet::storage]
     pub(super) type ProjectIdByDeipNftClassId<T> =
         StorageMap<_, Identity, DeipNftClassIdOf<T>, DeipProjectIdOf<T>, OptionQuery>;
+    // Migrate key hasher:
+    #[pallet::storage]
+    pub(super) type ProjectIdByDeipNftClassIdV1<T> =
+        StorageMap<_, Blake2_128Concat, DeipNftClassIdOf<T>, DeipProjectIdOf<T>, OptionQuery>;
 
     /// Storage with assets classes ant accounts which hold corresponding asset.
     #[pallet::storage]
     pub(super) type NftBalanceMap<T: Config> =
         StorageMap<_, Identity, DeipNftClassIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
+    // Migrate key hasher:
+    #[pallet::storage]
+    pub(super) type NftBalanceMapV1<T: Config> =
+        StorageMap<_, Blake2_128Concat, DeipNftClassIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
 
     #[pallet::error]
     pub enum Error<T> {
@@ -148,9 +204,9 @@ pub mod pallet {
             witness: DestroyWitness,
         ) -> DispatchResultWithPostInfo {
             // If id belongs to project, refuse to destroy.
-            if let Some(deip_class) = DeipNftClassIdByNftClassId::<T>::get(class) {
+            if let Some(deip_class) = DeipNftClassIdByNftClassIdV1::<T>::get(class) {
                 ensure!(
-                    !ProjectIdByDeipNftClassId::<T>::contains_key(deip_class),
+                    !ProjectIdByDeipNftClassIdV1::<T>::contains_key(deip_class),
                     Error::<T>::ProjectSecurityTokenCannotBeDestroyed
                 );
             }
@@ -158,11 +214,11 @@ pub mod pallet {
             // If asset was destroyed, clean storages
             if res.is_ok() {
                 let deip_class_id =
-                    DeipNftClassIdByNftClassId::<T>::mutate_exists(class, |v| v.take());
+                    DeipNftClassIdByNftClassIdV1::<T>::mutate_exists(class, |v| v.take());
                 // ClassId is unique, so entries can be safely removed.
                 if let Some(key) = deip_class_id {
-                    NftClassIdByDeipNftClassId::<T>::mutate_exists(key, |v| *v = None);
-                    NftBalanceMap::<T>::mutate_exists(key, |v| *v = None);
+                    NftClassIdByDeipNftClassIdV1::<T>::mutate_exists(key, |v| *v = None);
+                    NftBalanceMapV1::<T>::mutate_exists(key, |v| *v = None);
                 }
             }
             res
@@ -372,7 +428,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             // If id belongs to project, refuse to destroy.
             ensure!(
-                !ProjectIdByDeipNftClassId::<T>::contains_key(class),
+                !ProjectIdByDeipNftClassIdV1::<T>::contains_key(class),
                 Error::<T>::ProjectSecurityTokenCannotBeDestroyed
             );
 
@@ -383,9 +439,9 @@ pub mod pallet {
             let res = call.dispatch_bypass_filter(origin);
 
             if res.is_ok() {
-                DeipNftClassIdByNftClassId::<T>::mutate_exists(origin_class_id, |v| *v = None);
-                NftClassIdByDeipNftClassId::<T>::mutate_exists(class, |v| *v = None);
-                NftBalanceMap::<T>::mutate_exists(class, |v| *v = None);
+                DeipNftClassIdByNftClassIdV1::<T>::mutate_exists(origin_class_id, |v| *v = None);
+                NftClassIdByDeipNftClassIdV1::<T>::mutate_exists(class, |v| *v = None);
+                NftBalanceMapV1::<T>::mutate_exists(class, |v| *v = None);
             }
 
             res
@@ -412,9 +468,9 @@ pub mod pallet {
             let result = call.dispatch_bypass_filter(origin)?;
 
             // If project id exists for class id.
-            if ProjectIdByDeipNftClassId::<T>::contains_key(class) {
+            if ProjectIdByDeipNftClassIdV1::<T>::contains_key(class) {
                 // Check balance map for the class id.
-                NftBalanceMap::<T>::mutate_exists(class, |maybe| {
+                NftBalanceMapV1::<T>::mutate_exists(class, |maybe| {
                     let account = owner.into();
                     if let Some(balances) = maybe.as_mut() {
                         // If vec for this class doesn't contain asset, add account to map.
@@ -439,7 +495,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             // If id belongs to project, refuse to burn.
             ensure!(
-                !ProjectIdByDeipNftClassId::<T>::contains_key(class),
+                !ProjectIdByDeipNftClassIdV1::<T>::contains_key(class),
                 Error::<T>::ProjectSecurityTokenCannotBeBurned
             );
 
@@ -479,8 +535,8 @@ pub mod pallet {
             let ok = call.dispatch_bypass_filter(origin)?;
 
             // If project id exists for class id.
-            if ProjectIdByDeipNftClassId::<T>::contains_key(class) {
-                NftBalanceMap::<T>::mutate_exists(class, |maybe| {
+            if ProjectIdByDeipNftClassIdV1::<T>::contains_key(class) {
+                NftBalanceMapV1::<T>::mutate_exists(class, |maybe| {
                     let account = dest.into();
                     if let Some(balances) = maybe.as_mut() {
                         if let Err(i) = balances.binary_search(&account) {
@@ -518,7 +574,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             // If id belongs to project, refuse to freeze.
             ensure!(
-                !ProjectIdByDeipNftClassId::<T>::contains_key(class),
+                !ProjectIdByDeipNftClassIdV1::<T>::contains_key(class),
                 Error::<T>::ProjectSecurityTokenCannotBeFrozen
             );
 
@@ -555,7 +611,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             // If id belongs to project, refuse to freeze.
             ensure!(
-                !ProjectIdByDeipNftClassId::<T>::contains_key(class),
+                !ProjectIdByDeipNftClassIdV1::<T>::contains_key(class),
                 Error::<T>::ProjectSecurityTokenCannotBeFrozen
             );
 
@@ -741,7 +797,7 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         /// Convert DeipNftClassId to origin class id.
         fn deip_to_origin_class_id(class: DeipNftClassIdOf<T>) -> Result<T::NftClassId, Error<T>> {
-            NftClassIdByDeipNftClassId::<T>::get(class)
+            NftClassIdByDeipNftClassIdV1::<T>::get(class)
                 .ok_or(Error::<T>::DeipNftClassIdDoesNotExist)
         }
 
@@ -764,7 +820,7 @@ pub mod pallet {
 
             // Check if NFT with this deip id exist.
             ensure!(
-                !NftClassIdByDeipNftClassId::<T>::contains_key(class),
+                !NftClassIdByDeipNftClassIdV1::<T>::contains_key(class),
                 Error::<T>::DeipNftClassIdExists
             );
 
@@ -782,12 +838,12 @@ pub mod pallet {
             NextNftClassId::<T>::put(next_class_id);
 
             // Insert id to map.
-            NftClassIdByDeipNftClassId::<T>::insert(class, new_class_id);
-            DeipNftClassIdByNftClassId::<T>::insert(new_class_id, class);
+            NftClassIdByDeipNftClassIdV1::<T>::insert(class, new_class_id);
+            DeipNftClassIdByNftClassIdV1::<T>::insert(new_class_id, class);
 
             // IF project id is provided add id to projects map.
             if let Some(project_id) = project_id {
-                ProjectIdByDeipNftClassId::<T>::insert(class, project_id);
+                ProjectIdByDeipNftClassIdV1::<T>::insert(class, project_id);
                 // ??? @TODO
                 // AssetIdByProjectId::<T>::mutate_exists(project_id, |tokens| {
                 //     match tokens.as_mut() {
