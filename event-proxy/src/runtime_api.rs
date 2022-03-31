@@ -8571,7 +8571,7 @@ pub mod api {
                     PartialEq,
                     scale_info :: TypeInfo,
                 )]
-                pub enum Terms<_0> {
+                pub enum Terms {
                     #[codec(index = 0)]
                     GenericContractAgreement,
                 }
@@ -8731,12 +8731,7 @@ pub mod api {
                     hash: ::subxt::sp_core::H256,
                     activation_time: ::core::option::Option<::core::primitive::u64>,
                     expiration_time: ::core::option::Option<::core::primitive::u64>,
-                    terms: runtime_types::pallet_deip::contract::Terms<
-                        runtime_types::deip_asset_system::asset::Asset<
-                            runtime_types::primitive_types::H160,
-                            ::core::primitive::u128,
-                        >,
-                    >,
+                    terms: runtime_types::pallet_deip::contract::Terms,
                 },
                 #[codec(index = 11)]
                 accept_contract_agreement {
