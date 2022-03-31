@@ -122,7 +122,7 @@ fn create_ok_nda_content_access_request(
     (access_request_id, expected_nda_request)
 }
 
-fn create_issue_asset(
+fn create_mint_asset(
     account_id: AccountIdOf<Test>,
     id: DeipAssetIdOf<Test>,
     amount: DeipAssetBalanceOf<Test>,
@@ -992,7 +992,7 @@ fn simple_crowdfunding_hard_cap_reached() {
 
         let base_asset_id = DeipAssetId(3u32);
         let base_asset_total = 120_000u64;
-        create_issue_asset(ALICE_ACCOUNT_ID, base_asset_id, base_asset_total, None);
+        create_mint_asset(ALICE_ACCOUNT_ID, base_asset_id, base_asset_total, None);
 
         let call = pallet_deip_assets::Call::<Test>::transfer {
             id: base_asset_id,
@@ -1004,11 +1004,11 @@ fn simple_crowdfunding_hard_cap_reached() {
 
         let usd_id = DeipAssetId(0u32);
         let usd_total = 100_000u64;
-        create_issue_asset(*account_id, usd_id, usd_total, Some(*project_id));
+        create_mint_asset(*account_id, usd_id, usd_total, Some(*project_id));
 
         let eur_id = DeipAssetId(1u32);
         let eur_total = 80_000u64;
-        create_issue_asset(*account_id, eur_id, eur_total, Some(*project_id));
+        create_mint_asset(*account_id, eur_id, eur_total, Some(*project_id));
 
         let balance_before = DeipAssets::account_balance(account_id, &base_asset_id);
 
@@ -1086,7 +1086,7 @@ fn simple_crowdfunding_expired() {
 
         let base_asset_id = DeipAssetId(3u32);
         let base_asset_total = 120_000u64;
-        create_issue_asset(*account_id, base_asset_id, base_asset_total, Some(*project_id));
+        create_mint_asset(*account_id, base_asset_id, base_asset_total, Some(*project_id));
 
         let call = pallet_deip_assets::Call::<Test>::transfer(
             base_asset_id,
@@ -1106,11 +1106,11 @@ fn simple_crowdfunding_expired() {
 
         let usd_id = DeipAssetId(0u32);
         let usd_total = 100_000u64;
-        create_issue_asset(*account_id, usd_id, usd_total, Some(*project_id));
+        create_mint_asset(*account_id, usd_id, usd_total, Some(*project_id));
 
         let eur_id = DeipAssetId(1u32);
         let eur_total = 80_000u64;
-        create_issue_asset(*account_id, eur_id, eur_total, Some(*project_id));
+        create_mint_asset(*account_id, eur_id, eur_total, Some(*project_id));
 
         let balance_before = DeipAssets::account_balance(account_id, &base_asset_id);
         let bob_balance_before = DeipAssets::account_balance(&BOB_ACCOUNT_ID, &base_asset_id);
@@ -1227,7 +1227,7 @@ fn two_simultaneous_crowdfundings_expired() {
     ext.execute_with(|| {
         let base_asset_id = DeipAssetId(3u32);
         let base_asset_total = 120_000u64;
-        create_issue_asset(DEFAULT_ACCOUNT_ID, base_asset_id, base_asset_total, None);
+        create_mint_asset(DEFAULT_ACCOUNT_ID, base_asset_id, base_asset_total, None);
 
         let call = pallet_deip_assets::Call::<Test>::transfer(
             base_asset_id,
@@ -1247,11 +1247,11 @@ fn two_simultaneous_crowdfundings_expired() {
 
         let usd_id = DeipAssetId(0u32);
         let usd_total = 100_000u64;
-        create_issue_asset(ALICE_ACCOUNT_ID, usd_id, usd_total, None);
+        create_mint_asset(ALICE_ACCOUNT_ID, usd_id, usd_total, None);
 
         let eur_id = DeipAssetId(1u32);
         let eur_total = 80_000u64;
-        create_issue_asset(BOB_ACCOUNT_ID, eur_id, eur_total, None);
+        create_mint_asset(BOB_ACCOUNT_ID, eur_id, eur_total, None);
 
         let bob_usd_balance_before = DeipAssets::account_balance(&BOB_ACCOUNT_ID, &usd_id);
         let bob_eur_balance_before = DeipAssets::account_balance(&BOB_ACCOUNT_ID, &eur_id);

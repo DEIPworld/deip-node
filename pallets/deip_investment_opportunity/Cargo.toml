@@ -36,7 +36,7 @@ deip_serializable_u128 = { path = "../../deip_common/deip_serializable_u128", de
 deip-asset-system = { path = "../../deip_common/deip_asset_system", default-features = false }
 
 # Benchmarking deips:
-pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
+pallet-balances = { git = "https://github.com/DEIPworld/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
 pallet-deip-assets = { path = "../deip_assets", default-features = false, optional = true }
 pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
 deip-projects-info = {path = "../../deip_common/deip_projects_info", default-features = false, optional = true }

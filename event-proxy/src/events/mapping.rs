@@ -38,9 +38,9 @@ where
 
         Event::DeipInvestmentOpportunity(e) => match_event_deip_investment_opportunity(e),
 
-        Event::ParityTechAssets(assets_event) => match_event_deip_assets(assets_event),
+        Event::Assets(assets_event) => match_event_deip_assets(assets_event),
 
-        Event::ParityTechUniques(..)
+        Event::Uniques(..)
 
         | Event::Session(..) | Event::ImOnline(..)
 
@@ -49,7 +49,7 @@ where
         | Event::System(_)
         | Event::Utility(_)
         | Event::Grandpa(_)
-        | Event::ParityTechBalances(_)
+        | Event::Balances(_)
         | Event::Sudo(_)
         | Event::DeipVesting(_)
         | Event::Multisig(_)

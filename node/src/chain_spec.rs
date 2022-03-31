@@ -1,9 +1,9 @@
 use appchain_deip_runtime::{
     currency::{OCTS, UNITS as DEIP},
     opaque::Block, opaque::SessionKeys, Balance, BeefyConfig, ImOnlineConfig, OctopusAppchainConfig,
-    AccountId, AssetsConfig, BabeConfig, DeipConfig, DeipDaoConfig,
+    AccountId, DeipAssetsConfig, BabeConfig, DeipConfig, DeipDaoConfig,
     DeipPortalConfig, DeipProposalConfig, DeipVestingConfig, GenesisConfig, GrandpaConfig,
-    ParityTechBalancesConfig, Signature, SudoConfig, SystemConfig, UniquesConfig, SessionConfig,
+    BalancesConfig, Signature, SudoConfig, SystemConfig, DeipUniquesConfig, SessionConfig,
     OctopusLposConfig, WASM_BINARY, DeipEcosystemFundConfig, DeipInvestmentOpportunityConfig,
 };
 
@@ -15,7 +15,6 @@ use serde::{Deserialize, Serialize};
 use sp_core::{sr25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
-use sp_core::crypto::{Ss58Codec};
 
 use beefy_primitives::crypto::AuthorityId as BeefyId;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
@@ -267,7 +266,7 @@ fn genesis(
             // Add Wasm runtime to storage.
             code: wasm_binary.to_vec(),
         },
-        parity_tech_balances: ParityTechBalancesConfig {
+        balances: BalancesConfig {
             balances: endowed_accounts
         },
         session: SessionConfig {
@@ -308,8 +307,8 @@ fn genesis(
             domains: domains.iter().cloned().map(|k| (k, Domain { external_id: k })).collect(),
             domain_count: domains.len() as u32,
         },
-        assets: AssetsConfig::default(),
-        uniques: UniquesConfig::default(),
+        deip_assets: DeipAssetsConfig::default(),
+        deip_uniques: DeipUniquesConfig::default(),
         deip_proposal: DeipProposalConfig {},
         deip_dao: DeipDaoConfig {},
         deip_portal: DeipPortalConfig {},

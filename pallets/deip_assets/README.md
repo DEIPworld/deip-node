@@ -7,7 +7,7 @@ This pallet exposes the following extrinsic calls:
 ### Create a new class of fungible assets from a public origin
 
 ```rust
-pub fn deip_create_asset(
+pub fn deip_create(
     origin: OriginFor<T>,
     id: DeipAssetIdOf<T>,
     admin: T::DeipAccountId,
@@ -31,7 +31,7 @@ pub fn deip_destroy(
 ### Mint assets of a particular class
 
 ```rust
-pub fn deip_issue_asset(
+pub fn deip_mint(
     origin: OriginFor<T>,
     id: DeipAssetIdOf<T>,
     beneficiary: T::DeipAccountId,
