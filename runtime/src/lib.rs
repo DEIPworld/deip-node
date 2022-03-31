@@ -250,9 +250,23 @@ parameter_types! {
 
 // Configure FRAME pallets to include in runtime.
 
+use frame_support::traits::Contains;
+pub struct CallFilter;
+impl Contains<Call> for CallFilter {
+    fn contains(t: &Call) -> bool {
+        match t {
+            Call::Assets(pallet_assets::Call::destroy { .. }) => false,
+            Call::Assets(pallet_assets::Call::burn { .. }) => false,
+            Call::Uniques(pallet_uniques::Call::destroy { .. }) => false,
+            Call::Uniques(pallet_uniques::Call::burn { .. }) => false,
+            _ => true,
+        }
+    }
+}
+
 impl frame_system::Config for Runtime {
     /// The basic call filter to use in dispatchable.
-    type BaseCallFilter = Everything;
+    type BaseCallFilter = CallFilter;
     /// Block & extrinsics weights: base values and limits.
     type BlockWeights = RuntimeBlockWeights;
     /// The maximum length of a block (in bytes).
