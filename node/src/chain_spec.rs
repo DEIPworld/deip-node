@@ -3,7 +3,7 @@ use appchain_deip_runtime::{
     opaque::Block, opaque::SessionKeys, Balance, BeefyConfig, ImOnlineConfig, OctopusAppchainConfig,
     AccountId, AssetsConfig, BabeConfig, DeipConfig, DeipDaoConfig,
     DeipPortalConfig, DeipProposalConfig, DeipVestingConfig, GenesisConfig, GrandpaConfig,
-    ParityTechBalancesConfig, Signature, SudoConfig, SystemConfig, UniquesConfig, SessionConfig,
+    BalancesConfig, Signature, SudoConfig, SystemConfig, UniquesConfig, SessionConfig,
     OctopusLposConfig, WASM_BINARY, DeipEcosystemFundConfig, DeipInvestmentOpportunityConfig,
 };
 
@@ -267,7 +267,7 @@ fn genesis(
             // Add Wasm runtime to storage.
             code: wasm_binary.to_vec(),
         },
-        parity_tech_balances: ParityTechBalancesConfig {
+        balances: BalancesConfig {
             balances: endowed_accounts
         },
         session: SessionConfig {
