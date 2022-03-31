@@ -1,11 +1,13 @@
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
+use sp_std::vec::Vec;
 
 use crate::traits::GetToken;
 
 #[derive(Clone, Encode, Decode, TypeInfo)]
-pub struct PayloadDetails<AccountId> {
+pub struct PayloadDetails<AccountId, PayloadAssetId> {
     pub owner: AccountId,
+    pub assets: Vec<PayloadAssetId>,
 }
 
 #[derive(Debug, Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]

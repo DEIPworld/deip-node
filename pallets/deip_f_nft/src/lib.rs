@@ -18,7 +18,7 @@ pub mod pallet {
         Blake2_128Concat, Parameter,
     };
     use frame_system::{ensure_signed, pallet_prelude::OriginFor};
-    use sp_std::{vec, vec::Vec};
+    use sp_std::vec::Vec;
 
     #[pallet::config]
     pub trait Config:
@@ -54,8 +54,8 @@ pub mod pallet {
     pub enum Error<T> {
         /// The ID is already taken.
         InUse,
-        /// The given ID is uknown.
-        Unknown,
+        /// The given payload ID is uknown.
+        UnknownPayload,
         /// Origin should be a creator (owner) of the payload.
         WrongOrigin,
         /// PayloadAsset already is in the payload.
@@ -68,13 +68,12 @@ pub mod pallet {
 
     #[pallet::storage]
     /// Details of a payload.
-    type Payload<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::PayloadId, PayloadDetails<T::AccountId>>;
-
-    #[pallet::storage]
-    /// Assets in payloads.
-    type PayloadContainers<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::PayloadId, Vec<T::PayloadAssetId>>;
+    type Payload<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        T::PayloadId,
+        PayloadDetails<T::AccountId, T::PayloadAssetId>,
+    >;
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);
@@ -88,7 +87,8 @@ pub mod pallet {
 
             ensure!(!Payload::<T>::contains_key(id.clone()), Error::<T>::InUse);
 
-            Payload::<T>::insert(id.clone(), PayloadDetails { owner: owner.clone() });
+            let details = PayloadDetails { owner: owner.clone(), assets: Vec::new() };
+            Payload::<T>::insert(id.clone(), details);
 
             let event = Event::Created { id, creator: owner };
             Self::deposit_event(event);
@@ -108,16 +108,15 @@ pub mod pallet {
                 Error::<T>::AssetLockFailed
             })?;
 
-            let details = Payload::<T>::try_get(target.clone()).map_err(|_| Error::<T>::Unknown)?;
-            ensure!(origin == details.owner, Error::<T>::WrongOrigin);
-            PayloadContainers::<T>::mutate(target.clone(), |assets| -> DispatchResult {
-                if let Some(assets) = assets {
-                    ensure!(!assets.contains(&asset), Error::<T>::AlreadyExists);
-                    assets.push(asset.clone());
+            Payload::<T>::mutate(target.clone(), |maybe_details| {
+                if let Some(details) = maybe_details {
+                    ensure!(origin == details.owner, Error::<T>::WrongOrigin);
+                    ensure!(!details.assets.contains(&asset), Error::<T>::AlreadyExists);
+                    details.assets.push(asset.clone());
+                    Ok(())
                 } else {
-                    *assets = Some(vec![asset.clone()]);
+                    Err(Error::<T>::UnknownPayload)
                 }
-                Ok(())
             })?;
 
             let event = Event::AssetAdded { target, asset };
@@ -132,16 +131,18 @@ pub mod pallet {
             asset: T::PayloadAssetId,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
-            let details = Payload::<T>::try_get(source.clone()).map_err(|_| Error::<T>::Unknown)?;
-            ensure!(origin == details.owner, Error::<T>::WrongOrigin);
-            PayloadContainers::<T>::mutate(source.clone(), |assets| {
-                if let Some(assets) = assets {
-                    let index =
-                        assets.iter().position(|v| v == &asset).ok_or(Error::<T>::NotInPayload)?;
-                    assets.remove(index);
+            Payload::<T>::mutate(source.clone(), |maybe_details| {
+                if let Some(details) = maybe_details {
+                    ensure!(origin == details.owner, Error::<T>::WrongOrigin);
+                    let index = details
+                        .assets
+                        .iter()
+                        .position(|v| v == &asset)
+                        .ok_or(Error::<T>::NotInPayload)?;
+                    details.assets.remove(index);
                     Ok(())
                 } else {
-                    Err(Error::<T>::NotInPayload)
+                    Err(Error::<T>::UnknownPayload)
                 }
             })?;
 
