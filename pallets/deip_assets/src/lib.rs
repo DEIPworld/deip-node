@@ -46,17 +46,17 @@ const NON_LOCAL: u8 = 101;
 pub mod pallet {
     use frame_support::{
         pallet_prelude::{
-            ensure, Blake2_128Concat, Decode, DispatchResultWithPostInfo, Encode,
-            Get, Hooks, Identity, InvalidTransaction, MaxEncodedLen, Member, OptionQuery,
-            Parameter, Pays, StorageDoubleMap, StorageMap, StorageValue, TransactionSource,
-            TransactionValidity, ValidTransaction, ValidateUnsigned, ValueQuery,
+            ensure, Blake2_128Concat, Decode, DispatchResultWithPostInfo, Encode, Get, Hooks,
+            Identity, InvalidTransaction, MaxEncodedLen, Member, OptionQuery, Parameter, Pays,
+            StorageDoubleMap, StorageMap, StorageValue, TransactionSource, TransactionValidity,
+            ValidateUnsigned, ValueQuery,
         },
         traits::{Currency, ExistenceRequirement, UnfilteredDispatchable, WithdrawReasons},
         transactional, RuntimeDebug,
     };
     use frame_system::{
-        offchain::{SendTransactionTypes, SubmitTransaction},
-        pallet_prelude::{ensure_none, ensure_signed, BlockNumberFor, OriginFor},
+        offchain::SendTransactionTypes,
+        pallet_prelude::{ensure_signed, BlockNumberFor, OriginFor},
         RawOrigin,
     };
     use scale_info::TypeInfo;
@@ -69,7 +69,7 @@ pub mod pallet {
     #[cfg(feature = "std")]
     use frame_support::traits::GenesisBuild;
 
-    use pallet_assets::{WeightInfo};
+    use pallet_assets::WeightInfo;
 
     use deip_asset_system::AssetIdInitT;
     use deip_projects_info::DeipProjectsInfo;
@@ -120,7 +120,7 @@ pub mod pallet {
         type WipePeriod: Get<Self::BlockNumber>;
     }
 
-    use frame_support::traits::{StorageVersion, GetStorageVersion};
+    use frame_support::traits::{GetStorageVersion, StorageVersion};
 
     pub const V0: StorageVersion = StorageVersion::new(0);
     pub const V1: StorageVersion = StorageVersion::new(1);
@@ -131,15 +131,10 @@ pub mod pallet {
     #[pallet::storage_version(V1)]
     pub struct Pallet<T>(_);
 
-    fn count_items(pallet_name: &[u8], storage_name: &[u8]) -> usize
-    {
+    fn count_items(pallet_name: &[u8], storage_name: &[u8]) -> usize {
         use frame_support::storage::{storage_prefix, PrefixIterator};
         let prefix = storage_prefix(pallet_name, storage_name);
-        PrefixIterator::<()>::new(
-            prefix.to_vec(),
-            prefix.to_vec(),
-            |_key, _value| Ok(()),
-        ).count()
+        PrefixIterator::<()>::new(prefix.to_vec(), prefix.to_vec(), |_key, _value| Ok(())).count()
     }
 
     #[doc(hidden)]
@@ -148,8 +143,8 @@ pub mod pallet {
         fn on_runtime_upgrade() -> Weight {
             use core::convert::TryInto;
             use frame_support::storage::migration::move_storage_from_pallet;
-            if Pallet::<T>::on_chain_storage_version() == V0
-                && Pallet::<T>::current_storage_version() == V1
+            if Pallet::<T>::on_chain_storage_version() == V0 &&
+                Pallet::<T>::current_storage_version() == V1
             {
                 let mut reads: usize = 0;
                 for x in &[
@@ -167,72 +162,79 @@ pub mod pallet {
                     move_storage_from_pallet(
                         x.as_bytes(),
                         "Assets".as_bytes(),
-                        "DeipAssets".as_bytes()
+                        "DeipAssets".as_bytes(),
                     );
                 }
                 AssetIdByDeipAssetId::<T>::drain()
-                    .map(|x| { reads += 1; x })
-                    .for_each(|(k, k2, v)| { AssetIdByDeipAssetIdV1::<T>::insert(k, k2, v); });
+                    .map(|x| {
+                        reads += 1;
+                        x
+                    })
+                    .for_each(|(k, k2, v)| {
+                        AssetIdByDeipAssetIdV1::<T>::insert(k, k2, v);
+                    });
                 DeipAssetIdByAssetId::<T>::drain()
-                    .map(|x| { reads += 1; x })
-                    .for_each(|(k, k2, v)| { DeipAssetIdByAssetIdV1::<T>::insert(k, k2, v); });
+                    .map(|x| {
+                        reads += 1;
+                        x
+                    })
+                    .for_each(|(k, k2, v)| {
+                        DeipAssetIdByAssetIdV1::<T>::insert(k, k2, v);
+                    });
                 AssetIdByProjectId::<T>::drain()
-                    .map(|x| { reads += 1; x })
-                    .for_each(|(k, v)| { AssetIdByProjectIdV1::<T>::insert(k, v); });
+                    .map(|x| {
+                        reads += 1;
+                        x
+                    })
+                    .for_each(|(k, v)| {
+                        AssetIdByProjectIdV1::<T>::insert(k, v);
+                    });
                 ProjectIdByAssetId::<T>::drain()
-                    .map(|x| { reads += 1; x })
-                    .for_each(|(k, v)| { ProjectIdByAssetIdV1::<T>::insert(k, v); });
+                    .map(|x| {
+                        reads += 1;
+                        x
+                    })
+                    .for_each(|(k, v)| {
+                        ProjectIdByAssetIdV1::<T>::insert(k, v);
+                    });
                 InvestmentByAssetId::<T>::drain()
-                    .map(|x| { reads += 1; x })
-                    .for_each(|(k, v)| { InvestmentByAssetIdV1::<T>::insert(k, v); });
+                    .map(|x| {
+                        reads += 1;
+                        x
+                    })
+                    .for_each(|(k, v)| {
+                        InvestmentByAssetIdV1::<T>::insert(k, v);
+                    });
                 InvestmentMap::<T>::drain()
-                    .map(|x| { reads += 1; x })
-                    .for_each(|(k, v)| { InvestmentMapV1::<T>::insert(k, v); });
-                FtBalanceMap::<T>::drain()
-                    .map(|x| { reads += 1; x })
-                    .for_each(|(k, v)| { FtBalanceMapV1::<T>::insert(k, v); });
+                    .map(|x| {
+                        reads += 1;
+                        x
+                    })
+                    .for_each(|(k, v)| {
+                        InvestmentMapV1::<T>::insert(k, v);
+                    });
+                reads += FtBalanceMap::<T>::drain().count();
+
                 AssetMetadataMap::<T>::drain()
-                    .map(|x| { reads += 1; x })
-                    .for_each(|(k, v)| { AssetMetadataMapV1::<T>::insert(k, v); });
-                for x in &[
-                    "Asset",
-                    "Account",
-                    "Approvals",
-                    "Metadata",
-                ] {
+                    .map(|x| {
+                        reads += 1;
+                        x
+                    })
+                    .for_each(|(k, v)| {
+                        AssetMetadataMapV1::<T>::insert(k, v);
+                    });
+                for x in &["Asset", "Account", "Approvals", "Metadata"] {
                     reads += count_items(b"ParityTechAssets", x.as_bytes());
                     move_storage_from_pallet(
                         x.as_bytes(),
                         "ParityTechAssets".as_bytes(),
-                        "Assets".as_bytes()
+                        "Assets".as_bytes(),
                     );
                 }
                 let reads: Weight = reads.try_into().unwrap_or(Weight::MAX);
-                return T::DbWeight::get().reads_writes(reads, reads);
+                return T::DbWeight::get().reads_writes(reads, reads)
             }
             0
-        }
-
-        fn offchain_worker(n: T::BlockNumber) {
-            if !sp_io::offchain::is_validator() {
-                return
-            }
-
-            if n % T::WipePeriod::get() != Zero::zero() {
-                return
-            }
-
-            for (asset, accounts) in FtBalanceMapV1::<T>::iter() {
-                for account in accounts {
-                    if !Self::account_balance(&account, &asset).is_zero() {
-                        continue
-                    }
-
-                    let call = Call::deip_wipe_zero_balance { asset, account };
-                    let _submit =
-                        SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
-                }
-            }
         }
     }
 
@@ -240,32 +242,11 @@ pub mod pallet {
     impl<T: Config> ValidateUnsigned for Pallet<T> {
         type Call = Call<T>;
 
-        fn validate_unsigned(source: TransactionSource, call: &Self::Call) -> TransactionValidity {
-            if !matches!(source, TransactionSource::Local | TransactionSource::InBlock) {
-                return InvalidTransaction::Custom(super::NON_LOCAL).into()
-            }
-
-            if let Call::deip_wipe_zero_balance { asset, account } = &call {
-                if !Self::account_balance(account, asset).is_zero() {
-                    return InvalidTransaction::Stale.into()
-                }
-
-                let balances = match FtBalanceMapV1::<T>::try_get(*asset) {
-                    Err(_) => return InvalidTransaction::Stale.into(),
-                    Ok(b) => b,
-                };
-
-                if balances.binary_search_by_key(&account, |a| a).is_err() {
-                    return InvalidTransaction::Stale.into()
-                }
-
-                ValidTransaction::with_tag_prefix("DeipAssetsOffchainWorker")
-                    .propagate(false)
-                    .longevity(5)
-                    .and_provides((*asset, account.clone()))
-                    .build()
-            } else {
+        fn validate_unsigned(source: TransactionSource, _call: &Self::Call) -> TransactionValidity {
+            if matches!(source, TransactionSource::Local | TransactionSource::InBlock) {
                 InvalidTransaction::Call.into()
+            } else {
+                InvalidTransaction::Custom(super::NON_LOCAL).into()
             }
         }
     }
@@ -384,13 +365,10 @@ pub mod pallet {
         OptionQuery,
     >;
 
+    /// Deprecated
     #[pallet::storage]
     pub(super) type FtBalanceMap<T: Config> =
         StorageMap<_, Identity, DeipAssetIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
-    // Migrate key hasher:
-    #[pallet::storage]
-    pub(super) type FtBalanceMapV1<T: Config> =
-        StorageMap<_, Blake2_128Concat, DeipAssetIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
 
     #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq, TypeInfo)]
     pub(super) struct AssetMetadata<U8> {
@@ -460,10 +438,6 @@ pub mod pallet {
 
         pub fn get_project_fts(id: &DeipProjectIdOf<T>) -> Vec<DeipAssetIdOf<T>> {
             AssetIdByProjectIdV1::<T>::try_get(id.clone()).unwrap_or_default()
-        }
-
-        pub fn get_ft_balances(id: &DeipAssetIdOf<T>) -> Option<Vec<AccountIdOf<T>>> {
-            FtBalanceMapV1::<T>::try_get(*id).ok()
         }
 
         #[transactional]
@@ -622,7 +596,10 @@ pub mod pallet {
         ) -> Result<(), deip_assets_error::UnreserveError<DeipAssetIdOf<T>>> {
             use deip_assets_error::UnreserveError;
 
-            ensure!(InvestmentMapV1::<T>::contains_key(id.clone()), UnreserveError::NoSuchInvestment);
+            ensure!(
+                InvestmentMapV1::<T>::contains_key(id.clone()),
+                UnreserveError::NoSuchInvestment
+            );
 
             let id_account = Self::investment_key(&id);
 
@@ -676,29 +653,14 @@ pub mod pallet {
             to: AccountIdOf<T>,
             amount: AssetsBalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            let target_source = <T::Lookup as StaticLookup>::unlookup(to.clone());
+            let target_source = <T::Lookup as StaticLookup>::unlookup(to);
             let asset_id = AssetIdByDeipAssetIdV1::<T>::iter_prefix(id)
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
             let call =
                 pallet_assets::Call::<T>::transfer { id: asset_id, target: target_source, amount };
-            let ok = call.dispatch_bypass_filter(from)?;
-
-            if Self::try_get_tokenized_project(&id).is_some() {
-                FtBalanceMapV1::<T>::mutate_exists(id, |maybe| match maybe.as_mut() {
-                    None => {
-                        // this cannot happen but for any case
-                        *maybe = Some(vec![to]);
-                    },
-                    Some(b) => match b.binary_search_by_key(&&to, |a| a) {
-                        Ok(_) => (),
-                        Err(i) => b.insert(i, to),
-                    },
-                });
-            }
-
-            Ok(ok)
+            call.dispatch_bypass_filter(from)
         }
 
         fn deip_create_impl(
@@ -755,7 +717,7 @@ pub mod pallet {
             beneficiary: T::AccountId,
             amount: AssetsBalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            let beneficiary_source = <T::Lookup as StaticLookup>::unlookup(beneficiary.clone());
+            let beneficiary_source = <T::Lookup as StaticLookup>::unlookup(beneficiary);
 
             let asset_id = AssetIdByDeipAssetIdV1::<T>::iter_prefix(id)
                 .next()
@@ -766,27 +728,7 @@ pub mod pallet {
                 beneficiary: beneficiary_source,
                 amount,
             };
-            let result = call.dispatch_bypass_filter(origin)?;
-
-            if Self::try_get_tokenized_project(&id).is_some() {
-                FtBalanceMapV1::<T>::mutate_exists(id, |maybe| {
-                    let balances = match maybe.as_mut() {
-                        None => {
-                            *maybe = Some(vec![beneficiary]);
-                            return
-                        },
-                        Some(b) => b,
-                    };
-
-                    let account = beneficiary;
-                    match balances.binary_search_by_key(&&account, |a| a) {
-                        Ok(_) => (),
-                        Err(i) => balances.insert(i, account),
-                    };
-                });
-            }
-
-            Ok(result)
+            call.dispatch_bypass_filter(origin)
         }
 
         fn deip_set_metadata_impl(
@@ -818,7 +760,6 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-
         #[pallet::weight(AssetsWeightInfoOf::<T>::create())]
         pub fn deip_create(
             origin: OriginFor<T>,
@@ -1017,29 +958,6 @@ pub mod pallet {
             decimals: u8,
         ) -> DispatchResultWithPostInfo {
             Self::deip_set_metadata_impl(origin, id, name, symbol, decimals)
-        }
-
-        #[pallet::weight(10_000)]
-        pub fn deip_wipe_zero_balance(
-            origin: OriginFor<T>,
-            asset: DeipAssetIdOf<T>,
-            account: AccountIdOf<T>,
-        ) -> DispatchResultWithPostInfo {
-            ensure_none(origin)?;
-
-            FtBalanceMapV1::<T>::mutate_exists(asset, |maybe| match maybe.as_mut() {
-                None => Err(Error::<T>::FtNotFound.into()),
-                Some(b) => match b.binary_search_by_key(&&account, |a| a) {
-                    Err(_) => Err(Error::<T>::FtBalanceNotFound.into()),
-                    Ok(i) => {
-                        b.remove(i);
-                        if b.is_empty() {
-                            *maybe = None;
-                        }
-                        Ok(Some(0).into())
-                    },
-                },
-            })
         }
     }
 }
