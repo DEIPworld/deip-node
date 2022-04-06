@@ -207,15 +207,8 @@ pub mod pallet {
                         InvestmentMapV1::<T>::insert(k, v);
                     });
                 reads += FtBalanceMap::<T>::drain().count();
+                reads += AssetMetadataMap::<T>::drain().count();
 
-                AssetMetadataMap::<T>::drain()
-                    .map(|x| {
-                        reads += 1;
-                        x
-                    })
-                    .for_each(|(k, v)| {
-                        AssetMetadataMapV1::<T>::insert(k, v);
-                    });
                 for x in &["Asset", "Account", "Approvals", "Metadata"] {
                     reads += count_items(b"ParityTechAssets", x.as_bytes());
                     move_storage_from_pallet(
@@ -363,13 +356,10 @@ pub mod pallet {
         decimals: U8,
     }
 
+    /// Deprecated
     #[pallet::storage]
     pub(super) type AssetMetadataMap<T: Config> =
         StorageMap<_, Identity, DeipAssetIdOf<T>, AssetMetadata<u8>, OptionQuery>;
-    // Migrate key hasher:
-    #[pallet::storage]
-    pub(super) type AssetMetadataMapV1<T: Config> =
-        StorageMap<_, Blake2_128Concat, DeipAssetIdOf<T>, AssetMetadata<u8>, OptionQuery>;
 
     #[pallet::genesis_config]
     pub struct GenesisConfig<T> {
@@ -716,23 +706,13 @@ pub mod pallet {
             symbol: Vec<u8>,
             decimals: u8,
         ) -> DispatchResultWithPostInfo {
-            let asset_name = name.clone();
-            let asset_symbol = symbol.clone();
-
             let asset_id = AssetIdByDeipAssetIdV1::<T>::iter_prefix(id)
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
             let call =
                 pallet_assets::Call::<T>::set_metadata { id: asset_id, name, symbol, decimals };
-            let result = call.dispatch_bypass_filter(origin)?;
-
-            AssetMetadataMapV1::<T>::insert(
-                id,
-                AssetMetadata { name: asset_name, symbol: asset_symbol, decimals },
-            );
-
-            Ok(result)
+            call.dispatch_bypass_filter(origin)
         }
     }
 
