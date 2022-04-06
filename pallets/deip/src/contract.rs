@@ -8,7 +8,7 @@ pub type Id = H160;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum Terms {
-    GeneralContractAgreement,
+    GenericContractAgreement,
 }
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
@@ -16,7 +16,7 @@ pub enum Terms {
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum IndexTerms {
     LicenseAgreement,
-    GeneralContractAgreement,
+    GenericContractAgreement,
 }
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
@@ -24,7 +24,7 @@ pub enum IndexTerms {
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum Agreement<AccountId, Hash, Moment> {
     None,
-    GeneralContract(GeneralContractStatus<AccountId, Hash, Moment>),
+    GenericContract(GenericContractStatus<AccountId, Hash, Moment>),
 }
 
 pub type AgreementOf<T> = Agreement<AccountIdOf<T>, HashOf<T>, MomentOf<T>>;
@@ -65,7 +65,7 @@ pub enum LicenseStatus<AccountId, Hash, Moment, Asset> {
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct GeneralContract<AccountId, Hash, Moment> {
+pub struct GenericContract<AccountId, Hash, Moment> {
     pub(crate) id: Id,
     pub(crate) creator: AccountId,
     pub(crate) parties: Vec<AccountId>,
@@ -74,18 +74,18 @@ pub struct GeneralContract<AccountId, Hash, Moment> {
     pub(crate) expiration_time: Option<Moment>,
 }
 
-pub type GeneralContractOf<T> = GeneralContract<AccountIdOf<T>, HashOf<T>, MomentOf<T>>;
+pub type GenericContractOf<T> = GenericContract<AccountIdOf<T>, HashOf<T>, MomentOf<T>>;
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub enum GeneralContractStatus<AccountId, Hash, Moment> {
+pub enum GenericContractStatus<AccountId, Hash, Moment> {
     PartiallyAccepted {
-        contract: GeneralContract<AccountId, Hash, Moment>,
+        contract: GenericContract<AccountId, Hash, Moment>,
         accepted_by: Vec<AccountId>,
     },
-    Accepted(GeneralContract<AccountId, Hash, Moment>),
-    Rejected(GeneralContract<AccountId, Hash, Moment>),
+    Accepted(GenericContract<AccountId, Hash, Moment>),
+    Rejected(GenericContract<AccountId, Hash, Moment>),
 }
 
 impl<T: Config> Module<T> {
@@ -128,7 +128,7 @@ impl<T: Config> Module<T> {
             Error::<T>::ContractAgreementAlreadyExists
         );
         match terms {
-            Terms::GeneralContractAgreement => Self::create_general_contract(
+            Terms::GenericContractAgreement => Self::create_generic_contract(
                 id,
                 creator,
                 parties,
@@ -150,7 +150,7 @@ impl<T: Config> Module<T> {
             .map_err(|_| Error::<T>::ContractAgreementNotFound)?;
 
         match agreement {
-            Agreement::GeneralContract(status) => Self::accept_general_contract(party, status),
+            Agreement::GenericContract(status) => Self::accept_generic_contract(party, status),
             Agreement::None => Err(Error::<T>::ContractAgreementWrongAgreement.into()),
         }
     }
@@ -167,11 +167,11 @@ impl<T: Config> Module<T> {
 
         match agreement {
             Agreement::None => Err(Error::<T>::ContractAgreementWrongAgreement.into()),
-            Agreement::GeneralContract(status) => Self::reject_general_contract(party, status),
+            Agreement::GenericContract(status) => Self::reject_generic_contract(party, status),
         }
     }
 
-    fn create_general_contract(
+    fn create_generic_contract(
         id: Id,
         creator: AccountIdOf<T>,
         parties: Vec<T::AccountId>,
@@ -180,38 +180,38 @@ impl<T: Config> Module<T> {
         expiration_time: Option<MomentOf<T>>,
     ) -> DispatchResultWithPostInfo {
         let contract =
-            GeneralContract { id, creator, parties, hash, activation_time, expiration_time };
+            GenericContract { id, creator, parties, hash, activation_time, expiration_time };
 
         ContractAgreementMap::<T>::insert(
             id,
-            Agreement::GeneralContract(GeneralContractStatus::PartiallyAccepted {
+            Agreement::GenericContract(GenericContractStatus::PartiallyAccepted {
                 contract,
                 accepted_by: vec![],
             }),
         );
-        ContractAgreementIdByType::insert(IndexTerms::GeneralContractAgreement, id, ());
+        ContractAgreementIdByType::insert(IndexTerms::GenericContractAgreement, id, ());
 
         Self::deposit_event(RawEvent::ContractAgreementCreated(id));
 
-        Ok(Some(T::DeipWeightInfo::create_contract_agreement_general_contract()).into())
+        Ok(Some(T::DeipWeightInfo::create_contract_agreement_generic_contract()).into())
     }
 
-    fn accept_general_contract(
+    fn accept_generic_contract(
         party: AccountIdOf<T>,
-        status: GeneralContractStatus<AccountIdOf<T>, HashOf<T>, MomentOf<T>>,
+        status: GenericContractStatus<AccountIdOf<T>, HashOf<T>, MomentOf<T>>,
     ) -> DispatchResultWithPostInfo {
         match status {
-            GeneralContractStatus::Rejected(_) => Err(Error::<T>::ContractAgreementRejected.into()),
-            GeneralContractStatus::Accepted(_) =>
+            GenericContractStatus::Rejected(_) => Err(Error::<T>::ContractAgreementRejected.into()),
+            GenericContractStatus::Accepted(_) =>
                 Err(Error::<T>::ContractAgreementAlreadyAccepted.into()),
-            GeneralContractStatus::PartiallyAccepted { contract, accepted_by } =>
-                Self::accept_general_contract_impl(party, contract, accepted_by),
+            GenericContractStatus::PartiallyAccepted { contract, accepted_by } =>
+                Self::accept_generic_contract_impl(party, contract, accepted_by),
         }
     }
 
-    fn accept_general_contract_impl(
+    fn accept_generic_contract_impl(
         party: AccountIdOf<T>,
-        contract: GeneralContract<AccountIdOf<T>, HashOf<T>, MomentOf<T>>,
+        contract: GenericContract<AccountIdOf<T>, HashOf<T>, MomentOf<T>>,
         mut accepted_by: Vec<AccountIdOf<T>>,
     ) -> DispatchResultWithPostInfo {
         ensure!(!accepted_by.contains(&party), Error::<T>::ContractAgreementAlreadyAcceptedByParty);
@@ -223,17 +223,17 @@ impl<T: Config> Module<T> {
         if accepted_by.len() == contract.parties.len() {
             ContractAgreementMap::<T>::insert(
                 id,
-                Agreement::GeneralContract(GeneralContractStatus::Accepted(contract)),
+                Agreement::GenericContract(GenericContractStatus::Accepted(contract)),
             );
 
             Self::deposit_event(RawEvent::ContractAgreementAccepted(id, party));
             Self::deposit_event(RawEvent::ContractAgreementFinalized(id));
-            Ok(Some(T::DeipWeightInfo::accept_contract_agreement_general_contract_finalized())
+            Ok(Some(T::DeipWeightInfo::accept_contract_agreement_generic_contract_finalized())
                 .into())
         } else {
             ContractAgreementMap::<T>::insert(
                 id,
-                Agreement::GeneralContract(GeneralContractStatus::PartiallyAccepted {
+                Agreement::GenericContract(GenericContractStatus::PartiallyAccepted {
                     contract,
                     accepted_by,
                 }),
@@ -241,22 +241,22 @@ impl<T: Config> Module<T> {
 
             Self::deposit_event(RawEvent::ContractAgreementAccepted(id, party));
             Ok(Some(
-                T::DeipWeightInfo::accept_contract_agreement_general_contract_partially_accepted(),
+                T::DeipWeightInfo::accept_contract_agreement_generic_contract_partially_accepted(),
             )
             .into())
         }
     }
 
-    fn reject_general_contract(
+    fn reject_generic_contract(
         party: AccountIdOf<T>,
-        status: GeneralContractStatus<AccountIdOf<T>, HashOf<T>, MomentOf<T>>,
+        status: GenericContractStatus<AccountIdOf<T>, HashOf<T>, MomentOf<T>>,
     ) -> DispatchResult {
         match status {
-            GeneralContractStatus::Rejected(_) => Err(Error::<T>::ContractAgreementRejected.into()),
-            GeneralContractStatus::Accepted(_) =>
+            GenericContractStatus::Rejected(_) => Err(Error::<T>::ContractAgreementRejected.into()),
+            GenericContractStatus::Accepted(_) =>
                 Err(Error::<T>::ContractAgreementAlreadyAccepted.into()),
 
-            GeneralContractStatus::PartiallyAccepted { contract, accepted_by } => {
+            GenericContractStatus::PartiallyAccepted { contract, accepted_by } => {
                 ensure!(
                     !accepted_by.contains(&party),
                     Error::<T>::ContractAgreementAlreadyAcceptedByParty
@@ -270,7 +270,7 @@ impl<T: Config> Module<T> {
                 let id = contract.id;
                 ContractAgreementMap::<T>::insert(
                     id,
-                    Agreement::GeneralContract(GeneralContractStatus::Rejected(contract)),
+                    Agreement::GenericContract(GenericContractStatus::Rejected(contract)),
                 );
 
                 Self::deposit_event(RawEvent::ContractAgreementRejected(id, party));

@@ -8469,8 +8469,8 @@ pub mod api {
                     #[codec(index = 1)]
                     License(runtime_types::pallet_deip::contract::LicenseStatus<_0, _1, _2, _3>),
                     #[codec(index = 2)]
-                    GeneralContract(
-                        runtime_types::pallet_deip::contract::GeneralContractStatus<_0, _1, _2>,
+                    GenericContract(
+                        runtime_types::pallet_deip::contract::GenericContractStatus<_0, _1, _2>,
                     ),
                 }
                 #[derive(
@@ -8482,7 +8482,7 @@ pub mod api {
                     PartialEq,
                     scale_info :: TypeInfo,
                 )]
-                pub struct GeneralContract<_0, _1, _2> {
+                pub struct GenericContract<_0, _1, _2> {
                     pub id: runtime_types::primitive_types::H160,
                     pub creator: _0,
                     pub parties: ::std::vec::Vec<_0>,
@@ -8499,16 +8499,16 @@ pub mod api {
                     PartialEq,
                     scale_info :: TypeInfo,
                 )]
-                pub enum GeneralContractStatus<_0, _1, _2> {
+                pub enum GenericContractStatus<_0, _1, _2> {
                     #[codec(index = 0)]
                     PartiallyAccepted {
-                        contract: runtime_types::pallet_deip::contract::GeneralContract<_0, _1, _2>,
+                        contract: runtime_types::pallet_deip::contract::GenericContract<_0, _1, _2>,
                         accepted_by: ::std::vec::Vec<_0>,
                     },
                     #[codec(index = 1)]
-                    Accepted(runtime_types::pallet_deip::contract::GeneralContract<_0, _1, _2>),
+                    Accepted(runtime_types::pallet_deip::contract::GenericContract<_0, _1, _2>),
                     #[codec(index = 2)]
-                    Rejected(runtime_types::pallet_deip::contract::GeneralContract<_0, _1, _2>),
+                    Rejected(runtime_types::pallet_deip::contract::GenericContract<_0, _1, _2>),
                 }
                 #[derive(
                     :: subxt :: codec :: Encode,
@@ -8523,7 +8523,7 @@ pub mod api {
                     #[codec(index = 0)]
                     LicenseAgreement,
                     #[codec(index = 1)]
-                    GeneralContractAgreement,
+                    GenericContractAgreement,
                 }
                 #[derive(
                     :: subxt :: codec :: Encode,
@@ -8577,7 +8577,7 @@ pub mod api {
                     #[codec(index = 0)]
                     LicenseAgreement { source: runtime_types::primitive_types::H160, price: _0 },
                     #[codec(index = 1)]
-                    GeneralContractAgreement,
+                    GenericContractAgreement,
                 }
             }
             pub mod review {

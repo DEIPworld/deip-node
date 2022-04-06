@@ -1058,7 +1058,7 @@ decl_module! {
         /// - `terms` - specifies type of the contract agreement. For details see [`ContractAgreementTerms`].
         #[weight = {
             T::DeipWeightInfo::create_contract_agreement_project_license()
-                .max(T::DeipWeightInfo::create_contract_agreement_general_contract())
+                .max(T::DeipWeightInfo::create_contract_agreement_generic_contract())
         }]
         fn create_contract_agreement(origin,
             id: ContractAgreementId,
@@ -1082,8 +1082,8 @@ decl_module! {
         #[weight = {
             T::DeipWeightInfo::accept_contract_agreement_project_license_unsigned()
                 .max(T::DeipWeightInfo::accept_contract_agreement_project_license_signed_by_licenser())
-                .max(T::DeipWeightInfo::accept_contract_agreement_general_contract_partially_accepted())
-                .max(T::DeipWeightInfo::accept_contract_agreement_general_contract_finalized())
+                .max(T::DeipWeightInfo::accept_contract_agreement_generic_contract_partially_accepted())
+                .max(T::DeipWeightInfo::accept_contract_agreement_generic_contract_finalized())
         }]
         fn accept_contract_agreement(origin,
             id: ContractAgreementId,
