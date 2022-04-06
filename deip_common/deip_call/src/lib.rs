@@ -58,10 +58,8 @@ impl Serialize for WrappedCall<Call> {
             Call::DeipAssets(deip_assets_call) =>
                 Self::serialize_deip_assets_call(deip_assets_call, serializer),
             Call::Assets(..) |
-
             Call::Uniques(..) |
             Call::DeipUniques(..) |
-
             Call::System(_) |
             Call::DeipPortal(_) |
             Call::Timestamp(_) |
@@ -426,7 +424,7 @@ impl WrappedCall<Call> {
             deip_create { id, admin, min_balance, project_id } => CallObject {
                 module,
                 call: "deip_create",
-                args: &DeipAssetsCreateCallArgs::new(id, admin, min_balance, project_id),
+                args: &DeipAssetsCreateCallArgs::new(id, admin, min_balance),
             }
             .serialize(serializer),
 
@@ -612,17 +610,11 @@ struct DeipAssetsCreateCallArgs<A, B, D: Clone + AtLeast32BitUnsigned, E> {
     id: A,
     admin: B,
     min_balance: SerializableAtLeast32BitUnsigned<D>,
-    project_id: E,
 }
 
-impl<A, B, D: Clone + AtLeast32BitUnsigned, E> DeipAssetsCreateCallArgs<A, B, D, E> {
-    fn new(id: A, admin: B, min_balance: &D, project_id: E) -> Self {
-        Self {
-            id,
-            admin,
-            min_balance: SerializableAtLeast32BitUnsigned(min_balance.clone()),
-            project_id,
-        }
+impl<A, B, D: Clone + AtLeast32BitUnsigned> DeipAssetsCreateCallArgs<A, B, D> {
+    fn new(id: A, admin: B, min_balance: &D) -> Self {
+        Self { id, admin, min_balance: SerializableAtLeast32BitUnsigned(min_balance.clone()) }
     }
 }
 
