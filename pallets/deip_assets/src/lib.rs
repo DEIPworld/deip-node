@@ -181,14 +181,7 @@ pub mod pallet {
                     .for_each(|(k, k2, v)| {
                         DeipAssetIdByAssetIdV1::<T>::insert(k, k2, v);
                     });
-                AssetIdByProjectId::<T>::drain()
-                    .map(|x| {
-                        reads += 1;
-                        x
-                    })
-                    .for_each(|(k, v)| {
-                        AssetIdByProjectIdV1::<T>::insert(k, v);
-                    });
+                reads += AssetIdByProjectId::<T>::drain().count();
                 reads += ProjectIdByAssetId::<T>::drain().count();
                 InvestmentByAssetId::<T>::drain()
                     .map(|x| {
@@ -298,13 +291,10 @@ pub mod pallet {
     #[pallet::storage]
     pub(super) type NextAssetId<T> = StorageValue<_, AssetsAssetIdOf<T>, ValueQuery>;
 
+    /// Deprecated
     #[pallet::storage]
     pub(super) type AssetIdByProjectId<T: Config> =
         StorageMap<_, Identity, DeipProjectIdOf<T>, Vec<DeipAssetIdOf<T>>, OptionQuery>;
-    // Migrate key hasher:
-    #[pallet::storage]
-    pub(super) type AssetIdByProjectIdV1<T: Config> =
-        StorageMap<_, Blake2_128Concat, DeipProjectIdOf<T>, Vec<DeipAssetIdOf<T>>, OptionQuery>;
 
     /// Deprecated
     #[pallet::storage]
@@ -403,10 +393,6 @@ pub mod pallet {
                 None => Zero::zero(),
                 Some(prefix) => pallet_assets::Pallet::<T>::total_supply(prefix.0),
             }
-        }
-
-        pub fn get_project_fts(id: &DeipProjectIdOf<T>) -> Vec<DeipAssetIdOf<T>> {
-            AssetIdByProjectIdV1::<T>::try_get(id.clone()).unwrap_or_default()
         }
 
         #[transactional]
@@ -666,15 +652,6 @@ pub mod pallet {
             NextAssetId::<T>::put(next_asset_id);
             AssetIdByDeipAssetIdV1::<T>::insert(id, asset_id, ());
             DeipAssetIdByAssetIdV1::<T>::insert(asset_id, id, ());
-
-            if let Some(project_id) = project_id {
-                AssetIdByProjectIdV1::<T>::mutate_exists(project_id, |tokens| {
-                    match tokens.as_mut() {
-                        None => *tokens = Some(vec![id]),
-                        Some(c) => c.push(id),
-                    };
-                });
-            }
 
             Ok(post_dispatch_info)
         }

@@ -23,8 +23,6 @@ pub trait DeipAssetSystem<AccountId, SourceId, InvestmentId>: AssetIdInitT<Self:
 
     fn total_supply(asset: &Self::AssetId) -> Self::Balance;
 
-    fn get_project_fts(id: &SourceId) -> Vec<Self::AssetId>;
-
     fn transactionally_transfer(
         from: &AccountId,
         asset: Self::AssetId,

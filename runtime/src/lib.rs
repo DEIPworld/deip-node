@@ -777,10 +777,6 @@ impl deip_asset_system::DeipAssetSystem<AccountId, ProjectId, InvestmentId> for 
         DeipAssets::total_supply(asset)
     }
 
-    fn get_project_fts(id: &ProjectId) -> Vec<Self::AssetId> {
-        DeipAssets::get_project_fts(id)
-    }
-
     fn transactionally_transfer(
         from: &AccountId,
         asset: Self::AssetId,
