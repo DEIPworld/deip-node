@@ -8572,6 +8572,7 @@ pub mod api {
                     scale_info :: TypeInfo,
                 )]
                 pub enum Terms<_0> {
+                    #[codec(index = 0)]
                     GenericContractAgreement,
                 }
             }
