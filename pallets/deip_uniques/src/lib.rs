@@ -25,7 +25,6 @@ pub mod pallet {
     use pallet_uniques::{
         Call as UniquesCall, DestroyWitness, Pallet as UniquesPallet, WeightInfo,
     };
-    use sp_std::prelude::*;
 
     // Helper types.
     type DeipNftClassIdOf<T> = <T as Config>::DeipNftClassId;
@@ -114,12 +113,8 @@ pub mod pallet {
                         DeipNftClassIdByNftClassIdV1::<T>::insert(k, v);
                     });
                 reads += ProjectIdByDeipNftClassId::<T>::drain().count();
-                NftBalanceMap::<T>::drain()
-                    .map(|x| {
-                        reads += 1;
-                        x
-                    })
-                    .for_each(|(k, v)| NftBalanceMapV1::<T>::insert(k, v));
+                reads += NftBalanceMap::<T>::drain().count();
+
                 for x in &[
                     "Class",
                     "Account",
@@ -135,6 +130,7 @@ pub mod pallet {
                         "Uniques".as_bytes(),
                     );
                 }
+
                 let reads: Weight = reads.try_into().unwrap_or(Weight::MAX);
                 return T::DbWeight::get().reads_writes(reads, reads)
             }
@@ -214,13 +210,10 @@ pub mod pallet {
         StorageMap<_, Identity, DeipNftClassIdOf<T>, DeipProjectIdOf<T>, OptionQuery>;
 
     /// Storage with assets classes ant accounts which hold corresponding asset.
+    /// Deprecated
     #[pallet::storage]
     pub(super) type NftBalanceMap<T: Config> =
         StorageMap<_, Identity, DeipNftClassIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
-    // Migrate key hasher:
-    #[pallet::storage]
-    pub(super) type NftBalanceMapV1<T: Config> =
-        StorageMap<_, Blake2_128Concat, DeipNftClassIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
 
     #[pallet::error]
     pub enum Error<T> {
@@ -266,7 +259,6 @@ pub mod pallet {
             if res.is_ok() {
                 DeipNftClassIdByNftClassIdV1::<T>::mutate_exists(origin_class_id, |v| *v = None);
                 NftClassIdByDeipNftClassIdV1::<T>::mutate_exists(class, |v| *v = None);
-                NftBalanceMapV1::<T>::mutate_exists(class, |v| *v = None);
             }
 
             res
@@ -280,7 +272,7 @@ pub mod pallet {
             owner: T::DeipAccountId,
         ) -> DispatchResultWithPostInfo {
             // Convert target to source.
-            let owner_source = <T::Lookup as StaticLookup>::unlookup(owner.clone().into());
+            let owner_source = <T::Lookup as StaticLookup>::unlookup(owner.into());
 
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
@@ -290,22 +282,7 @@ pub mod pallet {
                 instance,
                 owner: owner_source,
             };
-            let result = call.dispatch_bypass_filter(origin)?;
-
-            // Check balance map for the class id.
-            NftBalanceMapV1::<T>::mutate_exists(class, |maybe| {
-                let account = owner.into();
-                if let Some(balances) = maybe.as_mut() {
-                    // If vec for this class doesn't contain asset, add account to map.
-                    if let Err(i) = balances.binary_search(&account) {
-                        balances.insert(i, account);
-                    }
-                } else {
-                    *maybe = Some(vec![account]);
-                }
-            });
-
-            Ok(result)
+            call.dispatch_bypass_filter(origin)
         }
 
         #[pallet::weight(T::WeightInfo::burn())]
@@ -338,7 +315,7 @@ pub mod pallet {
             dest: T::DeipAccountId,
         ) -> DispatchResultWithPostInfo {
             // Convert target to source.
-            let dest_source = <T::Lookup as StaticLookup>::unlookup(dest.clone().into());
+            let dest_source = <T::Lookup as StaticLookup>::unlookup(dest.into());
 
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
@@ -348,23 +325,7 @@ pub mod pallet {
                 instance,
                 dest: dest_source,
             };
-            let ok = call.dispatch_bypass_filter(origin)?;
-
-            NftBalanceMapV1::<T>::mutate_exists(class, |maybe| {
-                let account = dest.into();
-                if let Some(balances) = maybe.as_mut() {
-                    if let Err(i) = balances.binary_search(&account) {
-                        balances.insert(i, account);
-                    }
-                    // ??? @TODO remove class id from source account
-                } else {
-                    // This shouldn't happen but for any case.
-                    // If this happend, it means that asset was minted and NftBalanceMap wasn't updated.
-                    *maybe = Some(vec![account]);
-                }
-            });
-
-            Ok(ok)
+            call.dispatch_bypass_filter(origin)
         }
 
         #[pallet::weight(T::WeightInfo::redeposit(instances.len() as u32))]
@@ -374,8 +335,6 @@ pub mod pallet {
             instances: Vec<T::InstanceId>,
         ) -> DispatchResult {
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
-            // ??? Is check for class belonging to the project need.
-            // ??? Because from docs: class: The class of the asset to be !frozen!.
             UniquesPallet::<T>::redeposit(origin, origin_class_id, instances)
         }
 
@@ -552,14 +511,7 @@ pub mod pallet {
                 data,
                 is_frozen,
             };
-            let result = call.dispatch_bypass_filter(origin)?;
-
-            // AssetMetadataMap::<T>::insert(
-            //     id,
-            //     AssetMetadata { name: asset_name, symbol: asset_symbol, decimals },
-            // );
-
-            Ok(result)
+            call.dispatch_bypass_filter(origin)
         }
 
         #[pallet::weight(T::WeightInfo::clear_metadata())]
