@@ -303,10 +303,6 @@
   "ContractAgreementId": "H160",
   "ContractAgreementTerms": {
     "_enum": {
-      "LicenseAgreement": {
-        "source": "ProjectId",
-        "price": "DeipAsset"
-      },
       "GenericContractAgreement": {
       }
     }
@@ -314,7 +310,6 @@
   "ContractAgreementTermsOf": "ContractAgreementTerms",
   "ContractAgreementIndexTerms": {
     "_enum": [
-      "LicenseAgreement",
       "GenericContractAgreement"
     ]
   },
