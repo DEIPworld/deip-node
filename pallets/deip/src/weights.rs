@@ -51,11 +51,11 @@ pub trait WeightInfo {
     fn upvote_review() -> Weight;
     fn add_domain() -> Weight;
     fn create_contract_agreement_project_license() -> Weight;
-    fn create_contract_agreement_general_contract() -> Weight;
+    fn create_contract_agreement_generic_contract() -> Weight;
     fn accept_contract_agreement_project_license_unsigned() -> Weight;
     fn accept_contract_agreement_project_license_signed_by_licenser() -> Weight;
-    fn accept_contract_agreement_general_contract_partially_accepted() -> Weight;
-    fn accept_contract_agreement_general_contract_finalized() -> Weight;
+    fn accept_contract_agreement_generic_contract_partially_accepted() -> Weight;
+    fn accept_contract_agreement_generic_contract_finalized() -> Weight;
 }
 
 /// Weight functions for pallet_deip.
@@ -259,7 +259,7 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
     // Storage: Timestamp Now (r:1 w:0)
     // Storage: Deip ContractAgreementMap (r:1 w:1)
     // Storage: Deip ContractAgreementIdByType (r:0 w:1)
-    fn create_contract_agreement_general_contract() -> Weight {
+    fn create_contract_agreement_generic_contract() -> Weight {
         (42_595_000 as Weight)
             .saturating_add(T::DbWeight::get().reads(2 as Weight))
             .saturating_add(T::DbWeight::get().writes(2 as Weight))
@@ -286,13 +286,13 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
             .saturating_add(T::DbWeight::get().writes(4 as Weight))
     }
     // Storage: Deip ContractAgreementMap (r:1 w:1)
-    fn accept_contract_agreement_general_contract_partially_accepted() -> Weight {
+    fn accept_contract_agreement_generic_contract_partially_accepted() -> Weight {
         (36_490_000 as Weight)
             .saturating_add(T::DbWeight::get().reads(1 as Weight))
             .saturating_add(T::DbWeight::get().writes(1 as Weight))
     }
     // Storage: Deip ContractAgreementMap (r:1 w:1)
-    fn accept_contract_agreement_general_contract_finalized() -> Weight {
+    fn accept_contract_agreement_generic_contract_finalized() -> Weight {
         (47_737_000 as Weight)
             .saturating_add(T::DbWeight::get().reads(1 as Weight))
             .saturating_add(T::DbWeight::get().writes(1 as Weight))
