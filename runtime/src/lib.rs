@@ -769,10 +769,6 @@ impl deip_asset_system::DeipAssetSystem<AccountId, ProjectId, InvestmentId> for 
     type Balance = AssetBalance;
     type AssetId = DeipAssetId;
 
-    fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId> {
-        DeipAssets::try_get_tokenized_project(id)
-    }
-
     fn account_balance(account: &AccountId, asset: &Self::AssetId) -> Self::Balance {
         DeipAssets::account_balance(account, asset)
     }

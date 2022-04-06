@@ -19,8 +19,6 @@ pub trait DeipAssetSystem<AccountId, SourceId, InvestmentId>: AssetIdInitT<Self:
     /// The arithmetic type of asset identifier.
     type AssetId: Member + Parameter + Default + Copy + AsRef<[u8]>;
 
-    fn try_get_tokenized_project(id: &Self::AssetId) -> Option<SourceId>;
-
     fn account_balance(account: &AccountId, asset: &Self::AssetId) -> Self::Balance;
 
     fn total_supply(asset: &Self::AssetId) -> Self::Balance;

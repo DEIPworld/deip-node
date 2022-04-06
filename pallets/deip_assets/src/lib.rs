@@ -189,14 +189,7 @@ pub mod pallet {
                     .for_each(|(k, v)| {
                         AssetIdByProjectIdV1::<T>::insert(k, v);
                     });
-                ProjectIdByAssetId::<T>::drain()
-                    .map(|x| {
-                        reads += 1;
-                        x
-                    })
-                    .for_each(|(k, v)| {
-                        ProjectIdByAssetIdV1::<T>::insert(k, v);
-                    });
+                reads += ProjectIdByAssetId::<T>::drain().count();
                 InvestmentByAssetId::<T>::drain()
                     .map(|x| {
                         reads += 1;
@@ -320,13 +313,10 @@ pub mod pallet {
     pub(super) type AssetIdByProjectIdV1<T: Config> =
         StorageMap<_, Blake2_128Concat, DeipProjectIdOf<T>, Vec<DeipAssetIdOf<T>>, OptionQuery>;
 
+    /// Deprecated
     #[pallet::storage]
     pub(super) type ProjectIdByAssetId<T: Config> =
         StorageMap<_, Identity, DeipAssetIdOf<T>, DeipProjectIdOf<T>, OptionQuery>;
-    // Migrate key hasher:
-    #[pallet::storage]
-    pub(super) type ProjectIdByAssetIdV1<T: Config> =
-        StorageMap<_, Blake2_128Concat, DeipAssetIdOf<T>, DeipProjectIdOf<T>, OptionQuery>;
 
     #[pallet::storage]
     pub(super) type InvestmentByAssetId<T: Config> =
@@ -409,13 +399,6 @@ pub mod pallet {
             let entropy =
                 (b"deip/investments/", id.as_ref()).using_encoded(sp_io::hashing::blake2_256);
             T::AccountId::decode(&mut &entropy[..]).unwrap_or_default()
-        }
-
-        pub fn try_get_tokenized_project(id: &DeipAssetIdOf<T>) -> Option<DeipProjectIdOf<T>> {
-            match ProjectIdByAssetIdV1::<T>::try_get(*id) {
-                Ok(project_id) => Some(project_id),
-                Err(_) => None,
-            }
         }
 
         pub fn account_balance(account: &AccountIdOf<T>, asset: &DeipAssetIdOf<T>) -> T::Balance {
@@ -695,7 +678,6 @@ pub mod pallet {
             DeipAssetIdByAssetIdV1::<T>::insert(asset_id, id, ());
 
             if let Some(project_id) = project_id {
-                ProjectIdByAssetIdV1::<T>::insert(id, project_id.clone());
                 AssetIdByProjectIdV1::<T>::mutate_exists(project_id, |tokens| {
                     match tokens.as_mut() {
                         None => *tokens = Some(vec![id]),
