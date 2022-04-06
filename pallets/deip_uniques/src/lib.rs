@@ -234,10 +234,9 @@ pub mod pallet {
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
             admin: T::DeipAccountId,
-            project_id: Option<DeipProjectIdOf<T>>,
         ) -> DispatchResultWithPostInfo {
             let call = |class, admin| UniquesCall::<T>::create { class, admin };
-            Self::create_or_force(origin, class, admin, project_id, call)
+            Self::create_or_force(origin, class, admin, call)
         }
 
         #[pallet::weight(
@@ -558,19 +557,8 @@ pub mod pallet {
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
             admin: T::DeipAccountId,
-            project_id: Option<DeipProjectIdOf<T>>,
             call: impl FnOnce(T::NftClassId, <T::Lookup as StaticLookup>::Source) -> UniquesCall<T>,
         ) -> DispatchResultWithPostInfo {
-            // If project id is provided ensure that admin is in team.
-            if let Some(project_id) = project_id.as_ref() {
-                if let Some(team_id) = T::ProjectsInfo::try_get_project_team(project_id) {
-                    let account = ensure_signed(origin.clone())?;
-                    ensure!(team_id == account, Error::<T>::ProjectDoesNotBelongToTeam)
-                } else {
-                    return Err(Error::<T>::ProjectDoesNotExist.into())
-                }
-            }
-
             // Check if NFT with this deip id exist.
             ensure!(
                 !NftClassIdByDeipNftClassIdV1::<T>::contains_key(class),

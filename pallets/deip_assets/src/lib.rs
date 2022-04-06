@@ -56,7 +56,7 @@ pub mod pallet {
     };
     use frame_system::{
         offchain::SendTransactionTypes,
-        pallet_prelude::{ensure_signed, BlockNumberFor, OriginFor},
+        pallet_prelude::{BlockNumberFor, OriginFor},
         RawOrigin,
     };
     use scale_info::TypeInfo;
@@ -623,18 +623,7 @@ pub mod pallet {
             id: DeipAssetIdOf<T>,
             admin: T::AccountId,
             min_balance: AssetsBalanceOf<T>,
-            project_id: Option<DeipProjectIdOf<T>>,
         ) -> DispatchResultWithPostInfo {
-            if let Some(ref id) = project_id {
-                match T::ProjectsInfo::try_get_project_team(id) {
-                    None => return Err(Error::<T>::ProjectDoesNotExist.into()),
-                    Some(team_id) => {
-                        let account = ensure_signed(origin.clone())?;
-                        ensure!(team_id == account, Error::<T>::ProjectDoesNotBelongToTeam)
-                    },
-                };
-            }
-
             ensure!(
                 AssetIdByDeipAssetIdV1::<T>::iter_prefix(id).next().is_none(),
                 Error::<T>::DeipAssetIdExists
@@ -701,9 +690,8 @@ pub mod pallet {
             id: DeipAssetIdOf<T>,
             admin: T::DeipAccountId,
             min_balance: AssetsBalanceOf<T>,
-            project_id: Option<DeipProjectIdOf<T>>,
         ) -> DispatchResultWithPostInfo {
-            Self::deip_create_impl(origin, id, admin.into(), min_balance, project_id)
+            Self::deip_create_impl(origin, id, admin.into(), min_balance)
         }
 
         #[pallet::weight((10_000, Pays::No))]

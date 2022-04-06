@@ -12,7 +12,6 @@ pub fn deip_create(
     id: DeipAssetIdOf<T>,
     admin: T::DeipAccountId,
     min_balance: AssetsBalanceOf<T>,
-    project_id: Option<DeipProjectIdOf<T>>,
 ) -> DispatchResultWithPostInfo
 ```
 
