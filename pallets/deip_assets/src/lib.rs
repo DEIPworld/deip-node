@@ -170,17 +170,13 @@ pub mod pallet {
                         reads += 1;
                         x
                     })
-                    .for_each(|(k, k2, v)| {
-                        AssetIdByDeipAssetIdV1::<T>::insert(k, k2, v);
-                    });
+                    .for_each(|(k, k2, v)| AssetIdByDeipAssetIdV1::<T>::insert(k, k2, v));
                 DeipAssetIdByAssetId::<T>::drain()
                     .map(|x| {
                         reads += 1;
                         x
                     })
-                    .for_each(|(k, k2, v)| {
-                        DeipAssetIdByAssetIdV1::<T>::insert(k, k2, v);
-                    });
+                    .for_each(|(k, k2, v)| DeipAssetIdByAssetIdV1::<T>::insert(k, k2, v));
                 reads += AssetIdByProjectId::<T>::drain().count();
                 reads += ProjectIdByAssetId::<T>::drain().count();
                 InvestmentByAssetId::<T>::drain()
@@ -188,17 +184,13 @@ pub mod pallet {
                         reads += 1;
                         x
                     })
-                    .for_each(|(k, v)| {
-                        InvestmentByAssetIdV1::<T>::insert(k, v);
-                    });
+                    .for_each(|(k, v)| InvestmentByAssetIdV1::<T>::insert(k, v));
                 InvestmentMap::<T>::drain()
                     .map(|x| {
                         reads += 1;
                         x
                     })
-                    .for_each(|(k, v)| {
-                        InvestmentMapV1::<T>::insert(k, v);
-                    });
+                    .for_each(|(k, v)| InvestmentMapV1::<T>::insert(k, v));
                 reads += FtBalanceMap::<T>::drain().count();
                 reads += AssetMetadataMap::<T>::drain().count();
 
