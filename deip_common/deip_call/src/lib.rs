@@ -43,12 +43,11 @@ impl Serialize for WrappedCall<Call> {
         match &self.0 {
             Call::Deip(deip_call) => Self::serialize_deip_call(deip_call, serializer),
 
-            Call::DeipInvestmentOpportunity(deip_investment_opportunity_call) => {
+            Call::DeipInvestmentOpportunity(deip_investment_opportunity_call) =>
                 Self::serialize_deip_investment_opportunity_call(
                     deip_investment_opportunity_call,
-                    serializer
-                )
-            },
+                    serializer,
+                ),
 
             Call::DeipProposal(deip_proposal_call) =>
                 Self::serialize_deip_proposal_call(deip_proposal_call, serializer),
@@ -78,8 +77,7 @@ impl Serialize for WrappedCall<Call> {
             Call::ImOnline(_) |
             Call::Utility(_) |
             Call::Multisig(_) |
-            Call::DeipVesting(_)
-            => CallObject {
+            Call::DeipVesting(_) => CallObject {
                 module: "unsupported_module",
                 call: "unsupported_call",
                 args: &UnsupportedCallArgs {},
@@ -205,7 +203,6 @@ impl WrappedCall<Call> {
             //     args: &DeipRejectNdaAccessRequestCallArgs { external_id },
             // }
             // .serialize(serializer),
-
             create_review {
                 external_id,
                 author,
@@ -504,13 +501,6 @@ impl WrappedCall<Call> {
                 module,
                 call: "deip_set_metadata",
                 args: &DeipAssetsSetMetadataCallArgs { id, name, symbol, decimals },
-            }
-            .serialize(serializer),
-
-            deip_wipe_zero_balance { asset, account } => CallObject {
-                module,
-                call: "deip_wipe_zero_balance",
-                args: &DeipAssetsWipeZeroBalanceCallArgs { asset, account },
             }
             .serialize(serializer),
 

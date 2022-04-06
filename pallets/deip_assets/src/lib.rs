@@ -255,10 +255,6 @@ pub mod pallet {
     pub enum Error<T> {
         ProjectDoesNotExist,
         ProjectDoesNotBelongToTeam,
-        ProjectSecurityTokenCannotBeDestroyed,
-        ProjectSecurityTokenCannotBeBurned,
-        ProjectSecurityTokenCannotBeFreezed,
-        ProjectSecurityTokenAccountCannotBeFreezed,
         ReservedAssetCannotBeFreezed,
         ReservedAssetAccountCannotBeFreezed,
         FtNotFound,
@@ -777,11 +773,6 @@ pub mod pallet {
             id: DeipAssetIdOf<T>,
             witness: pallet_assets::DestroyWitness,
         ) -> DispatchResultWithPostInfo {
-            ensure!(
-                !ProjectIdByAssetIdV1::<T>::contains_key(id),
-                Error::<T>::ProjectSecurityTokenCannotBeDestroyed
-            );
-
             let asset_id = AssetIdByDeipAssetIdV1::<T>::iter_prefix(id)
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
@@ -808,11 +799,6 @@ pub mod pallet {
             who: T::DeipAccountId,
             #[pallet::compact] amount: AssetsBalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            ensure!(
-                !ProjectIdByAssetIdV1::<T>::contains_key(id),
-                Error::<T>::ProjectSecurityTokenCannotBeBurned
-            );
-
             let asset_id = AssetIdByDeipAssetIdV1::<T>::iter_prefix(id)
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
@@ -839,11 +825,6 @@ pub mod pallet {
             id: DeipAssetIdOf<T>,
             who: T::DeipAccountId,
         ) -> DispatchResultWithPostInfo {
-            ensure!(
-                !ProjectIdByAssetIdV1::<T>::contains_key(id),
-                Error::<T>::ProjectSecurityTokenAccountCannotBeFreezed
-            );
-
             ensure!(
                 !InvestmentByAssetIdV1::<T>::contains_key(id),
                 Error::<T>::ReservedAssetAccountCannotBeFreezed
@@ -878,11 +859,6 @@ pub mod pallet {
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
         ) -> DispatchResultWithPostInfo {
-            ensure!(
-                !ProjectIdByAssetIdV1::<T>::contains_key(id),
-                Error::<T>::ProjectSecurityTokenCannotBeFreezed
-            );
-
             ensure!(
                 !InvestmentByAssetIdV1::<T>::contains_key(id),
                 Error::<T>::ReservedAssetCannotBeFreezed

@@ -1,19 +1,18 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod investment_opportunity;
 pub mod asset;
+pub mod investment_opportunity;
 
-use sp_runtime::traits::{Member, AtLeast32BitUnsigned};
-use frame_support::dispatch::Parameter;
 pub use deip_assets_error::{ReserveError, UnreserveError};
+use frame_support::dispatch::Parameter;
+use sp_runtime::traits::{AtLeast32BitUnsigned, Member};
 use sp_std::prelude::*;
 
 pub trait AssetIdInitT<AssetId> {
     fn asset_id(raw: &[u8]) -> AssetId;
 }
 
-pub trait DeipAssetSystem<AccountId, SourceId, InvestmentId>: AssetIdInitT<Self::AssetId>
-{
+pub trait DeipAssetSystem<AccountId, SourceId, InvestmentId>: AssetIdInitT<Self::AssetId> {
     /// The units in which asset balances are recorded.
     type Balance: Member + Parameter + AtLeast32BitUnsigned + Default + Copy;
 
@@ -27,8 +26,6 @@ pub trait DeipAssetSystem<AccountId, SourceId, InvestmentId>: AssetIdInitT<Self:
     fn total_supply(asset: &Self::AssetId) -> Self::Balance;
 
     fn get_project_fts(id: &SourceId) -> Vec<Self::AssetId>;
-
-    fn get_ft_balances(id: &Self::AssetId) -> Option<Vec<AccountId>>;
 
     fn transactionally_transfer(
         from: &AccountId,

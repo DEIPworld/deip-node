@@ -4,7 +4,6 @@
 use super::*;
 use codec::Codec;
 use sp_runtime::traits::AtLeast32BitUnsigned;
-use investment_opportunity::Asset;
 
 // Here we declare the runtime API. It is implemented it the `impl` block in
 // runtime amalgamator file (the `runtime/src/lib.rs`)
@@ -23,6 +22,6 @@ sp_api::decl_runtime_apis! {
         fn get_project_content(id: &ProjectContentId) -> Option<ProjectContent<Hash, AccountId>>;
         fn get_nda(nda_id: &NdaId) -> Option<Nda<Hash, AccountId, Moment>>;
         fn get_review(review_id: &ReviewId) -> Option<Review<Hash, AccountId>>;
-        fn get_contract_agreement(id: &ContractAgreementId) -> Option<contract::Agreement<AccountId, Hash, Moment, Asset<AssetId, AssetBalance>>>;
+        fn get_contract_agreement(id: &ContractAgreementId) -> Option<contract::Agreement<AccountId, Hash, Moment>>;
     }
 }

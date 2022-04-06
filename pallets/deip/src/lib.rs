@@ -46,19 +46,16 @@ use frame_support::{
     dispatch::{DispatchResult, Parameter},
     ensure,
     pallet_prelude::*,
-    storage::{IterableStorageDoubleMap},
+    storage::IterableStorageDoubleMap,
     traits::{Currency, ReservableCurrency},
-    StorageMap,
     weights::Weight,
+    StorageMap,
 };
 use frame_system::{self as system, ensure_signed, offchain::SendTransactionTypes};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 pub use sp_core::{H160, H256};
-use sp_runtime::{
-    traits::{Member},
-    RuntimeDebug,
-};
+use sp_runtime::{traits::Member, RuntimeDebug};
 use sp_std::vec::Vec;
 
 #[cfg(test)]
@@ -78,10 +75,10 @@ pub use review::{Id as ReviewId, Review, Vote as DeipReviewVote};
 pub mod contract;
 pub use contract::{
     AgreementOf as ContractAgreementOf, Id as ContractAgreementId,
-    IndexTerms as ContractAgreementIndexTerms, TermsOf as ContractAgreementTermsOf,
+    IndexTerms as ContractAgreementIndexTerms, Terms,
 };
 
-use deip_transaction_ctx::{PortalCtxT};
+use deip_transaction_ctx::PortalCtxT;
 
 pub mod benchmarking;
 pub mod weights;
@@ -126,10 +123,10 @@ impl Default for ProjectContentType {
 
 /// Configuration trait. Pallet depends on frame_system and pallet_timestamp.
 pub trait Config:
-    frame_system::Config +
-    pallet_timestamp::Config +
-    SendTransactionTypes<Call<Self>> +
-    deip_asset_system::DeipAssetSystem<Self::AccountId, ProjectId, InvestmentId>
+    frame_system::Config
+    + pallet_timestamp::Config
+    + SendTransactionTypes<Call<Self>>
+    + deip_asset_system::DeipAssetSystem<Self::AccountId, ProjectId, InvestmentId>
 {
     type TransactionCtx: PortalCtxT<Call<Self>>;
 
@@ -512,13 +509,15 @@ decl_storage! {
 }
 
 mod v1 {
+    use super::{Config, PalletStorageVersion, StorageVersion};
     use core::convert::TryInto;
-    use super::{Config, StorageVersion, PalletStorageVersion};
-    use frame_support::weights::Weight;
-    use frame_support::traits::Get;
-    use frame_support::storage::{
-        StorageMap, IterableStorageMap, StorageValue, StorageDoubleMap,
-        IterableStorageDoubleMap
+    use frame_support::{
+        storage::{
+            IterableStorageDoubleMap, IterableStorageMap, StorageDoubleMap, StorageMap,
+            StorageValue,
+        },
+        traits::Get,
+        weights::Weight,
     };
 
     pub(crate) fn set_storage_version<T: Config>() -> Weight {
@@ -526,10 +525,11 @@ mod v1 {
         T::DbWeight::get().writes(1)
     }
 
-    pub(crate) fn migrate_investment_opportunity<T: Config>() -> Weight
-    {
+    pub(crate) fn migrate_investment_opportunity<T: Config>() -> Weight {
+        use super::{
+            InvestmentMap, InvestmentMapV1, SimpleCrowdfundingMap, SimpleCrowdfundingMapV1,
+        };
         use frame_support::storage::migration::move_storage_from_pallet;
-        use super::{InvestmentMapV1, InvestmentMap, SimpleCrowdfundingMap, SimpleCrowdfundingMapV1};
 
         let mut reads: usize = 0;
         let mut writes: usize = 0;
@@ -550,7 +550,7 @@ mod v1 {
         move_storage_from_pallet(
             "SimpleCrowdfundingMapV1".as_bytes(),
             "Deip".as_bytes(),
-            "DeipInvestmentOpportunity".as_bytes()
+            "DeipInvestmentOpportunity".as_bytes(),
         );
         reads *= 2;
         writes *= 2;
@@ -558,7 +558,7 @@ mod v1 {
         move_storage_from_pallet(
             "InvestmentMapV1".as_bytes(),
             "Deip".as_bytes(),
-            "DeipInvestmentOpportunity".as_bytes()
+            "DeipInvestmentOpportunity".as_bytes(),
         );
         reads_investments *= 2;
         writes_investments *= 2;
@@ -569,13 +569,11 @@ mod v1 {
         let writes_total: usize = writes + writes_investments;
         let writes_total: Weight = writes_total.try_into().unwrap_or(Weight::MAX);
 
-        return T::DbWeight::get().reads_writes(reads_total, writes_total)
+        T::DbWeight::get().reads_writes(reads_total, writes_total)
     }
 
-    pub(crate) fn migrate_projects_hasher<T: Config>() -> Weight
-    {
-        use super::{ProjectMap, ProjectMapV1};
-        use super::{ProjectIdByTeamId, ProjectIdByTeamIdV1};
+    pub(crate) fn migrate_projects_hasher<T: Config>() -> Weight {
+        use super::{ProjectIdByTeamId, ProjectIdByTeamIdV1, ProjectMap, ProjectMapV1};
         let mut reads: usize = 0;
         ProjectMap::<T>::drain().for_each(|(k, v)| {
             reads += 1;
@@ -589,11 +587,9 @@ mod v1 {
         T::DbWeight::get().reads_writes(reads, reads)
     }
 
-    pub(crate) fn migrate_project_contents_hasher<T: Config>() -> Weight
-    {
+    pub(crate) fn migrate_project_contents_hasher<T: Config>() -> Weight {
         use super::{
-            ProjectContentMap, ProjectContentMapV1,
-            ContentIdByProjectId, ContentIdByProjectIdV1
+            ContentIdByProjectId, ContentIdByProjectIdV1, ProjectContentMap, ProjectContentMapV1,
         };
         let mut reads: usize = 0;
         ProjectContentMap::<T>::drain().for_each(|(k, v)| {
@@ -608,12 +604,8 @@ mod v1 {
         T::DbWeight::get().reads_writes(reads, reads)
     }
 
-    pub(crate) fn migrate_nda_hasher<T: Config>() -> Weight
-    {
-        use super::{
-            NdaMap, NdaMapV1,
-            NdaAccessRequestMap, NdaAccessRequestMapV1
-        };
+    pub(crate) fn migrate_nda_hasher<T: Config>() -> Weight {
+        use super::{NdaAccessRequestMap, NdaAccessRequestMapV1, NdaMap, NdaMapV1};
         let mut reads: usize = 0;
         NdaMap::<T>::drain().for_each(|(k, v)| {
             reads += 1;
@@ -627,13 +619,12 @@ mod v1 {
         T::DbWeight::get().reads_writes(reads, reads)
     }
 
-    pub(crate) fn migrate_reviews_hasher<T: Config>() -> Weight
-    {
-        use super::{ReviewMap, ReviewMapV1};
-        use super::{ReviewIdByProjectIdV1, ReviewIdByProjectId};
-        use super::{ReviewIdByContentIdV1, ReviewIdByContentId};
-        use super::{ReviewIdByAccountIdV1, ReviewIdByAccountId};
-        use super::{VoteIdByReviewIdV1, VoteIdByReviewId};
+    pub(crate) fn migrate_reviews_hasher<T: Config>() -> Weight {
+        use super::{
+            ReviewIdByAccountId, ReviewIdByAccountIdV1, ReviewIdByContentId, ReviewIdByContentIdV1,
+            ReviewIdByProjectId, ReviewIdByProjectIdV1, ReviewMap, ReviewMapV1, VoteIdByReviewId,
+            VoteIdByReviewIdV1,
+        };
 
         let mut reads: usize = 0;
         ReviewMap::<T>::drain().for_each(|(k, v)| {
@@ -1076,7 +1067,7 @@ decl_module! {
             hash: HashOf<T>,
             activation_time: Option<MomentOf<T>>,
             expiration_time: Option<MomentOf<T>>,
-            terms: ContractAgreementTermsOf<T>,
+            terms: Terms,
         ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
             let parties = parties.into_iter().map(Into::into).collect();

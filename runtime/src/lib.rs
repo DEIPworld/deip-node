@@ -765,8 +765,7 @@ impl deip_asset_system::AssetIdInitT<DeipAssetId> for Runtime {
 
 use deip_asset_system::{ReserveError, UnreserveError};
 
-impl deip_asset_system::DeipAssetSystem<AccountId, ProjectId, InvestmentId> for Runtime
-{
+impl deip_asset_system::DeipAssetSystem<AccountId, ProjectId, InvestmentId> for Runtime {
     type Balance = AssetBalance;
     type AssetId = DeipAssetId;
 
@@ -786,10 +785,6 @@ impl deip_asset_system::DeipAssetSystem<AccountId, ProjectId, InvestmentId> for 
         DeipAssets::get_project_fts(id)
     }
 
-    fn get_ft_balances(id: &Self::AssetId) -> Option<Vec<AccountId>> {
-        DeipAssets::get_ft_balances(id)
-    }
-
     fn transactionally_transfer(
         from: &AccountId,
         asset: Self::AssetId,
@@ -807,9 +802,7 @@ impl deip_asset_system::DeipAssetSystem<AccountId, ProjectId, InvestmentId> for 
         DeipAssets::deip_transactionally_reserve(account, id, shares, asset)
     }
 
-    fn transactionally_unreserve(
-        id: InvestmentId,
-    ) -> Result<(), UnreserveError<Self::AssetId>> {
+    fn transactionally_unreserve(id: InvestmentId) -> Result<(), UnreserveError<Self::AssetId>> {
         DeipAssets::transactionally_unreserve(id)
     }
 
