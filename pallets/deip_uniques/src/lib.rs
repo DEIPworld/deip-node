@@ -18,13 +18,11 @@ pub mod pallet {
         traits::{Get, Hooks},
         Blake2_128Concat, BoundedVec, Identity, Parameter,
     };
-    use frame_system::{
-        ensure_signed,
-        pallet_prelude::{BlockNumberFor, OriginFor},
-    };
+    use frame_system::pallet_prelude::{BlockNumberFor, OriginFor};
     use pallet_uniques::{
         Call as UniquesCall, DestroyWitness, Pallet as UniquesPallet, WeightInfo,
     };
+    use sp_std::vec::Vec;
 
     // Helper types.
     type DeipNftClassIdOf<T> = <T as Config>::DeipNftClassId;

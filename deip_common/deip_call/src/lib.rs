@@ -462,7 +462,7 @@ impl WrappedCall<Call> {
 
         let module = "deip_assets";
         match call {
-            deip_create { id, admin, min_balance, project_id } => CallObject {
+            deip_create { id, admin, min_balance } => CallObject {
                 module,
                 call: "deip_create",
                 args: &DeipAssetsCreateCallArgs::new(id, admin, min_balance),
@@ -647,7 +647,7 @@ struct DeipAssetsDestroyCallArgs<A, B> {
 }
 
 #[derive(Serialize)]
-struct DeipAssetsCreateCallArgs<A, B, D: Clone + AtLeast32BitUnsigned, E> {
+struct DeipAssetsCreateCallArgs<A, B, D: Clone + AtLeast32BitUnsigned> {
     id: A,
     admin: B,
     min_balance: SerializableAtLeast32BitUnsigned<D>,
