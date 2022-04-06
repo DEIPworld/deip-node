@@ -51,7 +51,7 @@ use frame_support::{
     StorageMap,
     weights::Weight,
 };
-use frame_system::{self as system, ensure_none, ensure_signed, offchain::SendTransactionTypes};
+use frame_system::{self as system, ensure_signed, offchain::SendTransactionTypes};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 pub use sp_core::{H160, H256};
@@ -318,17 +318,6 @@ decl_event! {
         /// Emitted when a DAO votes for a review
         ReviewUpvoted(ReviewId, AccountId, DomainId),
 
-        /// Event emitted when a simple crowd funding has been created.
-        SimpleCrowdfundingCreated(InvestmentId),
-        /// Event emitted when a simple crowd funding has been activated.
-        SimpleCrowdfundingActivated(InvestmentId),
-        /// Event emitted when a simple crowd funding has finished.
-        SimpleCrowdfundingFinished(InvestmentId),
-        /// Event emitted when a simple crowd funding has expired.
-        SimpleCrowdfundingExpired(InvestmentId),
-        /// Event emitted when DAO invested to an opportunity
-        Invested(InvestmentId, AccountId),
-
         ContractAgreementCreated(ContractAgreementId),
         ContractAgreementAccepted(ContractAgreementId, AccountId),
         ContractAgreementFinalized(ContractAgreementId),
@@ -406,37 +395,8 @@ decl_error! {
 
         // ==== General =====
 
-        /// Deprecated call (see call docs)
-        DeprecatedCall,
-
-        /// Access Forbiten
+        /// Access Forbidden
         NoPermission,
-
-        // Investment opportunity errors
-        // (DEPRECATED, moved to DeipInvestmentOpportunity)
-        InvestmentOpportunityStartTimeMustBeLaterOrEqualCurrentMoment,
-        InvestmentOpportunityEndTimeMustBeLaterStartTime,
-        InvestmentOpportunitySoftCapMustBeGreaterOrEqualMinimum,
-        InvestmentOpportunityHardCapShouldBeGreaterOrEqualSoftCap,
-        InvestmentOpportunityAlreadyExists,
-        InvestmentOpportunityBalanceIsNotEnough,
-        InvestmentOpportunityFailedToReserveAsset,
-        InvestmentOpportunityAssetAmountMustBePositive,
-        InvestmentOpportunitySecurityTokenNotSpecified,
-        InvestmentOpportunityNotFound,
-        InvestmentOpportunityShouldBeInactive,
-        InvestmentOpportunityShouldBeStarted,
-        InvestmentOpportunityShouldBeActive,
-        InvestmentOpportunityExpirationWrongState,
-        InvestmentOpportunityWrongAssetId,
-        InvestmentOpportunityCapDifferentAssets,
-        InvestmentOpportunityTooMuchShares,
-
-        // Possible errors when DAO tries to invest to an opportunity
-        InvestingNotFound,
-        InvestingNotActive,
-        InvestingNotEnoughFunds,
-        InvestingWrongAsset,
 
         ContractAgreementNoParties,
         ContractAgreementStartTimeMustBeLaterOrEqualCurrentMoment,
@@ -766,69 +726,6 @@ decl_module! {
             ProjectIdByTeamIdV1::<T>::insert(project.team_id.clone(), project.external_id, ());
 
             Self::deposit_event(RawEvent::ProjectCreated(account, project));
-        }
-
-        /// (DEPRECATED, moved to DeipInvestmentOpportunity)
-        /// Allows DAO to create an investment opportunity.
-        ///
-        /// The origin for this call must be _Signed_.
-        ///
-        /// - `external_id`: id of the sale. Must be unique.
-        /// - `project_id`: id of the project which tokens are intended to sale.
-        /// - `investment_type`: specifies type of created investment opportunity. For possible
-        /// variants and details see [`FundingModel`].
-        #[weight = 10_000]
-        #[allow(unused_variables)]
-        fn create_investment_opportunity(origin,
-            external_id: InvestmentId,
-            creator: T::DeipAccountId,
-            shares: Vec<DeipAsset<T>>,
-            funding_model: FundingModelOf<T>,
-        ) -> DispatchResult {
-            let _account = ensure_signed(origin)?;
-            Err(Error::<T>::DeprecatedCall)?
-        }
-
-        /// (DEPRECATED, moved to DeipInvestmentOpportunity)
-        #[weight = 10_000]
-        #[allow(unused_variables)]
-        fn activate_crowdfunding(origin, sale_id: InvestmentId) -> DispatchResult {
-            ensure_none(origin)?;
-            Err(Error::<T>::DeprecatedCall)?
-        }
-
-        /// (DEPRECATED, moved to DeipInvestmentOpportunity)
-        #[weight = 10_000]
-        #[allow(unused_variables)]
-        fn expire_crowdfunding(origin, sale_id: InvestmentId) -> DispatchResultWithPostInfo {
-            ensure_none(origin)?;
-            Err(Error::<T>::DeprecatedCall)?
-        }
-
-        /// (DEPRECATED, moved to DeipInvestmentOpportunity)
-        #[weight = 10_000]
-        #[allow(unused_variables)]
-        fn finish_crowdfunding(origin, sale_id: InvestmentId) -> DispatchResult {
-            ensure_none(origin)?;
-            Err(Error::<T>::DeprecatedCall)?
-        }
-
-        /// (DEPRECATED, moved to DeipInvestmentOpportunity)
-        /// Allows DAO to invest to an opportunity.
-        ///
-        /// The origin for this call must be _Signed_.
-        ///
-        /// - `id`: identifier of the investment opportunity
-        /// - `amount`: amount of units to invest. The account should have enough funds on
-        ///     the balance. This amount is reserved until the investment finished or expired
-        #[weight = 10_000]
-        #[allow(unused_variables)]
-        fn invest(origin,
-            id: InvestmentId,
-            asset: DeipAsset<T>
-        ) -> DispatchResultWithPostInfo {
-            let _account = ensure_signed(origin)?;
-            Err(Error::<T>::DeprecatedCall)?
         }
 
         /// Allow a user to update project.

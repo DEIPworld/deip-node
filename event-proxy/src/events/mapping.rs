@@ -243,26 +243,6 @@ where
             // deip::ReviewUpvotedEvent
             unimplemented!()
         },
-        SimpleCrowdfundingCreated(..) => {
-            // deip::SimpleCrowdfundingCreatedEvent
-            unimplemented!()
-        },
-        SimpleCrowdfundingActivated(..) => {
-            // deip::SimpleCrowdfundingActivatedEvent
-            unimplemented!()
-        },
-        SimpleCrowdfundingFinished(..) => {
-            // deip::SimpleCrowdfundingFinishedEvent
-            unimplemented!()
-        },
-        SimpleCrowdfundingExpired(..) => {
-            // deip::SimpleCrowdfundingExpiredEvent
-            unimplemented!()
-        },
-        Invested(..) => {
-            // deip::InvestedEvent
-            unimplemented!()
-        },
         ContractAgreementCreated(..) => {
             // deip::ContractAgreementCreatedEvent
             unimplemented!()

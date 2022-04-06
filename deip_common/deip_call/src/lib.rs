@@ -114,47 +114,6 @@ impl WrappedCall<Call> {
                 }
                 .serialize(serializer),
 
-            create_investment_opportunity { external_id, creator, shares, funding_model } =>
-                CallObject {
-                    module: "deip",
-                    call: "create_investment_opportunity",
-                    args: &DeipCreateInvestmentOpportunityCallArgs {
-                        external_id,
-                        creator,
-                        shares,
-                        funding_model,
-                    },
-                }
-                .serialize(serializer),
-
-            activate_crowdfunding { sale_id } => CallObject {
-                module: "deip",
-                call: "activate_crowdfunding",
-                args: &DeipActivateCrowdfundingCallArgs { sale_id },
-            }
-            .serialize(serializer),
-
-            expire_crowdfunding { sale_id } => CallObject {
-                module: "deip",
-                call: "expire_crowdfunding",
-                args: &DeipExpireCrowdfundingCallArgs { sale_id },
-            }
-            .serialize(serializer),
-
-            finish_crowdfunding { sale_id } => CallObject {
-                module: "deip",
-                call: "finish_crowdfunding",
-                args: &DeipFinishCrowdfundingCallArgs { sale_id },
-            }
-            .serialize(serializer),
-
-            invest { id, asset } => CallObject {
-                module: "deip",
-                call: "invest",
-                args: &DeipInvestCallArgs { id, amount: asset },
-            }
-            .serialize(serializer),
-
             update_project { project_id, description, is_private } => CallObject {
                 module: "deip",
                 call: "update_project",
