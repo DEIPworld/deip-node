@@ -8521,8 +8521,6 @@ pub mod api {
                 )]
                 pub enum IndexTerms {
                     #[codec(index = 0)]
-                    LicenseAgreement,
-                    #[codec(index = 1)]
                     GenericContractAgreement,
                 }
                 #[derive(
@@ -8574,9 +8572,6 @@ pub mod api {
                     scale_info :: TypeInfo,
                 )]
                 pub enum Terms<_0> {
-                    #[codec(index = 0)]
-                    LicenseAgreement { source: runtime_types::primitive_types::H160, price: _0 },
-                    #[codec(index = 1)]
                     GenericContractAgreement,
                 }
             }
