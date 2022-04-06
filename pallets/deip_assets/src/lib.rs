@@ -39,17 +39,14 @@ pub use deip_serializable_u128::SerializableAtLeast32BitUnsigned as Serializable
 #[doc(inline)]
 pub use pallet::*;
 
-const NON_LOCAL: u8 = 101;
-
 #[frame_support::pallet]
 #[doc(hidden)]
 pub mod pallet {
     use frame_support::{
         pallet_prelude::{
             ensure, Blake2_128Concat, Decode, DispatchResultWithPostInfo, Encode, Get, Hooks,
-            Identity, InvalidTransaction, MaxEncodedLen, Member, OptionQuery, Parameter, Pays,
-            StorageDoubleMap, StorageMap, StorageValue, TransactionSource, TransactionValidity,
-            ValidateUnsigned, ValueQuery,
+            Identity, MaxEncodedLen, Member, OptionQuery, Parameter, Pays, StorageDoubleMap,
+            StorageMap, StorageValue, ValueQuery,
         },
         traits::{Currency, ExistenceRequirement, UnfilteredDispatchable, WithdrawReasons},
         transactional, RuntimeDebug,
@@ -206,19 +203,6 @@ pub mod pallet {
                 return T::DbWeight::get().reads_writes(reads, reads)
             }
             0
-        }
-    }
-
-    #[pallet::validate_unsigned]
-    impl<T: Config> ValidateUnsigned for Pallet<T> {
-        type Call = Call<T>;
-
-        fn validate_unsigned(source: TransactionSource, _call: &Self::Call) -> TransactionValidity {
-            if matches!(source, TransactionSource::Local | TransactionSource::InBlock) {
-                InvalidTransaction::Call.into()
-            } else {
-                InvalidTransaction::Custom(super::NON_LOCAL).into()
-            }
         }
     }
 
