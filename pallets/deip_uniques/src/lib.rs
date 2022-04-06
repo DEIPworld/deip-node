@@ -101,17 +101,13 @@ pub mod pallet {
                         reads += 1;
                         x
                     })
-                    .for_each(|(k, v)| {
-                        NftClassIdByDeipNftClassIdV1::<T>::insert(k, v);
-                    });
+                    .for_each(|(k, v)| NftClassIdByDeipNftClassIdV1::<T>::insert(k, v));
                 DeipNftClassIdByNftClassId::<T>::drain()
                     .map(|x| {
                         reads += 1;
                         x
                     })
-                    .for_each(|(k, v)| {
-                        DeipNftClassIdByNftClassIdV1::<T>::insert(k, v);
-                    });
+                    .for_each(|(k, v)| DeipNftClassIdByNftClassIdV1::<T>::insert(k, v));
                 reads += ProjectIdByDeipNftClassId::<T>::drain().count();
                 reads += NftBalanceMap::<T>::drain().count();
 
