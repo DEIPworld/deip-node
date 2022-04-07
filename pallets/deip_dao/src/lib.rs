@@ -83,14 +83,32 @@ pub mod pallet {
         type MaxSignatories: Get<u16>;
     }
 
+    use frame_support::traits::{StorageVersion, GetStorageVersion};
+
+    pub const V0: StorageVersion = StorageVersion::new(0);
+    pub const V1: StorageVersion = StorageVersion::new(1);
+
     #[doc(hidden)]
     #[pallet::pallet]
     #[pallet::generate_store(pub(super) trait Store)]
+    #[pallet::storage_version(V1)]
     pub struct Pallet<T>(_);
 
     #[doc(hidden)]
     #[pallet::hooks]
-    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_runtime_upgrade() -> Weight {
+            if Self::on_chain_storage_version() == V0
+                && Self::current_storage_version() == V1
+            {
+                let id = DaoId::zero();
+                DaoLookup::<T>::remove(dao_key2::<T>(&id));
+                DaoRepository::<T>::remove(id);
+                return T::DbWeight::get().writes(2);
+            }
+            0
+        }
+    }
 
     #[pallet::error]
     pub enum Error<T> {
@@ -442,6 +460,7 @@ pub mod pallet {
             let authority_key = ensure_signed(origin)?;
             let authority =
                 authority.assert::<T>(&authority_key).map_err::<Error<T>, _>(Into::into)?;
+            ensure!(!name.is_zero(), Error::<T>::Exists);
             ensure!(!DaoRepository::<T>::contains_key(&name), Error::<T>::Exists);
             let dao_key = Self::dao_key(&name);
             let dao = DaoOf::<T>::new(authority_key, authority, name, dao_key, metadata);

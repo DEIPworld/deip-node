@@ -120,7 +120,7 @@ pub mod pallet {
 
     use frame_support::traits::StorageVersion;
 
-    const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+    const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
 
     #[doc(hidden)]
     #[pallet::pallet]
@@ -131,6 +131,32 @@ pub mod pallet {
     use frame_support::storage::{StoragePrefixedMap};
     use sp_runtime::traits::{Hash};
 
+    mod v1 {
+        use super::*;
+        pub(super) fn migrate_signed_tx<T: Config>() -> Weight {
+            let mut pending: usize = 0;
+            PendingTx::<T>::drain().for_each(|(_, _, xt)| {
+                let portal_id = ScheduledTx::<T>::take(V0::<T>::extrinsic_hash(&xt)).unwrap();
+                SignedTx::<T>::insert(V1::<T>::extrinsic_hash(&xt), portal_id);
+                pending += 1;
+            });
+            let _ = ScheduledTx::<T>::remove_all(None);
+            T::DbWeight::get().reads_writes(pending as Weight * 2, pending as Weight + 1)
+        }
+    }
+
+    mod v2 {
+        use super::*;
+        pub(super) fn remove_zeroed_id<T: Config>() -> Weight {
+            let portal = PortalRepository::<T>::take(PortalId::<T>::default());
+            if let Some(portal) = portal {
+                DelegateLookup::<T>::remove(*portal.id());
+                OwnerLookup::<T>::remove(portal.owner().clone());
+            }
+            T::DbWeight::get().reads_writes(1, 1 + 2)
+        }
+    }
+
     #[doc(hidden)]
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
@@ -138,14 +164,12 @@ pub mod pallet {
             if Pallet::<T>::current_storage_version() == V1::<T>::version()
                 && Pallet::<T>::on_chain_storage_version() == V0::<T>::version()
             {
-                let mut pending: usize = 0;
-                PendingTx::<T>::drain().for_each(|(_, _, xt)| {
-                    let portal_id = ScheduledTx::<T>::take(V0::<T>::extrinsic_hash(&xt)).unwrap();
-                    SignedTx::<T>::insert(V1::<T>::extrinsic_hash(&xt), portal_id);
-                    pending += 1;
-                });
-                let _ = SignedTx::<T>::remove_all(None);
-                return T::DbWeight::get().reads_writes(pending as Weight * 2, pending as Weight + 1);
+                return v1::migrate_signed_tx::<T>();
+            }
+            else if Pallet::<T>::current_storage_version() == V2::<T>::version()
+                && Pallet::<T>::on_chain_storage_version() == V1::<T>::version()
+            {
+                return v2::remove_zeroed_id::<T>();
             }
             return 0;
         }
@@ -154,8 +178,7 @@ pub mod pallet {
     #[pallet::error]
     pub enum Error<T> {
         DelegateMismatch,
-        PortalMismatch,
-        AlreadyScheduled,
+        AlreadySigned,
         UnproperCall,
         NotSigned,
         OwnerIsNotATenant,
@@ -319,14 +342,27 @@ pub mod pallet {
         type ExtrinsicHash = T::Hash;
 
         fn version() -> StorageVersion {
-            STORAGE_VERSION
+            StorageVersion::new(1)
         }
         fn extrinsic_hash2(xt: &[u8]) -> ExtrinsicHash<T, Self> {
             T::Hashing::hash(xt)
         }
     }
 
-    // Migration to V2:
+    pub struct V2<T: Config>(PhantomData<T>) where Self: StorageVersionT<T>;
+
+    impl<T: Config> StorageVersionT<T> for V2<T> {
+        type ExtrinsicHash = <V1<T> as StorageVersionT<T>>::ExtrinsicHash;
+
+        fn version() -> StorageVersion {
+            STORAGE_VERSION
+        }
+        fn extrinsic_hash2(xt: &[u8]) -> Self::ExtrinsicHash {
+            V1::<T>::extrinsic_hash2(xt)
+        }
+    }
+
+    // Migration to V1:
     // Removed
     #[pallet::storage]
     pub(super) type PendingTx<T: Config> = StorageDoubleMap<
@@ -338,7 +374,7 @@ pub mod pallet {
         T::UncheckedExtrinsic,
     >;
 
-    // Migration to V2:
+    // Migration to V1:
     // Moved to SignedTx
     #[pallet::storage]
     pub(super) type ScheduledTx<T: Config> = StorageMap<_,
@@ -347,7 +383,7 @@ pub mod pallet {
         PortalId<T>
     >;
 
-    // Migration to V2:
+    // Migration to V1:
     // Moved from ScheduledTx
     #[pallet::storage]
     pub(super) type SignedTx<T: Config> = StorageMap<_,
