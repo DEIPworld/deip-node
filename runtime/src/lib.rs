@@ -253,14 +253,8 @@ parameter_types! {
 use frame_support::traits::Contains;
 pub struct CallFilter;
 impl Contains<Call> for CallFilter {
-    fn contains(t: &Call) -> bool {
-        match t {
-            Call::Assets(pallet_assets::Call::destroy { .. }) => false,
-            Call::Assets(pallet_assets::Call::burn { .. }) => false,
-            Call::Uniques(pallet_uniques::Call::destroy { .. }) => false,
-            Call::Uniques(pallet_uniques::Call::burn { .. }) => false,
-            _ => true,
-        }
+    fn contains(_t: &Call) -> bool {
+        true
     }
 }
 
@@ -946,8 +940,8 @@ construct_runtime!(
         Multisig: pallet_multisig::{Pallet, Call, Storage, Event<T>},
         Utility: pallet_utility::{Pallet, Call, Event},
         Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config},
-        DeipAssets: pallet_deip_assets::{Pallet, Call, Storage, Config<T>},
-        DeipUniques: pallet_deip_uniques::{Pallet, Call, Storage, Config<T>},
+        DeipAssets: pallet_deip_assets::{Pallet, Storage, Config<T>},
+        DeipUniques: pallet_deip_uniques::{Pallet, Storage, Config<T>},
         DeipProposal: pallet_deip_proposal::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
         DeipDao: pallet_deip_dao::{Pallet, Call, Storage, Event<T>, Config},
         DeipPortal: pallet_deip_portal::{Pallet, Call, Storage, Config, ValidateUnsigned},
