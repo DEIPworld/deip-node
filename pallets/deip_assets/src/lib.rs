@@ -52,7 +52,6 @@ pub mod pallet {
         transactional, RuntimeDebug,
     };
     use frame_system::{
-        offchain::SendTransactionTypes,
         pallet_prelude::{BlockNumberFor, OriginFor},
         RawOrigin,
     };
@@ -86,7 +85,6 @@ pub mod pallet {
     pub trait Config:
         frame_system::Config
         + pallet_assets::Config<AssetId = Self::AssetsAssetId>
-        + SendTransactionTypes<Call<Self>>
     {
         type ProjectsInfo: DeipProjectsInfo<Self::AccountId>;
         type DeipAccountId: Into<Self::AccountId> + From<Self::AccountId> + Parameter + Member;

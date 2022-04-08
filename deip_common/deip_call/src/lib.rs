@@ -55,11 +55,11 @@ impl Serialize for WrappedCall<Call> {
             Call::DeipDao(deip_dao_call) =>
                 Self::serialize_deip_dao_call(deip_dao_call, serializer),
 
-            Call::DeipAssets(deip_assets_call) =>
-                Self::serialize_deip_assets_call(deip_assets_call, serializer),
+            // Call::DeipAssets(deip_assets_call) =>
+            //     Self::serialize_deip_assets_call(deip_assets_call, serializer),
             Call::Assets(..) |
             Call::Uniques(..) |
-            Call::DeipUniques(..) |
+            // Call::DeipUniques(..) |
             Call::System(_) |
             Call::DeipPortal(_) |
             Call::Timestamp(_) |
@@ -410,6 +410,7 @@ impl WrappedCall<Call> {
         }
     }
 
+    #[allow(dead_code)]
     fn serialize_deip_assets_call<S>(
         call: &pallet_deip_assets::Call<Runtime>,
         serializer: S,
