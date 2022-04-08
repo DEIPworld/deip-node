@@ -575,7 +575,8 @@ impl deip_projects_info::DeipProjectsInfo<AccountId> for Runtime {
 }
 
 parameter_types! {
-    pub const WipePeriod: BlockNumber = DAYS;
+    /// Greater asset ids will be used for `deip_create` calls.
+    pub const StartAssetId: AssetId = AssetId::MAX / 2;
 }
 
 pub struct AssetIdInit;
@@ -591,7 +592,7 @@ impl pallet_deip_assets::Config for Runtime {
     type AssetsAssetId = AssetId;
     type AssetId = DeipAssetId;
     type AssetIdInit = AssetIdInit;
-    type WipePeriod = WipePeriod;
+    type StartAssetId = StartAssetId;
 }
 
 impl pallet_deip_balances::Config for Runtime {}

@@ -112,9 +112,8 @@ pub mod pallet {
             + TypeInfo;
         type AssetIdInit: AssetIdInitT<<Self as Config>::AssetId>;
 
-        /// Period of check for accounts with zero FTs
-        #[pallet::constant]
-        type WipePeriod: Get<Self::BlockNumber>;
+        /// Start origin `AssetId` for FT creation with Deip AssetId.
+        type StartAssetId: Get<<Self as pallet_assets::Config>::AssetId>;
     }
 
     use frame_support::traits::{GetStorageVersion, StorageVersion};
@@ -341,7 +340,9 @@ pub mod pallet {
 
     #[pallet::genesis_build]
     impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
-        fn build(&self) {}
+        fn build(&self) {
+            NextAssetId::<T>::put(T::StartAssetId::get());
+        }
     }
 
     impl<T: Config> Pallet<T> {
@@ -606,13 +607,14 @@ pub mod pallet {
             );
 
             let asset_id = NextAssetId::<T>::get();
-            let next_asset_id =
-                asset_id.checked_add(&One::one()).ok_or(Error::<T>::AssetIdOverflow)?;
 
             let admin_source = <T::Lookup as StaticLookup>::unlookup(admin);
             let call =
                 pallet_assets::Call::<T>::create { id: asset_id, admin: admin_source, min_balance };
             let post_dispatch_info = call.dispatch_bypass_filter(origin)?;
+
+            let next_asset_id =
+                asset_id.checked_add(&One::one()).ok_or(Error::<T>::AssetIdOverflow)?;
 
             NextAssetId::<T>::put(next_asset_id);
             AssetIdByDeipAssetIdV1::<T>::insert(id, asset_id, ());
