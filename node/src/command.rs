@@ -53,6 +53,7 @@ impl SubstrateCli for Cli {
         Ok(match id {
             "dev" => Box::new(chain_spec::development_config()?),
             "" | "local" => Box::new(chain_spec::local_testnet_config()?),
+            "pre-mainnet" => Box::new(chain_spec::pre_mainnet_config()?),
             "octopus-testnet" => Box::new(chain_spec::octopus_testnet_config()?),
             "octopus-mainnet" => Box::new(chain_spec::octopus_mainnet_config()?),
             path =>

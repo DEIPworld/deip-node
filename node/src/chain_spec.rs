@@ -126,15 +126,19 @@ pub fn development_config() -> Result<ChainSpec, String> {
                 wasm_binary,
                 // Initial PoA authorities
                 vec![
-                    // 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
-                    authority_keys_from_seed("Alice", 10 * OCTS), // OCTOPUS FOUNDATION NODE 1
+                    authority_keys_from_seed("Alice", 10 * OCTS)
                 ],
                 // Sudo account
-                AccountId::from_ss58check("5F9XVEoQDCYmTH4k5qczas4DiZUfp1RGbYKHyBYFgA9Zj1qn").unwrap(),
+                get_account_id_from_seed::<sr25519::Public>("Alice"),
                 // Pre-funded accounts
-                get_endowed_accounts(),
+                vec![
+                    (
+                        get_account_id_from_seed::<sr25519::Public>("Alice"),
+                        3_600_000_000 * DEIP
+                    )
+                ],
                 // Vestings
-                get_vesting_plans(),
+                vec![],
                 // Domains
                 vec![
                     DomainId::from_str("6225314ed224d2b25a22f01a34af16d3354d556c").unwrap(),
@@ -234,6 +238,63 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
     ))
 }
 
+pub fn pre_mainnet_config() -> Result<ChainSpec, String> {
+    let wasm_binary = WASM_BINARY.ok_or_else(|| "Pre Mainnet wasm not available".to_string())?;
+    let properties = get_properties("DEIP", 18, 42);
+
+    Ok(ChainSpec::from_genesis(
+        // Name
+        "DEIP Mainnet",
+        // ID
+        "mainnet",
+        ChainType::Development,
+        move || {
+            genesis(
+                wasm_binary,
+                // Initial PoA authorities
+                vec![
+                    authority_keys_from_seed("Alice", 10 * OCTS)
+                ],
+                // Sudo account
+                AccountId::from_ss58check("5F9XVEoQDCYmTH4k5qczas4DiZUfp1RGbYKHyBYFgA9Zj1qn").unwrap(),
+                // Pre-funded accounts
+                get_endowed_accounts(),
+                // Vestings
+                get_vesting_plans(),
+                // Domains
+                vec![
+                    DomainId::from_str("6225314ed224d2b25a22f01a34af16d3354d556c").unwrap(),
+                    /* Generic */
+                ],
+                // Appchain
+                get_appchain_config(
+                  // Appchain Relay Contract
+                  "deip-test.registry.test_oct.testnet",
+                  // Premined amount
+                  0 * DEIP,
+                  // Era Payout
+                  328_767 * DEIP,
+                ),
+                // Ecosystem fund account
+                AccountId::from_ss58check("5Cyvp4wHSaHej7ScxP3PKSRt6sNkBv9D7ZC5sU9k6YoMr5eh").unwrap(),
+                // Enable println
+                true,
+            )
+        },
+        // Bootnodes
+        vec![],
+        // Telemetry
+        None,
+        // Protocol ID
+        Some("deip-mainnet"),
+        // Properties
+        Some(properties),
+        // Extensions
+        Extensions::default(),
+    ))
+}
+
+
 /// Configure initial storage state for FRAME modules.
 fn genesis(
     wasm_binary: &[u8],
@@ -294,7 +355,7 @@ fn genesis(
         beefy: BeefyConfig { authorities: vec![] },
         octopus_appchain: OctopusAppchainConfig {
             anchor_contract: appchain_config.0,
-            asset_id_by_name: vec![("usdc.testnet".to_string(), 0)],
+            asset_id_by_name: vec![],
             validators,
             premined_amount: appchain_config.1
         },
@@ -318,6 +379,11 @@ fn genesis(
 
 pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
     vec![
+        // TODO: Remove Alice!
+        (
+            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            10 * DEIP
+        ),
         /* TEAM ================================================================================== */
         (
             AccountId::from_ss58check("5Db6cnUaq5h9CLUeYxcbfqGhVaV5hFaXf71WFHRUwKcQUBdn").unwrap(), // ALEX SHKOR
