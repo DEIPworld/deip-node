@@ -316,10 +316,8 @@ fn genesis(
     }
 }
 
-
 pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
     vec![
-        
         /* TEAM ================================================================================== */
         (
             AccountId::from_ss58check("5Db6cnUaq5h9CLUeYxcbfqGhVaV5hFaXf71WFHRUwKcQUBdn").unwrap(), // ALEX SHKOR
@@ -336,6 +334,10 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
         (
             AccountId::from_ss58check("5DZaWv9HQZCRiASBcB6363nj6xYYwTpKCHV96NTbxt1HNZrU").unwrap(), // DIMITRI SIDOROVITCH
             75375000 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5Hmt1AxMWF91dAKVcNWhMfiSyLQ7Ki1hWPbW8SspfMtMY8aE").unwrap(), // NIKOLAY SYUSKO
+            50000000 * DEIP
         ),
         (
             AccountId::from_ss58check("5HpPDX8PjNgY8iTxpsk4L5N1pqTyVd8sHvdE8yZs8T4x5vyb").unwrap(), // ADAM YATES
@@ -434,7 +436,7 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
             1500000 * DEIP
         ),
         (
-            AccountId::from_ss58check("5H1YZ7jhJK4CgzPoCmMfp5SYFDa74GeVgN8q5uEPxHmB2WBn").unwrap(), // MIROSLAV MILOVANOVI��
+            AccountId::from_ss58check("5H1YZ7jhJK4CgzPoCmMfp5SYFDa74GeVgN8q5uEPxHmB2WBn").unwrap(), // MIROSLAV MILOVANOVIC
             500000 * DEIP
         ),
         (
@@ -469,10 +471,6 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
             AccountId::from_ss58check("5F1RoDYEgAsCALL9ZXX9B5ctXTSi2Fm4ryzdFEUQnjvATh9Q").unwrap(), // PAVEL LAKUSHIN
             2000000 * DEIP
         ),
-        (
-            AccountId::from_ss58check("5FZWP7xW1UfdsCEnXfjEw5s4J9Szv1JG7P1GxG76g4VCkJbJ").unwrap(), // TEAM UNALLOCATED BALANCE
-            50000000 * DEIP
-        ),
         /* ANGELS AND ADVISORS =================================================================== */
         (
             AccountId::from_ss58check("5FUBk8tjkXUauTwKDvhjj3ujBGNswQH5evY3WkCFd1TxrUct").unwrap(), // IGOR CHEBATARENOK
@@ -483,7 +481,7 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
             12500000 * DEIP
         ),
         (
-            AccountId::from_ss58check("5GxcQRnJdFUfq8sy8eJX6kEDWtNKYGKx2gvzcu4wbTXKEP5U").unwrap(), // LEONID LOZNER
+            AccountId::from_ss58check("5F2BhPMUZjU39PCGr4CRrgXTp2bxenvXYdUMNeHTrx5EWEfL").unwrap(), // LEONID LOZNER
             34625000 * DEIP
         ),
         (
@@ -491,16 +489,20 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
             7500000 * DEIP
         ),
         (
-            AccountId::from_ss58check("5GCEA1R7HCZUEhykFDaRLLfTUgNfMRkdQAhQieoPFiBGfbwg").unwrap(), // VALERIA KHOLOSTENKO
-            16000000 * DEIP
-        ),
-        (
             AccountId::from_ss58check("5H13CpAwvMUTeNcTxfGmi6YdoSDo6kAHJfde3H4YoGyq5WeL").unwrap(), // ELLIOTT TEISSONNIERE
             16000000 * DEIP
         ),
         (
+            AccountId::from_ss58check("5Gq4YB8A4keRLFu84cKQNizWo93RLCyt3TZqENMeFxxXpmTJ").unwrap(), // PARALECT
+            20000000 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5GHNyHmqtBUoDDxrZiYn5btVx2axrt7Yxaf9LxkjWJiXm2Ev").unwrap(), // GOTBIT
+            2000000 * DEIP
+        ),
+        (
             AccountId::from_ss58check("5GQzK874N16bUULNd6wbeWMZovq4kZi64hJyAWbdse5gq126").unwrap(), // ANGELS ADVISORS UNALLOCATED BALANCE
-            138000000 * DEIP
+            132000000 * DEIP
         ),
         /* PRE SALE 1 ============================================================================ */
         (
@@ -572,6 +574,10 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
             37500 * DEIP
         ),
         (
+            AccountId::from_ss58check("5EvBdDfJP1ZM2FrrVMkoNsN82GdsHGEHVwZKrtPPreBWF5Lb").unwrap(), // DANIEL CHAVARRI ANDREU
+            37500 * DEIP
+        ),
+        (
             AccountId::from_ss58check("5DRjne1xdsGCNK2N4EVTBiaBKH9PDDmX8EP19bVscYohPwzY").unwrap(), // NURIDDIN JAMOLIDDINOVICH GAIBOV
             37500 * DEIP
         ),
@@ -625,6 +631,10 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
         ),
         (
             AccountId::from_ss58check("5HMeurL1piUBN5CjX88yYckcLtBSuWDZGjh5bzqSeo8u72nS").unwrap(), // DERYA VURALGIL
+            37500 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5Gk3UwL8hiR3zk4CHXh9WTKArr85UaNEypjo9epCjWQXnmeH").unwrap(), // JEMIL BIHA
             37500 * DEIP
         ),
         (
@@ -740,6 +750,10 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
             37500 * DEIP
         ),
         (
+            AccountId::from_ss58check("5DFSP7D28gCk9m6wjz8q9vwEk8mXsx2E1UNcPqyYQbv8pFhK").unwrap(), // IHOR VOLOBUIEV
+            37500 * DEIP
+        ),
+        (
             AccountId::from_ss58check("5G7Lvu2qoesT5gskfS548reXXRtAmWnUqCAGBAZQNWUHLfV5").unwrap(), // LANCE ATKINS ANDERSON
             37500 * DEIP
         ),
@@ -753,6 +767,10 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
         ),
         (
             AccountId::from_ss58check("5FbHrKHPUwMrgNxZnMEPBxf1N4vPduWr6CjjGUEgR5g8HryZ").unwrap(), // LANCE A ANDERSON JR.
+            37500 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5G6JLkKd1icetzbzoKC1CLd8GJVbwRyo93J7LEZNnhJCV2JP").unwrap(), // IGOR VALER'EVICH ZAETS
             37500 * DEIP
         ),
         (
@@ -773,6 +791,14 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
         ),
         (
             AccountId::from_ss58check("5FUSXEc2x5uj7X45TTnhAZ3PDprciNLiyToHiW2PZKrkMNrd").unwrap(), // SLAWOMIR MARIUSZ LESZCZY_SKI
+            37500 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5CB1R4sBRgAPU2fEt9R1JyqfcKB7dee4MUUXYLVbHF8uUJ9X").unwrap(), // PRIYA RAVIKUMAR
+            37500 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5EqrWxrCq2pj6gqzLkPeRUUuJkJDeyVNkXSKgnfnAqurCrBS").unwrap(), // ADAM WOJCIECH PI_TKA
             37500 * DEIP
         ),
         (
@@ -845,6 +871,10 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
         ),
         (
             AccountId::from_ss58check("5CDWtH3VKa73pcPicwYwcUeCyyuPZosyEiaPS1n9gpxApDSd").unwrap(), // PAUL ANTHONY ROGER FERNAND BODIN
+            37500 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5DyHyJqtTVmPAN9mNkzfeVaQT1pDnYTZVMFRJ2s5o7cwbzZe").unwrap(), // WUSHOUER XIAOKELATI
             37500 * DEIP
         ),
         (
@@ -1180,10 +1210,6 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
             75000 * DEIP
         ),
         (
-            AccountId::from_ss58check("5CJqLWKQeZjKir4mYhcnxz2EkNgF5UaGyjUNm8yeovbKmr6Y").unwrap(), // VINCENT ROMAGNOLI
-            75000 * DEIP
-        ),
-        (
             AccountId::from_ss58check("5HnPZGebXciqUQioe1x7MMmKW9w7XMoqPAp4zH8nMe5FsR2i").unwrap(), // ESAIAH MAKANA GIDEON
             75000 * DEIP
         ),
@@ -1400,6 +1426,10 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
             75000 * DEIP
         ),
         (
+            AccountId::from_ss58check("5HmB6hQw96E3a4pEkvnTTDts9NfPYS2Ef3h5x95LXLrf648u").unwrap(), // AHMED MOHAMED ELSHERIF
+            75000 * DEIP
+        ),
+        (
             AccountId::from_ss58check("5EvDqZaMu7ay3zB7xqHWihj6GgTD6Q42hoVfGeddAcJwEB2C").unwrap(), // JACEK MACIEJEWSKI
             75000 * DEIP
         ),
@@ -1425,6 +1455,10 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
         ),
         (
             AccountId::from_ss58check("5CASDXMydcH7kGrCb2cVwwPiN7RviXTTdxnnVDYL29U1wbMw").unwrap(), // JACEK KRZYSZTOF JANIK
+            75000 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5HBHaYWWgaTr19a6k9Go188JYzVn5KZACN2VAGdjkjaASJLc").unwrap(), // MICHA_ MAREK BORCZYK
             75000 * DEIP
         ),
         (
@@ -1504,6 +1538,10 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
             75000 * DEIP
         ),
         (
+            AccountId::from_ss58check("5DHbzqsv4w3CQ2yMpshJHzgMo4pohoFZ8yuTbnpEVu5Syw82").unwrap(), // PHAN DINH QUAN
+            75000 * DEIP
+        ),
+        (
             AccountId::from_ss58check("5H1cmQwd1jRKYHspCiMRNx9pVqaJCEa4qTdw4dxVWZx8EHQv").unwrap(), // DMYTRO KUZMIN
             75000 * DEIP
         ),
@@ -1513,6 +1551,10 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
         ),
         (
             AccountId::from_ss58check("5FLFZeJec63MY9npda9AwKVJNfRJoc2kJ4kC9ngXaUCc4rWt").unwrap(), // KAMIL D K�_ECZKO
+            75000 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5GHLMzsx6mWYwbWcBSFqnQQVP7DccbQjgMNxJtceQ4piSRio").unwrap(), // OJO-KOLAWOLE OLUMIDE ALFRED
             75000 * DEIP
         ),
         (
@@ -1561,6 +1603,10 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
         ),
         (
             AccountId::from_ss58check("5Dc489UukEDKmRLwNsUvuWbRyjT7ErQ6gvZtDX9wRfX5esQc").unwrap(), // JULIEN BAUER
+            75000 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5CorQdsXpjvQj6KfMa1BMya3n9WVYgxpeBiCEoETrToLfQFn").unwrap(), // ANDREI YEMIALYANCHYK
             75000 * DEIP
         ),
         (
@@ -1808,6 +1854,10 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
             375000 * DEIP
         ),
         (
+            AccountId::from_ss58check("5DJQqn7Q4LXofswfhtpqZNws44U6JymhzKWGgUs3AKpWfurw").unwrap(), // TOMASZ KRZYSZTOF MENTEL
+            375000 * DEIP
+        ),
+        (
             AccountId::from_ss58check("5Gzkrn8wa6u6M8C7qoYKMuCwdNYqusRn5tDg2FoCQQCYaJR8").unwrap(), // NHU CUONG LE
             375000 * DEIP
         ),
@@ -1860,6 +1910,10 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
             375000 * DEIP
         ),
         (
+            AccountId::from_ss58check("5CJhB914fmc36aXgxMBdjG86zbrgQ6JFUddYQ16R12hzcrkf").unwrap(), // NICOLAS PELARD
+            375000 * DEIP
+        ),
+        (
             AccountId::from_ss58check("5C52JPV1reDw49FEy5WcEzzbkqpaQbDiTzSYbxHBi6YZGy6L").unwrap(), // JULIEN YVES SOTTAS
             375000 * DEIP
         ),
@@ -1869,6 +1923,10 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
         ),
         (
             AccountId::from_ss58check("5GZDHnkgr482kAaG8ZJjfa7rDqGs5eVcghydnNyPAwfN3NGY").unwrap(), // MI SHUG MERET
+            750000 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5HKoudvvAmyr7M67iDswU3eni2riMuwE5xX6yShBY1q6U67s").unwrap(), // CHAI HANG CHOOI
             750000 * DEIP
         ),
         (
@@ -1933,7 +1991,7 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
         ),
         (
             AccountId::from_ss58check("5HTP7FuWLN9ewvksUwen9F8s3qU9vJb2Sh4QLKJ6R8u7t25U").unwrap(), // PRE SALE 1 UNALLOCATED BALANCE
-            16400000 * DEIP
+            13650000 * DEIP
         ),
         /* PRE SALE 2 ============================================================================ */
         (
@@ -1985,11 +2043,19 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
             600000 * DEIP
         ),
         (
+            AccountId::from_ss58check("5EoFsYhMgkLZnouhhUZTX5rtLF4onSYBV9Bjqn4HfaKCa5ZP").unwrap(), // TOMASZ KRZYSZTOF BARAN
+            1500000 * DEIP
+        ),
+        (
             AccountId::from_ss58check("5Dz8GMVA3L2tDJYVtjGLHKK1EzTZwzX16YYjELMe7B7iVGZT").unwrap(), // DAMIAN CICHOSZ 
             600000 * DEIP
         ),
         (
             AccountId::from_ss58check("5DXbsLbvQ5BAdTEG75iypqmkSrujG4wTZp2xdCMZHLdzhJ5E").unwrap(), // ANDREI ORSICH
+            3000000 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5CMHN7W6bDQ7JBnoCpe8cnRxH6SVpoUfxmAj35GKXjHaVJHE").unwrap(), // LAMANOSAU VIACHASLAU
             3000000 * DEIP
         ),
         (
@@ -2001,8 +2067,36 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
             600000 * DEIP
         ),
         (
+            AccountId::from_ss58check("5CFYSNuo4Xf7Qzhoi9kvUm8BbkFDHWvS5JiSSqzbYWXHZQPb").unwrap(), // KEMAL G�KDOGAN
+            3000000 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5Cd9CMi9nyfXGYRzUxE2uzMxURUXC4E8o8yRU6TbQLyiDmpM").unwrap(), // BIZINSKYI OLEKSANDR
+            1500000 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5DSc3NK3D2N8fZ3Mu7bz2kWC5MiWiw5q23E2uKijNv8oX37Q").unwrap(), // THIJS SCHRIJVER
+            1500000 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5FgikPX1o9jFfmpkgLVe7H6Mg3DZVvMGgk5Eo51S4moXWqFA").unwrap(), // BERKAY C'ATALYUREK
+            600000 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5DUXdT1M99tMNuR1E83kSMk22SWUhufmh1jCegdeiT5WFgHv").unwrap(), // VERNIK OLEKSDANDR 
+            600000 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5CexETqnfLugG4HAnaK1e32UYEqfAobC7zcmwuvq2FuquwAi").unwrap(), // STANISLAV ANDRIUSHCHENKO
+            1500000 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5DhBryXMZgmKG9nXmqYWsU2NnFZFerGpt2is1k5LmHUNqx2J").unwrap(), // STRYUK VADYM
+            600000 * DEIP
+        ),
+        (
             AccountId::from_ss58check("5DoL5yzLuiir4vHk5gfN4qQkbeLtMJ77SymBcBaYDu7UB9vG").unwrap(), // PRE SALE 2 UNALLOCATED BALANCE
-            21600000 * DEIP
+            7600000 * DEIP
         ),
         /* PRIVATE =============================================================================== */
         (
@@ -2022,13 +2116,21 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
             20000000 * DEIP
         ),
         (
+            AccountId::from_ss58check("5DDSHCVEzvVX29nFq9PhXeJDSKxTXoaPBox3qRvqUHTWxp3n").unwrap(), // TOKENSUITE
+            10000000 * DEIP
+        ),
+        (
             AccountId::from_ss58check("5C7vLmAZues23ZTCtVfvGtZSRygPDWndYwBhFhW9yHbRHEKV").unwrap(), // PRIVATE UNALLOCATED BALANCE
-            80187500 * DEIP
+            67687500 * DEIP
         ),
         /* STRATEGIC ============================================================================= */
         (
             AccountId::from_ss58check("5GubXsYvvjsyf4Pi3jE7w5B7W9c7gZQWXMJpNrvHKyaX8Vmj").unwrap(), // BLOCKWALL CAPITAL
             3541666 * DEIP
+        ),
+        (
+            AccountId::from_ss58check("5G9YgYppcvsfCNWEMgKmFf2PBsFgezpHt9Yb4FMVyozaZp3y").unwrap(), // FAIRUM VENTURES
+            12041666 * DEIP
         ),
         (
             AccountId::from_ss58check("5DkCHxyuxENSVLvd4AqrTcYyqDJJJC2JjJpNXoqs6HEeWDTA").unwrap(), // KEF VENTURES
@@ -2039,12 +2141,16 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
             3541666 * DEIP
         ),
         (
+            AccountId::from_ss58check("5EvCg4bNMHEcsKVLW5tXBpUed2tvhWCqQP89o9qXEVks996C").unwrap(), // TOKENSUITE
+            14166666 * DEIP
+        ),
+        (
             AccountId::from_ss58check("5HWF2Xz2gr4abfbtcEZPPRaETB7Hhp7L53bcW4ZLnoyfEZz7").unwrap(), // RAY CHOHAN (PATSNAP)
             7083333 * DEIP
         ),
         (
             AccountId::from_ss58check("5ETvWZWHbviZTKGEGyHxk4BsVSrej4mYGJSccVSe36j8d6mX").unwrap(), // STRATEGIC UNALLOCATED BALANCE
-            125249995 * DEIP
+            94416663 * DEIP
         ),
         /* SEED ================================================================================== */
         (
@@ -2052,17 +2158,21 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
             11250000 * DEIP
         ),
         (
+            AccountId::from_ss58check("5CSKm2aRkdtYEfuUDuHDYXhCed4eVffMoZoMLzHVw2Py6BTy").unwrap(), // BLOCKWALL CAPITAL
+            5625000 * DEIP
+        ),
+        (
             AccountId::from_ss58check("5En3sVgNTmDTXB3JaYNq6kQ6sjncvvGZQaR6YcmJExb7LpsS").unwrap(), // GLIB DUDKA
             4500000 * DEIP
         ),
         (
             AccountId::from_ss58check("5ENXPZH6buaW3tiTx7kE6aHmyEZiQ19BwV4vqQGETC8qhhAU").unwrap(), // SEED UNALLOCATED BALANCE
-            126250000 * DEIP
+            120000000 * DEIP
         ),
         /* UNLOCKED AT TGE BALANCE =============================================================== */
         (
             AccountId::from_ss58check("5EHZV8Lbm92vJ5aHotkEHFgsdfbmmzEpFTq2dxKpbjCG1WCW").unwrap(), // UNLOCKED AT TGE BALANCE
-            47162500 * DEIP
+            60200000 * DEIP
         ),
         /* VENTURE CAPITAL FUND ================================================================== */
         (
@@ -2076,7 +2186,7 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
         ),
         /* ECOSYSTEM FUND ======================================================================== */
         (
-            AccountId::from_ss58check("5F4XSE7qbaPELcEHEaatB7XQmoeEUPASqRTGAHJwMJX5RKYD").unwrap(), // ECOSYSTEM FUND
+            AccountId::from_ss58check("5Cyvp4wHSaHej7ScxP3PKSRt6sNkBv9D7ZC5sU9k6YoMr5eh").unwrap(), // ECOSYSTEM FUND
             200000000 * DEIP
         ),
         /* DEVELOPER SUPPORT PROGRAM FUND ======================================================== */
@@ -2124,37 +2234,36 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
             AccountId::from_ss58check("5Hp8ebMEaj3rHroZggGM5Cmrw4H1diCN2Kb5BdeL4gw39hXg").unwrap(), // BOCA CHICA IDO
             8000000 * DEIP
         ),
-        /* OCTOPUS FOUNDATION NODE 1 =================================================== */
+        /* OCTOPUS FOUNDATION NODE 1 ============================================================ */
         (
-            AccountId::from_ss58check("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap(), // OCTOPUS FOUNDATION NODE 1
+            AccountId::from_ss58check("5CJrDFTVTYVgU66qb33CqBnk5nUYU7Uo81idUyUyRPnq1qCH").unwrap(), // OCTOPUS FOUNDATION NODE 1
             250 * DEIP
         ),
-        /* OCTOPUS FOUNDATION NODE 2 =================================================== */
+        /* OCTOPUS FOUNDATION NODE 2 ============================================================ */
         (
-            AccountId::from_ss58check("5HNbc2PmKghpQNC5omLR1wutr6QRom6KPQWgk1jd9E3srJ59").unwrap(), // OCTOPUS FOUNDATION NODE 2
+            AccountId::from_ss58check("5DvQX4kFnch428Bb5oZnGt2duYbo7gFtNs7SHn6AgGDYdWKH").unwrap(), // OCTOPUS FOUNDATION NODE 2
             250 * DEIP
         ),
-        /* OCTOPUS FOUNDATION NODE 3 =================================================== */
+        /* OCTOPUS FOUNDATION NODE 3 ============================================================ */
         (
-            AccountId::from_ss58check("5F6o7EydJmcXsdQ4gR3rV4ngapPBb48CDz7fQWRcC7fxUFAe").unwrap(), // OCTOPUS FOUNDATION NODE 3
+            AccountId::from_ss58check("5DyzstWafuTaSUHBM8Qpxr8GofkbUFe9MLdHZs96PfzbaZQM").unwrap(), // OCTOPUS FOUNDATION NODE 3
             250 * DEIP
         ),
-        /* OCTOPUS FOUNDATION NODE 4 =================================================== */
+        /* OCTOPUS FOUNDATION NODE 4 ============================================================ */
         (
-            AccountId::from_ss58check("5DcXxL4EJofQVCWktdjfbUDtDPnG2ytees9JKRPnwW2kZeNc").unwrap(), // OCTOPUS FOUNDATION NODE 4
+            AccountId::from_ss58check("5HbS3KQ8PdR3uQbYrXzwF6wgDL3XSiHdfoKa1GtrdQRpKGeW").unwrap(), // OCTOPUS FOUNDATION NODE 4
             250 * DEIP
         ),
         /* SUDO ======================================================================= */
         (
             AccountId::from_ss58check("5F9XVEoQDCYmTH4k5qczas4DiZUfp1RGbYKHyBYFgA9Zj1qn").unwrap(), // SUDO BALANCE
-            4411507 * DEIP
+            11507 * DEIP
         ),
     ]
 }
 
 pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bool)> {
     vec![
-        
         /* TEAM ================================================================================== */
         (
             AccountId::from_ss58check("5Db6cnUaq5h9CLUeYxcbfqGhVaV5hFaXf71WFHRUwKcQUBdn").unwrap(), // ALEX SHKOR
@@ -2194,6 +2303,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
             7889400000, // 3 months
             0 * DEIP,
             75375000 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5Hmt1AxMWF91dAKVcNWhMfiSyLQ7Ki1hWPbW8SspfMtMY8aE").unwrap(), // NIKOLAY SYUSKO
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            15811200000, // 6 months
+            126230400000, // 48 months
+            7889400000, // 3 months
+            0 * DEIP,
+            50000000 * DEIP,
             true,
         ),
         (
@@ -2437,7 +2556,7 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
             true,
         ),
         (
-            AccountId::from_ss58check("5H1YZ7jhJK4CgzPoCmMfp5SYFDa74GeVgN8q5uEPxHmB2WBn").unwrap(), // MIROSLAV MILOVANOVI��
+            AccountId::from_ss58check("5H1YZ7jhJK4CgzPoCmMfp5SYFDa74GeVgN8q5uEPxHmB2WBn").unwrap(), // MIROSLAV MILOVANOVIC
             1651276800000, // 2022-04-30T00:00:00.000Z
             15811200000, // 6 months
             126230400000, // 48 months
@@ -2548,7 +2667,7 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
             true,
         ),
         (
-            AccountId::from_ss58check("5GxcQRnJdFUfq8sy8eJX6kEDWtNKYGKx2gvzcu4wbTXKEP5U").unwrap(), // LEONID LOZNER
+            AccountId::from_ss58check("5F2BhPMUZjU39PCGr4CRrgXTp2bxenvXYdUMNeHTrx5EWEfL").unwrap(), // LEONID LOZNER
             1651276800000, // 2022-04-30T00:00:00.000Z
             15811200000, // 6 months
             94694400000, // 36 months
@@ -2568,7 +2687,7 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
             true,
         ),
         (
-            AccountId::from_ss58check("5GCEA1R7HCZUEhykFDaRLLfTUgNfMRkdQAhQieoPFiBGfbwg").unwrap(), // VALERIA KHOLOSTENKO
+            AccountId::from_ss58check("5H13CpAwvMUTeNcTxfGmi6YdoSDo6kAHJfde3H4YoGyq5WeL").unwrap(), // ELLIOTT TEISSONNIERE
             1651276800000, // 2022-04-30T00:00:00.000Z
             15811200000, // 6 months
             94694400000, // 36 months
@@ -2578,13 +2697,23 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
             true,
         ),
         (
-            AccountId::from_ss58check("5H13CpAwvMUTeNcTxfGmi6YdoSDo6kAHJfde3H4YoGyq5WeL").unwrap(), // ELLIOTT TEISSONNIERE
+            AccountId::from_ss58check("5Gq4YB8A4keRLFu84cKQNizWo93RLCyt3TZqENMeFxxXpmTJ").unwrap(), // PARALECT
             1651276800000, // 2022-04-30T00:00:00.000Z
             15811200000, // 6 months
             94694400000, // 36 months
             7889400000, // 3 months
             0 * DEIP,
-            16000000 * DEIP,
+            20000000 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5GHNyHmqtBUoDDxrZiYn5btVx2axrt7Yxaf9LxkjWJiXm2Ev").unwrap(), // GOTBIT
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            15811200000, // 6 months
+            94694400000, // 36 months
+            7889400000, // 3 months
+            0 * DEIP,
+            2000000 * DEIP,
             true,
         ),
         /* PRE SALE 1 ============================================================================ */
@@ -2759,6 +2888,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
             true,
         ),
         (
+            AccountId::from_ss58check("5EvBdDfJP1ZM2FrrVMkoNsN82GdsHGEHVwZKrtPPreBWF5Lb").unwrap(), // DANIEL CHAVARRI ANDREU
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            37500 * DEIP,
+            true,
+        ),
+        (
             AccountId::from_ss58check("5DRjne1xdsGCNK2N4EVTBiaBKH9PDDmX8EP19bVscYohPwzY").unwrap(), // NURIDDIN JAMOLIDDINOVICH GAIBOV
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
@@ -2890,6 +3029,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
         ),
         (
             AccountId::from_ss58check("5HMeurL1piUBN5CjX88yYckcLtBSuWDZGjh5bzqSeo8u72nS").unwrap(), // DERYA VURALGIL
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            37500 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5Gk3UwL8hiR3zk4CHXh9WTKArr85UaNEypjo9epCjWQXnmeH").unwrap(), // JEMIL BIHA
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
             31536000000, // 12 months
@@ -3179,6 +3328,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
             true,
         ),
         (
+            AccountId::from_ss58check("5DFSP7D28gCk9m6wjz8q9vwEk8mXsx2E1UNcPqyYQbv8pFhK").unwrap(), // IHOR VOLOBUIEV
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            37500 * DEIP,
+            true,
+        ),
+        (
             AccountId::from_ss58check("5G7Lvu2qoesT5gskfS548reXXRtAmWnUqCAGBAZQNWUHLfV5").unwrap(), // LANCE ATKINS ANDERSON
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
@@ -3210,6 +3369,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
         ),
         (
             AccountId::from_ss58check("5FbHrKHPUwMrgNxZnMEPBxf1N4vPduWr6CjjGUEgR5g8HryZ").unwrap(), // LANCE A ANDERSON JR.
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            37500 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5G6JLkKd1icetzbzoKC1CLd8GJVbwRyo93J7LEZNnhJCV2JP").unwrap(), // IGOR VALER'EVICH ZAETS
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
             31536000000, // 12 months
@@ -3260,6 +3429,26 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
         ),
         (
             AccountId::from_ss58check("5FUSXEc2x5uj7X45TTnhAZ3PDprciNLiyToHiW2PZKrkMNrd").unwrap(), // SLAWOMIR MARIUSZ LESZCZY_SKI
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            37500 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5CB1R4sBRgAPU2fEt9R1JyqfcKB7dee4MUUXYLVbHF8uUJ9X").unwrap(), // PRIYA RAVIKUMAR
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            37500 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5EqrWxrCq2pj6gqzLkPeRUUuJkJDeyVNkXSKgnfnAqurCrBS").unwrap(), // ADAM WOJCIECH PI_TKA
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
             31536000000, // 12 months
@@ -3440,6 +3629,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
         ),
         (
             AccountId::from_ss58check("5CDWtH3VKa73pcPicwYwcUeCyyuPZosyEiaPS1n9gpxApDSd").unwrap(), // PAUL ANTHONY ROGER FERNAND BODIN
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            37500 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5DyHyJqtTVmPAN9mNkzfeVaQT1pDnYTZVMFRJ2s5o7cwbzZe").unwrap(), // WUSHOUER XIAOKELATI
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
             31536000000, // 12 months
@@ -4279,16 +4478,6 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
             true,
         ),
         (
-            AccountId::from_ss58check("5CJqLWKQeZjKir4mYhcnxz2EkNgF5UaGyjUNm8yeovbKmr6Y").unwrap(), // VINCENT ROMAGNOLI
-            1651276800000, // 2022-04-30T00:00:00.000Z
-            0, // 0 months
-            31536000000, // 12 months
-            7889400000, // 3 months
-            0 * DEIP,
-            75000 * DEIP,
-            true,
-        ),
-        (
             AccountId::from_ss58check("5HnPZGebXciqUQioe1x7MMmKW9w7XMoqPAp4zH8nMe5FsR2i").unwrap(), // ESAIAH MAKANA GIDEON
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
@@ -4829,6 +5018,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
             true,
         ),
         (
+            AccountId::from_ss58check("5HmB6hQw96E3a4pEkvnTTDts9NfPYS2Ef3h5x95LXLrf648u").unwrap(), // AHMED MOHAMED ELSHERIF
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            75000 * DEIP,
+            true,
+        ),
+        (
             AccountId::from_ss58check("5EvDqZaMu7ay3zB7xqHWihj6GgTD6Q42hoVfGeddAcJwEB2C").unwrap(), // JACEK MACIEJEWSKI
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
@@ -4890,6 +5089,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
         ),
         (
             AccountId::from_ss58check("5CASDXMydcH7kGrCb2cVwwPiN7RviXTTdxnnVDYL29U1wbMw").unwrap(), // JACEK KRZYSZTOF JANIK
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            75000 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5HBHaYWWgaTr19a6k9Go188JYzVn5KZACN2VAGdjkjaASJLc").unwrap(), // MICHA_ MAREK BORCZYK
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
             31536000000, // 12 months
@@ -5089,6 +5298,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
             true,
         ),
         (
+            AccountId::from_ss58check("5DHbzqsv4w3CQ2yMpshJHzgMo4pohoFZ8yuTbnpEVu5Syw82").unwrap(), // PHAN DINH QUAN
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            75000 * DEIP,
+            true,
+        ),
+        (
             AccountId::from_ss58check("5H1cmQwd1jRKYHspCiMRNx9pVqaJCEa4qTdw4dxVWZx8EHQv").unwrap(), // DMYTRO KUZMIN
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
@@ -5110,6 +5329,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
         ),
         (
             AccountId::from_ss58check("5FLFZeJec63MY9npda9AwKVJNfRJoc2kJ4kC9ngXaUCc4rWt").unwrap(), // KAMIL D K�_ECZKO
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            75000 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5GHLMzsx6mWYwbWcBSFqnQQVP7DccbQjgMNxJtceQ4piSRio").unwrap(), // OJO-KOLAWOLE OLUMIDE ALFRED
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
             31536000000, // 12 months
@@ -5230,6 +5459,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
         ),
         (
             AccountId::from_ss58check("5Dc489UukEDKmRLwNsUvuWbRyjT7ErQ6gvZtDX9wRfX5esQc").unwrap(), // JULIEN BAUER
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            75000 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5CorQdsXpjvQj6KfMa1BMya3n9WVYgxpeBiCEoETrToLfQFn").unwrap(), // ANDREI YEMIALYANCHYK
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
             31536000000, // 12 months
@@ -5849,6 +6088,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
             true,
         ),
         (
+            AccountId::from_ss58check("5DJQqn7Q4LXofswfhtpqZNws44U6JymhzKWGgUs3AKpWfurw").unwrap(), // TOMASZ KRZYSZTOF MENTEL
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            375000 * DEIP,
+            true,
+        ),
+        (
             AccountId::from_ss58check("5Gzkrn8wa6u6M8C7qoYKMuCwdNYqusRn5tDg2FoCQQCYaJR8").unwrap(), // NHU CUONG LE
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
@@ -5979,6 +6228,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
             true,
         ),
         (
+            AccountId::from_ss58check("5CJhB914fmc36aXgxMBdjG86zbrgQ6JFUddYQ16R12hzcrkf").unwrap(), // NICOLAS PELARD
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            375000 * DEIP,
+            true,
+        ),
+        (
             AccountId::from_ss58check("5C52JPV1reDw49FEy5WcEzzbkqpaQbDiTzSYbxHBi6YZGy6L").unwrap(), // JULIEN YVES SOTTAS
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
@@ -6000,6 +6259,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
         ),
         (
             AccountId::from_ss58check("5GZDHnkgr482kAaG8ZJjfa7rDqGs5eVcghydnNyPAwfN3NGY").unwrap(), // MI SHUG MERET
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            750000 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5HKoudvvAmyr7M67iDswU3eni2riMuwE5xX6yShBY1q6U67s").unwrap(), // CHAI HANG CHOOI
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
             31536000000, // 12 months
@@ -6280,6 +6549,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
             true,
         ),
         (
+            AccountId::from_ss58check("5EoFsYhMgkLZnouhhUZTX5rtLF4onSYBV9Bjqn4HfaKCa5ZP").unwrap(), // TOMASZ KRZYSZTOF BARAN
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            1500000 * DEIP,
+            true,
+        ),
+        (
             AccountId::from_ss58check("5Dz8GMVA3L2tDJYVtjGLHKK1EzTZwzX16YYjELMe7B7iVGZT").unwrap(), // DAMIAN CICHOSZ 
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
@@ -6300,6 +6579,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
             true,
         ),
         (
+            AccountId::from_ss58check("5CMHN7W6bDQ7JBnoCpe8cnRxH6SVpoUfxmAj35GKXjHaVJHE").unwrap(), // LAMANOSAU VIACHASLAU
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            3000000 * DEIP,
+            true,
+        ),
+        (
             AccountId::from_ss58check("5FeJLNDcpKat31UsCouLPhAjVsG5MxmuTduxH8GtNnU1pmcf").unwrap(), // PHAM QUOC DUC 
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
@@ -6311,6 +6600,76 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
         ),
         (
             AccountId::from_ss58check("5D7AhhKY17fQkpmYoVjZ7rJpmfQWBAnBRUK6UY9UybnK9Qv9").unwrap(), // ALEXANDER SCOTT COLE
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            600000 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5CFYSNuo4Xf7Qzhoi9kvUm8BbkFDHWvS5JiSSqzbYWXHZQPb").unwrap(), // KEMAL G�KDOGAN
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            3000000 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5Cd9CMi9nyfXGYRzUxE2uzMxURUXC4E8o8yRU6TbQLyiDmpM").unwrap(), // BIZINSKYI OLEKSANDR
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            1500000 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5DSc3NK3D2N8fZ3Mu7bz2kWC5MiWiw5q23E2uKijNv8oX37Q").unwrap(), // THIJS SCHRIJVER
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            1500000 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5FgikPX1o9jFfmpkgLVe7H6Mg3DZVvMGgk5Eo51S4moXWqFA").unwrap(), // BERKAY C'ATALYUREK
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            600000 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5DUXdT1M99tMNuR1E83kSMk22SWUhufmh1jCegdeiT5WFgHv").unwrap(), // VERNIK OLEKSDANDR 
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            600000 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5CexETqnfLugG4HAnaK1e32UYEqfAobC7zcmwuvq2FuquwAi").unwrap(), // STANISLAV ANDRIUSHCHENKO
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            1500000 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5DhBryXMZgmKG9nXmqYWsU2NnFZFerGpt2is1k5LmHUNqx2J").unwrap(), // STRYUK VADYM
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
             31536000000, // 12 months
@@ -6360,6 +6719,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
             20000000 * DEIP,
             true,
         ),
+        (
+            AccountId::from_ss58check("5DDSHCVEzvVX29nFq9PhXeJDSKxTXoaPBox3qRvqUHTWxp3n").unwrap(), // TOKENSUITE
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            10000000 * DEIP,
+            true,
+        ),
         /* STRATEGIC ============================================================================= */
         (
             AccountId::from_ss58check("5GubXsYvvjsyf4Pi3jE7w5B7W9c7gZQWXMJpNrvHKyaX8Vmj").unwrap(), // BLOCKWALL CAPITAL
@@ -6369,6 +6738,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
             7889400000, // 3 months
             0 * DEIP,
             3541666 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5G9YgYppcvsfCNWEMgKmFf2PBsFgezpHt9Yb4FMVyozaZp3y").unwrap(), // FAIRUM VENTURES
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            12041666 * DEIP,
             true,
         ),
         (
@@ -6392,6 +6771,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
             true,
         ),
         (
+            AccountId::from_ss58check("5EvCg4bNMHEcsKVLW5tXBpUed2tvhWCqQP89o9qXEVks996C").unwrap(), // TOKENSUITE
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            14166666 * DEIP,
+            true,
+        ),
+        (
             AccountId::from_ss58check("5HWF2Xz2gr4abfbtcEZPPRaETB7Hhp7L53bcW4ZLnoyfEZz7").unwrap(), // RAY CHOHAN (PATSNAP)
             1651276800000, // 2022-04-30T00:00:00.000Z
             0, // 0 months
@@ -6410,6 +6799,16 @@ pub fn get_vesting_plans() -> Vec<(AccountId, u64, u64, u64, u64, u128, u128, bo
             7889400000, // 3 months
             0 * DEIP,
             11250000 * DEIP,
+            true,
+        ),
+        (
+            AccountId::from_ss58check("5CSKm2aRkdtYEfuUDuHDYXhCed4eVffMoZoMLzHVw2Py6BTy").unwrap(), // BLOCKWALL CAPITAL
+            1651276800000, // 2022-04-30T00:00:00.000Z
+            0, // 0 months
+            31536000000, // 12 months
+            7889400000, // 3 months
+            0 * DEIP,
+            5625000 * DEIP,
             true,
         ),
         (
