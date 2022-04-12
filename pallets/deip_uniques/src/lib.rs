@@ -9,7 +9,7 @@ pub mod pallet {
     #[cfg(feature = "std")]
     use frame_support::traits::GenesisBuild;
 
-    use deip_asset_lock::{Error as LockError, Result as LockResult};
+    use deip_asset_lock::{Error as LockError, LockableAsset, Result as LockResult};
     use deip_projects_info::DeipProjectsInfo;
     use frame_support::{
         dispatch::{DispatchResult, DispatchResultWithPostInfo, UnfilteredDispatchable, Weight},
@@ -210,18 +210,6 @@ pub mod pallet {
     pub(super) type NftBalanceMap<T: Config> =
         StorageMap<_, Identity, DeipNftClassIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
 
-    /// Storage with locked uniques.
-    #[pallet::storage]
-    pub(super) type LockedAssets<T: Config> = StorageDoubleMap<
-        _,
-        Blake2_128Concat,
-        <T as Config>::NftClassId,
-        Blake2_128Concat,
-        T::InstanceId,
-        (),
-        OptionQuery,
-    >;
-
     #[pallet::error]
     pub enum Error<T> {
         DeipNftClassIdExists,
@@ -259,9 +247,6 @@ pub mod pallet {
             witness: DestroyWitness,
         ) -> DispatchResultWithPostInfo {
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
-
-            let is_locked = LockedAssets::<T>::iter_key_prefix(origin_class_id).count() != 0;
-            ensure!(is_locked, Error::<T>::NftClassHasLockedInstances);
 
             // Dispatch destroy call to origin pallet.
             let call = pallet_uniques::Call::<T>::destroy { class: origin_class_id, witness };
@@ -305,9 +290,6 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
-            let is_locked = LockedAssets::<T>::contains_key(origin_class_id, instance);
-            ensure!(is_locked, Error::<T>::NftIsLocked);
-
             // Convert target to source.
             let check_owner_source =
                 check_owner.map(|owner| <T::Lookup as StaticLookup>::unlookup(owner.into()));
@@ -332,9 +314,6 @@ pub mod pallet {
             let dest_source = <T::Lookup as StaticLookup>::unlookup(dest.into());
 
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
-
-            let is_locked = LockedAssets::<T>::contains_key(origin_class_id, instance);
-            ensure!(is_locked, Error::<T>::NftIsLocked);
 
             // Dispatch call to origin pallet.
             let call = pallet_uniques::Call::<T>::transfer {
@@ -427,9 +406,6 @@ pub mod pallet {
             let owner_source = <T::Lookup as StaticLookup>::unlookup(owner.into());
 
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
-
-            let is_locked = LockedAssets::<T>::iter_key_prefix(origin_class_id).count() != 0;
-            ensure!(is_locked, Error::<T>::NftIsLocked);
 
             // Dispatch call to origin pallet.
             let call = UniquesCall::<T>::transfer_ownership {
@@ -568,6 +544,16 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        pub fn lock(
+            origin: T::AccountId,
+            class: T::ClassId,
+            instance: T::InstanceId,
+        ) -> DispatchResult {
+            frame_support::log::error!("❗️❗️❗️ lock @TODO ❗️❗️❗️");
+
+            Ok(())
+        }
+
         /// Convert DeipNftClassId to origin class id.
         fn deip_to_origin_class_id(class: DeipNftClassIdOf<T>) -> Result<T::NftClassId, Error<T>> {
             NftClassIdByDeipNftClassIdV1::<T>::get(class)
@@ -604,38 +590,6 @@ pub mod pallet {
             DeipNftClassIdByNftClassIdV1::<T>::insert(new_class_id, class);
 
             Ok(post_dispatch_info)
-        }
-
-        pub fn lock_asset(
-            origin: T::AccountId,
-            class: <T as Config>::NftClassId,
-            instance: T::InstanceId,
-        ) -> LockResult {
-            let owner =
-                UniquesPallet::<T>::owner(class, instance).ok_or(LockError::AssetNotFound)?;
-            ensure!(origin == owner, LockError::AccountDoesNotHaveAsset);
-            LockedAssets::<T>::mutate_exists(class, instance, |maybe_asset| {
-                if maybe_asset.is_some() {
-                    Err(LockError::AlreadyLocked)
-                } else {
-                    *maybe_asset = Some(());
-                    Ok(())
-                }
-            })
-        }
-
-        pub fn unlock_asset(
-            class: <T as Config>::NftClassId,
-            instance: T::InstanceId,
-        ) -> LockResult {
-            LockedAssets::<T>::mutate_exists(class, instance, |maybe_asset| {
-                if maybe_asset.is_none() {
-                    Err(LockError::NotLocked)
-                } else {
-                    *maybe_asset = None;
-                    Ok(())
-                }
-            })
         }
     }
 }

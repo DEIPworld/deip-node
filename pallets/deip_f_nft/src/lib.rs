@@ -9,16 +9,22 @@ pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
     use crate::{traits::GetToken, types::PayloadDetails};
+    use codec::HasCompact;
     use deip_asset_lock::Result as LockResult;
     use frame_support::{
         dispatch::DispatchResult,
         ensure,
         log::error,
-        pallet_prelude::{IsType, StorageMap},
+        pallet_prelude::{IsType, Member, StorageMap},
+        sp_runtime::traits::StaticLookup,
         Blake2_128Concat, Parameter,
     };
     use frame_system::{ensure_signed, pallet_prelude::OriginFor};
     use sp_std::vec::Vec;
+
+    type Uniques<T> = pallet_deip_uniques::Pallet<T>;
+    type Assets<T> = pallet_deip_assets::pallet_assets::Pallet<T>;
+    type AssetIdOf<T> = <T as pallet_deip_assets::pallet_assets::Config>::AssetId;
 
     #[pallet::config]
     pub trait Config:
@@ -27,53 +33,19 @@ pub mod pallet {
         /// The overarching event type.
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
-        /// Identifier for the payload of a future F-NFT
-        type PayloadId: Parameter;
-
-        /// Identifier for a payload asset.
-        type PayloadAssetId: Parameter
-            + GetToken<
-                <Self as pallet_deip_assets::Config>::AssetsAssetId,
-                Self::ClassId,
-                Self::InstanceId,
-            >;
+        /// Identifier for the F-NFT asset.
+        type FNftId: Member + Parameter + Default + Copy + HasCompact;
     }
 
     #[pallet::event]
     #[pallet::generate_deposit(fn deposit_event)]
     pub enum Event<T: Config> {
-        /// A F-NFT payload was created.
-        Created { id: T::PayloadId, creator: T::AccountId },
-        /// Asset was added to payload.
-        AssetAdded { target: T::PayloadId, asset: T::PayloadAssetId },
-        /// Asset was removed from payload.
-        AssetRemoved { source: T::PayloadId, asset: T::PayloadAssetId },
+        Fractionalized { token: AssetIdOf<T>, amount: T::Balance },
+        Fused,
     }
 
     #[pallet::error]
-    pub enum Error<T> {
-        /// The ID is already taken.
-        InUse,
-        /// The given payload ID is uknown.
-        UnknownPayload,
-        /// Origin should be a creator (owner) of the payload.
-        WrongOrigin,
-        /// PayloadAsset already is in the payload.
-        AlreadyExists,
-        /// PayloadAsset is not in the Payload.
-        NotInPayload,
-        /// Asset lock failed.
-        AssetLockFailed,
-    }
-
-    #[pallet::storage]
-    /// Details of a payload.
-    type Payload<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        T::PayloadId,
-        PayloadDetails<T::AccountId, T::PayloadAssetId>,
-    >;
+    pub enum Error<T> {}
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);
@@ -81,90 +53,43 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::weight(1)]
-        pub fn create_payload(origin: OriginFor<T>, id: T::PayloadId) -> DispatchResult {
-            // Unsigned calls are not permitted.
-            let owner = ensure_signed(origin)?;
+        pub fn fractionalize(
+            origin: OriginFor<T>,
+            class: T::ClassId,
+            instance: T::InstanceId,
+            token: AssetIdOf<T>,
+            min_balance: T::Balance,
+            amount: T::Balance,
+        ) -> DispatchResult {
+            let account = ensure_signed(origin.clone())?;
 
-            ensure!(!Payload::<T>::contains_key(id.clone()), Error::<T>::InUse);
+            Uniques::<T>::lock(account.clone(), class, instance)?;
 
-            let details = PayloadDetails { owner: owner.clone(), assets: Vec::new() };
-            Payload::<T>::insert(id.clone(), details);
+            let admin = <T::Lookup as StaticLookup>::unlookup(account);
+            Assets::<T>::create(origin.clone(), token, admin.clone(), min_balance)?;
 
-            let event = Event::Created { id, creator: owner };
+            Assets::<T>::mint(origin, token, admin, amount)?;
+
+            error!("❗️❗️❗️ fractionalize @TODO ❗️❗️❗️");
+
+            let event = Event::Fractionalized { token, amount };
             Self::deposit_event(event);
             Ok(())
         }
 
         #[pallet::weight(1)]
-        pub fn add_asset(
+        pub fn fuse(
             origin: OriginFor<T>,
-            target: T::PayloadId,
-            asset: T::PayloadAssetId,
+            #[pallet::compact] id: T::FNftId,
+            test_id: T::FNftId,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
 
-            Self::lock(origin.clone(), &asset).map_err(|e| {
-                error!("❗️❗️❗️ asset lock failed: {:?}", e);
-                Error::<T>::AssetLockFailed
-            })?;
+            error!("❗️❗️❗️ fuse @TODO ❗️❗️❗️");
 
-            Payload::<T>::mutate(target.clone(), |maybe_details| {
-                if let Some(details) = maybe_details {
-                    ensure!(origin == details.owner, Error::<T>::WrongOrigin);
-                    ensure!(!details.assets.contains(&asset), Error::<T>::AlreadyExists);
-                    details.assets.push(asset.clone());
-                    Ok(())
-                } else {
-                    Err(Error::<T>::UnknownPayload)
-                }
-            })?;
-
-            let event = Event::AssetAdded { target, asset };
+            let event = Event::Fused;
             Self::deposit_event(event);
             Ok(())
-        }
-
-        #[pallet::weight(1)]
-        pub fn remove_asset(
-            origin: OriginFor<T>,
-            source: T::PayloadId,
-            asset: T::PayloadAssetId,
-        ) -> DispatchResult {
-            let origin = ensure_signed(origin)?;
-            Payload::<T>::mutate(source.clone(), |maybe_details| {
-                if let Some(details) = maybe_details {
-                    ensure!(origin == details.owner, Error::<T>::WrongOrigin);
-                    let index = details
-                        .assets
-                        .iter()
-                        .position(|v| v == &asset)
-                        .ok_or(Error::<T>::NotInPayload)?;
-                    details.assets.remove(index);
-                    Ok(())
-                } else {
-                    Err(Error::<T>::UnknownPayload)
-                }
-            })?;
-
-            let event = Event::AssetRemoved { source, asset };
-            Self::deposit_event(event);
-
-            Ok(())
-        }
-    }
-
-    impl<T: Config> Pallet<T>
-    where
-        T: pallet_deip_assets::Config + pallet_deip_uniques::Config,
-    {
-        fn lock(origin: T::AccountId, asset: &T::PayloadAssetId) -> LockResult {
-            if let Some(id) = asset.ft_asset_id() {
-                pallet_deip_assets::Pallet::<T>::lock_asset(*id)
-            } else if let Some((class, instance)) = asset.nft_class_id() {
-                pallet_deip_uniques::Pallet::<T>::lock_asset(origin, *class, *instance)
-            } else {
-                todo!()
-            }
         }
     }
 }

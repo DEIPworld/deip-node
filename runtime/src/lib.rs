@@ -912,8 +912,7 @@ impl pallet_deip_vesting::Config for Runtime {
 
 impl pallet_deip_f_nft::Config for Runtime {
     type Event = Event;
-    type PayloadId = u32;
-    type PayloadAssetId = PayloadAssetId;
+    type FNftId = NftClassId;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
