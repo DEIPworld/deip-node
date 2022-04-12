@@ -5,11 +5,9 @@ use serde::{
 
 use crate::appchain_deip::deip::events::{
     ContractAgreementAccepted, ContractAgreementCreated, ContractAgreementFinalized,
-    ContractAgreementRejected, DomainAdded, Invested, NdaAccessRequestCreated,
+    ContractAgreementRejected, DomainAdded, NdaAccessRequestCreated,
     NdaAccessRequestFulfilled, NdaAccessRequestRejected, NdaCreated, ProjectContnetCreated,
     ProjectCreated, ProjectRemoved, ProjectUpdated, ReviewCreated, ReviewUpvoted,
-    SimpleCrowdfundingActivated, SimpleCrowdfundingCreated, SimpleCrowdfundingExpired,
-    SimpleCrowdfundingFinished,
 };
 
 const ACCOUNT_ID_KEY: &str = "account_id";
@@ -143,64 +141,6 @@ impl Serialize for ReviewUpvoted {
         s.serialize_field("review_id", &self.0)?;
         s.serialize_field(ACCOUNT_ID_KEY, &self.1)?;
         s.serialize_field("domain_id", &self.2)?;
-        s.end()
-    }
-}
-
-const INVESTMENT_ID_KEY: &str = "investment_id";
-
-impl Serialize for SimpleCrowdfundingCreated {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("SimpleCrowdfundingCreatedEvent", 1)?;
-        s.serialize_field(INVESTMENT_ID_KEY, &self.0)?;
-        s.end()
-    }
-}
-
-impl Serialize for SimpleCrowdfundingActivated {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("SimpleCrowdfundingActivatedEvent", 1)?;
-        s.serialize_field(INVESTMENT_ID_KEY, &self.0)?;
-        s.end()
-    }
-}
-
-impl Serialize for SimpleCrowdfundingFinished {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("SimpleCrowdfundingFinishedEvent", 1)?;
-        s.serialize_field(INVESTMENT_ID_KEY, &self.0)?;
-        s.end()
-    }
-}
-
-impl Serialize for SimpleCrowdfundingExpired {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("SimpleCrowdfundingExpiredEvent", 1)?;
-        s.serialize_field(INVESTMENT_ID_KEY, &self.0)?;
-        s.end()
-    }
-}
-
-impl Serialize for Invested {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("InvestedEvent", 2)?;
-        s.serialize_field(INVESTMENT_ID_KEY, &self.0)?;
-        s.serialize_field(ACCOUNT_ID_KEY, &self.1)?;
         s.end()
     }
 }

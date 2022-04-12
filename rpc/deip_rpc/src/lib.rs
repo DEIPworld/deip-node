@@ -2,7 +2,7 @@ use codec::Codec;
 use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 pub use pallet_deip::api::DeipApi as DeipStorageRuntimeApi;
-use pallet_deip::*;
+use pallet_deip::{investment_opportunity::*, *};
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{
@@ -146,9 +146,7 @@ where
         &self,
         at: Option<BlockHash>,
         id: ContractAgreementId,
-    ) -> Result<
-        Option<contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>>,
-    >;
+    ) -> Result<Option<contract::Agreement<AccountId, Hash, Moment>>>;
 
     #[rpc(name = "deip_getContractAgreementList")]
     fn get_contract_agreement_list(
@@ -157,12 +155,7 @@ where
         count: u32,
         start_id: Option<ContractAgreementId>,
     ) -> BoxFutureResult<
-        Vec<
-            ListResult<
-                ContractAgreementId,
-                contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>,
-            >,
-        >,
+        Vec<ListResult<ContractAgreementId, contract::Agreement<AccountId, Hash, Moment>>>,
     >;
 
     #[rpc(name = "deip_getContractAgreementListByType")]
@@ -173,12 +166,7 @@ where
         count: u32,
         start_id: Option<ContractAgreementId>,
     ) -> BoxFutureResult<
-        Vec<
-            ListResult<
-                ContractAgreementId,
-                contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>,
-            >,
-        >,
+        Vec<ListResult<ContractAgreementId, contract::Agreement<AccountId, Hash, Moment>>>,
     >;
 
     #[rpc(name = "deip_getReviewUpvoteListByReview")]
@@ -489,9 +477,7 @@ where
         &self,
         at: Option<HashOf<Block>>,
         id: ContractAgreementId,
-    ) -> Result<
-        Option<contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>>,
-    > {
+    ) -> Result<Option<contract::Agreement<AccountId, Hash, Moment>>> {
         let api = self.client.runtime_api();
         let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 
@@ -506,12 +492,7 @@ where
         count: u32,
         start_id: Option<ContractAgreementId>,
     ) -> BoxFutureResult<
-        Vec<
-            ListResult<
-                ContractAgreementId,
-                contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>,
-            >,
-        >,
+        Vec<ListResult<ContractAgreementId, contract::Agreement<AccountId, Hash, Moment>>>,
     > {
         StorageMap::<Blake2_128Concat>::get_list(
             &self.state,
@@ -530,12 +511,7 @@ where
         count: u32,
         start_id: Option<ContractAgreementId>,
     ) -> BoxFutureResult<
-        Vec<
-            ListResult<
-                ContractAgreementId,
-                contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>,
-            >,
-        >,
+        Vec<ListResult<ContractAgreementId, contract::Agreement<AccountId, Hash, Moment>>>,
     > {
         get_list_by_index::<Twox64Concat, Blake2_128Concat, _, _, _, _>(
             &self.state,

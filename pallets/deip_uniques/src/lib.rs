@@ -11,18 +11,18 @@ pub mod pallet {
     use frame_support::traits::GenesisBuild;
 
     use frame_support::{
-        dispatch::{DispatchResult, DispatchResultWithPostInfo, UnfilteredDispatchable, Vec},
+        dispatch::{DispatchResult, DispatchResultWithPostInfo, UnfilteredDispatchable, Weight},
         ensure,
         pallet_prelude::{OptionQuery, StorageMap, StorageValue, ValueQuery},
         sp_runtime::traits::{CheckedAdd, One, StaticLookup},
-        traits::Get,
-        BoundedVec, Identity, Parameter,
+        traits::{Get, Hooks},
+        Blake2_128Concat, BoundedVec, Identity, Parameter,
     };
-    use frame_system::{ensure_signed, pallet_prelude::OriginFor};
+    use frame_system::pallet_prelude::{BlockNumberFor, OriginFor};
     use pallet_uniques::{
         Call as UniquesCall, DestroyWitness, Pallet as UniquesPallet, WeightInfo,
     };
-    use sp_std::vec;
+    use sp_std::vec::Vec;
 
     // Helper types.
     type DeipNftClassIdOf<T> = <T as Config>::DeipNftClassId;
@@ -53,9 +53,84 @@ pub mod pallet {
         type MaxOriginClassId: Get<Self::ClassId>;
     }
 
+    use frame_support::traits::{GetStorageVersion, StorageVersion};
+
+    pub const V0: StorageVersion = StorageVersion::new(0);
+    pub const V1: StorageVersion = StorageVersion::new(1);
+
     #[pallet::pallet]
     #[pallet::generate_store(pub(super) trait Store)]
+    #[pallet::storage_version(V1)]
     pub struct Pallet<T>(_);
+
+    fn count_items(pallet_name: &[u8], storage_name: &[u8]) -> usize {
+        use frame_support::storage::{storage_prefix, PrefixIterator};
+        let prefix = storage_prefix(pallet_name, storage_name);
+        PrefixIterator::<()>::new(prefix.to_vec(), prefix.to_vec(), |_key, _value| Ok(())).count()
+    }
+
+    #[doc(hidden)]
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_runtime_upgrade() -> Weight {
+            use core::convert::TryInto;
+            use frame_support::storage::migration::move_storage_from_pallet;
+
+            if Pallet::<T>::on_chain_storage_version() == V0 &&
+                Pallet::<T>::current_storage_version() == V1
+            {
+                let mut reads: usize = 0;
+                for x in &[
+                    "NftClassIdByDeipNftClassId",
+                    "DeipNftClassIdByNftClassId",
+                    "NextNftClassId",
+                    "ProjectIdByDeipNftClassId",
+                    "NftBalanceMap",
+                ] {
+                    reads += count_items(b"Uniques", x.as_bytes());
+                    move_storage_from_pallet(
+                        x.as_bytes(),
+                        "Uniques".as_bytes(),
+                        "DeipUniques".as_bytes(),
+                    );
+                }
+                NftClassIdByDeipNftClassId::<T>::drain()
+                    .map(|x| {
+                        reads += 1;
+                        x
+                    })
+                    .for_each(|(k, v)| NftClassIdByDeipNftClassIdV1::<T>::insert(k, v));
+                DeipNftClassIdByNftClassId::<T>::drain()
+                    .map(|x| {
+                        reads += 1;
+                        x
+                    })
+                    .for_each(|(k, v)| DeipNftClassIdByNftClassIdV1::<T>::insert(k, v));
+                reads += ProjectIdByDeipNftClassId::<T>::drain().count();
+                reads += NftBalanceMap::<T>::drain().count();
+
+                for x in &[
+                    "Class",
+                    "Account",
+                    "Asset",
+                    "ClassMetadataOf",
+                    "InstanceMetadataOf",
+                    "Attribute",
+                ] {
+                    reads += count_items(b"ParityTechUniques", x.as_bytes());
+                    move_storage_from_pallet(
+                        x.as_bytes(),
+                        "ParityTechUniques".as_bytes(),
+                        "Uniques".as_bytes(),
+                    );
+                }
+
+                let reads: Weight = reads.try_into().unwrap_or(Weight::MAX);
+                return T::DbWeight::get().reads_writes(reads, reads)
+            }
+            0
+        }
+    }
 
     #[pallet::genesis_config]
     pub struct GenesisConfig<T> {
@@ -89,6 +164,15 @@ pub mod pallet {
         <T as pallet_uniques::Config>::ClassId,
         OptionQuery,
     >;
+    // Migrate key hasher:
+    #[pallet::storage]
+    pub type NftClassIdByDeipNftClassIdV1<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        DeipNftClassIdOf<T>,
+        <T as pallet_uniques::Config>::ClassId,
+        OptionQuery,
+    >;
 
     /// Storage for matching Deip class id and origin `pallet_uniques` class id.
     #[pallet::storage]
@@ -99,17 +183,28 @@ pub mod pallet {
         DeipNftClassIdOf<T>,
         OptionQuery,
     >;
+    // Migrate key hasher:
+    #[pallet::storage]
+    pub type DeipNftClassIdByNftClassIdV1<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        <T as pallet_uniques::Config>::ClassId,
+        DeipNftClassIdOf<T>,
+        OptionQuery,
+    >;
 
     /// Storage for next NFT origin class id.
     #[pallet::storage]
     pub(super) type NextNftClassId<T> = StorageValue<_, <T as Config>::NftClassId, ValueQuery>;
 
     /// Storage with projects ids.
+    /// Deprecated
     #[pallet::storage]
     pub(super) type ProjectIdByDeipNftClassId<T> =
         StorageMap<_, Identity, DeipNftClassIdOf<T>, DeipProjectIdOf<T>, OptionQuery>;
 
     /// Storage with assets classes ant accounts which hold corresponding asset.
+    /// Deprecated
     #[pallet::storage]
     pub(super) type NftBalanceMap<T: Config> =
         StorageMap<_, Identity, DeipNftClassIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
@@ -128,236 +223,14 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        /// Issue a new class of non-fungible assets from a public origin.
-        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::create())]
-        pub fn create(
-            origin: OriginFor<T>,
-            class: <T as pallet_uniques::Config>::ClassId,
-            admin: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            ensure!(class <= T::MaxOriginClassId::get(), pallet_uniques::Error::<T>::InUse);
-
-            UniquesPallet::<T>::create(origin, class, admin)
-        }
-
-        /// Destroy a class of fungible assets.
-        #[pallet::weight(pallet_uniques::Call::<T>::destroy{class: *class, witness: *witness}.get_dispatch_info().weight)]
-        pub fn destroy(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            witness: DestroyWitness,
-        ) -> DispatchResultWithPostInfo {
-            // If id belongs to project, refuse to destroy.
-            if let Some(deip_class) = DeipNftClassIdByNftClassId::<T>::get(class) {
-                ensure!(
-                    !ProjectIdByDeipNftClassId::<T>::contains_key(deip_class),
-                    Error::<T>::ProjectSecurityTokenCannotBeDestroyed
-                );
-            }
-            let res = UniquesPallet::<T>::destroy(origin, class, witness);
-            // If asset was destroyed, clean storages
-            if res.is_ok() {
-                let deip_class_id =
-                    DeipNftClassIdByNftClassId::<T>::mutate_exists(class, |v| v.take());
-                // ClassId is unique, so entries can be safely removed.
-                if let Some(key) = deip_class_id {
-                    NftClassIdByDeipNftClassId::<T>::mutate_exists(key, |v| *v = None);
-                    NftBalanceMap::<T>::mutate_exists(key, |v| *v = None);
-                }
-            }
-            res
-        }
-
-        /// Mint an asset instance of a particular class.
-        #[pallet::weight(T::WeightInfo::mint())]
-        pub fn mint(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instance: T::InstanceId,
-            owner: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::mint(origin, class, instance, owner)
-        }
-
-        /// Destroy a single asset instance.
-        #[pallet::weight(T::WeightInfo::burn())]
-        pub fn burn(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instance: T::InstanceId,
-            check_owner: Option<<T::Lookup as StaticLookup>::Source>,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::burn(origin, class, instance, check_owner)
-        }
-
-        /// Move an asset from the sender account to another.
-        #[pallet::weight(T::WeightInfo::transfer())]
-        pub fn transfer(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instance: T::InstanceId,
-            dest: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::transfer(origin, class, instance, dest)
-        }
-
-        /// Reevaluate the deposits on some assets.
-        #[pallet::weight(T::WeightInfo::redeposit(instances.len() as u32))]
-        pub fn redeposit(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instances: Vec<T::InstanceId>,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::redeposit(origin, class, instances)
-        }
-
-        /// Disallow further unprivileged transfer of an asset instance.
-        #[pallet::weight(T::WeightInfo::freeze())]
-        pub fn freeze(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instance: T::InstanceId,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::freeze(origin, class, instance)
-        }
-
-        /// Re-allow unprivileged transfer of an asset instance.
-        #[pallet::weight(T::WeightInfo::thaw())]
-        pub fn thaw(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instance: T::InstanceId,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::thaw(origin, class, instance)
-        }
-
-        /// Disallow further unprivileged transfers for a whole asset class.
-        #[pallet::weight(T::WeightInfo::freeze_class())]
-        pub fn freeze_class(origin: OriginFor<T>, class: T::ClassId) -> DispatchResult {
-            UniquesPallet::<T>::freeze_class(origin, class)
-        }
-
-        /// Re-allow unprivileged transfers for a whole asset class.
-        #[pallet::weight(T::WeightInfo::thaw_class())]
-        pub fn thaw_class(origin: OriginFor<T>, class: T::ClassId) -> DispatchResult {
-            UniquesPallet::<T>::thaw_class(origin, class)
-        }
-
-        /// Change the Owner of an asset class.
-        #[pallet::weight(T::WeightInfo::transfer_ownership())]
-        pub fn transfer_ownership(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            owner: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::transfer_ownership(origin, class, owner)
-        }
-
-        /// Change the Issuer, Admin and Freezer of an asset class.
-        #[pallet::weight(T::WeightInfo::set_team())]
-        pub fn set_team(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            issuer: <T::Lookup as StaticLookup>::Source,
-            admin: <T::Lookup as StaticLookup>::Source,
-            freezer: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::set_team(origin, class, issuer, admin, freezer)
-        }
-
-        /// Approve an instance to be transferred by a delegated third-party account.
-        #[pallet::weight(T::WeightInfo::approve_transfer())]
-        pub fn approve_transfer(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instance: T::InstanceId,
-            delegate: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::approve_transfer(origin, class, instance, delegate)
-        }
-
-        /// Cancel the prior approval for the transfer of an asset by a delegate.
-        #[pallet::weight(T::WeightInfo::cancel_approval())]
-        pub fn cancel_approval(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instance: T::InstanceId,
-            maybe_check_delegate: Option<<T::Lookup as StaticLookup>::Source>,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::cancel_approval(origin, class, instance, maybe_check_delegate)
-        }
-
-        /// Set an attribute for an asset class or instance.
-        #[pallet::weight(T::WeightInfo::set_attribute())]
-        pub fn set_attribute(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            maybe_instance: Option<T::InstanceId>,
-            key: BoundedVec<u8, T::KeyLimit>,
-            value: BoundedVec<u8, T::ValueLimit>,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::set_attribute(origin, class, maybe_instance, key, value)
-        }
-
-        /// Set an attribute for an asset class or instance.
-        #[pallet::weight(T::WeightInfo::clear_attribute())]
-        pub fn clear_attribute(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            maybe_instance: Option<T::InstanceId>,
-            key: BoundedVec<u8, T::KeyLimit>,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::clear_attribute(origin, class, maybe_instance, key)
-        }
-
-        /// Set the metadata for an asset instance.
-        #[pallet::weight(T::WeightInfo::set_metadata())]
-        pub fn set_metadata(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instance: T::InstanceId,
-            data: BoundedVec<u8, T::StringLimit>,
-            is_frozen: bool,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::set_metadata(origin, class, instance, data, is_frozen)
-        }
-
-        /// Clear the metadata for an asset instance.
-        #[pallet::weight(T::WeightInfo::clear_metadata())]
-        pub fn clear_metadata(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            instance: T::InstanceId,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::clear_metadata(origin, class, instance)
-        }
-
-        /// Set the metadata for an asset class.
-        #[pallet::weight(T::WeightInfo::set_class_metadata())]
-        pub fn set_class_metadata(
-            origin: OriginFor<T>,
-            class: T::ClassId,
-            data: BoundedVec<u8, T::StringLimit>,
-            is_frozen: bool,
-        ) -> DispatchResult {
-            UniquesPallet::<T>::set_class_metadata(origin, class, data, is_frozen)
-        }
-
-        /// Clear the metadata for an asset class.
-        #[pallet::weight(T::WeightInfo::clear_class_metadata())]
-        pub fn clear_class_metadata(origin: OriginFor<T>, class: T::ClassId) -> DispatchResult {
-            UniquesPallet::<T>::clear_class_metadata(origin, class)
-        }
-
         #[pallet::weight(T::WeightInfo::create())]
         pub fn deip_create(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
             admin: T::DeipAccountId,
-            project_id: Option<DeipProjectIdOf<T>>,
         ) -> DispatchResultWithPostInfo {
             let call = |class, admin| UniquesCall::<T>::create { class, admin };
-            Self::create_or_force(origin, class, admin, project_id, call)
+            Self::create_or_force(origin, class, admin, call)
         }
 
         #[pallet::weight(
@@ -370,12 +243,6 @@ pub mod pallet {
             class: DeipNftClassIdOf<T>,
             witness: DestroyWitness,
         ) -> DispatchResultWithPostInfo {
-            // If id belongs to project, refuse to destroy.
-            ensure!(
-                !ProjectIdByDeipNftClassId::<T>::contains_key(class),
-                Error::<T>::ProjectSecurityTokenCannotBeDestroyed
-            );
-
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
             // Dispatch destroy call to origin pallet.
@@ -383,9 +250,8 @@ pub mod pallet {
             let res = call.dispatch_bypass_filter(origin);
 
             if res.is_ok() {
-                DeipNftClassIdByNftClassId::<T>::mutate_exists(origin_class_id, |v| *v = None);
-                NftClassIdByDeipNftClassId::<T>::mutate_exists(class, |v| *v = None);
-                NftBalanceMap::<T>::mutate_exists(class, |v| *v = None);
+                DeipNftClassIdByNftClassIdV1::<T>::mutate_exists(origin_class_id, |v| *v = None);
+                NftClassIdByDeipNftClassIdV1::<T>::mutate_exists(class, |v| *v = None);
             }
 
             res
@@ -399,7 +265,7 @@ pub mod pallet {
             owner: T::DeipAccountId,
         ) -> DispatchResultWithPostInfo {
             // Convert target to source.
-            let owner_source = <T::Lookup as StaticLookup>::unlookup(owner.clone().into());
+            let owner_source = <T::Lookup as StaticLookup>::unlookup(owner.into());
 
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
@@ -409,25 +275,7 @@ pub mod pallet {
                 instance,
                 owner: owner_source,
             };
-            let result = call.dispatch_bypass_filter(origin)?;
-
-            // If project id exists for class id.
-            if ProjectIdByDeipNftClassId::<T>::contains_key(class) {
-                // Check balance map for the class id.
-                NftBalanceMap::<T>::mutate_exists(class, |maybe| {
-                    let account = owner.into();
-                    if let Some(balances) = maybe.as_mut() {
-                        // If vec for this class doesn't contain asset, add account to map.
-                        if let Err(i) = balances.binary_search(&account) {
-                            balances.insert(i, account);
-                        }
-                    } else {
-                        *maybe = Some(vec![account]);
-                    }
-                });
-            }
-
-            Ok(result)
+            call.dispatch_bypass_filter(origin)
         }
 
         #[pallet::weight(T::WeightInfo::burn())]
@@ -437,12 +285,6 @@ pub mod pallet {
             instance: T::InstanceId,
             check_owner: Option<T::DeipAccountId>,
         ) -> DispatchResultWithPostInfo {
-            // If id belongs to project, refuse to burn.
-            ensure!(
-                !ProjectIdByDeipNftClassId::<T>::contains_key(class),
-                Error::<T>::ProjectSecurityTokenCannotBeBurned
-            );
-
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
             // Convert target to source.
@@ -466,7 +308,7 @@ pub mod pallet {
             dest: T::DeipAccountId,
         ) -> DispatchResultWithPostInfo {
             // Convert target to source.
-            let dest_source = <T::Lookup as StaticLookup>::unlookup(dest.clone().into());
+            let dest_source = <T::Lookup as StaticLookup>::unlookup(dest.into());
 
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
 
@@ -476,26 +318,7 @@ pub mod pallet {
                 instance,
                 dest: dest_source,
             };
-            let ok = call.dispatch_bypass_filter(origin)?;
-
-            // If project id exists for class id.
-            if ProjectIdByDeipNftClassId::<T>::contains_key(class) {
-                NftBalanceMap::<T>::mutate_exists(class, |maybe| {
-                    let account = dest.into();
-                    if let Some(balances) = maybe.as_mut() {
-                        if let Err(i) = balances.binary_search(&account) {
-                            balances.insert(i, account);
-                        }
-                        // ??? @TODO remove class id from source account
-                    } else {
-                        // This shouldn't happen but for any case.
-                        // If this happend, it means that asset was minted and NftBalanceMap wasn't updated.
-                        *maybe = Some(vec![account]);
-                    }
-                });
-            }
-
-            Ok(ok)
+            call.dispatch_bypass_filter(origin)
         }
 
         #[pallet::weight(T::WeightInfo::redeposit(instances.len() as u32))]
@@ -505,8 +328,6 @@ pub mod pallet {
             instances: Vec<T::InstanceId>,
         ) -> DispatchResult {
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
-            // ??? Is check for class belonging to the project need.
-            // ??? Because from docs: class: The class of the asset to be !frozen!.
             UniquesPallet::<T>::redeposit(origin, origin_class_id, instances)
         }
 
@@ -516,12 +337,6 @@ pub mod pallet {
             class: DeipNftClassIdOf<T>,
             instance: T::InstanceId,
         ) -> DispatchResultWithPostInfo {
-            // If id belongs to project, refuse to freeze.
-            ensure!(
-                !ProjectIdByDeipNftClassId::<T>::contains_key(class),
-                Error::<T>::ProjectSecurityTokenCannotBeFrozen
-            );
-
             // @TODO
             // ensure!(
             //     !InvestmentByAssetId::<T>::contains_key(id),
@@ -553,12 +368,6 @@ pub mod pallet {
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
         ) -> DispatchResultWithPostInfo {
-            // If id belongs to project, refuse to freeze.
-            ensure!(
-                !ProjectIdByDeipNftClassId::<T>::contains_key(class),
-                Error::<T>::ProjectSecurityTokenCannotBeFrozen
-            );
-
             // @TODO
             // ensure!(
             //     !InvestmentByAssetId::<T>::contains_key(id),
@@ -695,14 +504,7 @@ pub mod pallet {
                 data,
                 is_frozen,
             };
-            let result = call.dispatch_bypass_filter(origin)?;
-
-            // AssetMetadataMap::<T>::insert(
-            //     id,
-            //     AssetMetadata { name: asset_name, symbol: asset_symbol, decimals },
-            // );
-
-            Ok(result)
+            call.dispatch_bypass_filter(origin)
         }
 
         #[pallet::weight(T::WeightInfo::clear_metadata())]
@@ -741,7 +543,7 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         /// Convert DeipNftClassId to origin class id.
         fn deip_to_origin_class_id(class: DeipNftClassIdOf<T>) -> Result<T::NftClassId, Error<T>> {
-            NftClassIdByDeipNftClassId::<T>::get(class)
+            NftClassIdByDeipNftClassIdV1::<T>::get(class)
                 .ok_or(Error::<T>::DeipNftClassIdDoesNotExist)
         }
 
@@ -749,22 +551,11 @@ pub mod pallet {
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
             admin: T::DeipAccountId,
-            project_id: Option<DeipProjectIdOf<T>>,
             call: impl FnOnce(T::NftClassId, <T::Lookup as StaticLookup>::Source) -> UniquesCall<T>,
         ) -> DispatchResultWithPostInfo {
-            // If project id is provided ensure that admin is in team.
-            if let Some(project_id) = project_id.as_ref() {
-                if let Some(team_id) = T::ProjectsInfo::try_get_project_team(project_id) {
-                    let account = ensure_signed(origin.clone())?;
-                    ensure!(team_id == account, Error::<T>::ProjectDoesNotBelongToTeam)
-                } else {
-                    return Err(Error::<T>::ProjectDoesNotExist.into())
-                }
-            }
-
             // Check if NFT with this deip id exist.
             ensure!(
-                !NftClassIdByDeipNftClassId::<T>::contains_key(class),
+                !NftClassIdByDeipNftClassIdV1::<T>::contains_key(class),
                 Error::<T>::DeipNftClassIdExists
             );
 
@@ -782,20 +573,8 @@ pub mod pallet {
             NextNftClassId::<T>::put(next_class_id);
 
             // Insert id to map.
-            NftClassIdByDeipNftClassId::<T>::insert(class, new_class_id);
-            DeipNftClassIdByNftClassId::<T>::insert(new_class_id, class);
-
-            // IF project id is provided add id to projects map.
-            if let Some(project_id) = project_id {
-                ProjectIdByDeipNftClassId::<T>::insert(class, project_id);
-                // ??? @TODO
-                // AssetIdByProjectId::<T>::mutate_exists(project_id, |tokens| {
-                //     match tokens.as_mut() {
-                //         None => *tokens = Some(vec![id]),
-                //         Some(c) => c.push(id),
-                //     };
-                // });
-            }
+            NftClassIdByDeipNftClassIdV1::<T>::insert(class, new_class_id);
+            DeipNftClassIdByNftClassIdV1::<T>::insert(new_class_id, class);
 
             Ok(post_dispatch_info)
         }

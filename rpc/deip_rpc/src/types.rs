@@ -63,10 +63,7 @@ pub struct ProjectKeyValue<Hash, AccountId> {
 
 impl<Hash, AccountId> ProjectKeyValue<Hash, AccountId> {
     pub fn new(id: super::ProjectId) -> Self {
-        Self {
-            id,
-            _m: Default::default(),
-        }
+        Self { id, _m: Default::default() }
     }
 }
 
@@ -104,17 +101,17 @@ pub struct InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance, Transact
     _m: std::marker::PhantomData<(Moment, AssetId, AssetBalance, TransactionCtx)>,
 }
 
-impl<Moment, AssetId, AssetBalance, TransactionCtx> InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance, TransactionCtx> {
+impl<Moment, AssetId, AssetBalance, TransactionCtx>
+    InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance, TransactionCtx>
+{
     #[allow(dead_code)]
     pub fn new(id: super::InvestmentId) -> Self {
-        Self {
-            id,
-            _m: Default::default(),
-        }
+        Self { id, _m: Default::default() }
     }
 }
 
-impl<Moment, AssetId, AssetBalance, TransactionCtx> KeyValueInfo for InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance, TransactionCtx>
+impl<Moment, AssetId, AssetBalance, TransactionCtx> KeyValueInfo
+    for InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance, TransactionCtx>
 where
     Moment: 'static + Decode + Send,
     AssetId: 'static + Decode + Send,
@@ -147,39 +144,26 @@ impl GetError for AgreementError {
     }
 }
 
-pub struct AgreementKeyValue<AccountId, Hash, Moment, AssetId, AssetBalance> {
+pub struct AgreementKeyValue<AccountId, Hash, Moment> {
     pub id: super::ContractAgreementId,
-    _m: std::marker::PhantomData<(AccountId, Hash, Moment, AssetId, AssetBalance)>,
+    _m: std::marker::PhantomData<(AccountId, Hash, Moment)>,
 }
 
-impl<AccountId, Hash, Moment, AssetId, AssetBalance>
-    AgreementKeyValue<AccountId, Hash, Moment, AssetId, AssetBalance>
-{
+impl<AccountId, Hash, Moment> AgreementKeyValue<AccountId, Hash, Moment> {
     pub fn new(id: super::ContractAgreementId) -> Self {
-        Self {
-            id,
-            _m: Default::default(),
-        }
+        Self { id, _m: Default::default() }
     }
 }
 
-impl<AccountId, Hash, Moment, AssetId, AssetBalance> KeyValueInfo
-    for AgreementKeyValue<AccountId, Hash, Moment, AssetId, AssetBalance>
+impl<AccountId, Hash, Moment> KeyValueInfo for AgreementKeyValue<AccountId, Hash, Moment>
 where
     AccountId: 'static + Decode + Send,
     Hash: 'static + Decode + Send,
     Moment: 'static + Decode + Send,
-    AssetId: 'static + Decode + Send,
-    AssetBalance: 'static + Decode + Send + Clone + AtLeast32BitUnsigned,
 {
     type Key = super::ContractAgreementId;
     type KeyError = AgreementIdError;
-    type Value = super::contract::Agreement<
-        AccountId,
-        Hash,
-        Moment,
-        super::DeipAsset<AssetId, AssetBalance>,
-    >;
+    type Value = super::contract::Agreement<AccountId, Hash, Moment>;
     type ValueError = AgreementError;
 
     fn key(&self) -> &Self::Key {
@@ -210,10 +194,7 @@ pub struct ProjectContentKeyValue<Hash, AccountId> {
 
 impl<Hash, AccountId> ProjectContentKeyValue<Hash, AccountId> {
     pub fn new(id: super::ProjectContentId) -> Self {
-        Self {
-            id,
-            _m: Default::default(),
-        }
+        Self { id, _m: Default::default() }
     }
 }
 
@@ -255,10 +236,7 @@ pub struct ReviewKeyValue<Hash, AccountId> {
 
 impl<Hash, AccountId> ReviewKeyValue<Hash, AccountId> {
     pub fn new(id: super::ReviewId) -> Self {
-        Self {
-            id,
-            _m: Default::default(),
-        }
+        Self { id, _m: Default::default() }
     }
 }
 
@@ -300,10 +278,7 @@ pub struct UpvoteKeyValue<AccountId, Moment> {
 
 impl<AccountId, Moment> UpvoteKeyValue<AccountId, Moment> {
     pub fn new(id: (super::ReviewId, AccountId, super::DomainId)) -> Self {
-        Self {
-            id,
-            _m: Default::default(),
-        }
+        Self { id, _m: Default::default() }
     }
 }
 
@@ -345,10 +320,7 @@ pub struct NdaKeyValue<Hash, AccountId, Moment> {
 
 impl<Hash, AccountId, Moment> NdaKeyValue<Hash, AccountId, Moment> {
     pub fn new(id: super::NdaId) -> Self {
-        Self {
-            id,
-            _m: Default::default(),
-        }
+        Self { id, _m: Default::default() }
     }
 }
 

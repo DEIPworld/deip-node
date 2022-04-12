@@ -39,39 +39,33 @@ pub use deip_serializable_u128::SerializableAtLeast32BitUnsigned as Serializable
 #[doc(inline)]
 pub use pallet::*;
 
-const NON_LOCAL: u8 = 101;
-
 #[frame_support::pallet]
 #[doc(hidden)]
 pub mod pallet {
     use frame_support::{
         pallet_prelude::{
-            ensure, Blake2_128Concat, Decode, DispatchResult, DispatchResultWithPostInfo, Encode,
-            Get, Hooks, Identity, InvalidTransaction, MaxEncodedLen, Member, OptionQuery,
-            Parameter, Pays, StorageDoubleMap, StorageMap, StorageValue, TransactionSource,
-            TransactionValidity, ValidTransaction, ValidateUnsigned, ValueQuery,
+            ensure, Blake2_128Concat, Decode, DispatchResultWithPostInfo, Encode, Get, Hooks,
+            Identity, MaxEncodedLen, Member, OptionQuery, Parameter, Pays, StorageDoubleMap,
+            StorageMap, StorageValue, ValueQuery,
         },
         traits::{Currency, ExistenceRequirement, UnfilteredDispatchable, WithdrawReasons},
         transactional, RuntimeDebug,
     };
     use frame_system::{
-        offchain::{SendTransactionTypes, SubmitTransaction},
-        pallet_prelude::{ensure_none, ensure_signed, BlockNumberFor, OriginFor},
+        pallet_prelude::{BlockNumberFor, OriginFor},
         RawOrigin,
     };
     use scale_info::TypeInfo;
     use sp_runtime::traits::{CheckedAdd, One, StaticLookup, Zero};
-    use sp_std::{
-        prelude::{Clone, Vec},
-        vec,
-    };
+    use sp_std::prelude::*;
 
     use codec::HasCompact;
+    use frame_support::dispatch::Weight;
 
     #[cfg(feature = "std")]
     use frame_support::traits::GenesisBuild;
 
-    use pallet_assets::{DestroyWitness, WeightInfo};
+    use pallet_assets::WeightInfo;
 
     use deip_asset_system::AssetIdInitT;
     use deip_projects_info::DeipProjectsInfo;
@@ -87,15 +81,10 @@ pub mod pallet {
     pub type DeipAssetIdOf<T> = <T as Config>::AssetId;
     type AssetsWeightInfoOf<T> = <T as pallet_assets::Config>::WeightInfo;
 
-    // pub trait AssetIdInitT<T: Config>: TypeInfo {
-    //     fn from_bytes(source: &[u8]) -> <T as Config>::AssetId;
-    // }
-
     #[pallet::config]
     pub trait Config:
         frame_system::Config
         + pallet_assets::Config<AssetId = Self::AssetsAssetId>
-        + SendTransactionTypes<Call<Self>>
     {
         type ProjectsInfo: DeipProjectsInfo<Self::AccountId>;
         type DeipAccountId: Into<Self::AccountId> + From<Self::AccountId> + Parameter + Member;
@@ -126,68 +115,92 @@ pub mod pallet {
         type WipePeriod: Get<Self::BlockNumber>;
     }
 
+    use frame_support::traits::{GetStorageVersion, StorageVersion};
+
+    pub const V0: StorageVersion = StorageVersion::new(0);
+    pub const V1: StorageVersion = StorageVersion::new(1);
+
     #[doc(hidden)]
     #[pallet::pallet]
     #[pallet::generate_store(pub(super) trait Store)]
+    #[pallet::storage_version(V1)]
     pub struct Pallet<T>(_);
+
+    fn count_items(pallet_name: &[u8], storage_name: &[u8]) -> usize {
+        use frame_support::storage::{storage_prefix, PrefixIterator};
+        let prefix = storage_prefix(pallet_name, storage_name);
+        PrefixIterator::<()>::new(prefix.to_vec(), prefix.to_vec(), |_key, _value| Ok(())).count()
+    }
 
     #[doc(hidden)]
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-        fn offchain_worker(n: T::BlockNumber) {
-            if !sp_io::offchain::is_validator() {
-                return
-            }
-
-            if n % T::WipePeriod::get() != Zero::zero() {
-                return
-            }
-
-            for (asset, accounts) in FtBalanceMap::<T>::iter() {
-                for account in accounts {
-                    if !Self::account_balance(&account, &asset).is_zero() {
-                        continue
-                    }
-
-                    let call = Call::deip_wipe_zero_balance { asset, account };
-                    let _submit =
-                        SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
+        fn on_runtime_upgrade() -> Weight {
+            use core::convert::TryInto;
+            use frame_support::storage::migration::move_storage_from_pallet;
+            if Pallet::<T>::on_chain_storage_version() == V0 &&
+                Pallet::<T>::current_storage_version() == V1
+            {
+                let mut reads: usize = 0;
+                for x in &[
+                    "AssetIdByDeipAssetId",
+                    "DeipAssetIdByAssetId",
+                    "NextAssetId",
+                    "AssetIdByProjectId",
+                    "ProjectIdByAssetId",
+                    "InvestmentByAssetId",
+                    "InvestmentMap",
+                    "FtBalanceMap",
+                    "AssetMetadataMap",
+                ] {
+                    reads += count_items(b"Assets", x.as_bytes());
+                    move_storage_from_pallet(
+                        x.as_bytes(),
+                        "Assets".as_bytes(),
+                        "DeipAssets".as_bytes(),
+                    );
                 }
-            }
-        }
-    }
+                AssetIdByDeipAssetId::<T>::drain()
+                    .map(|x| {
+                        reads += 1;
+                        x
+                    })
+                    .for_each(|(k, k2, v)| AssetIdByDeipAssetIdV1::<T>::insert(k, k2, v));
+                DeipAssetIdByAssetId::<T>::drain()
+                    .map(|x| {
+                        reads += 1;
+                        x
+                    })
+                    .for_each(|(k, k2, v)| DeipAssetIdByAssetIdV1::<T>::insert(k, k2, v));
+                reads += AssetIdByProjectId::<T>::drain().count();
+                reads += ProjectIdByAssetId::<T>::drain().count();
+                InvestmentByAssetId::<T>::drain()
+                    .map(|x| {
+                        reads += 1;
+                        x
+                    })
+                    .for_each(|(k, v)| InvestmentByAssetIdV1::<T>::insert(k, v));
+                InvestmentMap::<T>::drain()
+                    .map(|x| {
+                        reads += 1;
+                        x
+                    })
+                    .for_each(|(k, v)| InvestmentMapV1::<T>::insert(k, v));
+                reads += FtBalanceMap::<T>::drain().count();
+                reads += AssetMetadataMap::<T>::drain().count();
 
-    #[pallet::validate_unsigned]
-    impl<T: Config> ValidateUnsigned for Pallet<T> {
-        type Call = Call<T>;
-
-        fn validate_unsigned(source: TransactionSource, call: &Self::Call) -> TransactionValidity {
-            if !matches!(source, TransactionSource::Local | TransactionSource::InBlock) {
-                return InvalidTransaction::Custom(super::NON_LOCAL).into()
-            }
-
-            if let Call::deip_wipe_zero_balance { asset, account } = &call {
-                if !Self::account_balance(account, asset).is_zero() {
-                    return InvalidTransaction::Stale.into()
+                for x in &["Asset", "Account", "Approvals", "Metadata"] {
+                    reads += count_items(b"ParityTechAssets", x.as_bytes());
+                    move_storage_from_pallet(
+                        x.as_bytes(),
+                        "ParityTechAssets".as_bytes(),
+                        "Assets".as_bytes(),
+                    );
                 }
-
-                let balances = match FtBalanceMap::<T>::try_get(*asset) {
-                    Err(_) => return InvalidTransaction::Stale.into(),
-                    Ok(b) => b,
-                };
-
-                if balances.binary_search_by_key(&account, |a| a).is_err() {
-                    return InvalidTransaction::Stale.into()
-                }
-
-                ValidTransaction::with_tag_prefix("DeipAssetsOffchainWorker")
-                    .propagate(false)
-                    .longevity(5)
-                    .and_provides((*asset, account.clone()))
-                    .build()
-            } else {
-                InvalidTransaction::Call.into()
+                let reads: Weight = reads.try_into().unwrap_or(Weight::MAX);
+                return T::DbWeight::get().reads_writes(reads, reads)
             }
+            0
         }
     }
 
@@ -195,10 +208,6 @@ pub mod pallet {
     pub enum Error<T> {
         ProjectDoesNotExist,
         ProjectDoesNotBelongToTeam,
-        ProjectSecurityTokenCannotBeDestroyed,
-        ProjectSecurityTokenCannotBeBurned,
-        ProjectSecurityTokenCannotBeFreezed,
-        ProjectSecurityTokenAccountCannotBeFreezed,
         ReservedAssetCannotBeFreezed,
         ReservedAssetAccountCannotBeFreezed,
         FtNotFound,
@@ -219,6 +228,17 @@ pub mod pallet {
         (),
         OptionQuery,
     >;
+    // Migrate key hasher:
+    #[pallet::storage]
+    pub(super) type AssetIdByDeipAssetIdV1<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        DeipAssetIdOf<T>,
+        Blake2_128Concat,
+        AssetsAssetIdOf<T>,
+        (),
+        OptionQuery,
+    >;
 
     #[pallet::storage]
     pub(super) type DeipAssetIdByAssetId<T: Config> = StorageDoubleMap<
@@ -230,14 +250,27 @@ pub mod pallet {
         (),
         OptionQuery,
     >;
+    // Migrate key hasher:
+    #[pallet::storage]
+    pub(super) type DeipAssetIdByAssetIdV1<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        AssetsAssetIdOf<T>,
+        Blake2_128Concat,
+        DeipAssetIdOf<T>,
+        (),
+        OptionQuery,
+    >;
 
     #[pallet::storage]
     pub(super) type NextAssetId<T> = StorageValue<_, AssetsAssetIdOf<T>, ValueQuery>;
 
+    /// Deprecated
     #[pallet::storage]
     pub(super) type AssetIdByProjectId<T: Config> =
         StorageMap<_, Identity, DeipProjectIdOf<T>, Vec<DeipAssetIdOf<T>>, OptionQuery>;
 
+    /// Deprecated
     #[pallet::storage]
     pub(super) type ProjectIdByAssetId<T: Config> =
         StorageMap<_, Identity, DeipAssetIdOf<T>, DeipProjectIdOf<T>, OptionQuery>;
@@ -245,6 +278,10 @@ pub mod pallet {
     #[pallet::storage]
     pub(super) type InvestmentByAssetId<T: Config> =
         StorageMap<_, Identity, DeipAssetIdOf<T>, Vec<DeipInvestmentIdOf<T>>, OptionQuery>;
+    // Migrate key hasher:
+    #[pallet::storage]
+    pub(super) type InvestmentByAssetIdV1<T: Config> =
+        StorageMap<_, Blake2_128Concat, DeipAssetIdOf<T>, Vec<DeipInvestmentIdOf<T>>, OptionQuery>;
 
     #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq, TypeInfo)]
     pub(super) struct Investment<AccountId, AssetId> {
@@ -261,7 +298,17 @@ pub mod pallet {
         Investment<AccountIdOf<T>, DeipAssetIdOf<T>>,
         OptionQuery,
     >;
+    // Migrate key hasher:
+    #[pallet::storage]
+    pub(super) type InvestmentMapV1<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        DeipInvestmentIdOf<T>,
+        Investment<AccountIdOf<T>, DeipAssetIdOf<T>>,
+        OptionQuery,
+    >;
 
+    /// Deprecated
     #[pallet::storage]
     pub(super) type FtBalanceMap<T: Config> =
         StorageMap<_, Identity, DeipAssetIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
@@ -273,6 +320,7 @@ pub mod pallet {
         decimals: U8,
     }
 
+    /// Deprecated
     #[pallet::storage]
     pub(super) type AssetMetadataMap<T: Config> =
         StorageMap<_, Identity, DeipAssetIdOf<T>, AssetMetadata<u8>, OptionQuery>;
@@ -307,33 +355,18 @@ pub mod pallet {
             T::AccountId::decode(&mut &entropy[..]).unwrap_or_default()
         }
 
-        pub fn try_get_tokenized_project(id: &DeipAssetIdOf<T>) -> Option<DeipProjectIdOf<T>> {
-            match ProjectIdByAssetId::<T>::try_get(*id) {
-                Ok(project_id) => Some(project_id),
-                Err(_) => None,
-            }
-        }
-
         pub fn account_balance(account: &AccountIdOf<T>, asset: &DeipAssetIdOf<T>) -> T::Balance {
-            match AssetIdByDeipAssetId::<T>::iter_prefix(*asset).next() {
+            match AssetIdByDeipAssetIdV1::<T>::iter_prefix(*asset).next() {
                 None => Default::default(),
                 Some(prefix) => pallet_assets::Pallet::<T>::balance(prefix.0, account.clone()),
             }
         }
 
         pub fn total_supply(asset: &DeipAssetIdOf<T>) -> T::Balance {
-            match AssetIdByDeipAssetId::<T>::iter_prefix(*asset).next() {
+            match AssetIdByDeipAssetIdV1::<T>::iter_prefix(*asset).next() {
                 None => Zero::zero(),
                 Some(prefix) => pallet_assets::Pallet::<T>::total_supply(prefix.0),
             }
-        }
-
-        pub fn get_project_fts(id: &DeipProjectIdOf<T>) -> Vec<DeipAssetIdOf<T>> {
-            AssetIdByProjectId::<T>::try_get(id.clone()).unwrap_or_default()
-        }
-
-        pub fn get_ft_balances(id: &DeipAssetIdOf<T>) -> Option<Vec<AccountIdOf<T>>> {
-            FtBalanceMap::<T>::try_get(*id).ok()
         }
 
         #[transactional]
@@ -366,7 +399,7 @@ pub mod pallet {
         ) -> Result<(), deip_assets_error::ReserveError<DeipAssetIdOf<T>>> {
             use deip_assets_error::ReserveError;
 
-            ensure!(!InvestmentMap::<T>::contains_key(id.clone()), ReserveError::AlreadyReserved);
+            ensure!(!InvestmentMapV1::<T>::contains_key(id.clone()), ReserveError::AlreadyReserved);
 
             let id_account = Self::investment_key(&id);
             let id_source = <T::Lookup as StaticLookup>::unlookup(id_account.clone());
@@ -384,7 +417,7 @@ pub mod pallet {
             let mut assets_to_reserve = Vec::<DeipAssetIdOf<T>>::with_capacity(shares.len());
 
             for (asset, amount) in shares {
-                let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(asset)
+                let asset_id = AssetIdByDeipAssetIdV1::<T>::iter_prefix(asset)
                     .next()
                     .ok_or(ReserveError::AssetTransferFailed(*asset))?
                     .0;
@@ -400,7 +433,7 @@ pub mod pallet {
 
                 assets_to_reserve.push(*asset);
 
-                InvestmentByAssetId::<T>::mutate_exists(*asset, |investments| {
+                InvestmentByAssetIdV1::<T>::mutate_exists(*asset, |investments| {
                     match investments.as_mut() {
                         None => *investments = Some(vec![id.clone()]),
                         Some(c) => c.push(id.clone()),
@@ -408,14 +441,14 @@ pub mod pallet {
                 });
             }
 
-            InvestmentByAssetId::<T>::mutate_exists(asset_to_raise, |investments| {
+            InvestmentByAssetIdV1::<T>::mutate_exists(asset_to_raise, |investments| {
                 match investments.as_mut() {
                     None => *investments = Some(vec![id.clone()]),
                     Some(c) => c.push(id.clone()),
                 };
             });
 
-            InvestmentMap::<T>::insert(
+            InvestmentMapV1::<T>::insert(
                 id.clone(),
                 Investment {
                     creator: account.clone(),
@@ -433,7 +466,7 @@ pub mod pallet {
         ) -> Result<(), deip_assets_error::UnreserveError<DeipAssetIdOf<T>>> {
             use deip_assets_error::UnreserveError;
 
-            let info = match InvestmentMap::<T>::take(id.clone()) {
+            let info = match InvestmentMapV1::<T>::take(id.clone()) {
                 Some(i) => i,
                 None => return Err(UnreserveError::NoSuchInvestment),
             };
@@ -444,7 +477,7 @@ pub mod pallet {
             let id_account = Self::investment_key(&id);
 
             for asset_id in info.assets.iter().chain(&[info.asset_id]) {
-                InvestmentByAssetId::<T>::mutate_exists(*asset_id, |maybe_investments| {
+                InvestmentByAssetIdV1::<T>::mutate_exists(*asset_id, |maybe_investments| {
                     let investments =
                         maybe_investments.as_mut().expect("checked in transactionally_reserve");
                     let index = investments
@@ -492,7 +525,10 @@ pub mod pallet {
         ) -> Result<(), deip_assets_error::UnreserveError<DeipAssetIdOf<T>>> {
             use deip_assets_error::UnreserveError;
 
-            ensure!(InvestmentMap::<T>::contains_key(id.clone()), UnreserveError::NoSuchInvestment);
+            ensure!(
+                InvestmentMapV1::<T>::contains_key(id.clone()),
+                UnreserveError::NoSuchInvestment
+            );
 
             let id_account = Self::investment_key(&id);
 
@@ -516,12 +552,12 @@ pub mod pallet {
         ) -> Result<(), deip_assets_error::UnreserveError<DeipAssetIdOf<T>>> {
             use deip_assets_error::UnreserveError;
 
-            let info = match InvestmentMap::<T>::try_get(id.clone()) {
+            let info = match InvestmentMapV1::<T>::try_get(id.clone()) {
                 Ok(i) => i,
                 Err(_) => return Err(UnreserveError::NoSuchInvestment),
             };
 
-            let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(info.asset_id)
+            let asset_id = AssetIdByDeipAssetIdV1::<T>::iter_prefix(info.asset_id)
                 .next()
                 .ok_or(UnreserveError::AssetTransferFailed(info.asset_id))?
                 .0;
@@ -546,50 +582,24 @@ pub mod pallet {
             to: AccountIdOf<T>,
             amount: AssetsBalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            let target_source = <T::Lookup as StaticLookup>::unlookup(to.clone());
-            let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
+            let target_source = <T::Lookup as StaticLookup>::unlookup(to);
+            let asset_id = AssetIdByDeipAssetIdV1::<T>::iter_prefix(id)
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
             let call =
                 pallet_assets::Call::<T>::transfer { id: asset_id, target: target_source, amount };
-            let ok = call.dispatch_bypass_filter(from)?;
-
-            if Self::try_get_tokenized_project(&id).is_some() {
-                FtBalanceMap::<T>::mutate_exists(id, |maybe| match maybe.as_mut() {
-                    None => {
-                        // this cannot happen but for any case
-                        *maybe = Some(vec![to]);
-                    },
-                    Some(b) => match b.binary_search_by_key(&&to, |a| a) {
-                        Ok(_) => (),
-                        Err(i) => b.insert(i, to),
-                    },
-                });
-            }
-
-            Ok(ok)
+            call.dispatch_bypass_filter(from)
         }
 
-        fn deip_create_asset_impl(
+        fn deip_create_impl(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             admin: T::AccountId,
             min_balance: AssetsBalanceOf<T>,
-            project_id: Option<DeipProjectIdOf<T>>,
         ) -> DispatchResultWithPostInfo {
-            if let Some(ref id) = project_id {
-                match T::ProjectsInfo::try_get_project_team(id) {
-                    None => return Err(Error::<T>::ProjectDoesNotExist.into()),
-                    Some(team_id) => {
-                        let account = ensure_signed(origin.clone())?;
-                        ensure!(team_id == account, Error::<T>::ProjectDoesNotBelongToTeam)
-                    },
-                };
-            }
-
             ensure!(
-                AssetIdByDeipAssetId::<T>::iter_prefix(id).next().is_none(),
+                AssetIdByDeipAssetIdV1::<T>::iter_prefix(id).next().is_none(),
                 Error::<T>::DeipAssetIdExists
             );
 
@@ -603,31 +613,21 @@ pub mod pallet {
             let post_dispatch_info = call.dispatch_bypass_filter(origin)?;
 
             NextAssetId::<T>::put(next_asset_id);
-            AssetIdByDeipAssetId::<T>::insert(id, asset_id, ());
-            DeipAssetIdByAssetId::<T>::insert(asset_id, id, ());
-
-            if let Some(project_id) = project_id {
-                ProjectIdByAssetId::<T>::insert(id, project_id.clone());
-                AssetIdByProjectId::<T>::mutate_exists(project_id, |tokens| {
-                    match tokens.as_mut() {
-                        None => *tokens = Some(vec![id]),
-                        Some(c) => c.push(id),
-                    };
-                });
-            }
+            AssetIdByDeipAssetIdV1::<T>::insert(id, asset_id, ());
+            DeipAssetIdByAssetIdV1::<T>::insert(asset_id, id, ());
 
             Ok(post_dispatch_info)
         }
 
-        fn deip_issue_asset_impl(
+        fn deip_mint_impl(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             beneficiary: T::AccountId,
             amount: AssetsBalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            let beneficiary_source = <T::Lookup as StaticLookup>::unlookup(beneficiary.clone());
+            let beneficiary_source = <T::Lookup as StaticLookup>::unlookup(beneficiary);
 
-            let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
+            let asset_id = AssetIdByDeipAssetIdV1::<T>::iter_prefix(id)
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
@@ -636,27 +636,7 @@ pub mod pallet {
                 beneficiary: beneficiary_source,
                 amount,
             };
-            let result = call.dispatch_bypass_filter(origin)?;
-
-            if Self::try_get_tokenized_project(&id).is_some() {
-                FtBalanceMap::<T>::mutate_exists(id, |maybe| {
-                    let balances = match maybe.as_mut() {
-                        None => {
-                            *maybe = Some(vec![beneficiary]);
-                            return
-                        },
-                        Some(b) => b,
-                    };
-
-                    let account = beneficiary;
-                    match balances.binary_search_by_key(&&account, |a| a) {
-                        Ok(_) => (),
-                        Err(i) => balances.insert(i, account),
-                    };
-                });
-            }
-
-            Ok(result)
+            call.dispatch_bypass_filter(origin)
         }
 
         fn deip_set_metadata_impl(
@@ -666,199 +646,26 @@ pub mod pallet {
             symbol: Vec<u8>,
             decimals: u8,
         ) -> DispatchResultWithPostInfo {
-            let asset_name = name.clone();
-            let asset_symbol = symbol.clone();
-
-            let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
+            let asset_id = AssetIdByDeipAssetIdV1::<T>::iter_prefix(id)
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
             let call =
                 pallet_assets::Call::<T>::set_metadata { id: asset_id, name, symbol, decimals };
-            let result = call.dispatch_bypass_filter(origin)?;
-
-            AssetMetadataMap::<T>::insert(
-                id,
-                AssetMetadata { name: asset_name, symbol: asset_symbol, decimals },
-            );
-
-            Ok(result)
+            call.dispatch_bypass_filter(origin)
         }
     }
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::weight(AssetsWeightInfoOf::<T>::create())]
-        pub fn create(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            admin: <T::Lookup as StaticLookup>::Source,
-            min_balance: AssetsBalanceOf<T>,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::create(origin, id, admin, min_balance)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::destroy(0, 0, 0))] // @TODO replace with actual coeff
-        pub fn destroy(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            witness: DestroyWitness,
-        ) -> DispatchResultWithPostInfo {
-            pallet_assets::Pallet::<T>::destroy(origin, id, witness)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::mint())]
-        pub fn mint(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            beneficiary: <T::Lookup as StaticLookup>::Source,
-            amount: AssetsBalanceOf<T>,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::mint(origin, id, beneficiary, amount)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::burn())]
-        pub fn burn(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            who: <T::Lookup as StaticLookup>::Source,
-            amount: AssetsBalanceOf<T>,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::burn(origin, id, who, amount)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::transfer())]
-        pub fn transfer(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            target: <T::Lookup as StaticLookup>::Source,
-            amount: AssetsBalanceOf<T>,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::transfer(origin, id, target, amount)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::transfer_keep_alive())]
-        pub fn transfer_keep_alive(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            target: <T::Lookup as StaticLookup>::Source,
-            amount: AssetsBalanceOf<T>,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::transfer_keep_alive(origin, id, target, amount)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::freeze())]
-        pub fn freeze(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            who: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::freeze(origin, id, who)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::thaw())]
-        pub fn thaw(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            who: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::thaw(origin, id, who)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::freeze_asset())]
-        pub fn freeze_asset(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::freeze_asset(origin, id)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::thaw_asset())]
-        pub fn thaw_asset(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::thaw_asset(origin, id)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::transfer_ownership())]
-        pub fn transfer_ownership(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            owner: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::transfer_ownership(origin, id, owner)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::set_team())]
-        pub fn set_team(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            issuer: <T::Lookup as StaticLookup>::Source,
-            admin: <T::Lookup as StaticLookup>::Source,
-            freezer: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::set_team(origin, id, issuer, admin, freezer)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::set_metadata(name.len() as u32, symbol.len() as u32))]
-        pub fn set_metadata(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            name: Vec<u8>,
-            symbol: Vec<u8>,
-            decimals: u8,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::set_metadata(origin, id, name, symbol, decimals)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::clear_metadata())]
-        pub fn clear_metadata(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::clear_metadata(origin, id)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::approve_transfer())]
-        pub fn approve_transfer(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            delegate: <T::Lookup as StaticLookup>::Source,
-            amount: AssetsBalanceOf<T>,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::approve_transfer(origin, id, delegate, amount)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::cancel_approval())]
-        pub fn cancel_approval(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            delegate: <T::Lookup as StaticLookup>::Source,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::cancel_approval(origin, id, delegate)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::transfer_approved())]
-        pub fn transfer_approved(
-            origin: OriginFor<T>,
-            id: <T as pallet_assets::Config>::AssetId,
-            owner: <T::Lookup as StaticLookup>::Source,
-            destination: <T::Lookup as StaticLookup>::Source,
-            amount: AssetsBalanceOf<T>,
-        ) -> DispatchResult {
-            pallet_assets::Pallet::<T>::transfer_approved(origin, id, owner, destination, amount)
-        }
-
-        #[pallet::weight(AssetsWeightInfoOf::<T>::create())]
-        pub fn deip_create_asset(
+        pub fn deip_create(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             admin: T::DeipAccountId,
             min_balance: AssetsBalanceOf<T>,
-            project_id: Option<DeipProjectIdOf<T>>,
         ) -> DispatchResultWithPostInfo {
-            Self::deip_create_asset_impl(origin, id, admin.into(), min_balance, project_id)
+            Self::deip_create_impl(origin, id, admin.into(), min_balance)
         }
 
         #[pallet::weight((10_000, Pays::No))]
@@ -867,12 +674,7 @@ pub mod pallet {
             id: DeipAssetIdOf<T>,
             witness: pallet_assets::DestroyWitness,
         ) -> DispatchResultWithPostInfo {
-            ensure!(
-                !ProjectIdByAssetId::<T>::contains_key(id),
-                Error::<T>::ProjectSecurityTokenCannotBeDestroyed
-            );
-
-            let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
+            let asset_id = AssetIdByDeipAssetIdV1::<T>::iter_prefix(id)
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
@@ -882,13 +684,13 @@ pub mod pallet {
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::mint())]
-        pub fn deip_issue_asset(
+        pub fn deip_mint(
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
             beneficiary: T::DeipAccountId,
             #[pallet::compact] amount: AssetsBalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            Self::deip_issue_asset_impl(origin, id, beneficiary.into(), amount)
+            Self::deip_mint_impl(origin, id, beneficiary.into(), amount)
         }
 
         #[pallet::weight(AssetsWeightInfoOf::<T>::burn())]
@@ -898,12 +700,7 @@ pub mod pallet {
             who: T::DeipAccountId,
             #[pallet::compact] amount: AssetsBalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            ensure!(
-                !ProjectIdByAssetId::<T>::contains_key(id),
-                Error::<T>::ProjectSecurityTokenCannotBeBurned
-            );
-
-            let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
+            let asset_id = AssetIdByDeipAssetIdV1::<T>::iter_prefix(id)
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
@@ -930,16 +727,11 @@ pub mod pallet {
             who: T::DeipAccountId,
         ) -> DispatchResultWithPostInfo {
             ensure!(
-                !ProjectIdByAssetId::<T>::contains_key(id),
-                Error::<T>::ProjectSecurityTokenAccountCannotBeFreezed
-            );
-
-            ensure!(
-                !InvestmentByAssetId::<T>::contains_key(id),
+                !InvestmentByAssetIdV1::<T>::contains_key(id),
                 Error::<T>::ReservedAssetAccountCannotBeFreezed
             );
 
-            let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
+            let asset_id = AssetIdByDeipAssetIdV1::<T>::iter_prefix(id)
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
@@ -955,7 +747,7 @@ pub mod pallet {
             who: T::DeipAccountId,
         ) -> DispatchResultWithPostInfo {
             let who_source = <T::Lookup as StaticLookup>::unlookup(who.into());
-            let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
+            let asset_id = AssetIdByDeipAssetIdV1::<T>::iter_prefix(id)
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
@@ -969,16 +761,11 @@ pub mod pallet {
             id: DeipAssetIdOf<T>,
         ) -> DispatchResultWithPostInfo {
             ensure!(
-                !ProjectIdByAssetId::<T>::contains_key(id),
-                Error::<T>::ProjectSecurityTokenCannotBeFreezed
-            );
-
-            ensure!(
-                !InvestmentByAssetId::<T>::contains_key(id),
+                !InvestmentByAssetIdV1::<T>::contains_key(id),
                 Error::<T>::ReservedAssetCannotBeFreezed
             );
 
-            let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
+            let asset_id = AssetIdByDeipAssetIdV1::<T>::iter_prefix(id)
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
@@ -991,7 +778,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             id: DeipAssetIdOf<T>,
         ) -> DispatchResultWithPostInfo {
-            let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
+            let asset_id = AssetIdByDeipAssetIdV1::<T>::iter_prefix(id)
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
@@ -1006,7 +793,7 @@ pub mod pallet {
             owner: T::DeipAccountId,
         ) -> DispatchResultWithPostInfo {
             let owner_source = <T::Lookup as StaticLookup>::unlookup(owner.into());
-            let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
+            let asset_id = AssetIdByDeipAssetIdV1::<T>::iter_prefix(id)
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
@@ -1026,7 +813,7 @@ pub mod pallet {
             let issuer_source = <T::Lookup as StaticLookup>::unlookup(issuer.into());
             let admin_source = <T::Lookup as StaticLookup>::unlookup(admin.into());
             let freezer_source = <T::Lookup as StaticLookup>::unlookup(freezer.into());
-            let asset_id = AssetIdByDeipAssetId::<T>::iter_prefix(id)
+            let asset_id = AssetIdByDeipAssetIdV1::<T>::iter_prefix(id)
                 .next()
                 .ok_or(Error::<T>::DeipAssetIdDoesNotExist)?
                 .0;
@@ -1048,29 +835,6 @@ pub mod pallet {
             decimals: u8,
         ) -> DispatchResultWithPostInfo {
             Self::deip_set_metadata_impl(origin, id, name, symbol, decimals)
-        }
-
-        #[pallet::weight(10_000)]
-        pub fn deip_wipe_zero_balance(
-            origin: OriginFor<T>,
-            asset: DeipAssetIdOf<T>,
-            account: AccountIdOf<T>,
-        ) -> DispatchResultWithPostInfo {
-            ensure_none(origin)?;
-
-            FtBalanceMap::<T>::mutate_exists(asset, |maybe| match maybe.as_mut() {
-                None => Err(Error::<T>::FtNotFound.into()),
-                Some(b) => match b.binary_search_by_key(&&account, |a| a) {
-                    Err(_) => Err(Error::<T>::FtBalanceNotFound.into()),
-                    Ok(i) => {
-                        b.remove(i);
-                        if b.is_empty() {
-                            *maybe = None;
-                        }
-                        Ok(Some(0).into())
-                    },
-                },
-            })
         }
     }
 }

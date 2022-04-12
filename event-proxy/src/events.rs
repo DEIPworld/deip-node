@@ -17,7 +17,8 @@ use subxt::RawEvent;
 use crate::{
     appchain_deip::{
         deip::events as deip_events, deip_dao::events as dao_events,
-        deip_proposal::events as proposal_events, parity_tech_assets::events as assets_events,
+        deip_investment_opportunity::events as deip_investment_opportunity_events,
+        deip_proposal::events as proposal_events, assets::events as assets_events,
     },
     frame::deip_proposal::{self, DeipProposal},
 };
@@ -146,15 +147,16 @@ where
             DomainAdded(e) => e.serialize(serializer),
             ReviewCreated(e) => e.serialize(serializer),
             ReviewUpvoted(e) => e.serialize(serializer),
+            ContractAgreementCreated(e) => e.serialize(serializer),
+            ContractAgreementAccepted(e) => e.serialize(serializer),
+            ContractAgreementFinalized(e) => e.serialize(serializer),
+            ContractAgreementRejected(e) => e.serialize(serializer),
+            // =============== DeipInvestmentOpportunity:
             SimpleCrowdfundingCreated(e) => e.serialize(serializer),
             SimpleCrowdfundingActivated(e) => e.serialize(serializer),
             SimpleCrowdfundingFinished(e) => e.serialize(serializer),
             SimpleCrowdfundingExpired(e) => e.serialize(serializer),
             Invested(e) => e.serialize(serializer),
-            ContractAgreementCreated(e) => e.serialize(serializer),
-            ContractAgreementAccepted(e) => e.serialize(serializer),
-            ContractAgreementFinalized(e) => e.serialize(serializer),
-            ContractAgreementRejected(e) => e.serialize(serializer),
             // =============== DeipDao:
             DaoCreate(e) => e.serialize(serializer),
             DaoAlterAuthority(e) => e.serialize(serializer),
@@ -188,6 +190,23 @@ where
 }
 
 #[derive(Debug)]
+pub enum LegacyEvent<Current, Legacy> {
+    Current(Current),
+    #[allow(dead_code)]
+    Legacy(Legacy)
+}
+impl<C: Serialize, L: Serialize> Serialize for LegacyEvent<C, L> {
+    fn serialize<S: Serializer>(&self, serializer: S)
+        -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    {
+        match self {
+            Self::Current(current) => current.serialize(serializer),
+            Self::Legacy(legacy) => legacy.serialize(serializer),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum DomainEventData<T: DeipProposal> {
     // DeipProposal:
     ProposalProposed(deip_proposal::ProposedEvent<T>),
@@ -207,15 +226,31 @@ pub enum DomainEventData<T: DeipProposal> {
     DomainAdded(deip_events::DomainAdded),
     ReviewCreated(deip_events::ReviewCreated),
     ReviewUpvoted(deip_events::ReviewUpvoted),
-    SimpleCrowdfundingCreated(deip_events::SimpleCrowdfundingCreated),
-    SimpleCrowdfundingActivated(deip_events::SimpleCrowdfundingActivated),
-    SimpleCrowdfundingFinished(deip_events::SimpleCrowdfundingFinished),
-    SimpleCrowdfundingExpired(deip_events::SimpleCrowdfundingExpired),
-    Invested(deip_events::Invested),
     ContractAgreementCreated(deip_events::ContractAgreementCreated),
     ContractAgreementAccepted(deip_events::ContractAgreementAccepted),
     ContractAgreementFinalized(deip_events::ContractAgreementFinalized),
     ContractAgreementRejected(deip_events::ContractAgreementRejected),
+    // DeipInvestmentOpportunity:
+    SimpleCrowdfundingCreated(LegacyEvent<
+        deip_investment_opportunity_events::SimpleCrowdfundingCreated,
+        (),
+    >),
+    SimpleCrowdfundingActivated(LegacyEvent<
+        deip_investment_opportunity_events::SimpleCrowdfundingActivated,
+        (),
+    >),
+    SimpleCrowdfundingFinished(LegacyEvent<
+        deip_investment_opportunity_events::SimpleCrowdfundingFinished,
+        (),
+    >),
+    SimpleCrowdfundingExpired(LegacyEvent<
+        deip_investment_opportunity_events::SimpleCrowdfundingExpired,
+        (),
+    >),
+    Invested(LegacyEvent<
+        deip_investment_opportunity_events::Invested,
+        (),
+    >),
     // DeipDao:
     DaoCreate(dao_events::DaoCreate),
     DaoAlterAuthority(dao_events::DaoAlterAuthority),
@@ -355,43 +390,6 @@ where
             meta,
         },
         (
-            deip_events::SimpleCrowdfundingCreated::PALLET,
-            deip_events::SimpleCrowdfundingCreated::EVENT,
-        ) => DomainEvent {
-            name: "project_tokenSaleCreated".to_string(),
-            data: decode_event_data(raw).map(DomainEventData::SimpleCrowdfundingCreated)?,
-            meta,
-        },
-        (
-            deip_events::SimpleCrowdfundingActivated::PALLET,
-            deip_events::SimpleCrowdfundingActivated::EVENT,
-        ) => DomainEvent {
-            name: "project_tokenSaleActivated".to_string(),
-            data: decode_event_data(raw).map(DomainEventData::SimpleCrowdfundingActivated)?,
-            meta,
-        },
-        (
-            deip_events::SimpleCrowdfundingFinished::PALLET,
-            deip_events::SimpleCrowdfundingFinished::EVENT,
-        ) => DomainEvent {
-            name: "project_tokenSaleFinished".to_string(),
-            data: decode_event_data(raw).map(DomainEventData::SimpleCrowdfundingFinished)?,
-            meta,
-        },
-        (
-            deip_events::SimpleCrowdfundingExpired::PALLET,
-            deip_events::SimpleCrowdfundingExpired::EVENT,
-        ) => DomainEvent {
-            name: "project_tokenSaleExpired".to_string(),
-            data: decode_event_data(raw).map(DomainEventData::SimpleCrowdfundingExpired)?,
-            meta,
-        },
-        (deip_events::Invested::PALLET, deip_events::Invested::EVENT) => DomainEvent {
-            name: "project_tokenSaleContributed".to_string(),
-            data: decode_event_data(raw).map(DomainEventData::Invested)?,
-            meta,
-        },
-        (
             deip_events::ContractAgreementCreated::PALLET,
             deip_events::ContractAgreementCreated::EVENT,
         ) => DomainEvent {
@@ -421,6 +419,55 @@ where
         ) => DomainEvent {
             name: "deip_contractAgreementRejected".to_string(),
             data: decode_event_data(raw).map(DomainEventData::ContractAgreementRejected)?,
+            meta,
+        },
+        // =========== DeipInvestmentOpportunity:
+        (
+            deip_investment_opportunity_events::SimpleCrowdfundingCreated::PALLET,
+            deip_investment_opportunity_events::SimpleCrowdfundingCreated::EVENT,
+        ) => DomainEvent {
+            name: "project_tokenSaleCreated".to_string(),
+            data: DomainEventData::SimpleCrowdfundingCreated(
+                decode_event_data(raw).map(LegacyEvent::Current)?
+            ),
+            meta,
+        },
+        (
+            deip_investment_opportunity_events::SimpleCrowdfundingActivated::PALLET,
+            deip_investment_opportunity_events::SimpleCrowdfundingActivated::EVENT,
+        ) => DomainEvent {
+            name: "project_tokenSaleActivated".to_string(),
+            data: DomainEventData::SimpleCrowdfundingActivated(
+                decode_event_data(raw).map(LegacyEvent::Current)?
+            ),
+            meta,
+        },
+        (
+            deip_investment_opportunity_events::SimpleCrowdfundingFinished::PALLET,
+            deip_investment_opportunity_events::SimpleCrowdfundingFinished::EVENT,
+        ) => DomainEvent {
+            name: "project_tokenSaleFinished".to_string(),
+            data: DomainEventData::SimpleCrowdfundingFinished(
+                decode_event_data(raw).map(LegacyEvent::Current)?
+            ),
+            meta,
+        },
+        (
+            deip_investment_opportunity_events::SimpleCrowdfundingExpired::PALLET,
+            deip_investment_opportunity_events::SimpleCrowdfundingExpired::EVENT,
+        ) => DomainEvent {
+            name: "project_tokenSaleExpired".to_string(),
+            data: DomainEventData::SimpleCrowdfundingExpired(
+                decode_event_data(raw).map(LegacyEvent::Current)?
+            ),
+            meta,
+        },
+        (
+            deip_investment_opportunity_events::Invested::PALLET,
+            deip_investment_opportunity_events::Invested::EVENT
+        ) => DomainEvent {
+            name: "project_tokenSaleContributed".to_string(),
+            data: DomainEventData::Invested(decode_event_data(raw).map(LegacyEvent::Current)?),
             meta,
         },
         // =========== DeipDao:

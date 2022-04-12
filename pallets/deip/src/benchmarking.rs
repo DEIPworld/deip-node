@@ -1,35 +1,31 @@
 #![cfg(feature = "runtime-benchmarks")]
-
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-use super::{*};
-use frame_system::{RawOrigin, EventRecord};
-use frame_support::{traits::Get};
-use frame_benchmarking::{benchmarks, account, whitelisted_caller, whitelist_account};
-use sp_std::prelude::*;
+use super::*;
 use core::convert::TryInto;
-use frame_support::weights::PostDispatchInfo;
+use frame_benchmarking::{account, benchmarks, whitelist_account, whitelisted_caller};
+use frame_support::{traits::Get, weights::PostDispatchInfo};
+use frame_system::{EventRecord, RawOrigin};
 use sp_core::H160;
+use sp_std::prelude::*;
 
-use crate::Pallet;
+use crate::{
+    contract::{
+        GenericContract, GenericContractOf, GenericContractStatus, License, LicenseOf,
+        LicenseStatus, Terms,
+    },
+    Pallet,
+};
 use sp_runtime::traits::{Hash, Saturating, Scale, StaticLookup};
-use crate::contract::{
-    License, LicenseOf, LicenseStatus,
-    TermsOf, Terms,
-    GeneralContractStatus, GeneralContract, GeneralContractOf,
-};
 
-use pallet_deip_assets::{
-    Pallet as DeipAssets,
-    ProjectsInfoOf,
-    Config as DeipAssetsConfig,
-    DeipAssetIdOf
-};
-use pallet_assets::Config as AssetsConfig;
 use deip_projects_info::DeipProjectsInfo;
-use pallet_balances::Config as BalancesConfig;
 use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
+use pallet_assets::Config as AssetsConfig;
+use pallet_balances::Config as BalancesConfig;
+use pallet_deip_assets::{
+    Config as DeipAssetsConfig, DeipAssetIdOf, Pallet as DeipAssets, ProjectsInfoOf,
+};
 
 const SEED: u32 = 0;
 
@@ -70,51 +66,40 @@ fn init_project<T: Config>(idx: u8, domains: u8) -> ProjectOf<T> {
     let domains: Vec<DomainId> = (0..domains)
         .map(|idx| create_domain::<T>(init_domain(idx + 1)).external_id)
         .collect();
-    ProjectOf::<T> {
-        is_private,
-        external_id,
-        team_id,
-        description,
-        domains,
-    }
+    ProjectOf::<T> { is_private, external_id, team_id, description, domains }
 }
 
 fn _create_project<T: Config>(project: ProjectOf<T>) -> ProjectOf<T> {
-    let ProjectOf::<T> {
-        is_private,
-        external_id,
-        team_id,
-        description,
-        domains
-    } = project;
+    let ProjectOf::<T> { is_private, external_id, team_id, description, domains } = project;
     Pallet::<T>::create_project(
         RawOrigin::Signed(team_id.clone()).into(),
         is_private,
         external_id,
         team_id.into(),
         description,
-        domains
-    ).unwrap();
-    ProjectMap::<T>::get(external_id)
+        domains,
+    )
+    .unwrap();
+    ProjectMapV1::<T>::get(external_id)
 }
 
 fn create_project_asset<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
-    project: &ProjectOf<T>
-) -> DispatchResultWithPostInfo
-{
+    project: &ProjectOf<T>,
+) -> DispatchResultWithPostInfo {
     pallet_balances::Pallet::<T>::set_balance(
         RawOrigin::Root.into(),
         T::Lookup::unlookup(project.team_id.clone()),
         <T as BalancesConfig>::Balance::max_value(),
         <T as BalancesConfig>::Balance::from(0u16),
-    ).unwrap();
-    DeipAssets::<T>::deip_create_asset(
+    )
+    .unwrap();
+    DeipAssets::<T>::deip_create(
         RawOrigin::Signed(project.team_id.clone()).into(),
         T::AssetIdInit::asset_id(project.external_id.as_bytes()),
         project.team_id.clone().into(),
         <T as AssetsConfig>::Balance::from(200u16),
-        Some(ProjectsInfoOf::<T>::project_id(project.external_id.as_bytes()))
-    ).unwrap();
+    )
+    .unwrap();
     Ok(None.into())
 }
 
@@ -122,20 +107,16 @@ fn init_project_content<T: Config>(
     project: &ProjectOf<T>,
     authors: u8,
     references: Option<&[ProjectContentOf<T>]>,
-) -> ProjectContentOf<T>
-{
+) -> ProjectContentOf<T> {
     let external_id: ProjectContentId = project.external_id;
     let project_external_id: ProjectId = project.external_id;
     let team_id: T::AccountId = project.team_id.clone();
     let content_type: ProjectContentType = ProjectContentType::Announcement;
     let description: T::Hash = T::Hashing::hash("project content description".as_bytes());
     let content: T::Hash = T::Hashing::hash("project content".as_bytes());
-    let authors: Vec<T::AccountId> = (0..authors)
-        .map(|idx| init_member::<T>(idx as u32))
-        .collect();
-    let references: Option<Vec<ProjectContentId>> = references.map(
-        |x| x.iter().map(|y| y.external_id).collect()
-    );
+    let authors: Vec<T::AccountId> = (0..authors).map(|idx| init_member::<T>(idx as u32)).collect();
+    let references: Option<Vec<ProjectContentId>> =
+        references.map(|x| x.iter().map(|y| y.external_id).collect());
     ProjectContentOf::<T> {
         external_id,
         project_external_id,
@@ -148,10 +129,7 @@ fn init_project_content<T: Config>(
     }
 }
 
-fn _create_project_content<T: Config>(
-    project_content: ProjectContentOf<T>
-) -> ProjectContentOf<T>
-{
+fn _create_project_content<T: Config>(project_content: ProjectContentOf<T>) -> ProjectContentOf<T> {
     let ProjectContentOf::<T> {
         external_id,
         project_external_id,
@@ -161,7 +139,7 @@ fn _create_project_content<T: Config>(
         content,
         authors,
         references,
-    } =  project_content;
+    } = project_content;
     let authors = authors.into_iter().map(Into::into).collect();
     Pallet::<T>::create_project_content(
         RawOrigin::Signed(team_id.clone()).into(),
@@ -172,9 +150,10 @@ fn _create_project_content<T: Config>(
         description,
         content,
         authors,
-        references
-    ).unwrap();
-    ProjectContentMap::<T>::get(external_id)
+        references,
+    )
+    .unwrap();
+    ProjectContentMapV1::<T>::get(external_id)
 }
 
 fn create_reference_project<T: Config>(project_idx: u8) -> ProjectContentOf<T> {
@@ -230,7 +209,7 @@ fn now<T: Config>() -> T::Moment {
 //         parties.into_iter().map(Into::into).collect(),
 //         projects
 //     ).unwrap();
-//     NdaMap::<T>::get(external_id)
+//     NdaMapV1::<T>::get(external_id)
 // }
 
 // fn init_nda_content_access_request<T: Config>(idx: u8, nda: &NdaOf<T>) -> NdaAccessRequestOf<T>
@@ -271,15 +250,14 @@ fn now<T: Config>() -> T::Moment {
 //         encrypted_payload_hash,
 //         encrypted_payload_iv
 //     ).unwrap();
-//     NdaAccessRequestMap::<T>::get(external_id)
+//     NdaAccessRequestMapV1::<T>::get(external_id)
 // }
 
 fn init_review<T: Config>(
     idx: u8,
     domains: &[DomainId],
-    project_content: &ProjectContentOf<T>
-) -> ReviewOf<T>
-{
+    project_content: &ProjectContentOf<T>,
+) -> ReviewOf<T> {
     let external_id: ReviewId = ReviewId::from([idx; 20]);
     let author: T::AccountId = whitelisted_caller();
     let content: T::Hash = T::Hashing::hash("review content".as_bytes());
@@ -294,12 +272,11 @@ fn init_review<T: Config>(
         domains,
         assessment_model,
         weight,
-        project_content_external_id
+        project_content_external_id,
     }
 }
 
-fn _create_review<T: Config>(review: ReviewOf<T>) -> ReviewOf<T>
-{
+fn _create_review<T: Config>(review: ReviewOf<T>) -> ReviewOf<T> {
     let ReviewOf::<T> {
         external_id,
         author,
@@ -307,7 +284,7 @@ fn _create_review<T: Config>(review: ReviewOf<T>) -> ReviewOf<T>
         domains,
         assessment_model,
         weight,
-        project_content_external_id
+        project_content_external_id,
     } = review;
     Pallet::<T>::create_review(
         RawOrigin::Signed(author.clone()).into(),
@@ -317,9 +294,10 @@ fn _create_review<T: Config>(review: ReviewOf<T>) -> ReviewOf<T>
         domains,
         assessment_model,
         weight,
-        project_content_external_id
-    ).unwrap();
-    ReviewMap::<T>::get(external_id)
+        project_content_external_id,
+    )
+    .unwrap();
+    ReviewMapV1::<T>::get(external_id)
 }
 
 benchmarks! {
@@ -338,126 +316,6 @@ benchmarks! {
         assert_last_event::<T>(Event::<T>::ProjectCreated(
             project.team_id.clone(),
             project
-        ).into());
-    }
-
-    create_investment_opportunity {
-        let s in 1 .. 10;
-        let crowdfunding = init_simple_crowdfunding::<T>(1, s as u8);
-        let PreSimpleCrowdfunding::<T> {
-            investment,
-            funding_model,
-            shares
-        } = pre_simple_crowdfunding::<T>(crowdfunding, whitelisted_caller());
-
-        let external_id = investment.sale_id.clone();
-
-    }: _(RawOrigin::Signed(investment.owner.clone()),
-            external_id,
-            investment.owner.clone().into(),
-            shares,
-            funding_model)
-    verify {
-        assert_last_event::<T>(Event::<T>::SimpleCrowdfundingCreated(
-            external_id
-        ).into());
-    }
-
-    activate_crowdfunding {
-        let crowdfunding = init_simple_crowdfunding::<T>(1, 10);
-        let pre_crowdfunding =
-            pre_simple_crowdfunding::<T>(crowdfunding, whitelisted_caller());
-        let crowdfunding =
-            _create_investment_opportunity::<T>(pre_crowdfunding);
-
-    }: _(RawOrigin::None, crowdfunding.external_id)
-    verify {
-        assert_last_event::<T>(Event::<T>::SimpleCrowdfundingActivated(
-            crowdfunding.external_id
-        ).into());
-    }
-
-    expire_crowdfunding_already_expired {
-        let crowdfunding = init_simple_crowdfunding::<T>(1, 10);
-        let pre_crowdfunding =
-            pre_simple_crowdfunding::<T>(crowdfunding, whitelisted_caller());
-        let crowdfunding =
-            _create_investment_opportunity::<T>(pre_crowdfunding);
-        let crowdfunding = _activate_crowdfunding::<T>(crowdfunding);
-        let crowdfunding = set_crowdfunding_end_time::<T>(crowdfunding, now::<T>());
-        let crowdfunding = _expire_crowdfunding::<T>(crowdfunding);
-
-    }: expire_crowdfunding(RawOrigin::None, crowdfunding.external_id)
-    verify {}
-
-    expire_crowdfunding {
-        let crowdfunding = init_simple_crowdfunding::<T>(1, 10);
-        let pre_crowdfunding =
-            pre_simple_crowdfunding::<T>(crowdfunding, whitelisted_caller());
-        let crowdfunding =
-            _create_investment_opportunity::<T>(pre_crowdfunding);
-        let crowdfunding = _activate_crowdfunding::<T>(crowdfunding);
-        let crowdfunding = set_crowdfunding_end_time::<T>(crowdfunding, now::<T>());
-
-    }: _(RawOrigin::None, crowdfunding.external_id)
-    verify {
-        assert_last_event::<T>(Event::<T>::SimpleCrowdfundingExpired(
-            crowdfunding.external_id
-        ).into());
-    }
-
-    finish_crowdfunding {
-        let crowdfunding = init_simple_crowdfunding::<T>(1, 10);
-        let pre_crowdfunding =
-            pre_simple_crowdfunding::<T>(crowdfunding, whitelisted_caller());
-        let crowdfunding =
-            _create_investment_opportunity::<T>(pre_crowdfunding);
-        let crowdfunding = _activate_crowdfunding::<T>(crowdfunding);
-        _invest::<T>(&crowdfunding, whitelisted_caller());
-
-    }: _(RawOrigin::None, crowdfunding.external_id)
-    verify {
-        assert_last_event::<T>(Event::<T>::SimpleCrowdfundingFinished(
-            crowdfunding.external_id
-        ).into());
-    }
-
-    invest {
-        let crowdfunding = init_simple_crowdfunding::<T>(1, 10);
-        let pre_crowdfunding =
-            pre_simple_crowdfunding::<T>(crowdfunding, whitelisted_caller());
-        let crowdfunding =
-            _create_investment_opportunity::<T>(pre_crowdfunding);
-        let crowdfunding = _activate_crowdfunding::<T>(crowdfunding);
-        let investor: T::AccountId = whitelisted_caller();
-
-    }: _(RawOrigin::Signed(investor.clone()),
-            crowdfunding.external_id,
-            DeipAssetOf::<T>::new(crowdfunding.asset_id, crowdfunding.soft_cap.0)
-            )
-    verify {
-        assert_last_event::<T>(Event::<T>::Invested(
-            crowdfunding.external_id,
-            investor,
-        ).into());
-    }
-
-    invest_hard_cap_reached {
-        let crowdfunding = init_simple_crowdfunding::<T>(1, 10);
-        let pre_crowdfunding =
-            pre_simple_crowdfunding::<T>(crowdfunding, whitelisted_caller());
-        let crowdfunding =
-            _create_investment_opportunity::<T>(pre_crowdfunding);
-        let crowdfunding = _activate_crowdfunding::<T>(crowdfunding);
-        let investor: T::AccountId = whitelisted_caller();
-
-    }: invest(RawOrigin::Signed(investor.clone()),
-            crowdfunding.external_id,
-            DeipAssetOf::<T>::new(crowdfunding.asset_id, crowdfunding.hard_cap.0)
-            )
-    verify {
-        assert_last_event::<T>(Event::<T>::SimpleCrowdfundingFinished(
-            crowdfunding.external_id,
         ).into());
     }
 
@@ -689,7 +547,7 @@ benchmarks! {
 
         let terms = init_license_agreement::<T>(
             &project,
-            T::AssetSystem::asset_id([38; 20].as_slice())
+            T::asset_id([38; 20].as_slice())
         );
         let parties = Parties::<T>::license_agreement(&project, init_member::<T>(99));
         let agreement = init_contract_agreement::<T>(1, terms, parties);
@@ -708,7 +566,7 @@ benchmarks! {
             license.hash,
             license.activation_time,
             license.expiration_time,
-            TermsOf::<T>::LicenseAgreement {
+            Terms::LicenseAgreement {
                 source: license.project_id,
                 price: license.price
             })
@@ -718,11 +576,11 @@ benchmarks! {
         ).into());
     }
 
-    create_contract_agreement_general_contract {
+    create_contract_agreement_generic_contract {
         let project = init_project::<T>(1, 0);
         let project = _create_project::<T>(project);
 
-        let terms = init_general_contract_agreement::<T>();
+        let terms = init_generic_contract_agreement::<T>();
         let parties = Parties::<T>::ContractAgreement((100..105).map(init_member::<T>).collect());
         let agreement = init_contract_agreement::<T>(1, terms, parties);
 
@@ -737,7 +595,7 @@ benchmarks! {
             license.hash,
             license.activation_time,
             license.expiration_time,
-            TermsOf::<T>::GeneralContractAgreement)
+            Terms::GenericContractAgreement)
     verify {
         assert_last_event::<T>(Event::<T>::ContractAgreementCreated(
             id
@@ -751,7 +609,7 @@ benchmarks! {
 
         let terms = init_license_agreement::<T>(
             &project,
-            T::AssetSystem::asset_id([38; 20].as_slice())
+            T::asset_id([38; 20].as_slice())
         );
         let parties = Parties::<T>::license_agreement(&project, init_member::<T>(99));
         let agreement = init_contract_agreement::<T>(1, terms, parties);
@@ -778,7 +636,7 @@ benchmarks! {
 
         let terms = init_license_agreement::<T>(
             &project,
-            T::AssetSystem::asset_id([38; 20].as_slice())
+            T::asset_id([38; 20].as_slice())
         );
         let parties = Parties::<T>::license_agreement(&project, init_member::<T>(99));
         let agreement = init_contract_agreement::<T>(1, terms, parties);
@@ -811,11 +669,11 @@ benchmarks! {
         ).into());
     }
 
-    accept_contract_agreement_general_contract_partially_accepted {
+    accept_contract_agreement_generic_contract_partially_accepted {
         let project = init_project::<T>(1, 0);
         let project = _create_project::<T>(project);
 
-        let terms = init_general_contract_agreement::<T>();
+        let terms = init_generic_contract_agreement::<T>();
         let parties = Parties::<T>::ContractAgreement((100..105).map(init_member::<T>).collect());
         let agreement = init_contract_agreement::<T>(1, terms, parties);
         let agreement = _create_contract_agreement::<T>(agreement);
@@ -836,11 +694,11 @@ benchmarks! {
         ).into());
     }
 
-    accept_contract_agreement_general_contract_finalized {
+    accept_contract_agreement_generic_contract_finalized {
         let project = init_project::<T>(1, 0);
         let project = _create_project::<T>(project);
 
-        let terms = init_general_contract_agreement::<T>();
+        let terms = init_generic_contract_agreement::<T>();
         let parties = Parties::<T>::ContractAgreement((100..105).map(init_member::<T>).collect());
         let agreement = init_contract_agreement::<T>(1, terms, parties);
         let agreement = _create_contract_agreement::<T>(agreement);
@@ -871,20 +729,16 @@ benchmarks! {
 
 fn init_license_agreement<T: Config + DeipAssetsConfig>(
     source: &ProjectOf<T>,
-    asset_id: crate::DeipAssetIdOf<T>
-) -> TermsOf<T>
-{
-    TermsOf::<T>::LicenseAgreement {
+    asset_id: crate::investment_opportunity::DeipAssetId<T>,
+) -> Terms {
+    Terms::LicenseAgreement {
         source: source.external_id,
-        price: DeipAssetOf::<T>::new(
-            asset_id,
-            <_>::from(200u16)
-        ),
+        price: DeipAsset::<T>::new(asset_id, <_>::from(200u16)),
     }
 }
 
-fn init_general_contract_agreement<T: Config>() -> TermsOf<T> {
-    TermsOf::<T>::GeneralContractAgreement
+fn init_generic_contract_agreement<T: Config>() -> Terms {
+    Terms::GenericContractAgreement
 }
 
 struct LicenseAgreementParties<T: Config> {
@@ -893,7 +747,7 @@ struct LicenseAgreementParties<T: Config> {
 }
 enum Parties<T: Config> {
     LicenseAgreement(LicenseAgreementParties<T>),
-    ContractAgreement(Vec<T::AccountId>)
+    ContractAgreement(Vec<T::AccountId>),
 }
 impl<T: Config> LicenseAgreementParties<T> {
     fn to_vec<U: From<T::AccountId>>(self) -> Vec<U> {
@@ -901,11 +755,7 @@ impl<T: Config> LicenseAgreementParties<T> {
     }
 }
 impl<T: Config> Parties<T> {
-    fn license_agreement(
-        licenser: &ProjectOf<T>,
-        licensee: T::AccountId,
-    ) -> Self
-    {
+    fn license_agreement(licenser: &ProjectOf<T>, licensee: T::AccountId) -> Self {
         Self::LicenseAgreement(LicenseAgreementParties {
             licenser: licenser.team_id.clone(),
             licensee,
@@ -919,9 +769,7 @@ impl<T: Config> Parties<T> {
     }
     fn into_contract_agreement<U: From<T::AccountId>>(self) -> Vec<U> {
         match self {
-            Self::ContractAgreement(parties) => {
-                parties.into_iter().map(U::from).collect()
-            },
+            Self::ContractAgreement(parties) => parties.into_iter().map(U::from).collect(),
             _ => unreachable!(),
         }
     }
@@ -929,10 +777,9 @@ impl<T: Config> Parties<T> {
 
 fn init_contract_agreement<T: Config>(
     idx: u8,
-    terms: TermsOf<T>,
+    terms: Terms,
     parties: Parties<T>,
-) -> ContractAgreementOf<T>
-{
+) -> ContractAgreementOf<T> {
     let id = ContractAgreementId::from([idx; 20]);
     let creator: T::AccountId = whitelisted_caller();
 
@@ -941,44 +788,39 @@ fn init_contract_agreement<T: Config>(
     let expiration_time: Option<MomentOf<T>> = None;
 
     match terms {
-        Terms::LicenseAgreement { source, price } => {
-            let parties = parties.into_license_agreement();
-            let license = License {
-                id,
-                creator,
-                licenser: parties.licenser,
-                licensee: parties.licensee,
-                hash,
-                activation_time,
-                expiration_time,
-                project_id: source,
-                price
-            };
-            ContractAgreementOf::<T>::License(LicenseStatus::Unsigned(license))
-        },
-        Terms::GeneralContractAgreement => {
-            use crate::contract::{GeneralContractStatus::PartiallyAccepted};
+        // Terms::LicenseAgreement { source, price } => {
+        //     let parties = parties.into_license_agreement();
+        //     let license = License {
+        //         id,
+        //         creator,
+        //         licenser: parties.licenser,
+        //         licensee: parties.licensee,
+        //         hash,
+        //         activation_time,
+        //         expiration_time,
+        //         project_id: source,
+        //         price,
+        //     };
+        //     ContractAgreementOf::<T>::GenericContract(LicenseStatus::Unsigned(license))
+        // },
+        Terms::GenericContractAgreement => {
+            use crate::contract::GenericContractStatus::PartiallyAccepted;
             let parties: Vec<T::AccountId> = parties.into_contract_agreement();
-            let contract = GeneralContract {
-                id,
-                creator,
-                parties,
-                hash,
-                activation_time,
-                expiration_time,
-            };
-            ContractAgreementOf::<T>::GeneralContract(PartiallyAccepted {
+            let contract =
+                GenericContract { id, creator, parties, hash, activation_time, expiration_time };
+            ContractAgreementOf::<T>::GenericContract(PartiallyAccepted {
                 contract,
                 accepted_by: vec![],
             })
-        }
+        },
     }
 }
 
-fn _create_contract_agreement<T: Config>(agreement: ContractAgreementOf<T>) -> ContractAgreementOf<T>
-{
+fn _create_contract_agreement<T: Config>(
+    agreement: ContractAgreementOf<T>,
+) -> ContractAgreementOf<T> {
     let id = match agreement {
-        ContractAgreementOf::<T>::License(LicenseStatus::Unsigned(license)) => {
+        ContractAgreementOf::<T>::GenericContract(LicenseStatus::Unsigned(license)) => {
             let License {
                 id,
                 creator,
@@ -988,36 +830,27 @@ fn _create_contract_agreement<T: Config>(agreement: ContractAgreementOf<T>) -> C
                 activation_time,
                 expiration_time,
                 project_id,
-                price
+                price,
             } = license;
             Pallet::<T>::create_contract_agreement(
                 RawOrigin::Signed(creator.clone()).into(),
                 id,
                 creator.into(),
-                LicenseAgreementParties::<T> {
-                    licenser,
-                    licensee,
-                }.to_vec(),
+                LicenseAgreementParties::<T> { licenser, licensee }.to_vec(),
                 hash,
                 activation_time,
                 expiration_time,
-                TermsOf::<T>::LicenseAgreement {
-                    source: project_id,
-                    price,
-                },
-            ).unwrap();
+                Terms::LicenseAgreement { source: project_id, price },
+            )
+            .unwrap();
             id
         },
-        ContractAgreementOf::<T>::GeneralContract(
-            GeneralContractStatus::PartiallyAccepted { contract, .. }) => {
-            let GeneralContract {
-                id,
-                creator,
-                parties,
-                hash,
-                activation_time,
-                expiration_time
-            } = contract;
+        ContractAgreementOf::<T>::GenericContract(GenericContractStatus::PartiallyAccepted {
+            contract,
+            ..
+        }) => {
+            let GenericContract { id, creator, parties, hash, activation_time, expiration_time } =
+                contract;
             Pallet::<T>::create_contract_agreement(
                 RawOrigin::Signed(creator.clone()).into(),
                 id,
@@ -1026,8 +859,9 @@ fn _create_contract_agreement<T: Config>(agreement: ContractAgreementOf<T>) -> C
                 hash,
                 activation_time,
                 expiration_time,
-                TermsOf::<T>::GeneralContractAgreement,
-            ).unwrap();
+                Terms::GenericContractAgreement,
+            )
+            .unwrap();
             id
         },
         _ => unreachable!(),
@@ -1035,63 +869,56 @@ fn _create_contract_agreement<T: Config>(agreement: ContractAgreementOf<T>) -> C
     ContractAgreementMap::<T>::get(id)
 }
 
-fn as_unsigned_license_agreement<T: Config>(
-    agreement: ContractAgreementOf<T>
-) -> LicenseOf<T>
-{
+fn as_unsigned_license_agreement<T: Config>(agreement: ContractAgreementOf<T>) -> LicenseOf<T> {
     match agreement {
-        ContractAgreementOf::<T>::License(LicenseStatus::Unsigned(license)) => {
-            license
-        }
+        ContractAgreementOf::<T>::GenericContract(LicenseStatus::Unsigned(license)) => license,
         _ => unreachable!(),
     }
 }
 
 fn as_partially_accepted_contract<T: Config>(
-    agreement: ContractAgreementOf<T>
-) -> GeneralContractOf<T>
-{
+    agreement: ContractAgreementOf<T>,
+) -> GenericContractOf<T> {
     match agreement {
-        ContractAgreementOf::<T>::GeneralContract(
-            GeneralContractStatus::PartiallyAccepted { contract, .. }) => {
-            contract
-        },
+        ContractAgreementOf::<T>::GenericContract(GenericContractStatus::PartiallyAccepted {
+            contract,
+            ..
+        }) => contract,
         _ => unreachable!(),
     }
 }
 
-use sp_runtime::traits::Bounded;
 use deip_asset_system::AssetIdInitT;
-use crate::traits::DeipAssetSystem;
+use sp_runtime::traits::Bounded;
 
 fn _add_balance<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
     party: T::AccountId,
     asset_id: pallet_deip_assets::DeipAssetIdOf<T>,
-) -> DispatchResultWithPostInfo
-{
-    pallet_balances::Pallet::<T>::set_balance(
-        RawOrigin::Root.into(),
-        T::Lookup::unlookup(party.clone()),
-        <T as BalancesConfig>::Balance::max_value(),
-        <T as BalancesConfig>::Balance::from(0u16),
-    ).unwrap();
+) -> DispatchResultWithPostInfo {
+    // pallet_balances::Pallet::<T>::set_balance(
+    //     RawOrigin::Root.into(),
+    //     T::Lookup::unlookup(party.clone()),
+    //     <T as BalancesConfig>::Balance::max_value(),
+    //     <T as BalancesConfig>::Balance::from(0u16),
+    // )
+    // .unwrap();
 
     let asset_admin: <T as DeipAssetsConfig>::DeipAccountId = party.clone().into();
     let min_balance = <T as AssetsConfig>::Balance::from(200u16);
 
-    DeipAssets::<T>::deip_create_asset(
+    DeipAssets::<T>::deip_create(
         RawOrigin::Signed(party.clone()).into(),
         asset_id.clone(),
         asset_admin.clone(),
         min_balance.clone(),
-        None
-    ).unwrap();
+    )
+    .unwrap();
 
-    DeipAssets::<T>::deip_issue_asset(
+    DeipAssets::<T>::deip_mint(
         RawOrigin::Signed(party.clone()).into(),
         asset_id,
         asset_admin,
-        min_balance
+        min_balance,
     )?;
 
     Ok(None.into())
@@ -1101,287 +928,34 @@ fn _create_asset<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
     asset_id: pallet_deip_assets::DeipAssetIdOf<T>,
     admin: T::AccountId,
     min_balance: <T as AssetsConfig>::Balance,
-) -> DispatchResultWithPostInfo
-{
-    pallet_balances::Pallet::<T>::set_balance(
-        RawOrigin::Root.into(),
-        T::Lookup::unlookup(admin.clone()),
-        <T as BalancesConfig>::Balance::max_value(),
-        <T as BalancesConfig>::Balance::min_value(),
-    )?;
+) -> DispatchResultWithPostInfo {
+    // pallet_balances::Pallet::<T>::set_balance(
+    //     RawOrigin::Root.into(),
+    //     T::Lookup::unlookup(admin.clone()),
+    //     <T as BalancesConfig>::Balance::max_value(),
+    //     <T as BalancesConfig>::Balance::min_value(),
+    // )?;
 
     let asset_admin: <T as DeipAssetsConfig>::DeipAccountId = admin.clone().into();
 
-    DeipAssets::<T>::deip_create_asset(
+    DeipAssets::<T>::deip_create(
         RawOrigin::Signed(admin).into(),
         asset_id,
         asset_admin,
         min_balance,
-        None
     )
 }
 
-fn _issue_asset<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
+fn _mint<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
     asset_id: pallet_deip_assets::DeipAssetIdOf<T>,
     admin: T::AccountId,
     beneficiary: T::AccountId,
     amount: <T as AssetsConfig>::Balance,
-) -> DispatchResultWithPostInfo
-{
-    DeipAssets::<T>::deip_issue_asset(
+) -> DispatchResultWithPostInfo {
+    DeipAssets::<T>::deip_mint(
         RawOrigin::Signed(admin).into(),
         asset_id,
         beneficiary.into(),
-        amount
-    )
-}
-
-fn init_investment_opportunity<T: Config>(idx: u8) -> InvestmentOf<T> {
-    let sale_id: InvestmentId = InvestmentId::from([idx; 20]);
-    let owner: T::AccountId = whitelisted_caller();
-    let amount = DeipAssetBalanceOf::<T>::from(200u16);
-    let time = T::Moment::from(1u16).mul(T::BlockNumber::from(10u16));
-    InvestmentOf::<T> {
-        sale_id,
-        owner,
         amount,
-        time,
-    }
-}
-
-fn init_funding_model<T: Config>(investment: &InvestmentOf<T>) -> FundingModelOf<T> {
-    let start_time: T::Moment = now::<T>();
-    let end_time: T::Moment = start_time + investment.time;
-
-    let asset_id = T::AssetSystem::asset_id([1u8; 20].as_slice());
-
-    let soft_cap = DeipAssetOf::<T>::new(asset_id, DeipAssetBalanceOf::<T>::from(100u16));
-    let hard_cap = DeipAssetOf::<T>::new(asset_id, DeipAssetBalanceOf::<T>::from(200u16));
-    FundingModelOf::<T>::SimpleCrowdfunding {
-        start_time,
-        end_time,
-        soft_cap,
-        hard_cap
-    }
-}
-
-fn _create_simple_crowdfunding<T: Config>(
-    investment: InvestmentOf<T>,
-    funding_model: FundingModelOf<T>,
-    shares: Vec<DeipAssetOf<T>>,
-) -> Result<SimpleCrowdfundingOf<T>, DispatchError>
-{
-    let InvestmentOf::<T> {
-        sale_id,
-        owner,
-        amount: _,
-        time: _
-    } = investment;
-    Pallet::<T>::create_investment_opportunity(
-        RawOrigin::Signed(owner.clone()).into(),
-        sale_id,
-        owner.into(),
-        shares,
-        funding_model
-    )?;
-    Ok(SimpleCrowdfundingMap::<T>::get(sale_id))
-}
-
-type CrowdfundingBalance<T> = SerializableAtLeast32BitUnsigned<DeipAssetBalanceOf<T>>;
-
-fn init_simple_crowdfunding<T: Config + BalancesConfig + DeipAssetsConfig>(
-    idx: u8,
-    shares: u8,
-) -> SimpleCrowdfundingOf<T>
-{
-    let created_ctx: TransactionCtxId<TransactionCtxOf<T>> =
-        Default::default();
-
-    let external_id: InvestmentId =
-        InvestmentId::from([idx; 20]);
-
-    let start_time: T::Moment
-        = now::<T>();
-
-    use sp_runtime::traits::{One, Zero};
-    let end_time: T::Moment =
-        start_time + T::Moment::one().mul(T::BlockNumber::from(10u16));
-
-    let status: SimpleCrowdfundingStatus =
-        SimpleCrowdfundingStatus::Active;
-
-    let asset_id: crate::DeipAssetIdOf<T> =
-        T::AssetSystem::asset_id(external_id.as_bytes());
-
-    let share_ratio = 5u16;
-    let shares: Vec<DeipAssetOf<T>> =
-        (1..shares+1).map(|i| {
-            DeipAssetOf::<T>::new(
-                T::AssetSystem::asset_id([idx+i; 20].as_slice()),
-                DeipAssetBalanceOf::<T>::from(i as u16 * share_ratio * 2)
-            )
-        }).collect();
-
-    let total_amount = shares.iter()
-        .map(|x| DeipAssetBalanceOf::<T>::from(*x.amount()))
-        .fold(DeipAssetBalanceOf::<T>::zero(), |acc,  x| acc + x);
-    let soft_cap = total_amount - DeipAssetBalanceOf::<T>::from(share_ratio);
-    let hard_cap = total_amount;
-
-    let total_amount: CrowdfundingBalance<T> =
-        SerializableAtLeast32BitUnsigned(total_amount);
-
-    let soft_cap: CrowdfundingBalance<T> =
-        SerializableAtLeast32BitUnsigned(soft_cap);
-
-    let hard_cap: CrowdfundingBalance<T> =
-        SerializableAtLeast32BitUnsigned(hard_cap);
-
-    SimpleCrowdfundingOf::<T> {
-        created_ctx,
-        external_id,
-        start_time,
-        end_time,
-        status,
-        asset_id,
-        total_amount,
-        soft_cap,
-        hard_cap,
-        shares,
-    }
-}
-
-struct PreSimpleCrowdfunding<T: Config> {
-    investment: InvestmentOf<T>,
-    funding_model: FundingModelOf<T>,
-    shares: Vec<DeipAssetOf<T>>,
-}
-
-fn pre_simple_crowdfunding<T: Config + DeipAssetsConfig + BalancesConfig>(
-    crowdfunding: SimpleCrowdfundingOf<T>,
-    investment_owner: T::AccountId,
-) -> PreSimpleCrowdfunding<T>
-{
-    let SimpleCrowdfundingOf::<T> {
-        created_ctx: _,
-        external_id,
-        start_time,
-        end_time,
-        status: _,
-        asset_id,
-        total_amount,
-        soft_cap,
-        hard_cap,
-        shares,
-    } = crowdfunding;
-
-    use sp_runtime::traits::{Zero, One};
-    _create_asset::<T>(
-        T::AssetIdInit::asset_id(external_id.as_bytes()),
-        investment_owner.clone(),
-        <_>::one()
-    ).unwrap();
-    _issue_asset::<T>(
-        T::AssetIdInit::asset_id(external_id.as_bytes()),
-        investment_owner.clone(),
-        investment_owner.clone(),
-        <T as AssetsConfig>::Balance::from(unsafe { TryInto::<u16>::try_into(total_amount.0).unwrap_unchecked() }),
-    ).unwrap();
-
-    shares.iter().for_each(|x| {
-        _create_asset::<T>(
-            T::AssetIdInit::asset_id(x.id().as_ref()),
-            investment_owner.clone(),
-            <_>::one()
-        ).unwrap();
-        _issue_asset::<T>(
-            T::AssetIdInit::asset_id(x.id().as_ref()),
-            investment_owner.clone(),
-            investment_owner.clone(),
-            <T as AssetsConfig>::Balance::from(unsafe { TryInto::<u16>::try_into(*x.amount()).unwrap_unchecked() }),
-        ).unwrap();
-    });
-
-    let investment = InvestmentOf::<T> {
-        sale_id: external_id,
-        owner: investment_owner,
-        amount: total_amount.0,
-        time: end_time - start_time,
-    };
-    let funding_model = FundingModelOf::<T>::SimpleCrowdfunding {
-        start_time,
-        end_time,
-        soft_cap: DeipAssetOf::<T>::new(asset_id, soft_cap.0),
-        hard_cap: DeipAssetOf::<T>::new(asset_id, hard_cap.0),
-    };
-    PreSimpleCrowdfunding::<T> {
-        investment,
-        funding_model,
-        shares
-    }
-}
-
-fn _create_investment_opportunity<T: Config>(
-    crowdfunding: PreSimpleCrowdfunding<T>
-) -> SimpleCrowdfundingOf<T>
-{
-    let PreSimpleCrowdfunding::<T> {
-        investment,
-        funding_model,
-        shares,
-    } = crowdfunding;
-    let external_id = investment.sale_id.clone();
-    Pallet::<T>::create_investment_opportunity(
-        RawOrigin::Signed(investment.owner.clone()).into(),
-        external_id,
-        investment.owner.clone().into(),
-        shares,
-        funding_model
-    ).unwrap();
-    SimpleCrowdfundingMap::<T>::get(external_id)
-}
-
-fn _activate_crowdfunding<T: Config>(
-    crowdfunding: SimpleCrowdfundingOf<T>
-) -> SimpleCrowdfundingOf<T>
-{
-    Pallet::<T>::activate_crowdfunding(
-        RawOrigin::None.into(),
-        crowdfunding.external_id
-    ).unwrap();
-    SimpleCrowdfundingMap::<T>::get(crowdfunding.external_id)
-}
-
-fn _expire_crowdfunding<T: Config>(
-    crowdfunding: SimpleCrowdfundingOf<T>,
-) -> SimpleCrowdfundingOf<T>
-{
-    Pallet::<T>::expire_crowdfunding(
-        RawOrigin::None.into(),
-        crowdfunding.external_id,
-    ).unwrap();
-    SimpleCrowdfundingMap::<T>::get(crowdfunding.external_id)
-}
-
-fn set_crowdfunding_end_time<T: Config>(
-    mut crowdfunding: SimpleCrowdfundingOf<T>,
-    end_time: T::Moment,
-) -> SimpleCrowdfundingOf<T>
-{
-    let external_id = crowdfunding.external_id;
-    crowdfunding.end_time = end_time;
-    SimpleCrowdfundingMap::<T>::insert(external_id, crowdfunding);
-    SimpleCrowdfundingMap::<T>::get(external_id)
-}
-
-fn _invest<T: Config>(
-    crowdfunding: &SimpleCrowdfundingOf<T>,
-    owner: T::AccountId,
-)
-{
-    Pallet::<T>::invest(
-        RawOrigin::Signed(owner).into(),
-        crowdfunding.external_id,
-        DeipAssetOf::<T>::new(crowdfunding.asset_id, crowdfunding.soft_cap.0)
-    ).unwrap();
+    )
 }

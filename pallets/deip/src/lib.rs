@@ -45,20 +45,17 @@ use frame_support::{
     decl_error, decl_event, decl_module, decl_storage,
     dispatch::{DispatchResult, Parameter},
     ensure,
-    log::debug,
     pallet_prelude::*,
-    storage::{IterableStorageDoubleMap, IterableStorageMap},
+    storage::IterableStorageDoubleMap,
     traits::{Currency, ReservableCurrency},
+    weights::Weight,
     StorageMap,
 };
-use frame_system::{self as system, ensure_none, ensure_signed, offchain::SendTransactionTypes};
+use frame_system::{self as system, ensure_signed, offchain::SendTransactionTypes};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 pub use sp_core::{H160, H256};
-use sp_runtime::{
-    traits::{Member, ValidateUnsigned},
-    RuntimeDebug,
-};
+use sp_runtime::{traits::Member, RuntimeDebug};
 use sp_std::vec::Vec;
 
 #[cfg(test)]
@@ -69,40 +66,27 @@ mod tests;
 
 pub mod api;
 
-mod investment_opportunity;
-use investment_opportunity::Status as SimpleCrowdfundingStatus;
-pub use investment_opportunity::{
-    FundingModel, FundingModelOf, Id as InvestmentId, Info as SimpleCrowdfunding,
-};
-
-mod contribution;
-use contribution::Contribution as Investment;
+pub mod investment_opportunity;
+use investment_opportunity::*;
 
 mod review;
 pub use review::{Id as ReviewId, Review, Vote as DeipReviewVote};
 
-mod asset;
-pub use asset::Asset as DeipAsset;
-
 pub mod contract;
 pub use contract::{
     AgreementOf as ContractAgreementOf, Id as ContractAgreementId,
-    IndexTerms as ContractAgreementIndexTerms, TermsOf as ContractAgreementTermsOf,
+    IndexTerms as ContractAgreementIndexTerms, Terms,
 };
 
-use deip_transaction_ctx::{PortalCtxT, TransactionCtxId};
+use deip_transaction_ctx::PortalCtxT;
 
-pub mod traits;
-
-pub mod benchmarking;
+// pub mod benchmarking;
 pub mod weights;
 use system::pallet_prelude::OriginFor;
 pub use weights::{WeightInfo, Weights};
 
-/// A maximum number of Domains. When domains reaches this number, no new domains can be added.
+/// A maximum number of Domains. When trait Condomains reaches this number, no new domains can be added.
 pub const MAX_DOMAINS: u32 = 100;
-
-const NON_LOCAL: u8 = 100;
 
 /// Possible statuses of Project inherited from Project Content type
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
@@ -139,7 +123,10 @@ impl Default for ProjectContentType {
 
 /// Configuration trait. Pallet depends on frame_system and pallet_timestamp.
 pub trait Config:
-    frame_system::Config + pallet_timestamp::Config + SendTransactionTypes<Call<Self>>
+    frame_system::Config
+    + pallet_timestamp::Config
+    + SendTransactionTypes<Call<Self>>
+    + deip_asset_system::DeipAssetSystem<Self::AccountId, ProjectId, InvestmentId>
 {
     type TransactionCtx: PortalCtxT<Call<Self>>;
 
@@ -149,8 +136,6 @@ pub trait Config:
     type DeipAccountId: Into<Self::AccountId> + From<Self::AccountId> + Parameter + Member + Default;
 
     type Currency: ReservableCurrency<Self::AccountId>;
-
-    type AssetSystem: traits::DeipAssetSystem<Self::AccountId>;
 
     type DeipWeightInfo: WeightInfo;
 
@@ -178,21 +163,8 @@ pub type ReviewOf<T> = Review<HashOf<T>, AccountIdOf<T>>;
 pub type NdaOf<T> = Nda<HashOf<T>, AccountIdOf<T>, MomentOf<T>>;
 pub type NdaAccessRequestOf<T> = NdaAccessRequest<HashOf<T>, AccountIdOf<T>>;
 pub type ProjectContentOf<T> = ProjectContent<HashOf<T>, AccountIdOf<T>>;
-pub type SimpleCrowdfundingOf<T> = SimpleCrowdfunding<
-    MomentOf<T>,
-    DeipAssetIdOf<T>,
-    DeipAssetBalanceOf<T>,
-    TransactionCtxId<TransactionCtxOf<T>>,
->;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
-pub type InvestmentOf<T> = Investment<AccountIdOf<T>, DeipAssetBalanceOf<T>, MomentOf<T>>;
-pub type DeipAssetIdOf<T> =
-    <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::AssetId;
-pub type DeipAssetBalanceOf<T> =
-    <<T as Config>::AssetSystem as traits::DeipAssetSystem<AccountIdOf<T>>>::Balance;
-pub type DeipAssetOf<T> = DeipAsset<DeipAssetIdOf<T>, DeipAssetBalanceOf<T>>;
 type DeipReviewVoteOf<T> = DeipReviewVote<AccountIdOf<T>, MomentOf<T>>;
-type TransactionCtxOf<T> = <T as Config>::TransactionCtx;
 
 /// PPossible project domains
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq, TypeInfo)]
@@ -261,7 +233,7 @@ pub struct Nda<Hash, AccountId, Moment> {
     contract_hash: Hash,
     /// Involved Parties
     parties: Vec<AccountId>,
-    /// Involved Projects
+    /// Involved ProjectMapV1
     projects: Vec<ProjectId>,
 }
 
@@ -311,7 +283,7 @@ decl_event! {
         Project = ProjectOf<T>,
         Review = ReviewOf<T>,
     {
-        // ==== Projects ====
+        // ==== ProjectMapV1 ====
 
         /// Event emitted when a project has been created. [BelongsTo, Project]
         ProjectCreated(AccountId, Project),
@@ -344,17 +316,6 @@ decl_event! {
         /// Emitted when a DAO votes for a review
         ReviewUpvoted(ReviewId, AccountId, DomainId),
 
-        /// Event emitted when a simple crowd funding has been created.
-        SimpleCrowdfundingCreated(InvestmentId),
-        /// Event emitted when a simple crowd funding has been activated.
-        SimpleCrowdfundingActivated(InvestmentId),
-        /// Event emitted when a simple crowd funding has finished.
-        SimpleCrowdfundingFinished(InvestmentId),
-        /// Event emitted when a simple crowd funding has expired.
-        SimpleCrowdfundingExpired(InvestmentId),
-        /// Event emitted when DAO invested to an opportunity
-        Invested(InvestmentId, AccountId),
-
         ContractAgreementCreated(ContractAgreementId),
         ContractAgreementAccepted(ContractAgreementId, AccountId),
         ContractAgreementFinalized(ContractAgreementId),
@@ -365,7 +326,7 @@ decl_event! {
 // Errors inform users that something went wrong.
 decl_error! {
     pub enum Error for Module<T: Config> {
-        // ==== Projects ====
+        // ==== ProjectMapV1 ====
 
         /// The project does not exist.
         NoSuchProject,
@@ -432,33 +393,8 @@ decl_error! {
 
         // ==== General =====
 
-        /// Access Forbiten
+        /// Access Forbidden
         NoPermission,
-
-        // Investment opportunity errors
-        InvestmentOpportunityStartTimeMustBeLaterOrEqualCurrentMoment,
-        InvestmentOpportunityEndTimeMustBeLaterStartTime,
-        InvestmentOpportunitySoftCapMustBeGreaterOrEqualMinimum,
-        InvestmentOpportunityHardCapShouldBeGreaterOrEqualSoftCap,
-        InvestmentOpportunityAlreadyExists,
-        InvestmentOpportunityBalanceIsNotEnough,
-        InvestmentOpportunityFailedToReserveAsset,
-        InvestmentOpportunityAssetAmountMustBePositive,
-        InvestmentOpportunitySecurityTokenNotSpecified,
-        InvestmentOpportunityNotFound,
-        InvestmentOpportunityShouldBeInactive,
-        InvestmentOpportunityShouldBeStarted,
-        InvestmentOpportunityShouldBeActive,
-        InvestmentOpportunityExpirationWrongState,
-        InvestmentOpportunityWrongAssetId,
-        InvestmentOpportunityCapDifferentAssets,
-        InvestmentOpportunityTooMuchShares,
-
-        // Possible errors when DAO tries to invest to an opportunity
-        InvestingNotFound,
-        InvestingNotActive,
-        InvestingNotEnoughFunds,
-        InvestingWrongAsset,
 
         ContractAgreementNoParties,
         ContractAgreementStartTimeMustBeLaterOrEqualCurrentMoment,
@@ -482,39 +418,84 @@ decl_error! {
     }
 }
 
+/// Storage version.
+#[derive(Encode, Decode, Eq, PartialEq, TypeInfo)]
+pub enum StorageVersion {
+    /// Initial version.
+    V0,
+    /// Separate investment_opportunity.
+    V1,
+}
+
 decl_storage! {
     trait Store for Module<T: Config> as Deip {
+        /// Should be used in conjunction with `on_runtime_upgrade` to ensure an upgrade is executed
+        /// once, even if the code is not removed in time.
+        pub PalletStorageVersion get(fn pallet_storage_version)
+            build(|_| StorageVersion::V1): StorageVersion = StorageVersion::V0;
+
         ProjectMap: map hasher(identity) ProjectId => ProjectOf<T>;
+        // Migrate key hasher
+        ProjectMapV1: map hasher(blake2_128_concat) ProjectId => ProjectOf<T>;
 
         ProjectIdByTeamId: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(identity) ProjectId => ();
+        // Migrate key hasher
+        ProjectIdByTeamIdV1: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(blake2_128_concat) ProjectId => ();
 
+        /// (DEPRECATED, moved to DeipInvestmentOpportunity)
         SimpleCrowdfundingMap: map hasher(identity) InvestmentId => SimpleCrowdfundingOf<T>;
+        // Migrate key hasher
+        SimpleCrowdfundingMapV1: map hasher(blake2_128_concat) InvestmentId => SimpleCrowdfundingOf<T>;
 
+        /// (DEPRECATED, moved to DeipInvestmentOpportunity)
         /// Contains various contributions from DAOs
-        InvestmentMap: map hasher(identity) InvestmentId => Vec<(T::AccountId, InvestmentOf<T>)>;
+        InvestmentMap: map hasher(identity) InvestmentId => Vec<(T::AccountId, Investment<T>)>;
+        // Migrate key hasher
+        InvestmentMapV1: map hasher(blake2_128_concat) InvestmentId => Vec<(T::AccountId, Investment<T>)>;
 
         ProjectContentMap: map hasher(identity) ProjectContentId => ProjectContentOf<T>;
+        // Migrate key hasher
+        ProjectContentMapV1: map hasher(blake2_128_concat) ProjectContentId => ProjectContentOf<T>;
         ContentIdByProjectId: double_map hasher(identity) ProjectId, hasher(identity) ProjectContentId => ();
+        // Migrate key hasher
+        ContentIdByProjectIdV1: double_map hasher(blake2_128_concat) ProjectId, hasher(blake2_128_concat) ProjectContentId => ();
 
         /// NDA list, guarantees uniquest and provides NDA listing
         Ndas get(fn nda_list): Vec<(ProjectId, T::AccountId)>;
         /// Map to NDA Info
-        NdaMap get(fn nda): map hasher(identity) NdaId => NdaOf<T>;
+        NdaMap: map hasher(identity) NdaId => NdaOf<T>;
+        // Migrate key hasher
+        NdaMapV1 get(fn nda): map hasher(blake2_128_concat) NdaId => NdaOf<T>;
 
         /// NDA Access Requests list, guarantees uniquest and provides NDA Access Requests listing
         NdaAccessRequests get(fn nda_requests): Vec<(NdaAccessRequestId, NdaId, T::AccountId)>;
         /// Map to NDA Access Requests Info
-        NdaAccessRequestMap get(fn nda_request): map hasher(identity) NdaAccessRequestId => NdaAccessRequestOf<T>;
+        NdaAccessRequestMap: map hasher(identity) NdaAccessRequestId => NdaAccessRequestOf<T>;
+        // Migrate key hasher
+        NdaAccessRequestMapV1 get(fn nda_request): map hasher(blake2_128_concat) NdaAccessRequestId => NdaAccessRequestOf<T>;
 
         ReviewMap: map hasher(identity) ReviewId => ReviewOf<T>;
+        // Migrate key hasher
+        ReviewMapV1: map hasher(blake2_128_concat) ReviewId => ReviewOf<T>;
 
         ReviewIdByProjectId: double_map hasher(identity) ProjectId, hasher(identity) ReviewId => ();
+        // Migrate key hasher
+        ReviewIdByProjectIdV1: double_map hasher(blake2_128_concat) ProjectId, hasher(blake2_128_concat) ReviewId => ();
+
         ReviewIdByContentId: double_map hasher(identity) ProjectContentId, hasher(identity) ReviewId => ();
+        // Migrate key hasher
+        ReviewIdByContentIdV1: double_map hasher(blake2_128_concat) ProjectContentId, hasher(blake2_128_concat) ReviewId => ();
+
         ReviewIdByAccountId: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(identity) ReviewId => ();
+        // Migrate key hasher
+        ReviewIdByAccountIdV1: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(blake2_128_concat) ReviewId => ();
 
         ReviewVoteMap: map hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => DeipReviewVoteOf<T>;
 
         VoteIdByReviewId: double_map hasher(identity) ReviewId, hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => ();
+        // Migrate key hasher
+        VoteIdByReviewIdV1: double_map hasher(blake2_128_concat) ReviewId, hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => ();
+
         VoteIdByAccountId: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => ();
 
         // The set of all Domains.
@@ -528,6 +509,150 @@ decl_storage! {
     }
 }
 
+mod v1 {
+    use super::{Config, PalletStorageVersion, StorageVersion};
+    use core::convert::TryInto;
+    use frame_support::{
+        storage::{
+            IterableStorageDoubleMap, IterableStorageMap, StorageDoubleMap, StorageMap,
+            StorageValue,
+        },
+        traits::Get,
+        weights::Weight,
+    };
+
+    pub(crate) fn set_storage_version<T: Config>() -> Weight {
+        PalletStorageVersion::put(StorageVersion::V1);
+        T::DbWeight::get().writes(1)
+    }
+
+    pub(crate) fn migrate_investment_opportunity<T: Config>() -> Weight {
+        use super::{
+            InvestmentMap, InvestmentMapV1, SimpleCrowdfundingMap, SimpleCrowdfundingMapV1,
+        };
+        use frame_support::storage::migration::move_storage_from_pallet;
+
+        let mut reads: usize = 0;
+        let mut writes: usize = 0;
+        SimpleCrowdfundingMap::<T>::drain().for_each(|(k, v)| {
+            reads += 1;
+            SimpleCrowdfundingMapV1::<T>::insert(k, v);
+            writes += 1;
+        });
+
+        let mut reads_investments: usize = 0;
+        let mut writes_investments: usize = 0;
+        InvestmentMap::<T>::drain().for_each(|(k, v)| {
+            reads_investments += 1;
+            InvestmentMapV1::<T>::insert(k, v);
+            writes_investments += 1;
+        });
+
+        move_storage_from_pallet(
+            "SimpleCrowdfundingMapV1".as_bytes(),
+            "Deip".as_bytes(),
+            "DeipInvestmentOpportunity".as_bytes(),
+        );
+        reads *= 2;
+        writes *= 2;
+
+        move_storage_from_pallet(
+            "InvestmentMapV1".as_bytes(),
+            "Deip".as_bytes(),
+            "DeipInvestmentOpportunity".as_bytes(),
+        );
+        reads_investments *= 2;
+        writes_investments *= 2;
+
+        let reads_total: usize = reads + reads_investments;
+        let reads_total: Weight = reads_total.try_into().unwrap_or(Weight::MAX);
+
+        let writes_total: usize = writes + writes_investments;
+        let writes_total: Weight = writes_total.try_into().unwrap_or(Weight::MAX);
+
+        T::DbWeight::get().reads_writes(reads_total, writes_total)
+    }
+
+    pub(crate) fn migrate_projects_hasher<T: Config>() -> Weight {
+        use super::{ProjectIdByTeamId, ProjectIdByTeamIdV1, ProjectMap, ProjectMapV1};
+        let mut reads: usize = 0;
+        ProjectMap::<T>::drain().for_each(|(k, v)| {
+            reads += 1;
+            ProjectMapV1::<T>::insert(k, v);
+        });
+        ProjectIdByTeamId::<T>::drain().for_each(|(k, k2, v)| {
+            reads += 1;
+            ProjectIdByTeamIdV1::<T>::insert(k, k2, v);
+        });
+        let reads = reads.try_into().unwrap_or(Weight::MAX);
+        T::DbWeight::get().reads_writes(reads, reads)
+    }
+
+    pub(crate) fn migrate_project_contents_hasher<T: Config>() -> Weight {
+        use super::{
+            ContentIdByProjectId, ContentIdByProjectIdV1, ProjectContentMap, ProjectContentMapV1,
+        };
+        let mut reads: usize = 0;
+        ProjectContentMap::<T>::drain().for_each(|(k, v)| {
+            reads += 1;
+            ProjectContentMapV1::<T>::insert(k, v);
+        });
+        ContentIdByProjectId::drain().for_each(|(k, k2, v)| {
+            reads += 1;
+            ContentIdByProjectIdV1::insert(k, k2, v);
+        });
+        let reads = reads.try_into().unwrap_or(Weight::MAX);
+        T::DbWeight::get().reads_writes(reads, reads)
+    }
+
+    pub(crate) fn migrate_nda_hasher<T: Config>() -> Weight {
+        use super::{NdaAccessRequestMap, NdaAccessRequestMapV1, NdaMap, NdaMapV1};
+        let mut reads: usize = 0;
+        NdaMap::<T>::drain().for_each(|(k, v)| {
+            reads += 1;
+            NdaMapV1::<T>::insert(k, v);
+        });
+        NdaAccessRequestMap::<T>::drain().for_each(|(k, v)| {
+            reads += 1;
+            NdaAccessRequestMapV1::<T>::insert(k, v);
+        });
+        let reads = reads.try_into().unwrap_or(Weight::MAX);
+        T::DbWeight::get().reads_writes(reads, reads)
+    }
+
+    pub(crate) fn migrate_reviews_hasher<T: Config>() -> Weight {
+        use super::{
+            ReviewIdByAccountId, ReviewIdByAccountIdV1, ReviewIdByContentId, ReviewIdByContentIdV1,
+            ReviewIdByProjectId, ReviewIdByProjectIdV1, ReviewMap, ReviewMapV1, VoteIdByReviewId,
+            VoteIdByReviewIdV1,
+        };
+
+        let mut reads: usize = 0;
+        ReviewMap::<T>::drain().for_each(|(k, v)| {
+            reads += 1;
+            ReviewMapV1::<T>::insert(k, v);
+        });
+        ReviewIdByProjectId::drain().for_each(|(k, k2, v)| {
+            reads += 1;
+            ReviewIdByProjectIdV1::insert(k, k2, v);
+        });
+        ReviewIdByContentId::drain().for_each(|(k, k2, v)| {
+            reads += 1;
+            ReviewIdByContentIdV1::insert(k, k2, v);
+        });
+        ReviewIdByAccountId::<T>::drain().for_each(|(k, k2, v)| {
+            reads += 1;
+            ReviewIdByAccountIdV1::<T>::insert(k, k2, v);
+        });
+        VoteIdByReviewId::<T>::drain().for_each(|(k, k2, v)| {
+            reads += 1;
+            VoteIdByReviewIdV1::<T>::insert(k, k2, v);
+        });
+        let reads = reads.try_into().unwrap_or(Weight::MAX);
+        T::DbWeight::get().reads_writes(reads, reads)
+    }
+}
+
 // Dispatchable functions allows users to interact with the pallet and invoke state changes.
 // These functions materialize as "extrinsics", which are often compared to transactions.
 // Dispatchable functions must be annotated with a weight and must return a DispatchResult.
@@ -538,6 +663,19 @@ decl_module! {
 
         // Events must be initialized if they are used by the pallet.
         fn deposit_event() = default;
+
+        fn on_runtime_upgrade() -> Weight {
+            if Module::<T>::pallet_storage_version() == StorageVersion::V0 {
+                let mut weight = v1::migrate_investment_opportunity::<T>();
+                weight += v1::migrate_projects_hasher::<T>();
+                weight += v1::migrate_project_contents_hasher::<T>();
+                weight += v1::migrate_nda_hasher::<T>();
+                weight += v1::migrate_reviews_hasher::<T>();
+                weight += v1::set_storage_version::<T>();
+                return weight;
+            }
+            0
+        }
 
         /// Allow a user to create project.
         ///
@@ -574,78 +712,12 @@ decl_module! {
                 ensure!(Domains::contains_key(&domain), Error::<T>::DomainNotExists);
             }
 
-            ensure!(!ProjectMap::<T>::contains_key(project.external_id), Error::<T>::ProjectAlreadyExists);
+            ensure!(!ProjectMapV1::<T>::contains_key(project.external_id), Error::<T>::ProjectAlreadyExists);
 
-            ProjectMap::<T>::insert(project.external_id, project.clone());
-            ProjectIdByTeamId::<T>::insert(project.team_id.clone(), project.external_id, ());
+            ProjectMapV1::<T>::insert(project.external_id, project.clone());
+            ProjectIdByTeamIdV1::<T>::insert(project.team_id.clone(), project.external_id, ());
 
             Self::deposit_event(RawEvent::ProjectCreated(account, project));
-        }
-
-        /// Allows DAO to create an investment opportunity.
-        ///
-        /// The origin for this call must be _Signed_.
-        ///
-        /// - `external_id`: id of the sale. Must be unique.
-        /// - `project_id`: id of the project which tokens are intended to sale.
-        /// - `investment_type`: specifies type of created investment opportunity. For possible
-        /// variants and details see [`FundingModel`].
-        #[weight = {
-            let s = shares.len() as u32;
-            T::DeipWeightInfo::create_investment_opportunity(s)
-        }]
-        fn create_investment_opportunity(origin,
-            external_id: InvestmentId,
-            creator: T::DeipAccountId,
-            shares: Vec<DeipAssetOf<T>>,
-            funding_model: FundingModelOf<T>,
-        ) -> DispatchResult {
-            let account = ensure_signed(origin)?;
-            Self::create_investment_opportunity_impl(account, external_id, creator.into(), shares, funding_model)
-        }
-
-        #[weight = {
-            T::DeipWeightInfo::activate_crowdfunding()
-        }]
-        fn activate_crowdfunding(origin, sale_id: InvestmentId) -> DispatchResult {
-            ensure_none(origin)?;
-            Self::activate_crowdfunding_impl(sale_id)
-        }
-
-        #[weight = {
-            T::DeipWeightInfo::expire_crowdfunding_already_expired()
-                .max(T::DeipWeightInfo::expire_crowdfunding())
-        }]
-        fn expire_crowdfunding(origin, sale_id: InvestmentId) -> DispatchResultWithPostInfo {
-            ensure_none(origin)?;
-            Self::expire_crowdfunding_impl(sale_id)
-        }
-
-        #[weight = {
-            T::DeipWeightInfo::finish_crowdfunding()
-        }]
-        fn finish_crowdfunding(origin, sale_id: InvestmentId) -> DispatchResult {
-            ensure_none(origin)?;
-            Self::finish_crowdfunding_impl(sale_id)
-        }
-
-        /// Allows DAO to invest to an opportunity.
-        ///
-        /// The origin for this call must be _Signed_.
-        ///
-        /// - `id`: identifier of the investment opportunity
-        /// - `amount`: amount of units to invest. The account should have enough funds on
-        ///     the balance. This amount is reserved until the investment finished or expired
-        #[weight = {
-            T::DeipWeightInfo::invest()
-                .max(T::DeipWeightInfo::invest_hard_cap_reached())
-        }]
-        fn invest(origin,
-            id: InvestmentId,
-            asset: DeipAssetOf<T>
-        ) -> DispatchResultWithPostInfo {
-            let account = ensure_signed(origin)?;
-            Self::invest_to_crowdfunding_impl(account, id, asset)
         }
 
         /// Allow a user to update project.
@@ -664,7 +736,7 @@ decl_module! {
             // https://substrate.dev/docs/en/knowledgebase/runtime/origin
             let account = ensure_signed(origin)?;
 
-            ProjectMap::<T>::mutate_exists(project_id, |maybe_project| -> DispatchResult {
+            ProjectMapV1::<T>::mutate_exists(project_id, |maybe_project| -> DispatchResult {
                 let project = maybe_project.as_mut().ok_or(Error::<T>::NoSuchProject)?;
 
                 ensure!(project.team_id == account, Error::<T>::NoPermission);
@@ -720,9 +792,9 @@ decl_module! {
                 references
             };
 
-            ensure!(!ProjectContentMap::<T>::contains_key(&content.external_id), Error::<T>::ProjectContentAlreadyExists);
+            ensure!(!ProjectContentMapV1::<T>::contains_key(&content.external_id), Error::<T>::ProjectContentAlreadyExists);
 
-            let project = ProjectMap::<T>::get(content.project_external_id);
+            let project = ProjectMapV1::<T>::get(content.project_external_id);
 
             ensure!(!project.external_id.is_zero(), Error::<T>::NoSuchProject);
             ensure!(project.team_id == content.team_id, Error::<T>::ProjectNotBelongToTeam);
@@ -731,13 +803,13 @@ decl_module! {
             if let Some(references) = &content.references {
                 let is_all_references_exists = references
                     .iter()
-                    .all(|&reference| ProjectContentMap::<T>::contains_key(reference));
+                    .all(|&reference| ProjectContentMapV1::<T>::contains_key(reference));
 
                 ensure!(is_all_references_exists, Error::<T>::NoSuchReference);
             }
 
-            ProjectContentMap::<T>::insert(content.external_id, content.clone());
-            ContentIdByProjectId::insert(content.project_external_id, content.external_id, ());
+            ProjectContentMapV1::<T>::insert(content.external_id, content.clone());
+            ContentIdByProjectIdV1::insert(content.project_external_id, content.external_id, ());
 
             Self::deposit_event(RawEvent::ProjectContnetCreated(account, content.external_id));
         }
@@ -750,7 +822,7 @@ decl_module! {
         // /// - `contract_hash`: Hash of the contract
         // /// - `maybe_start_date`: Optional. Unix Timestamp. Entry into force of the contract
         // /// - `parties`: List of involved Parties
-        // /// - `projects`: List of involved Projects
+        // /// - `projects`: List of involved ProjectMapV1
         // #[weight = {
         //     let p = parties.len() as u32;
         //     T::DeipWeightInfo::create_project_nda(p)
@@ -782,7 +854,7 @@ decl_module! {
         //
         //     projects.iter()
         //         .try_for_each(|id| -> DispatchResult {
-        //             let project = ProjectMap::<T>::get(id);
+        //             let project = ProjectMapV1::<T>::get(id);
         //
         //             ensure!(!project.external_id.is_zero(), Error::<T>::NoSuchProject);
         //             ensure!(parties.contains(&project.team_id), Error::<T>::TeamOfAllProjectsMustSpecifiedAsParty);
@@ -809,7 +881,7 @@ decl_module! {
         //     nda_list.insert(index_to_insert_nda, (nda.external_id, contract_creator.clone()));
         //     Ndas::<T>::put(nda_list);
         //
-        //     NdaMap::<T>::insert(nda.external_id, nda);
+        //     NdaMapV1::<T>::insert(nda.external_id, nda);
         //
         //     // Emit an event that the NDA was created.
         //     Self::deposit_event(RawEvent::NdaCreated(contract_creator, external_id));
@@ -838,7 +910,7 @@ decl_module! {
         //     let account = ensure_signed(origin)?;
         //     let timestamp = pallet_timestamp::Pallet::<T>::get();
         //
-        //     let nda = NdaMap::<T>::get(nda_external_id);
+        //     let nda = NdaMapV1::<T>::get(nda_external_id);
         //
         //     ensure!(!nda.external_id.is_zero(), Error::<T>::NoSuchNda);
         //     ensure!(nda.start_date <= Some(timestamp), Error::<T>::NdaContractIsNotActiveYet);
@@ -863,7 +935,7 @@ decl_module! {
         //     nda_requests.insert(index_to_insert_nda_request, (external_id, nda_external_id, account.clone()));
         //     NdaAccessRequests::<T>::put(nda_requests);
         //
-        //     NdaAccessRequestMap::<T>::insert(nda_request.external_id, nda_request);
+        //     NdaAccessRequestMapV1::<T>::insert(nda_request.external_id, nda_request);
         //
         //     // Emit an event that the NDA was created.
         //     Self::deposit_event(RawEvent::NdaAccessRequestCreated(account, external_id));
@@ -889,11 +961,11 @@ decl_module! {
         // ) {
         //     let account = ensure_signed(origin)?;
         //
-        //     NdaAccessRequestMap::<T>::mutate_exists(external_id, |maybe_nda_access_request| -> DispatchResult {
+        //     NdaAccessRequestMapV1::<T>::mutate_exists(external_id, |maybe_nda_access_request| -> DispatchResult {
         //         let mut nda_access_request = maybe_nda_access_request.as_mut().ok_or(Error::<T>::NoSuchNdaAccessRequest)?;
         //
         //         ensure!(nda_access_request.status == NdaAccessRequestStatus::Pending, Error::<T>::NdaAccessRequestAlreadyFinalized);
-        //         ensure!(NdaMap::<T>::contains_key(nda_access_request.nda_external_id), Error::<T>::NoSuchNda);
+        //         ensure!(NdaMapV1::<T>::contains_key(nda_access_request.nda_external_id), Error::<T>::NoSuchNda);
         //
         //         nda_access_request.status = NdaAccessRequestStatus::Fulfilled;
         //         nda_access_request.grantor = Some(account.clone());
@@ -922,13 +994,13 @@ decl_module! {
         //  ) {
         //      let account = ensure_signed(origin)?;
         //
-        //      NdaAccessRequestMap::<T>::mutate_exists(external_id, |maybe_nda_access_request| -> DispatchResult {
+        //      NdaAccessRequestMapV1::<T>::mutate_exists(external_id, |maybe_nda_access_request| -> DispatchResult {
         //         let mut nda_access_request = maybe_nda_access_request.as_mut().ok_or(Error::<T>::NoSuchNdaAccessRequest)?;
         //
         //
         //         ensure!(nda_access_request.status == NdaAccessRequestStatus::Pending, Error::<T>::NdaAccessRequestAlreadyFinalized);
-        //         ensure!(NdaMap::<T>::contains_key(nda_access_request.nda_external_id), Error::<T>::NoSuchNda);
-        //
+        //         ensure!(NdaMapV1::<T>::contains_key(nda_access_request.nda_external_id), Error::<T>::NoSuchNda);
+        //MomentOf
         //         nda_access_request.status = NdaAccessRequestStatus::Rejected;
         //
         //         Ok(())
@@ -987,7 +1059,7 @@ decl_module! {
         /// - `terms` - specifies type of the contract agreement. For details see [`ContractAgreementTerms`].
         #[weight = {
             T::DeipWeightInfo::create_contract_agreement_project_license()
-                .max(T::DeipWeightInfo::create_contract_agreement_general_contract())
+                .max(T::DeipWeightInfo::create_contract_agreement_generic_contract())
         }]
         fn create_contract_agreement(origin,
             id: ContractAgreementId,
@@ -996,7 +1068,7 @@ decl_module! {
             hash: HashOf<T>,
             activation_time: Option<MomentOf<T>>,
             expiration_time: Option<MomentOf<T>>,
-            terms: ContractAgreementTermsOf<T>,
+            terms: Terms,
         ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
             let parties = parties.into_iter().map(Into::into).collect();
@@ -1011,8 +1083,8 @@ decl_module! {
         #[weight = {
             T::DeipWeightInfo::accept_contract_agreement_project_license_unsigned()
                 .max(T::DeipWeightInfo::accept_contract_agreement_project_license_signed_by_licenser())
-                .max(T::DeipWeightInfo::accept_contract_agreement_general_contract_partially_accepted())
-                .max(T::DeipWeightInfo::accept_contract_agreement_general_contract_finalized())
+                .max(T::DeipWeightInfo::accept_contract_agreement_generic_contract_partially_accepted())
+                .max(T::DeipWeightInfo::accept_contract_agreement_generic_contract_finalized())
         }]
         fn accept_contract_agreement(origin,
             id: ContractAgreementId,
@@ -1042,84 +1114,23 @@ decl_module! {
             if !sp_io::offchain::is_validator() {
                 return;
             }
-
-            Self::process_investment_opportunities_offchain();
-        }
-    }
-}
-
-impl<T: Config> ValidateUnsigned for Module<T> {
-    type Call = Call<T>;
-
-    /// Validate unsigned call to this module.
-    ///
-    /// By default unsigned transactions are disallowed, but implementing the validator
-    /// here we make sure that some particular calls (the ones produced by offchain worker)
-    /// are being whitelisted and marked as valid.
-    fn validate_unsigned(source: TransactionSource, call: &Self::Call) -> TransactionValidity {
-        // Firstly let's check that we get the local transaction.
-        if !matches!(source, TransactionSource::Local | TransactionSource::InBlock) {
-            return InvalidTransaction::Custom(NON_LOCAL).into()
-        }
-
-        match call {
-            Call::activate_crowdfunding { sale_id: id } => {
-                let sale = SimpleCrowdfundingMap::<T>::try_get(id)
-                    .map_err(|_| InvalidTransaction::Stale)?;
-                if !matches!(sale.status, SimpleCrowdfundingStatus::Inactive) {
-                    return InvalidTransaction::Stale.into()
-                }
-
-                ValidTransaction::with_tag_prefix("DeipOffchainWorker")
-                    .propagate(false)
-                    .longevity(5)
-                    .and_provides((b"activate_crowdfunding", *id))
-                    .build()
-            },
-            Call::expire_crowdfunding { sale_id: id } => {
-                let sale = SimpleCrowdfundingMap::<T>::try_get(id)
-                    .map_err(|_| InvalidTransaction::Stale)?;
-                if !matches!(sale.status, SimpleCrowdfundingStatus::Active) {
-                    return InvalidTransaction::Stale.into()
-                }
-
-                ValidTransaction::with_tag_prefix("DeipOffchainWorker")
-                    .propagate(false)
-                    .longevity(5)
-                    .and_provides((b"expire_crowdfunding", *id))
-                    .build()
-            },
-            Call::finish_crowdfunding { sale_id: id } => {
-                let sale = SimpleCrowdfundingMap::<T>::try_get(id)
-                    .map_err(|_| InvalidTransaction::Stale)?;
-                if !matches!(sale.status, SimpleCrowdfundingStatus::Active) {
-                    return InvalidTransaction::Stale.into()
-                }
-
-                ValidTransaction::with_tag_prefix("DeipOffchainWorker")
-                    .propagate(false)
-                    .longevity(5)
-                    .and_provides((b"finish_crowdfunding", *id))
-                    .build()
-            },
-            _ => InvalidTransaction::Call.into(),
         }
     }
 }
 
 impl<T: Config> Module<T> {
     fn is_project_finished(project_id: &ProjectId) -> bool {
-        ContentIdByProjectId::iter_prefix(project_id)
-            .map(|(k, _)| ProjectContentMap::<T>::get(k))
+        ContentIdByProjectIdV1::iter_prefix(project_id)
+            .map(|(k, _)| ProjectContentMapV1::<T>::get(k))
             .any(|c| c.content_type == ProjectContentType::FinalResult)
     }
 
     pub fn get_project(project_id: &ProjectId) -> Option<ProjectOf<T>> {
-        ProjectMap::<T>::try_get(project_id).ok()
+        ProjectMapV1::<T>::try_get(project_id).ok()
     }
 
     pub fn try_get_project_team(id: &ProjectId) -> Option<AccountIdOf<T>> {
-        match ProjectMap::<T>::try_get(*id) {
+        match ProjectMapV1::<T>::try_get(*id) {
             Err(_) => None,
             Ok(project) => Some(project.team_id),
         }
@@ -1130,15 +1141,15 @@ impl<T: Config> Module<T> {
     }
 
     pub fn get_project_content(id: &ProjectContentId) -> Option<ProjectContentOf<T>> {
-        ProjectContentMap::<T>::try_get(id).ok()
+        ProjectContentMapV1::<T>::try_get(id).ok()
     }
 
     pub fn get_nda(nda_id: &NdaId) -> Option<NdaOf<T>> {
-        NdaMap::<T>::try_get(nda_id).ok()
+        NdaMapV1::<T>::try_get(nda_id).ok()
     }
 
     pub fn get_review(id: &ReviewId) -> Option<ReviewOf<T>> {
-        ReviewMap::<T>::try_get(id).ok()
+        ReviewMapV1::<T>::try_get(id).ok()
     }
 
     pub fn get_investment_opportunity(id: &InvestmentId) -> Option<SimpleCrowdfundingOf<T>> {

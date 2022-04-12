@@ -12,14 +12,6 @@ use pallet_deip_proposal::proposal::{BatchItem, InputProposalBatch};
 
 use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 
-use crate::assets_call_args::{
-    AssetsApproveTransferCallArgs, AssetsBurnCallArgs, AssetsCancelApprovalCallArgs,
-    AssetsClearMetadataCallArgs, AssetsCreateCallArgs, AssetsDestroyCallArgs,
-    AssetsFreezeAssetCallArgs, AssetsFreezeCallArgs, AssetsMintCallArgs, AssetsSetMetadataCallArgs,
-    AssetsSetTeamCallArgs, AssetsThawCallArgs, AssetsTransferApprovedCallArgs,
-    AssetsTransferCallArgs, AssetsTransferKeepAliveCallArgs, AssetsTransferOwnershipCallArgs,
-};
-
 #[derive(Clone, Debug, Eq, PartialEq, Decode, Encode, Deserialize, TypeInfo)]
 pub struct WrappedCall<Call: Parameter + Member>(pub Call);
 
@@ -51,16 +43,23 @@ impl Serialize for WrappedCall<Call> {
         match &self.0 {
             Call::Deip(deip_call) => Self::serialize_deip_call(deip_call, serializer),
 
+            Call::DeipInvestmentOpportunity(deip_investment_opportunity_call) =>
+                Self::serialize_deip_investment_opportunity_call(
+                    deip_investment_opportunity_call,
+                    serializer,
+                ),
+
             Call::DeipProposal(deip_proposal_call) =>
                 Self::serialize_deip_proposal_call(deip_proposal_call, serializer),
 
             Call::DeipDao(deip_dao_call) =>
                 Self::serialize_deip_dao_call(deip_dao_call, serializer),
 
-            Call::Assets(deip_assets_call) =>
-                Self::serialize_deip_assets_call(deip_assets_call, serializer),
-
+            // Call::DeipAssets(deip_assets_call) =>
+            //     Self::serialize_deip_assets_call(deip_assets_call, serializer),
+            Call::Assets(..) |
             Call::Uniques(..) |
+            // Call::DeipUniques(..) |
             Call::System(_) |
             Call::DeipPortal(_) |
             Call::Timestamp(_) |
@@ -110,47 +109,6 @@ impl WrappedCall<Call> {
                     },
                 }
                 .serialize(serializer),
-
-            create_investment_opportunity { external_id, creator, shares, funding_model } =>
-                CallObject {
-                    module: "deip",
-                    call: "create_investment_opportunity",
-                    args: &DeipCreateInvestmentOpportunityCallArgs {
-                        external_id,
-                        creator,
-                        shares,
-                        funding_model,
-                    },
-                }
-                .serialize(serializer),
-
-            activate_crowdfunding { sale_id } => CallObject {
-                module: "deip",
-                call: "activate_crowdfunding",
-                args: &DeipActivateCrowdfundingCallArgs { sale_id },
-            }
-            .serialize(serializer),
-
-            expire_crowdfunding { sale_id } => CallObject {
-                module: "deip",
-                call: "expire_crowdfunding",
-                args: &DeipExpireCrowdfundingCallArgs { sale_id },
-            }
-            .serialize(serializer),
-
-            finish_crowdfunding { sale_id } => CallObject {
-                module: "deip",
-                call: "finish_crowdfunding",
-                args: &DeipFinishCrowdfundingCallArgs { sale_id },
-            }
-            .serialize(serializer),
-
-            invest { id, asset } => CallObject {
-                module: "deip",
-                call: "invest",
-                args: &DeipInvestCallArgs { id, amount: asset },
-            }
-            .serialize(serializer),
 
             update_project { project_id, description, is_private } => CallObject {
                 module: "deip",
@@ -243,7 +201,6 @@ impl WrappedCall<Call> {
             //     args: &DeipRejectNdaAccessRequestCallArgs { external_id },
             // }
             // .serialize(serializer),
-
             create_review {
                 external_id,
                 author,
@@ -318,6 +275,61 @@ impl WrappedCall<Call> {
             .serialize(serializer),
 
             __PhantomItem(..) => unreachable!(),
+        }
+    }
+
+    fn serialize_deip_investment_opportunity_call<S>(
+        deip_call: &pallet_deip_investment_opportunity::Call<Runtime>,
+        serializer: S,
+    ) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        use pallet_deip_investment_opportunity::Call::*;
+
+        match deip_call {
+            create_investment_opportunity { external_id, creator, shares, funding_model } =>
+                CallObject {
+                    module: "deip",
+                    call: "create_investment_opportunity",
+                    args: &DeipCreateInvestmentOpportunityCallArgs {
+                        external_id,
+                        creator,
+                        shares,
+                        funding_model,
+                    },
+                }
+                .serialize(serializer),
+
+            activate_crowdfunding { sale_id } => CallObject {
+                module: "deip",
+                call: "activate_crowdfunding",
+                args: &DeipActivateCrowdfundingCallArgs { sale_id },
+            }
+            .serialize(serializer),
+
+            expire_crowdfunding { sale_id } => CallObject {
+                module: "deip",
+                call: "expire_crowdfunding",
+                args: &DeipExpireCrowdfundingCallArgs { sale_id },
+            }
+            .serialize(serializer),
+
+            finish_crowdfunding { sale_id } => CallObject {
+                module: "deip",
+                call: "finish_crowdfunding",
+                args: &DeipFinishCrowdfundingCallArgs { sale_id },
+            }
+            .serialize(serializer),
+
+            invest { id, asset } => CallObject {
+                module: "deip",
+                call: "invest",
+                args: &DeipInvestCallArgs { id, amount: asset },
+            }
+            .serialize(serializer),
+
+            __Ignore(..) => unreachable!(),
         }
     }
 
@@ -398,8 +410,9 @@ impl WrappedCall<Call> {
         }
     }
 
+    #[allow(dead_code)]
     fn serialize_deip_assets_call<S>(
-        deip_assets_call: &pallet_deip_assets::Call<Runtime>,
+        call: &pallet_deip_assets::Call<Runtime>,
         serializer: S,
     ) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
     where
@@ -408,131 +421,11 @@ impl WrappedCall<Call> {
         use pallet_deip_assets::Call::*;
 
         let module = "deip_assets";
-        match deip_assets_call {
-            // pallet_assets::Call::create
-            create { id, admin, min_balance } => {
-                let call = "create";
-                let args = AssetsCreateCallArgs::new(*id, admin, *min_balance);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::destroy
-            destroy { id, witness: _ } => {
-                // todo!("find a way to serialize witness")
-                let call = "destroy";
-                let args = AssetsDestroyCallArgs::new(*id);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::mint
-            mint { id, beneficiary, amount } => {
-                let call = "mint";
-                let args = AssetsMintCallArgs::new(*id, beneficiary, *amount);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::burn
-            burn { id, who, amount } => {
-                let call = "burn";
-                let args = AssetsBurnCallArgs::new(*id, who, *amount);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::transfer
-            transfer { id, target, amount } => {
-                let call = "transfer";
-                let args = AssetsTransferCallArgs::new(*id, target, *amount);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::transfer_keep_alive
-            transfer_keep_alive { id, target, amount } => {
-                let call = "transfer_keep_alive";
-                let args = AssetsTransferKeepAliveCallArgs::new(*id, target, *amount);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::freeze
-            freeze { id, who } => {
-                let call = "freeze";
-                let args = AssetsFreezeCallArgs::new(*id, who);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::thaw
-            thaw { id, who } => {
-                let call = "thaw";
-                let args = AssetsThawCallArgs::new(*id, who);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::freeze_asset
-            freeze_asset { id } => {
-                let call = "freeze_asset";
-                let args = AssetsFreezeAssetCallArgs::new(*id);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::thaw_asset
-            thaw_asset { id } => {
-                let call = "thaw_asset";
-                let args = AssetsFreezeAssetCallArgs::new(*id);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::transfer_ownership
-            transfer_ownership { id, owner } => {
-                let call = "transfer_ownership";
-                let args = AssetsTransferOwnershipCallArgs::new(*id, owner);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::set_team
-            set_team { id, issuer, admin, freezer } => {
-                let call = "set_team";
-                let args = AssetsSetTeamCallArgs::new(*id, issuer, admin, freezer);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::set_metadata
-            set_metadata { id, name, symbol, decimals } => {
-                let call = "set_metadata";
-                let args = AssetsSetMetadataCallArgs::new(*id, name, symbol, *decimals);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::clear_metadata
-            clear_metadata { id } => {
-                let call = "clear_metadata";
-                let args = AssetsClearMetadataCallArgs::new(*id);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::approve_transfer
-            approve_transfer { id, delegate, amount } => {
-                let call = "approve_transfer";
-                let args = AssetsApproveTransferCallArgs::new(*id, delegate, *amount);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::cancel_approval
-            cancel_approval { id, delegate } => {
-                let call = "cancel_approval";
-                let args = AssetsCancelApprovalCallArgs::new(*id, delegate);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            // pallet_assets::Call::transfer_approved
-            transfer_approved { id, owner, destination, amount } => {
-                let call = "transfer_approved";
-                let args = AssetsTransferApprovedCallArgs::new(*id, owner, destination, *amount);
-                CallObject::new(module, call, args).serialize(serializer)
-            },
-
-            deip_create_asset { id, admin, min_balance, project_id } => CallObject {
+        match call {
+            deip_create { id, admin, min_balance } => CallObject {
                 module,
-                call: "deip_create_asset",
-                args: &DeipAssetsCreateAssetCallArgs::new(id, admin, min_balance, project_id),
+                call: "deip_create",
+                args: &DeipAssetsCreateCallArgs::new(id, admin, min_balance),
             }
             .serialize(serializer),
 
@@ -543,10 +436,10 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            deip_issue_asset { id, beneficiary, amount } => CallObject {
+            deip_mint { id, beneficiary, amount } => CallObject {
                 module,
-                call: "deip_issue_asset",
-                args: &DeipAssetsIssueAssetCallArgs::new(id, beneficiary, amount),
+                call: "deip_mint",
+                args: &DeipAssetsMintCallArgs::new(id, beneficiary, amount),
             }
             .serialize(serializer),
 
@@ -607,13 +500,6 @@ impl WrappedCall<Call> {
                 module,
                 call: "deip_set_metadata",
                 args: &DeipAssetsSetMetadataCallArgs { id, name, symbol, decimals },
-            }
-            .serialize(serializer),
-
-            deip_wipe_zero_balance { asset, account } => CallObject {
-                module,
-                call: "deip_wipe_zero_balance",
-                args: &DeipAssetsWipeZeroBalanceCallArgs { asset, account },
             }
             .serialize(serializer),
 
@@ -702,13 +588,13 @@ impl<A, B, C: Clone + AtLeast32BitUnsigned> DeipAssetsBurnCallArgs<A, B, C> {
 }
 
 #[derive(Serialize)]
-struct DeipAssetsIssueAssetCallArgs<A, B, C: Clone + AtLeast32BitUnsigned> {
+struct DeipAssetsMintCallArgs<A, B, C: Clone + AtLeast32BitUnsigned> {
     id: A,
     beneficiary: B,
     amount: SerializableAtLeast32BitUnsigned<C>,
 }
 
-impl<A, B, C: Clone + AtLeast32BitUnsigned> DeipAssetsIssueAssetCallArgs<A, B, C> {
+impl<A, B, C: Clone + AtLeast32BitUnsigned> DeipAssetsMintCallArgs<A, B, C> {
     fn new(id: A, beneficiary: B, amount: &C) -> Self {
         Self { id, beneficiary, amount: SerializableAtLeast32BitUnsigned(amount.clone()) }
     }
@@ -721,21 +607,15 @@ struct DeipAssetsDestroyCallArgs<A, B> {
 }
 
 #[derive(Serialize)]
-struct DeipAssetsCreateAssetCallArgs<A, B, D: Clone + AtLeast32BitUnsigned, E> {
+struct DeipAssetsCreateCallArgs<A, B, D: Clone + AtLeast32BitUnsigned> {
     id: A,
     admin: B,
     min_balance: SerializableAtLeast32BitUnsigned<D>,
-    project_id: E,
 }
 
-impl<A, B, D: Clone + AtLeast32BitUnsigned, E> DeipAssetsCreateAssetCallArgs<A, B, D, E> {
-    fn new(id: A, admin: B, min_balance: &D, project_id: E) -> Self {
-        Self {
-            id,
-            admin,
-            min_balance: SerializableAtLeast32BitUnsigned(min_balance.clone()),
-            project_id,
-        }
+impl<A, B, D: Clone + AtLeast32BitUnsigned> DeipAssetsCreateCallArgs<A, B, D> {
+    fn new(id: A, admin: B, min_balance: &D) -> Self {
+        Self { id, admin, min_balance: SerializableAtLeast32BitUnsigned(min_balance.clone()) }
     }
 }
 
@@ -916,10 +796,4 @@ struct CallObject<A, B, C> {
     module: A,
     call: B,
     args: C,
-}
-
-impl<A, B, C> CallObject<A, B, C> {
-    fn new(module: A, call: B, args: C) -> Self {
-        Self { module, call, args }
-    }
 }

@@ -170,7 +170,7 @@ pub mod pallet {
                         vesting_during_cliff,
                     },
                 );
-                let reasons = WithdrawReasons::TRANSACTION_PAYMENT | WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE | WithdrawReasons::FEE | WithdrawReasons::TIP;
+                let reasons = WithdrawReasons::all();
                 T::Currency::set_lock(VESTING_ID, who, total_amount, reasons);
             }
         }
@@ -251,7 +251,7 @@ pub mod pallet {
                 VestingPlans::<T>::remove(&who);
                 Self::deposit_event(Event::<T>::VestingCompleted(who));
             } else {
-                let reasons = WithdrawReasons::TRANSACTION_PAYMENT | WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE | WithdrawReasons::FEE | WithdrawReasons::TIP;
+                let reasons = WithdrawReasons::all();
                 T::Currency::set_lock(VESTING_ID, &who, locked_now, reasons);
                 Self::deposit_event(Event::<T>::VestingUpdated(who, locked_now));
             }
