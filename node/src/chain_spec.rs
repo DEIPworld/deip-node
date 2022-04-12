@@ -2303,27 +2303,27 @@ pub fn get_endowed_accounts() -> Vec<(AccountId, u128)> {
         /* OCTOPUS FOUNDATION NODE 1 ============================================================ */
         (
             AccountId::from_ss58check("5CJrDFTVTYVgU66qb33CqBnk5nUYU7Uo81idUyUyRPnq1qCH").unwrap(), // OCTOPUS FOUNDATION NODE 1
-            250 * DEIP
+            510 * DEIP
         ),
         /* OCTOPUS FOUNDATION NODE 2 ============================================================ */
         (
             AccountId::from_ss58check("5DvQX4kFnch428Bb5oZnGt2duYbo7gFtNs7SHn6AgGDYdWKH").unwrap(), // OCTOPUS FOUNDATION NODE 2
-            250 * DEIP
+            10 * DEIP
         ),
         /* OCTOPUS FOUNDATION NODE 3 ============================================================ */
         (
             AccountId::from_ss58check("5DyzstWafuTaSUHBM8Qpxr8GofkbUFe9MLdHZs96PfzbaZQM").unwrap(), // OCTOPUS FOUNDATION NODE 3
-            250 * DEIP
+            10 * DEIP
         ),
         /* OCTOPUS FOUNDATION NODE 4 ============================================================ */
         (
             AccountId::from_ss58check("5HbS3KQ8PdR3uQbYrXzwF6wgDL3XSiHdfoKa1GtrdQRpKGeW").unwrap(), // OCTOPUS FOUNDATION NODE 4
-            250 * DEIP
+            10 * DEIP
         ),
         /* SUDO ======================================================================= */
         (
             AccountId::from_ss58check("5F9XVEoQDCYmTH4k5qczas4DiZUfp1RGbYKHyBYFgA9Zj1qn").unwrap(), // SUDO BALANCE
-            11507 * DEIP
+            11967 * DEIP
         ),
     ]
 }
