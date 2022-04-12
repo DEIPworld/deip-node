@@ -22,6 +22,6 @@ sp_api::decl_runtime_apis! {
         fn get_project_content(id: &ProjectContentId) -> Option<ProjectContent<Hash, AccountId>>;
         fn get_nda(nda_id: &NdaId) -> Option<Nda<Hash, AccountId, Moment>>;
         fn get_review(review_id: &ReviewId) -> Option<Review<Hash, AccountId>>;
-        fn get_contract_agreement(id: &ContractAgreementId) -> Option<contract::Agreement<AccountId, Hash, Moment, DeipAsset<AssetId, AssetBalance>>>;
+        fn get_contract_agreement(id: &ContractAgreementId) -> Option<contract::Agreement<AccountId, Hash, Moment>>;
     }
 }

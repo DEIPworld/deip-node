@@ -95,76 +95,10 @@ impl pallet_balances::Config for Test {
     type WeightInfo = ();
 }
 
-impl pallet_deip::traits::DeipAssetSystem<u64> for Test {
-    type Balance = u64;
-    type AssetId = DeipAssetId;
-
-    fn try_get_tokenized_project(id: &Self::AssetId) -> Option<super::ProjectId> {
-        DeipAssets::try_get_tokenized_project(id)
-    }
-
-    fn account_balance(account: &AccountId, asset: &Self::AssetId) -> Self::Balance {
-        DeipAssets::account_balance(account, asset)
-    }
-
-    fn total_supply(asset: &Self::AssetId) -> Self::Balance {
-        DeipAssets::total_supply(asset)
-    }
-
-    fn get_project_fts(id: &super::ProjectId) -> Vec<Self::AssetId> {
-        DeipAssets::get_project_fts(id)
-    }
-
-    fn get_ft_balances(id: &Self::AssetId) -> Option<Vec<AccountId>> {
-        DeipAssets::get_ft_balances(id)
-    }
-
-    fn transactionally_transfer(
-        from: &AccountId,
-        asset: Self::AssetId,
-        transfers: &[(Self::Balance, AccountId)],
-    ) -> Result<(), ()> {
-        DeipAssets::transactionally_transfer(from, asset, transfers)
-    }
-
-    fn transactionally_reserve(
-        account: &u64,
-        id: super::InvestmentId,
-        security_tokens_on_sale: &[(Self::AssetId, Self::Balance)],
-        asset: Self::AssetId,
-    ) -> Result<(), ReserveError<Self::AssetId>> {
-        DeipAssets::transactionally_reserve(account, id, security_tokens_on_sale, asset)
-    }
-
-    fn transactionally_unreserve(
-        id: super::InvestmentId,
-    ) -> Result<(), UnreserveError<Self::AssetId>> {
-        DeipAssets::transactionally_unreserve(id)
-    }
-
-    fn transfer_from_reserved(
-        id: super::InvestmentId,
-        who: &u64,
-        asset: Self::AssetId,
-        amount: Self::Balance,
-    ) -> Result<(), UnreserveError<Self::AssetId>> {
-        DeipAssets::transfer_from_reserved(id, who, asset, amount)
-    }
-
-    fn transfer_to_reserved(
-        who: &AccountId,
-        id: super::InvestmentId,
-        amount: Self::Balance,
-    ) -> Result<(), UnreserveError<Self::AssetId>> {
-        DeipAssets::transfer_to_reserved(who, id, amount)
-    }
-}
-
 impl pallet_deip::Config for Test {
     type Event = Event;
     type DeipAccountId = Self::AccountId;
     type Currency = Balances;
-    type AssetSystem = Self;
 }
 
 parameter_types! {

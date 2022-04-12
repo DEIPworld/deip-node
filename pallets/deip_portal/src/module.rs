@@ -71,7 +71,7 @@ where
             ensure!(T::Portal::lookup_delegate(portal_id)? == delegate, DelegateMismatch);
             let xt_hash = V1::<T>::extrinsic_hash(&xt);
             // debug!("{}: {:?}", "Schedule extrinsic", &xt_hash);
-            ensure!(!SignedTx::<T>::contains_key(xt_hash), AlreadyScheduled);
+            ensure!(!SignedTx::<T>::contains_key(xt_hash), AlreadySigned);
             SignedTx::<T>::insert(xt_hash, portal_id);
             return Ok(())
         } else {
@@ -88,9 +88,9 @@ where
         let xt = ctx.extrinsic_data();
         let xt_hash = V1::<T>::extrinsic_hash2(&xt[..]);
         // debug!("{}: {:?}", "Dispatch scheduled", &xt_hash);
-        let expected_portal_id = SignedTx::<T>::get(xt_hash);
+        let expected_portal_id = SignedTx::<T>::take(xt_hash);
         ensure!(expected_portal_id.is_some(), NotSigned);
-        ensure!(portal_id == expected_portal_id.unwrap(), PortalMismatch);
+        ensure!(portal_id == expected_portal_id.unwrap(), NotSigned);
         Ok(ctx.dispatch(portal_id, call, origin))
     }
 

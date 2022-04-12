@@ -1,10 +1,10 @@
 use appchain_deip_runtime::{
     currency::{OCTS, UNITS as DEIP},
     opaque::Block, opaque::SessionKeys, Balance, BeefyConfig, ImOnlineConfig, OctopusAppchainConfig,
-    AccountId, AssetsConfig, BabeConfig, DeipConfig, DeipDaoConfig,
+    AccountId, DeipAssetsConfig, BabeConfig, DeipConfig, DeipDaoConfig,
     DeipPortalConfig, DeipProposalConfig, DeipVestingConfig, GenesisConfig, GrandpaConfig,
-    ParityTechBalancesConfig, Signature, SudoConfig, SystemConfig, UniquesConfig, SessionConfig, 
-    OctopusLposConfig, WASM_BINARY, DeipEcosystemFundConfig,
+    BalancesConfig, Signature, SudoConfig, SystemConfig, DeipUniquesConfig, SessionConfig,
+    OctopusLposConfig, WASM_BINARY, DeipEcosystemFundConfig, DeipInvestmentOpportunityConfig,
 };
 
 use sc_chain_spec::ChainSpecExtension;
@@ -15,7 +15,6 @@ use serde::{Deserialize, Serialize};
 use sp_core::{sr25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
-use sp_core::crypto::{Ss58Codec};
 
 use beefy_primitives::crypto::AuthorityId as BeefyId;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
@@ -135,12 +134,8 @@ pub fn development_config() -> Result<ChainSpec, String> {
                 vec![
                     (
                         get_account_id_from_seed::<sr25519::Public>("Alice"),
-                        10 * DEIP
-                    ),
-                    (
-                        AccountId::from_ss58check("5D7kG2UWD49rPvgjUjfghdYCJCNXoBdfC4LcyJe41D8fr6KU").unwrap(),
-                        40 * DEIP
-                    ),
+                        3_600_000_000 * DEIP
+                    )
                 ],
                 // Vestings
                 vec![],
@@ -154,12 +149,12 @@ pub fn development_config() -> Result<ChainSpec, String> {
                   // Appchain Relay Contract
                   "deip-test.registry.test_oct.testnet",
                   // Premined amount
-                  3_599_999_950 * DEIP,
+                  0 * DEIP,
                   // Era Payout
                   328_767 * DEIP,
                 ),
                 // Ecosystem fund account
-                AccountId::from_ss58check("5FRvKQzZ4taefHzFt5fgQHKJQYRL8SsswcrXCuDogucQoDqz").unwrap(),
+                get_account_id_from_seed::<sr25519::Public>("Eve"),
                 // Enable println
                 true,
             )
@@ -192,7 +187,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                 wasm_binary,
                 // Initial PoA authorities
                 vec![
-                    authority_keys_from_seed("Alice", 10 * OCTS), 
+                    authority_keys_from_seed("Alice", 10 * OCTS),
                     authority_keys_from_seed("Bob", 10 * OCTS)
                 ],
                 // Sudo account
@@ -201,15 +196,11 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                 vec![
                     (
                         get_account_id_from_seed::<sr25519::Public>("Alice"),
-                        10 * DEIP
+                        1_800_000_000 * DEIP
                     ),
                     (
                         get_account_id_from_seed::<sr25519::Public>("Bob"),
-                        10 * DEIP
-                    ),
-                    (
-                        AccountId::from_ss58check("5D7kG2UWD49rPvgjUjfghdYCJCNXoBdfC4LcyJe41D8fr6KU").unwrap(),
-                        30 * DEIP
+                        1_800_000_000 * DEIP
                     ),
                 ],
                 // Vestings
@@ -224,12 +215,12 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                   // Appchain Relay Contract
                   "deip-test.registry.test_oct.testnet",
                   // Premined amount
-                  3_599_999_950 * DEIP,
+                  0 * DEIP,
                   // Era Payout
                   328_767 * DEIP,
                 ),
                 // Ecosystem fund account
-                AccountId::from_ss58check("5FRvKQzZ4taefHzFt5fgQHKJQYRL8SsswcrXCuDogucQoDqz").unwrap(),
+                get_account_id_from_seed::<sr25519::Public>("Eve"),
                 // Enable println
                 true,
             )
@@ -275,7 +266,7 @@ fn genesis(
             // Add Wasm runtime to storage.
             code: wasm_binary.to_vec(),
         },
-        parity_tech_balances: ParityTechBalancesConfig {
+        balances: BalancesConfig {
             balances: endowed_accounts
         },
         session: SessionConfig {
@@ -316,14 +307,15 @@ fn genesis(
             domains: domains.iter().cloned().map(|k| (k, Domain { external_id: k })).collect(),
             domain_count: domains.len() as u32,
         },
-        assets: AssetsConfig::default(),
-        uniques: UniquesConfig::default(),
+        deip_assets: DeipAssetsConfig::default(),
+        deip_uniques: DeipUniquesConfig::default(),
         deip_proposal: DeipProposalConfig {},
         deip_dao: DeipDaoConfig {},
         deip_portal: DeipPortalConfig {},
         deip_vesting: DeipVestingConfig { vesting: vesting_plans },
         deip_ecosystem_fund: DeipEcosystemFundConfig {
             fee_recipient: ecosystem_fund_key.clone()
-        }
+        },
+        deip_investment_opportunity: DeipInvestmentOpportunityConfig {},
     }
 }

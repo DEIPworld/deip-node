@@ -11,7 +11,6 @@ pub fn deip_create(
       origin: OriginFor<T>,
       class: DeipNftClassIdOf<T>,
       admin: T::DeipAccountId,
-      project_id: Option<DeipProjectIdOf<T>>,
   ) -> DispatchResultWithPostInfo
 ```
 

@@ -24,10 +24,10 @@ pub use frame_support::{
 use frame_system::{
     self,
     limits::{BlockLength, BlockWeights},
-    EnsureRoot,
+    EnsureNever,
 };
 pub use pallet_balances::Call as BalancesCall;
-use pallet_deip::{InvestmentId, ProjectId, H160};
+use pallet_deip::{investment_opportunity::InvestmentId, ProjectId, H160};
 use pallet_grandpa::{
     fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
@@ -135,7 +135,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 102,
+    spec_version: 104,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -250,9 +250,17 @@ parameter_types! {
 
 // Configure FRAME pallets to include in runtime.
 
+use frame_support::traits::Contains;
+pub struct CallFilter;
+impl Contains<Call> for CallFilter {
+    fn contains(_t: &Call) -> bool {
+        true
+    }
+}
+
 impl frame_system::Config for Runtime {
     /// The basic call filter to use in dispatchable.
-    type BaseCallFilter = Everything;
+    type BaseCallFilter = CallFilter;
     /// Block & extrinsics weights: base values and limits.
     type BlockWeights = RuntimeBlockWeights;
     /// The maximum length of a block (in bytes).
@@ -550,7 +558,7 @@ impl pallet_assets::Config for Runtime {
     type Balance = AssetBalance;
     type AssetId = AssetId;
     type Currency = Balances;
-    type ForceOrigin = EnsureRoot<AccountId>;
+    type ForceOrigin = EnsureNever<AccountId>;
     type AssetDeposit = AssetDeposit;
     type MetadataDepositBase = MetadataDepositBase;
     type MetadataDepositPerByte = MetadataDepositPerByte;
@@ -563,7 +571,7 @@ impl pallet_assets::Config for Runtime {
 
 impl deip_projects_info::DeipProjectsInfo<AccountId> for Runtime {
     type ProjectId = pallet_deip::ProjectId;
-    type InvestmentId = pallet_deip::InvestmentId;
+    type InvestmentId = pallet_deip::investment_opportunity::InvestmentId;
 
     fn try_get_project_team(id: &Self::ProjectId) -> Option<AccountId> {
         Deip::try_get_project_team(id)
@@ -625,7 +633,7 @@ impl pallet_uniques::Config for Runtime {
     type ClassId = NftClassId;
     type InstanceId = InstanceId;
     type Currency = Balances;
-    type ForceOrigin = EnsureRoot<AccountId>;
+    type ForceOrigin = EnsureNever<AccountId>;
     type ClassDeposit = ClassDeposit;
     type InstanceDeposit = InstanceDeposit;
     type MetadataDepositBase = MetadataDepositBase; // ??? is it correct to reuse const from assets
@@ -744,10 +752,77 @@ impl pallet_deip::Config for Runtime {
     type Event = Event;
     type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
     type Currency = Balances;
-    type AssetSystem = Self;
     type DeipWeightInfo = pallet_deip::Weights<Self>;
     type MaxNdaParties = MaxNdaParties;
     type MaxInvestmentShares = MaxInvestmentShares;
+}
+
+impl pallet_deip_investment_opportunity::Config for Runtime {
+    type DeipInvestmentWeightInfo = pallet_deip_investment_opportunity::weights::Weights<Self>;
+    type Event = Event;
+    type TransactionCtx = TransactionCtx;
+    type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
+    type MaxInvestmentShares = MaxInvestmentShares;
+    type SourceId = ProjectId;
+}
+
+impl deip_asset_system::AssetIdInitT<DeipAssetId> for Runtime {
+    fn asset_id(raw: &[u8]) -> DeipAssetId {
+        DeipAssetId::from_slice(raw)
+    }
+}
+
+use deip_asset_system::{ReserveError, UnreserveError};
+
+impl deip_asset_system::DeipAssetSystem<AccountId, ProjectId, InvestmentId> for Runtime {
+    type Balance = AssetBalance;
+    type AssetId = DeipAssetId;
+
+    fn account_balance(account: &AccountId, asset: &Self::AssetId) -> Self::Balance {
+        DeipAssets::account_balance(account, asset)
+    }
+
+    fn total_supply(asset: &Self::AssetId) -> Self::Balance {
+        DeipAssets::total_supply(asset)
+    }
+
+    fn transactionally_transfer(
+        from: &AccountId,
+        asset: Self::AssetId,
+        transfers: &[(Self::Balance, AccountId)],
+    ) -> Result<(), ()> {
+        DeipAssets::transactionally_transfer(from, asset, transfers)
+    }
+
+    fn transactionally_reserve(
+        account: &AccountId,
+        id: InvestmentId,
+        shares: &[(Self::AssetId, Self::Balance)],
+        asset: Self::AssetId,
+    ) -> Result<(), ReserveError<Self::AssetId>> {
+        DeipAssets::deip_transactionally_reserve(account, id, shares, asset)
+    }
+
+    fn transactionally_unreserve(id: InvestmentId) -> Result<(), UnreserveError<Self::AssetId>> {
+        DeipAssets::transactionally_unreserve(id)
+    }
+
+    fn transfer_from_reserved(
+        id: InvestmentId,
+        who: &AccountId,
+        asset: Self::AssetId,
+        amount: Self::Balance,
+    ) -> Result<(), UnreserveError<Self::AssetId>> {
+        DeipAssets::transfer_from_reserved(id, who, asset, amount)
+    }
+
+    fn transfer_to_reserved(
+        who: &AccountId,
+        id: InvestmentId,
+        amount: Self::Balance,
+    ) -> Result<(), UnreserveError<Self::AssetId>> {
+        DeipAssets::deip_transfer_to_reserved(who, id, amount)
+    }
 }
 
 parameter_types! {
@@ -821,77 +896,6 @@ impl pallet_deip_portal::TenantLookupT<AccountId> for Runtime {
     }
 }
 
-impl deip_asset_system::AssetIdInitT<DeipAssetId> for Runtime {
-    fn asset_id(raw: &[u8]) -> DeipAssetId {
-        DeipAssetId::from_slice(raw)
-    }
-}
-
-impl pallet_deip::traits::DeipAssetSystem<AccountId> for Runtime {
-    type Balance = AssetBalance;
-    type AssetId = DeipAssetId;
-
-    fn try_get_tokenized_project(id: &Self::AssetId) -> Option<ProjectId> {
-        Assets::try_get_tokenized_project(id)
-    }
-
-    fn account_balance(account: &AccountId, asset: &Self::AssetId) -> Self::Balance {
-        Assets::account_balance(account, asset)
-    }
-
-    fn total_supply(asset: &Self::AssetId) -> Self::Balance {
-        Assets::total_supply(asset)
-    }
-
-    fn get_project_fts(id: &ProjectId) -> Vec<Self::AssetId> {
-        Assets::get_project_fts(id)
-    }
-
-    fn get_ft_balances(id: &Self::AssetId) -> Option<Vec<AccountId>> {
-        Assets::get_ft_balances(id)
-    }
-
-    fn transactionally_transfer(
-        from: &AccountId,
-        asset: Self::AssetId,
-        transfers: &[(Self::Balance, AccountId)],
-    ) -> Result<(), ()> {
-        Assets::transactionally_transfer(from, asset, transfers)
-    }
-
-    fn transactionally_reserve(
-        account: &AccountId,
-        id: InvestmentId,
-        shares: &[(Self::AssetId, Self::Balance)],
-        asset: Self::AssetId,
-    ) -> Result<(), deip_assets_error::ReserveError<Self::AssetId>> {
-        Assets::deip_transactionally_reserve(account, id, shares, asset)
-    }
-
-    fn transactionally_unreserve(
-        id: InvestmentId,
-    ) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
-        Assets::transactionally_unreserve(id)
-    }
-
-    fn transfer_from_reserved(
-        id: InvestmentId,
-        who: &AccountId,
-        asset: Self::AssetId,
-        amount: Self::Balance,
-    ) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
-        Assets::transfer_from_reserved(id, who, asset, amount)
-    }
-
-    fn transfer_to_reserved(
-        who: &AccountId,
-        id: InvestmentId,
-        amount: Self::Balance,
-    ) -> Result<(), deip_assets_error::UnreserveError<Self::AssetId>> {
-        Assets::deip_transfer_to_reserved(who, id, amount)
-    }
-}
-
 parameter_types! {
   pub const MinVestedTransfer: u64 = 1;
 }
@@ -917,7 +921,8 @@ construct_runtime!(
         Babe: pallet_babe,
         Timestamp: pallet_timestamp,
         Authorship: pallet_authorship,
-        Balances: pallet_deip_balances,
+        Balances: pallet_balances,
+        DeipBalances: pallet_deip_balances::{Pallet},
         TransactionPayment: pallet_transaction_payment,
         OctopusAppchain: pallet_octopus_appchain::{Pallet, Call, Storage, Config<T>, Event<T>, ValidateUnsigned},
         OctopusLpos: pallet_octopus_lpos,
@@ -928,22 +933,22 @@ construct_runtime!(
         ImOnline: pallet_im_online,
         Historical: pallet_session_historical::{Pallet},
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage},
-        ParityTechAssets: pallet_assets::{Pallet, Storage, Event<T>},
-        ParityTechBalances: pallet_balances::{Pallet, Storage, Event<T>, Config<T>},
-        ParityTechUniques: pallet_uniques::{Pallet, Storage, Event<T>},
+        Assets: pallet_assets::{Pallet, Call, Storage, Event<T>},
+        Uniques: pallet_uniques::{Pallet, Call, Storage, Event<T>},
         Mmr: pallet_mmr::{Pallet, Storage},
         Beefy: pallet_beefy::{Pallet, Config<T>},
         MmrLeaf: pallet_beefy_mmr,
         Multisig: pallet_multisig::{Pallet, Call, Storage, Event<T>},
         Utility: pallet_utility::{Pallet, Call, Event},
-        Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
-        Assets: pallet_deip_assets::{Pallet, Storage, Call, Config<T>, ValidateUnsigned},
-        Uniques: pallet_deip_uniques::{Pallet, Storage, Call, Config<T>},
+        Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config},
+        DeipAssets: pallet_deip_assets::{Pallet, Storage, Config<T>},
+        DeipUniques: pallet_deip_uniques::{Pallet, Storage, Config<T>},
         DeipProposal: pallet_deip_proposal::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
         DeipDao: pallet_deip_dao::{Pallet, Call, Storage, Event<T>, Config},
         DeipPortal: pallet_deip_portal::{Pallet, Call, Storage, Config, ValidateUnsigned},
         DeipVesting: pallet_deip_vesting::{Pallet, Call, Storage, Event<T>, Config<T>},
         DeipEcosystemFund: pallet_deip_ecosystem_fund::{Pallet, Config<T>, Storage},
+        DeipInvestmentOpportunity: pallet_deip_investment_opportunity,
     }
 );
 
@@ -1223,7 +1228,8 @@ impl_runtime_apis! {
             list_benchmark!(list, extra, pallet_deip_proposal, DeipProposal);
             list_benchmark!(list, extra, pallet_deip_dao, DeipDao);
             list_benchmark!(list, extra, pallet_deip_portal, DeipPortal);
-            list_benchmark!(list, extra, pallet_deip, Deip);
+            // list_benchmark!(list, extra, pallet_deip, Deip);
+            list_benchmark!(list, extra, pallet_deip_investment_opportunity, DeipInvestmentOpportunity);
 
             let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -1263,7 +1269,8 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, pallet_deip_proposal, DeipProposal);
             add_benchmark!(params, batches, pallet_deip_dao, DeipDao);
             add_benchmark!(params, batches, pallet_deip_portal, DeipPortal);
-            add_benchmark!(params, batches, pallet_deip, Deip);
+            // add_benchmark!(params, batches, pallet_deip, Deip);
+            add_benchmark!(params, batches, pallet_deip_investment_opportunity, DeipInvestmentOpportunity);
 
             Ok(batches)
         }

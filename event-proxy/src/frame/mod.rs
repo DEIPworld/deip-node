@@ -5,3 +5,4 @@ pub mod deip_proposal;
 pub mod octopus_appchain;
 #[cfg(feature = "octopus")]
 pub mod octopus_lpos;
+pub mod deip_investment_opportunity;

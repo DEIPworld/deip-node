@@ -122,7 +122,7 @@ fn create_ok_nda_content_access_request(
     (access_request_id, expected_nda_request)
 }
 
-fn create_issue_asset(
+fn create_mint_asset(
     account_id: AccountIdOf<Test>,
     id: DeipAssetIdOf<Test>,
     amount: DeipAssetBalanceOf<Test>,
@@ -221,10 +221,10 @@ fn add_project() {
     new_test_ext().execute_with(|| {
         let (project_id, project, _, team) = create_ok_project(None);
 
-        let project_stored = ProjectMap::<Test>::get(project_id);
+        let project_stored = ProjectMapV1::<Test>::get(project_id);
 
         assert!(
-            <ProjectMap<Test>>::contains_key(project_id),
+            <ProjectMapV1<Test>>::contains_key(project_id),
             "Project Map did not contain the project, value was `{}`",
             project_id
         );
@@ -232,8 +232,8 @@ fn add_project() {
         assert_eq!(project, project_stored);
 
         assert!(
-            ProjectIdByTeamId::<Test>::contains_key(team, project_id),
-            "ProjectIdByTeamId did not contain project, value was `{}`",
+            ProjectIdByTeamIdV1::<Test>::contains_key(team, project_id),
+            "ProjectIdByTeamIdV1 did not contain project, value was `{}`",
             project_id
         );
     })
@@ -292,7 +292,7 @@ fn update_project() {
             Some(true)
         ));
 
-        let project_stored = ProjectMap::<Test>::get(project_id);
+        let project_stored = ProjectMapV1::<Test>::get(project_id);
 
         assert_eq!(project_stored.description, new_description);
         assert_eq!(project_stored.is_private, true);
@@ -352,14 +352,14 @@ fn create_project_content() {
         ));
 
         assert!(
-            <ProjectContentMap<Test>>::contains_key(project_content_id),
+            <ProjectContentMapV1<Test>>::contains_key(project_content_id),
             "Project Content Map did not contain key, value was `{}`",
             project_content_id
         );
 
         assert!(
-            ContentIdByProjectId::contains_key(project_id, project_content_id),
-            "ContentIdByProjectId does not contain the key: `{}`, `{}`",
+            ContentIdByProjectIdV1::contains_key(project_id, project_content_id),
+            "ContentIdByProjectIdV1 does not contain the key: `{}`, `{}`",
             project_id,
             project_content_id
         );
@@ -402,14 +402,14 @@ fn create_project_content_with_references() {
         ));
 
         assert!(
-            <ProjectContentMap<Test>>::contains_key(project_content_with_reference_id),
+            <ProjectContentMapV1<Test>>::contains_key(project_content_with_reference_id),
             "Project Content Map did not contain key, value was `{}`",
             project_content_with_reference_id
         );
 
         assert!(
-            ContentIdByProjectId::contains_key(project_id, project_content_with_reference_id),
-            "ContentIdByProjectId does not contain the key: `{}`, `{}`",
+            ContentIdByProjectIdV1::contains_key(project_id, project_content_with_reference_id),
+            "ContentIdByProjectIdV1 does not contain the key: `{}`, `{}`",
             project_id,
             project_content_with_reference_id
         );
@@ -562,10 +562,10 @@ fn create_project_nda() {
         let (project_nda_id, expected_nda) = create_ok_nda();
 
         let nda_list = Ndas::<Test>::get();
-        let nda_stored = NdaMap::<Test>::get(project_nda_id);
+        let nda_stored = NdaMapV1::<Test>::get(project_nda_id);
 
         assert!(
-            <NdaMap<Test>>::contains_key(project_nda_id),
+            <NdaMapV1<Test>>::contains_key(project_nda_id),
             "NDA Map did not contain key, value was `{}`",
             project_nda_id
         );
@@ -746,10 +746,10 @@ fn create_nda_content_access_request() {
             create_ok_nda_content_access_request(project_nda_id);
 
         let nda_list = NdaAccessRequests::<Test>::get();
-        let nda_stored = NdaAccessRequestMap::<Test>::get(access_request_id);
+        let nda_stored = NdaAccessRequestMapV1::<Test>::get(access_request_id);
 
         assert!(
-            <NdaAccessRequestMap<Test>>::contains_key(access_request_id),
+            <NdaAccessRequestMapV1<Test>>::contains_key(access_request_id),
             "NDA request Map did not contain key, value was `{}`",
             access_request_id
         );
@@ -825,7 +825,7 @@ fn fulfill_nda_content_access_request() {
             proof_of_encrypted_payload_encryption_key.clone()
         ));
 
-        let nda_stored = NdaAccessRequestMap::<Test>::get(access_request_id);
+        let nda_stored = NdaAccessRequestMapV1::<Test>::get(access_request_id);
 
         let expected_nda_request = NdaAccessRequest {
             status: NdaAccessRequestStatus::Fulfilled,
@@ -902,7 +902,7 @@ fn reject_nda_content_access_request() {
             access_request_id.clone(),
         ));
 
-        let nda_stored = NdaAccessRequestMap::<Test>::get(access_request_id);
+        let nda_stored = NdaAccessRequestMapV1::<Test>::get(access_request_id);
 
         let expected_nda_request =
             NdaAccessRequest { status: NdaAccessRequestStatus::Rejected, ..nda_request };
@@ -992,7 +992,7 @@ fn simple_crowdfunding_hard_cap_reached() {
 
         let base_asset_id = DeipAssetId(3u32);
         let base_asset_total = 120_000u64;
-        create_issue_asset(ALICE_ACCOUNT_ID, base_asset_id, base_asset_total, None);
+        create_mint_asset(ALICE_ACCOUNT_ID, base_asset_id, base_asset_total, None);
 
         let call = pallet_deip_assets::Call::<Test>::transfer {
             id: base_asset_id,
@@ -1004,11 +1004,11 @@ fn simple_crowdfunding_hard_cap_reached() {
 
         let usd_id = DeipAssetId(0u32);
         let usd_total = 100_000u64;
-        create_issue_asset(*account_id, usd_id, usd_total, Some(*project_id));
+        create_mint_asset(*account_id, usd_id, usd_total, Some(*project_id));
 
         let eur_id = DeipAssetId(1u32);
         let eur_total = 80_000u64;
-        create_issue_asset(*account_id, eur_id, eur_total, Some(*project_id));
+        create_mint_asset(*account_id, eur_id, eur_total, Some(*project_id));
 
         let balance_before = DeipAssets::account_balance(account_id, &base_asset_id);
 
@@ -1086,7 +1086,7 @@ fn simple_crowdfunding_expired() {
 
         let base_asset_id = DeipAssetId(3u32);
         let base_asset_total = 120_000u64;
-        create_issue_asset(*account_id, base_asset_id, base_asset_total, Some(*project_id));
+        create_mint_asset(*account_id, base_asset_id, base_asset_total, Some(*project_id));
 
         let call = pallet_deip_assets::Call::<Test>::transfer(
             base_asset_id,
@@ -1106,11 +1106,11 @@ fn simple_crowdfunding_expired() {
 
         let usd_id = DeipAssetId(0u32);
         let usd_total = 100_000u64;
-        create_issue_asset(*account_id, usd_id, usd_total, Some(*project_id));
+        create_mint_asset(*account_id, usd_id, usd_total, Some(*project_id));
 
         let eur_id = DeipAssetId(1u32);
         let eur_total = 80_000u64;
-        create_issue_asset(*account_id, eur_id, eur_total, Some(*project_id));
+        create_mint_asset(*account_id, eur_id, eur_total, Some(*project_id));
 
         let balance_before = DeipAssets::account_balance(account_id, &base_asset_id);
         let bob_balance_before = DeipAssets::account_balance(&BOB_ACCOUNT_ID, &base_asset_id);
@@ -1227,7 +1227,7 @@ fn two_simultaneous_crowdfundings_expired() {
     ext.execute_with(|| {
         let base_asset_id = DeipAssetId(3u32);
         let base_asset_total = 120_000u64;
-        create_issue_asset(DEFAULT_ACCOUNT_ID, base_asset_id, base_asset_total, None);
+        create_mint_asset(DEFAULT_ACCOUNT_ID, base_asset_id, base_asset_total, None);
 
         let call = pallet_deip_assets::Call::<Test>::transfer(
             base_asset_id,
@@ -1247,11 +1247,11 @@ fn two_simultaneous_crowdfundings_expired() {
 
         let usd_id = DeipAssetId(0u32);
         let usd_total = 100_000u64;
-        create_issue_asset(ALICE_ACCOUNT_ID, usd_id, usd_total, None);
+        create_mint_asset(ALICE_ACCOUNT_ID, usd_id, usd_total, None);
 
         let eur_id = DeipAssetId(1u32);
         let eur_total = 80_000u64;
-        create_issue_asset(BOB_ACCOUNT_ID, eur_id, eur_total, None);
+        create_mint_asset(BOB_ACCOUNT_ID, eur_id, eur_total, None);
 
         let bob_usd_balance_before = DeipAssets::account_balance(&BOB_ACCOUNT_ID, &usd_id);
         let bob_eur_balance_before = DeipAssets::account_balance(&BOB_ACCOUNT_ID, &eur_id);

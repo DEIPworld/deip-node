@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 use serde::Serialize;
 use sp_runtime::{AccountId32, MultiAddress as SpMultiAddress};

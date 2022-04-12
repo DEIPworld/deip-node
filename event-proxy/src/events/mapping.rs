@@ -36,9 +36,11 @@ where
             match_event_deip_proposal(deip_proposal_event)
         }
 
-        Event::ParityTechAssets(assets_event) => match_event_deip_assets(assets_event),
+        Event::DeipInvestmentOpportunity(e) => match_event_deip_investment_opportunity(e),
 
-        Event::ParityTechUniques(..)
+        Event::Assets(assets_event) => match_event_deip_assets(assets_event),
+
+        Event::Uniques(..)
 
         | Event::Session(..) | Event::ImOnline(..)
 
@@ -47,11 +49,11 @@ where
         | Event::System(_)
         | Event::Utility(_)
         | Event::Grandpa(_)
-        | Event::ParityTechBalances(_)
+        | Event::Balances(_)
         | Event::Sudo(_)
-        // | Event::template(_)
         | Event::DeipVesting(_)
-        | Event::Multisig(_) => unreachable!(),
+        | Event::Multisig(_)
+        => unreachable!(),
     }
 }
 
@@ -241,6 +243,32 @@ where
             // deip::ReviewUpvotedEvent
             unimplemented!()
         },
+        ContractAgreementCreated(..) => {
+            // deip::ContractAgreementCreatedEvent
+            unimplemented!()
+        },
+        ContractAgreementAccepted(..) => {
+            // deip::ContractAgreementAcceptedEvent
+            unimplemented!()
+        },
+        ContractAgreementFinalized(..) => {
+            // deip::ContractAgreementFinalizedEvent
+            unimplemented!()
+        },
+        ContractAgreementRejected(..) => {
+            // deip::ContractAgreementRejectedEvent
+            unimplemented!()
+        },
+    }
+}
+
+fn match_event_deip_investment_opportunity<T>(e: &pallet_deip_investment_opportunity::Event<Runtime>) -> DomainEventData<T>
+where
+    T: DeipProposal,
+{
+    use pallet_deip_investment_opportunity::Event::*;
+
+    match e {
         SimpleCrowdfundingCreated(..) => {
             // deip::SimpleCrowdfundingCreatedEvent
             unimplemented!()
@@ -261,21 +289,6 @@ where
             // deip::InvestedEvent
             unimplemented!()
         },
-        ContractAgreementCreated(..) => {
-            // deip::ContractAgreementCreatedEvent
-            unimplemented!()
-        },
-        ContractAgreementAccepted(..) => {
-            // deip::ContractAgreementAcceptedEvent
-            unimplemented!()
-        },
-        ContractAgreementFinalized(..) => {
-            // deip::ContractAgreementFinalizedEvent
-            unimplemented!()
-        },
-        ContractAgreementRejected(..) => {
-            // deip::ContractAgreementRejectedEvent
-            unimplemented!()
-        },
+        __Ignore { .. } => unreachable!(),
     }
 }
