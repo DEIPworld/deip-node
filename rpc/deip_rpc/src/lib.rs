@@ -2,7 +2,7 @@ use codec::Codec;
 use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 pub use pallet_deip::api::DeipApi as DeipStorageRuntimeApi;
-use pallet_deip::{investment_opportunity::*, *};
+use pallet_deip::{*};
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{

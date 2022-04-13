@@ -49,7 +49,7 @@ pub struct License<AccountId, Hash, Moment, Asset> {
     pub(crate) price: Asset,
 }
 
-pub type LicenseOf<T> = License<AccountIdOf<T>, HashOf<T>, MomentOf<T>, DeipAsset<T>>;
+pub type LicenseOf<T> = License<AccountIdOf<T>, HashOf<T>, MomentOf<T>, /*DeipAsset<T>*/ ()>;
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

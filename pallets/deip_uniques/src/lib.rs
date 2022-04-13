@@ -6,7 +6,6 @@ pub use pallet_uniques;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use deip_projects_info::DeipProjectsInfo;
     #[cfg(feature = "std")]
     use frame_support::traits::GenesisBuild;
 
@@ -26,9 +25,6 @@ pub mod pallet {
 
     // Helper types.
     type DeipNftClassIdOf<T> = <T as Config>::DeipNftClassId;
-    type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-    type DeipProjectIdOf<T> =
-        <<T as Config>::ProjectsInfo as DeipProjectsInfo<AccountIdOf<T>>>::ProjectId;
 
     #[pallet::config]
     pub trait Config:
@@ -45,9 +41,6 @@ pub mod pallet {
 
         /// Type of `pallet_uniques::Config::ClassId`.
         type NftClassId: Parameter + CheckedAdd + Default + One + Copy + PartialOrd;
-
-        /// Additional project info.
-        type ProjectsInfo: DeipProjectsInfo<Self::AccountId>;
 
         /// Max class id available for asset creation via origin `pallet_uniques::Call`.
         type MaxOriginClassId: Get<Self::ClassId>;
@@ -106,8 +99,8 @@ pub mod pallet {
                         x
                     })
                     .for_each(|(k, v)| DeipNftClassIdByNftClassIdV1::<T>::insert(k, v));
-                reads += ProjectIdByDeipNftClassId::<T>::drain().count();
-                reads += NftBalanceMap::<T>::drain().count();
+                // reads += ProjectIdByDeipNftClassId::<T>::drain().count();
+                // reads += NftBalanceMap::<T>::drain().count();
 
                 for x in &[
                     "Class",
@@ -196,18 +189,6 @@ pub mod pallet {
     /// Storage for next NFT origin class id.
     #[pallet::storage]
     pub(super) type NextNftClassId<T> = StorageValue<_, <T as Config>::NftClassId, ValueQuery>;
-
-    /// Storage with projects ids.
-    /// Deprecated
-    #[pallet::storage]
-    pub(super) type ProjectIdByDeipNftClassId<T> =
-        StorageMap<_, Identity, DeipNftClassIdOf<T>, DeipProjectIdOf<T>, OptionQuery>;
-
-    /// Storage with assets classes ant accounts which hold corresponding asset.
-    /// Deprecated
-    #[pallet::storage]
-    pub(super) type NftBalanceMap<T: Config> =
-        StorageMap<_, Identity, DeipNftClassIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
 
     #[pallet::error]
     pub enum Error<T> {
