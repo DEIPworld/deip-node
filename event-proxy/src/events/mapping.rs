@@ -269,11 +269,11 @@ where
     use pallet_deip_investment_opportunity::Event::*;
 
     match e {
-        SimpleCrowdfundingCreated(..) => {
+        Created(..) => {
             // deip::SimpleCrowdfundingCreatedEvent
             unimplemented!()
         },
-        SimpleCrowdfundingActivated(..) => {
+        Activated(..) => {
             // deip::SimpleCrowdfundingActivatedEvent
             unimplemented!()
         },
@@ -281,7 +281,7 @@ where
             // deip::SimpleCrowdfundingFinishedEvent
             unimplemented!()
         },
-        SimpleCrowdfundingExpired(..) => {
+        Expired(..) => {
             // deip::SimpleCrowdfundingExpiredEvent
             unimplemented!()
         },

@@ -27,7 +27,7 @@ use frame_system::{
     EnsureNever,
 };
 pub use pallet_balances::Call as BalancesCall;
-use pallet_deip::{investment_opportunity::InvestmentId, ProjectId, H160};
+use pallet_deip::{ProjectId, H160};
 use pallet_grandpa::{
     fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
@@ -55,6 +55,7 @@ use sp_std::prelude::*;
 use sp_version::NativeVersion;
 
 pub mod deip_account;
+mod asset_transfer;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -571,7 +572,7 @@ impl pallet_assets::Config for Runtime {
 
 impl deip_projects_info::DeipProjectsInfo<AccountId> for Runtime {
     type ProjectId = pallet_deip::ProjectId;
-    type InvestmentId = pallet_deip::investment_opportunity::InvestmentId;
+    type InvestmentId = pallet_deip_investment_opportunity::crowdfunding::CrowdfundingId;
 
     fn try_get_project_team(id: &Self::ProjectId) -> Option<AccountId> {
         Deip::try_get_project_team(id)
@@ -650,7 +651,6 @@ impl pallet_deip_uniques::Config for Runtime {
     type DeipAccountId = deip_account::DeipAccountId<<Self as frame_system::Config>::AccountId>;
     type ProjectId = pallet_deip::ProjectId;
     type NftClassId = <Self as pallet_uniques::Config>::ClassId;
-    type ProjectsInfo = Self;
     type MaxOriginClassId = MaxOriginClassId;
 }
 
@@ -744,7 +744,7 @@ pub type TransactionCtxId = pallet_deip_portal::TransactionCtxId<TransactionCtx>
 
 parameter_types! {
     pub const MaxNdaParties: u16 = 50;
-    pub const MaxInvestmentShares: u16 = 10;
+    pub const MaxCrowdfundingShares: u16 = 10;
 }
 
 impl pallet_deip::Config for Runtime {
@@ -756,72 +756,51 @@ impl pallet_deip::Config for Runtime {
     type MaxNdaParties = MaxNdaParties;
 }
 
+use deip_asset_system::{GenericFToken, GenericFNFToken, DummyDeipAssetsPallet};
+use frame_support::traits::{fungibles, tokens::nonfungibles};
+
 impl pallet_deip_investment_opportunity::Config for Runtime {
     type DeipInvestmentWeightInfo = pallet_deip_investment_opportunity::weights::Weights<Self>;
     type Event = Event;
     type TransactionCtx = TransactionCtx;
     type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
-    type MaxInvestmentShares = MaxInvestmentShares;
-    type SourceId = ProjectId;
-}
+    type MaxShares = MaxCrowdfundingShares;
+    type Currency = Balances;
 
-impl deip_asset_system::AssetIdInitT<DeipAssetId> for Runtime {
-    fn asset_id(raw: &[u8]) -> DeipAssetId {
-        DeipAssetId::from_slice(raw)
-    }
-}
+    type Crowdfunding = pallet_deip_investment_opportunity::crowdfunding::SimpleCrowdfundingV2<Self>;
 
-use deip_asset_system::{ReserveError, UnreserveError};
+    type AssetAmount = <Assets as fungibles::Inspect<Self::AccountId>>::Balance;
 
-impl deip_asset_system::DeipAssetSystem<AccountId, ProjectId, InvestmentId> for Runtime {
-    type Balance = AssetBalance;
-    type AssetId = DeipAssetId;
+    type FundAssetId = <Assets as fungibles::Inspect<Self::AccountId>>::AssetId;
+    type FundAssetPayload = ();
+    type FundAssetImpl = Assets;
+    type FundAsset = GenericFToken<
+        Self::FundAssetId,
+        Self::FundAssetPayload,
+        Self::AccountId,
+        Self::AssetAmount,
+        Self::FundAssetImpl
+    >;
 
-    fn account_balance(account: &AccountId, asset: &Self::AssetId) -> Self::Balance {
-        DeipAssets::account_balance(account, asset)
-    }
-
-    fn total_supply(asset: &Self::AssetId) -> Self::Balance {
-        DeipAssets::total_supply(asset)
-    }
-
-    fn transactionally_transfer(
-        from: &AccountId,
-        asset: Self::AssetId,
-        transfers: &[(Self::Balance, AccountId)],
-    ) -> Result<(), ()> {
-        DeipAssets::transactionally_transfer(from, asset, transfers)
-    }
-
-    fn transactionally_reserve(
-        account: &AccountId,
-        id: InvestmentId,
-        shares: &[(Self::AssetId, Self::Balance)],
-        asset: Self::AssetId,
-    ) -> Result<(), ReserveError<Self::AssetId>> {
-        DeipAssets::deip_transactionally_reserve(account, id, shares, asset)
-    }
-
-    fn transactionally_unreserve(id: InvestmentId) -> Result<(), UnreserveError<Self::AssetId>> {
-        DeipAssets::transactionally_unreserve(id)
-    }
-
-    fn transfer_from_reserved(
-        id: InvestmentId,
-        who: &AccountId,
-        asset: Self::AssetId,
-        amount: Self::Balance,
-    ) -> Result<(), UnreserveError<Self::AssetId>> {
-        DeipAssets::transfer_from_reserved(id, who, asset, amount)
-    }
-
-    fn transfer_to_reserved(
-        who: &AccountId,
-        id: InvestmentId,
-        amount: Self::Balance,
-    ) -> Result<(), UnreserveError<Self::AssetId>> {
-        DeipAssets::deip_transfer_to_reserved(who, id, amount)
-    }
+    type SharesAssetId = Self::Hash;
+    type SharesAssetPayload = (
+        <Uniques as nonfungibles::Inspect<Self::AccountId>>::ClassId,
+        <Uniques as nonfungibles::Inspect<Self::AccountId>>::InstanceId,
+        <Assets as fungibles::Inspect<Self::AccountId>>::AssetId
+    );
+    type SharesAssetImpl = DummyDeipAssetsPallet<
+        Uniques,
+        Assets,
+        Self::AccountId,
+        Self::Hashing,
+    >;
+    type SharesAsset = GenericFNFToken<
+        Self::SharesAssetId,
+        Self::SharesAssetPayload,
+        Self::AccountId,
+        Self::AssetAmount,
+        Self::SharesAssetImpl
+    >;
 }
 
 parameter_types! {

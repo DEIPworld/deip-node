@@ -19,6 +19,7 @@ mod tests;
 pub mod benchmarking;
 pub mod weights;
 pub mod module;
+pub mod crowdfunding;
 
 const NON_LOCAL: u8 = 100;
 
@@ -35,17 +36,20 @@ pub mod pallet {
         pallet_prelude::*,
         weights::{GetDispatchInfo, PostDispatchInfo},
         Hashable,
+        transactional
     };
 
     use frame_support::traits::{
         Get,
         IsSubType,
         UnfilteredDispatchable,
-        StoredMap
+        StoredMap,
+        fungibles,
+        tokens::nonfungibles,
+        ReservableCurrency,
     };
 
     use sp_std::{
-        collections::btree_map::BTreeMap,
         iter::FromIterator,
         prelude::*,
         fmt::Debug
@@ -53,15 +57,15 @@ pub mod pallet {
 
     use frame_support::dispatch::DispatchResult;
     use sp_runtime::{
-        traits::{Dispatchable, IdentifyAccount},
+        traits::{Dispatchable, IdentifyAccount, AtLeast32BitUnsigned},
         MultiSigner,
+        FixedPointOperand
     };
 
-    use sp_core::H256;
-    use crate::module::{InvestmentId, FundingModelOf, DeipAsset, DeipAssetBalance, DeipAssetId};
+    use crate::module::{*};
 
     use crate::weights::WeightInfo;
-    use deip_asset_system::DeipAssetSystem;
+    use deip_asset_system::{asset::{GenericAssetT, TransferUnitT}};
     use deip_transaction_ctx::{PortalCtxT, TransactionCtxId};
 
     /// Configuration trait
@@ -69,7 +73,6 @@ pub mod pallet {
     pub trait Config:
         frame_system::Config +
         pallet_timestamp::Config +
-        DeipAssetSystem<Self::AccountId, Self::SourceId, InvestmentId> +
         SendTransactionTypes<Call<Self>>
     {
         type DeipInvestmentWeightInfo: WeightInfo;
@@ -83,14 +86,50 @@ pub mod pallet {
         type DeipAccountId: Into<Self::AccountId> + From<Self::AccountId> + Parameter + Member + Default;
 
         #[pallet::constant]
-        type MaxInvestmentShares: Get<u16>;
+        type MaxShares: Get<u16>;
 
-        type SourceId: Member + Parameter;
+        type Currency: ReservableCurrency<Self::AccountId>;
 
+        type Crowdfunding: CrowdfundingT<Self> + Parameter + Member;
+
+        type AssetAmount:
+            Default +
+            AtLeast32BitUnsigned +
+            FixedPointOperand +
+            Clone + Parameter + Member + Copy;
+
+        type FundAssetId: Default + AtLeast32BitUnsigned + Clone + Parameter + Member + Copy;
+        type FundAssetPayload: Default + Parameter + Member + Clone + Copy;
+        type FundAssetImpl;
+
+        type FundAsset:
+            GenericAssetT<
+                Self::FundAssetId,
+                Self::FundAssetPayload,
+                Self::AccountId,
+                Self::AssetAmount,
+                Self::FundAssetImpl
+            > +
+            TransferUnitT<Self::AccountId, Self::AssetAmount, Self::FundAssetImpl>;
+
+        type SharesAssetId: Default + Parameter + Member + Clone + Copy;
+        type SharesAssetPayload: Default + Parameter + Member + Clone + Copy;
+        type SharesAssetImpl;
+
+        type SharesAsset:
+            GenericAssetT<
+                Self::SharesAssetId,
+                Self::SharesAssetPayload,
+                Self::AccountId,
+                Self::AssetAmount,
+                Self::SharesAssetImpl
+            > +
+            TransferUnitT<Self::AccountId, Self::AssetAmount, Self::SharesAssetImpl>;
     }
 
     use frame_support::traits::StorageVersion;
     use frame_support::dispatch::GetStorageVersion;
+
     pub const V1: StorageVersion = StorageVersion::new(1);
 
     #[doc(hidden)]
@@ -120,13 +159,13 @@ pub mod pallet {
                 return InvalidTransaction::Custom(crate::NON_LOCAL).into()
             }
 
-            use crate::module::SimpleCrowdfundingStatus;
+            use crate::module::CrowdfundingStatus;
 
             match call {
-                Call::activate_crowdfunding { sale_id: id } => {
+                Call::activate { id } => {
                     let sale = SimpleCrowdfundingMapV1::<T>::try_get(id)
                         .map_err(|_| InvalidTransaction::Stale)?;
-                    if !matches!(sale.status, SimpleCrowdfundingStatus::Inactive) {
+                    if !matches!(sale.status, CrowdfundingStatus::Ready) {
                         return InvalidTransaction::Stale.into()
                     }
 
@@ -136,10 +175,10 @@ pub mod pallet {
                         .and_provides((b"activate_crowdfunding", *id))
                         .build()
                 },
-                Call::expire_crowdfunding { sale_id: id } => {
+                Call::expire { id } => {
                     let sale = SimpleCrowdfundingMapV1::<T>::try_get(id)
                         .map_err(|_| InvalidTransaction::Stale)?;
-                    if !matches!(sale.status, SimpleCrowdfundingStatus::Active) {
+                    if !matches!(sale.status, CrowdfundingStatus::Active) {
                         return InvalidTransaction::Stale.into()
                     }
 
@@ -149,19 +188,19 @@ pub mod pallet {
                         .and_provides((b"expire_crowdfunding", *id))
                         .build()
                 },
-                Call::finish_crowdfunding { sale_id: id } => {
-                    let sale = SimpleCrowdfundingMapV1::<T>::try_get(id)
-                        .map_err(|_| InvalidTransaction::Stale)?;
-                    if !matches!(sale.status, SimpleCrowdfundingStatus::Active) {
-                        return InvalidTransaction::Stale.into()
-                    }
-
-                    ValidTransaction::with_tag_prefix("DeipInvestmentOpportunityOCW")
-                        .propagate(false)
-                        .longevity(5)
-                        .and_provides((b"finish_crowdfunding", *id))
-                        .build()
-                },
+                // Call::finish { id } => {
+                //     let sale = SimpleCrowdfundingMapV1::<T>::try_get(id)
+                //         .map_err(|_| InvalidTransaction::Stale)?;
+                //     if !matches!(sale.status, CrowdfundingStatus::Active) {
+                //         return InvalidTransaction::Stale.into()
+                //     }
+                //
+                //     ValidTransaction::with_tag_prefix("DeipInvestmentOpportunityOCW")
+                //         .propagate(false)
+                //         .longevity(5)
+                //         .and_provides((b"finish_crowdfunding", *id))
+                //         .build()
+                // },
                 _ => InvalidTransaction::Call.into(),
             }
         }
@@ -169,29 +208,19 @@ pub mod pallet {
 
     #[pallet::error]
     pub enum Error<T> {
-        StartTimeMustBeLaterOrEqualCurrentMoment,
-        EndTimeMustBeLaterStartTime,
-        SoftCapMustBeGreaterOrEqualMinimum,
-        HardCapShouldBeGreaterOrEqualSoftCap,
+        StartTimeMiscondition,
+        EndTimeMiscondition,
+        SoftCapMiscondition,
+        HardCapMiscondition,
         AlreadyExists,
         BalanceIsNotEnough,
-        FailedToReserveAsset,
-        AssetAmountMustBePositive,
         SecurityTokenNotSpecified,
         NotFound,
-        ShouldBeInactive,
-        ShouldBeStarted,
-        ShouldBeActive,
-        ExpirationWrongState,
+        ImpossibleSituation,
         WrongAssetId,
-        CapDifferentAssets,
+        NoShares,
         TooMuchShares,
-        // Possible errors when DAO tries to invest to an opportunity
-        InvestingNotFound,
-        InvestingNotActive,
-        InvestingNotEnoughFunds,
-        InvestingWrongAsset,
-        /// Access Forbdden
+        WrongAsset,
         NoPermission,
     }
 
@@ -199,15 +228,27 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// Event emitted when a simple crowd funding has been created.
-        SimpleCrowdfundingCreated(InvestmentId),
+        Created(T::Crowdfunding),
         /// Event emitted when a simple crowd funding has been activated.
-        SimpleCrowdfundingActivated(InvestmentId),
+        Activated(CrowdfundingId),
         /// Event emitted when a simple crowd funding has finished.
-        SimpleCrowdfundingFinished(InvestmentId),
+        SimpleCrowdfundingFinished(CrowdfundingId),
         /// Event emitted when a simple crowd funding has expired.
-        SimpleCrowdfundingExpired(InvestmentId),
+        Expired(CrowdfundingId, CrowdfundingStatus),
         /// Event emitted when DAO invested to an opportunity
-        Invested(InvestmentId, T::AccountId),
+        Invested(CrowdfundingId, T::AccountId),
+        HardCapReached(CrowdfundingId, T::AccountId),
+        CommitShares {
+            id: CrowdfundingId,
+            shares: (T::SharesAssetId, T::AssetAmount)
+        },
+        RollbackShares{
+            id: CrowdfundingId,
+            shares: (T::SharesAssetId, T::AssetAmount)
+        },
+        Refund(CrowdfundingId, T::AccountId),
+        Refunded(CrowdfundingId),
+        StatusUpdated(CrowdfundingId, CrowdfundingStatus),
     }
 
     #[doc(hidden)]
@@ -225,6 +266,8 @@ pub mod pallet {
         fn build(&self) {}
     }
 
+    use crate::module::{*};
+
     #[pallet::call]
     impl<T: Config> Pallet<T>
     {
@@ -237,52 +280,87 @@ pub mod pallet {
         /// - `investment_type`: specifies type of created investment opportunity. For possible
         /// variants and details see [`FundingModel`].
         #[pallet::weight({
-            let s = shares.len() as u32;
+            let s = 0;//shares.len() as u32;
             T::DeipInvestmentWeightInfo::create_investment_opportunity(s)
         })]
-        pub fn create_investment_opportunity(
+        #[transactional]
+        pub fn create(
             origin: OriginFor<T>,
-            external_id: InvestmentId,
+            id: CrowdfundingId,
             creator: T::DeipAccountId,
-            shares: Vec<DeipAsset<T>>,
-            funding_model: FundingModelOf<T>,
+            shares: (T::SharesAssetId, T::AssetAmount),
+            fund: T::FundAssetId,
         ) -> DispatchResult
         {
-            let account = ensure_signed(origin)?;
-            Self::create_investment_opportunity_impl(account, external_id, creator.into(), shares, funding_model)
+            T::create::<CrowdfundingStatus>(
+                ensure_signed(origin)?,
+                id,
+                shares,
+                fund
+            )
         }
 
         #[pallet::weight(T::DeipInvestmentWeightInfo::activate_crowdfunding())]
-        pub fn activate_crowdfunding(
+        #[transactional]
+        pub fn commit_shares(
             origin: OriginFor<T>,
-            sale_id: InvestmentId
+            id: CrowdfundingId,
+            shares: (T::SharesAssetId, T::AssetAmount)
         ) -> DispatchResult
         {
-            ensure_none(origin)?;
-            Self::activate_crowdfunding_impl(sale_id)
+            T::commit_shares::<CrowdfundingStatus>(
+                ensure_signed(origin)?,
+                id,
+                shares
+            )
         }
 
         #[pallet::weight(
             T::DeipInvestmentWeightInfo::expire_crowdfunding_already_expired()
                 .max(T::DeipInvestmentWeightInfo::expire_crowdfunding())
         )]
-        pub fn expire_crowdfunding(
+        #[transactional]
+        pub fn rollback_shares(
             origin: OriginFor<T>,
-            sale_id: InvestmentId
-        ) -> DispatchResultWithPostInfo
+            id: CrowdfundingId,
+            shares: T::SharesAssetId
+        ) -> DispatchResult
         {
-            ensure_none(origin)?;
-            Self::expire_crowdfunding_impl(sale_id)
+            T::rollback_shares::<CrowdfundingStatus>(
+                ensure_signed(origin)?,
+                id,
+                shares,
+            )
         }
 
-        #[pallet::weight(T::DeipInvestmentWeightInfo::finish_crowdfunding())]
-        pub fn finish_crowdfunding(
+        #[pallet::weight(T::DeipInvestmentWeightInfo::activate_crowdfunding())]
+        pub fn ready(
             origin: OriginFor<T>,
-            sale_id: InvestmentId
+            id: CrowdfundingId,
+            start_time: Option<T::Moment>,
+            end_time: T::Moment,
+            soft_cap: T::AssetAmount,
+            hard_cap: T::AssetAmount,
+        ) -> DispatchResult
+        {
+            T::ready::<CrowdfundingStatus>(
+                ensure_signed(origin)?,
+                id,
+                start_time,
+                end_time,
+                soft_cap,
+                hard_cap
+            )
+        }
+
+        #[pallet::weight(T::DeipInvestmentWeightInfo::activate_crowdfunding())]
+        pub fn activate(
+            origin: OriginFor<T>,
+            id: CrowdfundingId
         ) -> DispatchResult
         {
             ensure_none(origin)?;
-            Self::finish_crowdfunding_impl(sale_id)
+            T::activate::<CrowdfundingStatus>(id)
         }
 
         /// Allows DAO to invest to an opportunity.
@@ -296,13 +374,103 @@ pub mod pallet {
             T::DeipInvestmentWeightInfo::invest()
                 .max(T::DeipInvestmentWeightInfo::invest_hard_cap_reached())
         )]
+        #[transactional]
         pub fn invest(
             origin: OriginFor<T>,
-            id: InvestmentId,
-            asset: DeipAsset<T>
-        ) -> DispatchResultWithPostInfo {
-            let account = ensure_signed(origin)?;
-            Self::invest_to_crowdfunding_impl(account, id, asset)
+            id: CrowdfundingId,
+            amount: T::AssetAmount
+        ) -> DispatchResultWithPostInfo
+        {
+            T::invest::<CrowdfundingStatus>(
+                ensure_signed(origin)?,
+                id,
+                amount
+            )
+        }
+
+        #[pallet::weight(
+            T::DeipInvestmentWeightInfo::expire_crowdfunding_already_expired()
+                .max(T::DeipInvestmentWeightInfo::expire_crowdfunding())
+        )]
+        #[transactional]
+        pub fn payout(
+            origin: OriginFor<T>,
+            investor: Option<T::AccountId>,
+            id: CrowdfundingId,
+            shares: T::SharesAssetId
+        ) -> DispatchResult
+        {
+            T::payout::<CrowdfundingStatus>(
+                ensure_signed(origin)?,
+                investor,
+                id,
+                shares
+            )
+        }
+
+        #[pallet::weight(
+            T::DeipInvestmentWeightInfo::expire_crowdfunding_already_expired()
+                .max(T::DeipInvestmentWeightInfo::expire_crowdfunding())
+        )]
+        #[transactional]
+        pub fn raise(
+            origin: OriginFor<T>,
+            id: CrowdfundingId
+        ) -> DispatchResult
+        {
+            T::raise::<CrowdfundingStatus>(
+                ensure_signed(origin)?,
+                id
+            )
+        }
+
+        #[pallet::weight(
+            T::DeipInvestmentWeightInfo::expire_crowdfunding_already_expired()
+                .max(T::DeipInvestmentWeightInfo::expire_crowdfunding())
+        )]
+        pub fn expire(
+            origin: OriginFor<T>,
+            id: CrowdfundingId
+        ) -> DispatchResultWithPostInfo
+        {
+            ensure_none(origin)?;
+            T::expire::<CrowdfundingStatus>(id)
+        }
+
+        #[pallet::weight(
+            T::DeipInvestmentWeightInfo::expire_crowdfunding_already_expired()
+                .max(T::DeipInvestmentWeightInfo::expire_crowdfunding())
+        )]
+        #[transactional]
+        pub fn refund(
+            origin: OriginFor<T>,
+            investor: Option<T::AccountId>,
+            id: CrowdfundingId
+        ) -> DispatchResult
+        {
+            T::refund::<CrowdfundingStatus>(
+                ensure_signed(origin)?,
+                investor,
+                id
+            )
+        }
+
+        #[pallet::weight(
+            T::DeipInvestmentWeightInfo::expire_crowdfunding_already_expired()
+                .max(T::DeipInvestmentWeightInfo::expire_crowdfunding())
+        )]
+        #[transactional]
+        pub fn release_shares(
+            origin: OriginFor<T>,
+            id: CrowdfundingId,
+            shares: T::SharesAssetId
+        ) -> DispatchResult
+        {
+            T::release_shares::<CrowdfundingStatus>(
+                ensure_signed(origin)?,
+                id,
+                shares,
+            )
         }
     }
 
@@ -313,14 +481,130 @@ pub mod pallet {
     #[pallet::storage]
     pub type InvestmentMapV1<T: Config> = StorageMap<_,
         Blake2_128Concat,
-        InvestmentId,
+        CrowdfundingId,
         Vec<(T::AccountId, Investment<T>)>
+    >;
+
+    #[pallet::storage]
+    pub type InvestmentMapV2<T: Config> = StorageDoubleMap<_,
+        Blake2_128Concat,
+        CrowdfundingId,
+        Blake2_128Concat,
+        T::AccountId,
+        Investment<T>
+    >;
+
+    #[pallet::storage]
+    pub type PayoutMapV2<T: Config> = StorageNMap<_,
+        (
+            NMapKey<Blake2_128Concat, CrowdfundingId>,
+            NMapKey<Blake2_128Concat, T::AccountId>,
+            NMapKey<Blake2_128Concat, T::SharesAssetId>,
+        ),
+        ()
     >;
 
     #[pallet::storage]
     pub type SimpleCrowdfundingMapV1<T: Config> = StorageMap<_,
         Blake2_128Concat,
-        InvestmentId,
+        CrowdfundingId,
         SimpleCrowdfundingOf<T>,
+    >;
+
+    #[pallet::storage]
+    pub(crate) type CrowdfundingStatusV2<T: Config> = StorageMap<_,
+        Blake2_128Concat,
+        CrowdfundingId,
+        CrowdfundingStatus
+    >;
+
+    #[pallet::storage]
+    pub(crate) type SharesMapV2<T: Config> = StorageDoubleMap<_,
+        Blake2_128Concat,
+        CrowdfundingId,
+        Blake2_128Concat,
+        T::SharesAssetId,
+        T::AssetAmount
+    >;
+
+    /// <INCOMPLeTE> is NOT! ComplEte to activAtion!
+    pub(crate) struct IncompleteRepo<T>(PhantomData<T>);
+    /// <READY> to ActivatiOn;
+    pub(crate) struct ReadyRepo<T>(PhantomData<T>);
+    pub(crate) struct ActiveRepo<T>(PhantomData<T>);
+
+    pub(crate) struct PayoutRepo<T>(PhantomData<T>);
+    pub(crate) struct RaiseRepo<T>(PhantomData<T>);
+
+    pub(crate) struct RefundRepo<T>(PhantomData<T>);
+    pub(crate) struct ReleaseSharesRepo<T>(PhantomData<T>);
+
+    impl<T: Config> RepositoryT<T> for IncompleteRepo<T> {
+        type S = IncompleteCrowdfundingMapV2<T>;
+    }
+    impl<T: Config> RepositoryT<T> for ReadyRepo<T> {
+        type S = ReadyCrowdfundingMapV2<T>;
+    }
+    impl<T: Config> RepositoryT<T> for ActiveRepo<T> {
+        type S = ActiveCrowdfundingMapV2<T>;
+    }
+
+    impl<T: Config> RepositoryT<T> for PayoutRepo<T> {
+        type S = PayoutCrowdfundingMapV2<T>;
+    }
+    impl<T: Config> RepositoryT<T> for RaiseRepo<T> {
+        type S = RaiseCrowdfundingMapV2<T>;
+    }
+
+    impl<T: Config> RepositoryT<T> for RefundRepo<T> {
+        type S = RefundCrowdfundingMapV2<T>;
+    }
+    impl<T: Config> RepositoryT<T> for ReleaseSharesRepo<T> {
+        type S = ReleaseSharesCrowdfundingMapV2<T>;
+    }
+
+    #[pallet::storage]
+    pub(crate) type IncompleteCrowdfundingMapV2<T: Config> = StorageMap<_,
+        Blake2_128Concat,
+        CrowdfundingId,
+        T::Crowdfunding
+    >;
+    #[pallet::storage]
+    pub(crate) type ReadyCrowdfundingMapV2<T: Config> = StorageMap<_,
+        Blake2_128Concat,
+        CrowdfundingId,
+        T::Crowdfunding
+    >;
+    #[pallet::storage]
+    pub(crate) type ActiveCrowdfundingMapV2<T: Config> = StorageMap<_,
+        Blake2_128Concat,
+        CrowdfundingId,
+        T::Crowdfunding
+    >;
+
+    #[pallet::storage]
+    pub(crate) type PayoutCrowdfundingMapV2<T: Config> = StorageMap<_,
+        Blake2_128Concat,
+        CrowdfundingId,
+        T::Crowdfunding
+    >;
+    #[pallet::storage]
+    pub(crate) type RaiseCrowdfundingMapV2<T: Config> = StorageMap<_,
+        Blake2_128Concat,
+        CrowdfundingId,
+        T::Crowdfunding
+    >;
+
+    #[pallet::storage]
+    pub(crate) type RefundCrowdfundingMapV2<T: Config> = StorageMap<_,
+        Blake2_128Concat,
+        CrowdfundingId,
+        T::Crowdfunding
+    >;
+    #[pallet::storage]
+    pub(crate) type ReleaseSharesCrowdfundingMapV2<T: Config> = StorageMap<_,
+        Blake2_128Concat,
+        CrowdfundingId,
+        T::Crowdfunding
     >;
 }

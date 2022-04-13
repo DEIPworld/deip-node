@@ -174,7 +174,6 @@ benchmarks! {
 }
 
 use sp_runtime::traits::Bounded;
-use deip_asset_system::{AssetIdInitT, DeipAssetSystem};
 
 fn _add_balance<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
     party: T::AccountId,
@@ -247,9 +246,9 @@ fn _mint<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
 }
 
 fn init_investment_opportunity<T: Config>(idx: u8) -> Investment<T> {
-    let sale_id: InvestmentId = InvestmentId::from([idx; 20]);
+    let sale_id: CrowdfundingId = CrowdfundingId::from([idx; 20]);
     let owner: T::AccountId = whitelisted_caller();
-    let amount = DeipAssetBalance::<T>::from(200u16);
+    let amount = FTokenAmount::<T>::from(200u16);
     let time = T::Moment::from(1u16).mul(T::BlockNumber::from(10u16));
     Investment::<T> {
         sale_id,
@@ -265,8 +264,8 @@ fn init_funding_model<T: Config>(investment: &Investment<T>) -> FundingModelOf<T
 
     let asset_id = T::asset_id([1u8; 20].as_slice());
 
-    let soft_cap = DeipAsset::<T>::new(asset_id, DeipAssetBalance::<T>::from(100u16));
-    let hard_cap = DeipAsset::<T>::new(asset_id, DeipAssetBalance::<T>::from(200u16));
+    let soft_cap = FToken::<T>::new(asset_id, FTokenAmount::<T>::from(100u16));
+    let hard_cap = FToken::<T>::new(asset_id, FTokenAmount::<T>::from(200u16));
     FundingModelOf::<T>::SimpleCrowdfunding {
         start_time,
         end_time,
@@ -278,7 +277,7 @@ fn init_funding_model<T: Config>(investment: &Investment<T>) -> FundingModelOf<T
 fn _create_simple_crowdfunding<T: Config>(
     investment: Investment<T>,
     funding_model: FundingModelOf<T>,
-    shares: Vec<DeipAsset<T>>,
+    shares: Vec<FToken<T>>,
 ) -> Result<SimpleCrowdfundingOf<T>, DispatchError>
 {
     let Investment::<T> {
@@ -287,7 +286,7 @@ fn _create_simple_crowdfunding<T: Config>(
         amount: _,
         time: _
     } = investment;
-    Pallet::<T>::create_investment_opportunity(
+    Pallet::<T>::create(
         RawOrigin::Signed(owner.clone()).into(),
         sale_id,
         owner.into(),
@@ -297,7 +296,7 @@ fn _create_simple_crowdfunding<T: Config>(
     Ok(SimpleCrowdfundingMapV1::<T>::get(sale_id).unwrap())
 }
 
-type CrowdfundingBalance<T> = SerializableAtLeast32BitUnsigned<DeipAssetBalance<T>>;
+type CrowdfundingBalance<T> = SerializableAtLeast32BitUnsigned<FTokenAmount<T>>;
 
 fn init_simple_crowdfunding<T: Config + BalancesConfig + DeipAssetsConfig>(
     idx: u8,
@@ -307,8 +306,8 @@ fn init_simple_crowdfunding<T: Config + BalancesConfig + DeipAssetsConfig>(
     let created_ctx: TransactionCtxId<<T as Config>::TransactionCtx> =
         Default::default();
 
-    let external_id: InvestmentId =
-        InvestmentId::from([idx; 20]);
+    let external_id: CrowdfundingId =
+        CrowdfundingId::from([idx; 20]);
 
     let start_time: T::Moment
         = now::<T>();
@@ -317,25 +316,25 @@ fn init_simple_crowdfunding<T: Config + BalancesConfig + DeipAssetsConfig>(
     let end_time: T::Moment =
         start_time + T::Moment::one().mul(T::BlockNumber::from(10u16));
 
-    let status: SimpleCrowdfundingStatus =
-        SimpleCrowdfundingStatus::Active;
+    let status: CrowdfundingStatus =
+        CrowdfundingStatus::Active;
 
-    let asset_id: DeipAssetId<T> =
+    let asset_id: FTokenId<T> =
         T::asset_id(external_id.as_bytes());
 
     let share_ratio = 5u16;
-    let shares: Vec<DeipAsset<T>> =
+    let shares: Vec<FToken<T>> =
         (1..shares+1).map(|i| {
-            DeipAsset::<T>::new(
+            FToken::<T>::new(
                 T::asset_id([idx+i; 20].as_slice()),
-                DeipAssetBalance::<T>::from(i as u16 * share_ratio * 2)
+                FTokenAmount::<T>::from(i as u16 * share_ratio * 2)
             )
         }).collect();
 
     let total_amount = shares.iter()
-        .map(|x| DeipAssetBalance::<T>::from(*x.amount()))
-        .fold(DeipAssetBalance::<T>::zero(), |acc,  x| acc + x);
-    let soft_cap = total_amount - DeipAssetBalance::<T>::from(share_ratio);
+        .map(|x| FTokenAmount::<T>::from(*x.amount()))
+        .fold(FTokenAmount::<T>::zero(), |acc, x| acc + x);
+    let soft_cap = total_amount - FTokenAmount::<T>::from(share_ratio);
     let hard_cap = total_amount;
 
     let total_amount: CrowdfundingBalance<T> =
@@ -364,7 +363,7 @@ fn init_simple_crowdfunding<T: Config + BalancesConfig + DeipAssetsConfig>(
 struct PreSimpleCrowdfunding<T: Config> {
     investment: Investment<T>,
     funding_model: FundingModelOf<T>,
-    shares: Vec<DeipAsset<T>>,
+    shares: Vec<FToken<T>>,
 }
 
 fn pre_simple_crowdfunding<T: Config + DeipAssetsConfig + BalancesConfig>(
@@ -421,8 +420,8 @@ fn pre_simple_crowdfunding<T: Config + DeipAssetsConfig + BalancesConfig>(
     let funding_model = FundingModelOf::<T>::SimpleCrowdfunding {
         start_time,
         end_time,
-        soft_cap: DeipAsset::<T>::new(asset_id, soft_cap.0),
-        hard_cap: DeipAsset::<T>::new(asset_id, hard_cap.0),
+        soft_cap: FToken::<T>::new(asset_id, soft_cap.0),
+        hard_cap: FToken::<T>::new(asset_id, hard_cap.0),
     };
     PreSimpleCrowdfunding::<T> {
         investment,
@@ -441,7 +440,7 @@ fn _create_investment_opportunity<T: Config>(
         shares,
     } = crowdfunding;
     let external_id = investment.sale_id.clone();
-    Pallet::<T>::create_investment_opportunity(
+    Pallet::<T>::create(
         RawOrigin::Signed(investment.owner.clone()).into(),
         external_id,
         investment.owner.clone().into(),
@@ -455,7 +454,7 @@ fn _activate_crowdfunding<T: Config>(
     crowdfunding: SimpleCrowdfundingOf<T>
 ) -> SimpleCrowdfundingOf<T>
 {
-    Pallet::<T>::activate_crowdfunding(
+    Pallet::<T>::activate(
         RawOrigin::None.into(),
         crowdfunding.external_id
     ).unwrap();
@@ -466,7 +465,7 @@ fn _expire_crowdfunding<T: Config>(
     crowdfunding: SimpleCrowdfundingOf<T>,
 ) -> SimpleCrowdfundingOf<T>
 {
-    Pallet::<T>::expire_crowdfunding(
+    Pallet::<T>::expire(
         RawOrigin::None.into(),
         crowdfunding.external_id,
     ).unwrap();
@@ -492,6 +491,6 @@ fn _invest<T: Config>(
     Pallet::<T>::invest(
         RawOrigin::Signed(owner).into(),
         crowdfunding.external_id,
-        DeipAsset::<T>::new(crowdfunding.asset_id, crowdfunding.soft_cap.0)
+        FToken::<T>::new(crowdfunding.asset_id, crowdfunding.soft_cap.0)
     ).unwrap();
 }

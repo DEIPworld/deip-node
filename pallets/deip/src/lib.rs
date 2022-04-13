@@ -66,9 +66,6 @@ mod tests;
 
 pub mod api;
 
-pub mod investment_opportunity;
-use investment_opportunity::*;
-
 mod review;
 pub use review::{Id as ReviewId, Review, Vote as DeipReviewVote};
 
@@ -126,7 +123,6 @@ pub trait Config:
     frame_system::Config
     + pallet_timestamp::Config
     + SendTransactionTypes<Call<Self>>
-    + deip_asset_system::DeipAssetSystem<Self::AccountId, ProjectId, InvestmentId>
 {
     type TransactionCtx: PortalCtxT<Call<Self>>;
 
@@ -433,66 +429,33 @@ decl_storage! {
         pub PalletStorageVersion get(fn pallet_storage_version)
             build(|_| StorageVersion::V1): StorageVersion = StorageVersion::V0;
 
-        ProjectMap: map hasher(identity) ProjectId => ProjectOf<T>;
-        // Migrate key hasher
         ProjectMapV1: map hasher(blake2_128_concat) ProjectId => ProjectOf<T>;
 
-        ProjectIdByTeamId: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(identity) ProjectId => ();
-        // Migrate key hasher
         ProjectIdByTeamIdV1: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(blake2_128_concat) ProjectId => ();
 
-        /// (DEPRECATED, moved to DeipInvestmentOpportunity)
-        SimpleCrowdfundingMap: map hasher(identity) InvestmentId => SimpleCrowdfundingOf<T>;
-        // Migrate key hasher
-        SimpleCrowdfundingMapV1: map hasher(blake2_128_concat) InvestmentId => SimpleCrowdfundingOf<T>;
-
-        /// (DEPRECATED, moved to DeipInvestmentOpportunity)
-        /// Contains various contributions from DAOs
-        InvestmentMap: map hasher(identity) InvestmentId => Vec<(T::AccountId, Investment<T>)>;
-        // Migrate key hasher
-        InvestmentMapV1: map hasher(blake2_128_concat) InvestmentId => Vec<(T::AccountId, Investment<T>)>;
-
-        ProjectContentMap: map hasher(identity) ProjectContentId => ProjectContentOf<T>;
-        // Migrate key hasher
         ProjectContentMapV1: map hasher(blake2_128_concat) ProjectContentId => ProjectContentOf<T>;
-        ContentIdByProjectId: double_map hasher(identity) ProjectId, hasher(identity) ProjectContentId => ();
-        // Migrate key hasher
         ContentIdByProjectIdV1: double_map hasher(blake2_128_concat) ProjectId, hasher(blake2_128_concat) ProjectContentId => ();
 
         /// NDA list, guarantees uniquest and provides NDA listing
         Ndas get(fn nda_list): Vec<(ProjectId, T::AccountId)>;
         /// Map to NDA Info
-        NdaMap: map hasher(identity) NdaId => NdaOf<T>;
-        // Migrate key hasher
         NdaMapV1 get(fn nda): map hasher(blake2_128_concat) NdaId => NdaOf<T>;
 
         /// NDA Access Requests list, guarantees uniquest and provides NDA Access Requests listing
         NdaAccessRequests get(fn nda_requests): Vec<(NdaAccessRequestId, NdaId, T::AccountId)>;
         /// Map to NDA Access Requests Info
-        NdaAccessRequestMap: map hasher(identity) NdaAccessRequestId => NdaAccessRequestOf<T>;
-        // Migrate key hasher
         NdaAccessRequestMapV1 get(fn nda_request): map hasher(blake2_128_concat) NdaAccessRequestId => NdaAccessRequestOf<T>;
 
-        ReviewMap: map hasher(identity) ReviewId => ReviewOf<T>;
-        // Migrate key hasher
         ReviewMapV1: map hasher(blake2_128_concat) ReviewId => ReviewOf<T>;
 
-        ReviewIdByProjectId: double_map hasher(identity) ProjectId, hasher(identity) ReviewId => ();
-        // Migrate key hasher
         ReviewIdByProjectIdV1: double_map hasher(blake2_128_concat) ProjectId, hasher(blake2_128_concat) ReviewId => ();
 
-        ReviewIdByContentId: double_map hasher(identity) ProjectContentId, hasher(identity) ReviewId => ();
-        // Migrate key hasher
         ReviewIdByContentIdV1: double_map hasher(blake2_128_concat) ProjectContentId, hasher(blake2_128_concat) ReviewId => ();
 
-        ReviewIdByAccountId: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(identity) ReviewId => ();
-        // Migrate key hasher
         ReviewIdByAccountIdV1: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(blake2_128_concat) ReviewId => ();
 
         ReviewVoteMap: map hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => DeipReviewVoteOf<T>;
 
-        VoteIdByReviewId: double_map hasher(identity) ReviewId, hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => ();
-        // Migrate key hasher
         VoteIdByReviewIdV1: double_map hasher(blake2_128_concat) ReviewId, hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => ();
 
         VoteIdByAccountId: double_map hasher(blake2_128_concat) AccountIdOf<T>, hasher(blake2_128_concat) (ReviewId, AccountIdOf<T>, DomainId) => ();
@@ -510,12 +473,8 @@ decl_storage! {
 
 mod v1 {
     use super::{Config, PalletStorageVersion, StorageVersion};
-    use core::convert::TryInto;
     use frame_support::{
-        storage::{
-            IterableStorageDoubleMap, IterableStorageMap, StorageDoubleMap, StorageMap,
-            StorageValue,
-        },
+        storage::{StorageValue},
         traits::Get,
         weights::Weight,
     };
@@ -523,132 +482,6 @@ mod v1 {
     pub(crate) fn set_storage_version<T: Config>() -> Weight {
         PalletStorageVersion::put(StorageVersion::V1);
         T::DbWeight::get().writes(1)
-    }
-
-    pub(crate) fn migrate_investment_opportunity<T: Config>() -> Weight {
-        use super::{
-            InvestmentMap, InvestmentMapV1, SimpleCrowdfundingMap, SimpleCrowdfundingMapV1,
-        };
-        use frame_support::storage::migration::move_storage_from_pallet;
-
-        let mut reads: usize = 0;
-        let mut writes: usize = 0;
-        SimpleCrowdfundingMap::<T>::drain().for_each(|(k, v)| {
-            reads += 1;
-            SimpleCrowdfundingMapV1::<T>::insert(k, v);
-            writes += 1;
-        });
-
-        let mut reads_investments: usize = 0;
-        let mut writes_investments: usize = 0;
-        InvestmentMap::<T>::drain().for_each(|(k, v)| {
-            reads_investments += 1;
-            InvestmentMapV1::<T>::insert(k, v);
-            writes_investments += 1;
-        });
-
-        move_storage_from_pallet(
-            "SimpleCrowdfundingMapV1".as_bytes(),
-            "Deip".as_bytes(),
-            "DeipInvestmentOpportunity".as_bytes(),
-        );
-        reads *= 2;
-        writes *= 2;
-
-        move_storage_from_pallet(
-            "InvestmentMapV1".as_bytes(),
-            "Deip".as_bytes(),
-            "DeipInvestmentOpportunity".as_bytes(),
-        );
-        reads_investments *= 2;
-        writes_investments *= 2;
-
-        let reads_total: usize = reads + reads_investments;
-        let reads_total: Weight = reads_total.try_into().unwrap_or(Weight::MAX);
-
-        let writes_total: usize = writes + writes_investments;
-        let writes_total: Weight = writes_total.try_into().unwrap_or(Weight::MAX);
-
-        T::DbWeight::get().reads_writes(reads_total, writes_total)
-    }
-
-    pub(crate) fn migrate_projects_hasher<T: Config>() -> Weight {
-        use super::{ProjectIdByTeamId, ProjectIdByTeamIdV1, ProjectMap, ProjectMapV1};
-        let mut reads: usize = 0;
-        ProjectMap::<T>::drain().for_each(|(k, v)| {
-            reads += 1;
-            ProjectMapV1::<T>::insert(k, v);
-        });
-        ProjectIdByTeamId::<T>::drain().for_each(|(k, k2, v)| {
-            reads += 1;
-            ProjectIdByTeamIdV1::<T>::insert(k, k2, v);
-        });
-        let reads = reads.try_into().unwrap_or(Weight::MAX);
-        T::DbWeight::get().reads_writes(reads, reads)
-    }
-
-    pub(crate) fn migrate_project_contents_hasher<T: Config>() -> Weight {
-        use super::{
-            ContentIdByProjectId, ContentIdByProjectIdV1, ProjectContentMap, ProjectContentMapV1,
-        };
-        let mut reads: usize = 0;
-        ProjectContentMap::<T>::drain().for_each(|(k, v)| {
-            reads += 1;
-            ProjectContentMapV1::<T>::insert(k, v);
-        });
-        ContentIdByProjectId::drain().for_each(|(k, k2, v)| {
-            reads += 1;
-            ContentIdByProjectIdV1::insert(k, k2, v);
-        });
-        let reads = reads.try_into().unwrap_or(Weight::MAX);
-        T::DbWeight::get().reads_writes(reads, reads)
-    }
-
-    pub(crate) fn migrate_nda_hasher<T: Config>() -> Weight {
-        use super::{NdaAccessRequestMap, NdaAccessRequestMapV1, NdaMap, NdaMapV1};
-        let mut reads: usize = 0;
-        NdaMap::<T>::drain().for_each(|(k, v)| {
-            reads += 1;
-            NdaMapV1::<T>::insert(k, v);
-        });
-        NdaAccessRequestMap::<T>::drain().for_each(|(k, v)| {
-            reads += 1;
-            NdaAccessRequestMapV1::<T>::insert(k, v);
-        });
-        let reads = reads.try_into().unwrap_or(Weight::MAX);
-        T::DbWeight::get().reads_writes(reads, reads)
-    }
-
-    pub(crate) fn migrate_reviews_hasher<T: Config>() -> Weight {
-        use super::{
-            ReviewIdByAccountId, ReviewIdByAccountIdV1, ReviewIdByContentId, ReviewIdByContentIdV1,
-            ReviewIdByProjectId, ReviewIdByProjectIdV1, ReviewMap, ReviewMapV1, VoteIdByReviewId,
-            VoteIdByReviewIdV1,
-        };
-
-        let mut reads: usize = 0;
-        ReviewMap::<T>::drain().for_each(|(k, v)| {
-            reads += 1;
-            ReviewMapV1::<T>::insert(k, v);
-        });
-        ReviewIdByProjectId::drain().for_each(|(k, k2, v)| {
-            reads += 1;
-            ReviewIdByProjectIdV1::insert(k, k2, v);
-        });
-        ReviewIdByContentId::drain().for_each(|(k, k2, v)| {
-            reads += 1;
-            ReviewIdByContentIdV1::insert(k, k2, v);
-        });
-        ReviewIdByAccountId::<T>::drain().for_each(|(k, k2, v)| {
-            reads += 1;
-            ReviewIdByAccountIdV1::<T>::insert(k, k2, v);
-        });
-        VoteIdByReviewId::<T>::drain().for_each(|(k, k2, v)| {
-            reads += 1;
-            VoteIdByReviewIdV1::<T>::insert(k, k2, v);
-        });
-        let reads = reads.try_into().unwrap_or(Weight::MAX);
-        T::DbWeight::get().reads_writes(reads, reads)
     }
 }
 
@@ -665,13 +498,7 @@ decl_module! {
 
         fn on_runtime_upgrade() -> Weight {
             if Module::<T>::pallet_storage_version() == StorageVersion::V0 {
-                let mut weight = v1::migrate_investment_opportunity::<T>();
-                weight += v1::migrate_projects_hasher::<T>();
-                weight += v1::migrate_project_contents_hasher::<T>();
-                weight += v1::migrate_nda_hasher::<T>();
-                weight += v1::migrate_reviews_hasher::<T>();
-                weight += v1::set_storage_version::<T>();
-                return weight;
+                return v1::set_storage_version::<T>();
             }
             0
         }
@@ -1149,10 +976,6 @@ impl<T: Config> Module<T> {
 
     pub fn get_review(id: &ReviewId) -> Option<ReviewOf<T>> {
         ReviewMapV1::<T>::try_get(id).ok()
-    }
-
-    pub fn get_investment_opportunity(id: &InvestmentId) -> Option<SimpleCrowdfundingOf<T>> {
-        SimpleCrowdfundingMap::<T>::try_get(id).ok()
     }
 
     pub fn get_contract_agreement(id: &ContractAgreementId) -> Option<ContractAgreementOf<T>> {

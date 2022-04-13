@@ -1,3 +1,4 @@
+use core::fmt::Debug;
 use codec::{Decode, Encode};
 use frame_support::{
     pallet_prelude::{Member, Parameter, TypeInfo},
@@ -10,7 +11,7 @@ use sp_io::hashing::twox_128;
 use sp_std::prelude::*;
 
 /// Context of a transaction that executed in
-pub trait TransactionCtxT: Sized + Clone {
+pub trait TransactionCtxT: Sized + Clone + Debug {
     type BlockNumber: Parameter + Member;
     type ExtrinsicId: Parameter + Member;
 
@@ -36,10 +37,10 @@ impl<Ctx: TransactionCtxT> Default for TransactionCtxId<Ctx> {
     }
 }
 
-#[derive(Clone, Default, Eq, PartialEq, TypeInfo)]
-pub struct TransactionCtx<T: frame_system::Config + TypeInfo>(sp_std::marker::PhantomData<T>);
+#[derive(Debug, Clone, Default, Eq, PartialEq, TypeInfo)]
+pub struct TransactionCtx<T: frame_system::Config + TypeInfo + Debug>(sp_std::marker::PhantomData<T>);
 
-impl<T: frame_system::Config + TypeInfo> TransactionCtxT for TransactionCtx<T> {
+impl<T: frame_system::Config + TypeInfo + Debug> TransactionCtxT for TransactionCtx<T> {
     type BlockNumber = T::BlockNumber;
     type ExtrinsicId = u32;
 
@@ -73,7 +74,7 @@ impl<T: frame_system::Config + TypeInfo> TransactionCtxT for TransactionCtx<T> {
 #[macro_export]
 macro_rules! ctx_t {
     ($name:tt) => {
-        #[derive(Clone, Default, Eq, PartialEq, scale_info::TypeInfo)]
+        #[derive(Debug, Clone, Default, Eq, PartialEq, scale_info::TypeInfo)]
         pub struct $name<T: TransactionCtxT>(T);
 
         impl<T> TransactionCtxT for $name<T>

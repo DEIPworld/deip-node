@@ -1,8 +1,6 @@
 use codec::Decode;
 use common_rpc::*;
 
-use sp_runtime::traits::AtLeast32BitUnsigned;
-
 // Domains
 
 pub struct DomainIdError;
@@ -74,54 +72,6 @@ impl<Hash: 'static + Decode + Send, AccountId: 'static + Decode + Send> KeyValue
     type KeyError = ProjectIdError;
     type Value = super::Project<Hash, AccountId>;
     type ValueError = ProjectError;
-
-    fn key(&self) -> &Self::Key {
-        &self.id
-    }
-}
-
-// Investment opportunities
-
-pub struct InvestmentIdError;
-impl GetError for InvestmentIdError {
-    fn get_error() -> Error {
-        Error::InvestmentIdDecodeFailed
-    }
-}
-
-pub struct InvestmentOpportunityError;
-impl GetError for InvestmentOpportunityError {
-    fn get_error() -> Error {
-        Error::InvestmentOpportunityDecodeFailed
-    }
-}
-
-pub struct InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance, TransactionCtx> {
-    pub id: super::InvestmentId,
-    _m: std::marker::PhantomData<(Moment, AssetId, AssetBalance, TransactionCtx)>,
-}
-
-impl<Moment, AssetId, AssetBalance, TransactionCtx>
-    InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance, TransactionCtx>
-{
-    #[allow(dead_code)]
-    pub fn new(id: super::InvestmentId) -> Self {
-        Self { id, _m: Default::default() }
-    }
-}
-
-impl<Moment, AssetId, AssetBalance, TransactionCtx> KeyValueInfo
-    for InvestmentOpportunityKeyValue<Moment, AssetId, AssetBalance, TransactionCtx>
-where
-    Moment: 'static + Decode + Send,
-    AssetId: 'static + Decode + Send,
-    AssetBalance: 'static + Decode + Send + Clone + AtLeast32BitUnsigned,
-    TransactionCtx: 'static + Decode + Send,
-{
-    type Key = super::InvestmentId;
-    type KeyError = InvestmentIdError;
-    type Value = super::SimpleCrowdfunding<Moment, AssetId, AssetBalance, TransactionCtx>;
-    type ValueError = InvestmentOpportunityError;
 
     fn key(&self) -> &Self::Key {
         &self.id
