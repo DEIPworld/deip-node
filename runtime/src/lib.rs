@@ -1227,7 +1227,7 @@ impl_runtime_apis! {
             list_benchmark!(list, extra, pallet_deip_proposal, DeipProposal);
             list_benchmark!(list, extra, pallet_deip_dao, DeipDao);
             list_benchmark!(list, extra, pallet_deip_portal, DeipPortal);
-            list_benchmark!(list, extra, pallet_deip, Deip);
+            // list_benchmark!(list, extra, pallet_deip, Deip);
             list_benchmark!(list, extra, pallet_deip_investment_opportunity, DeipInvestmentOpportunity);
 
             let storage_info = AllPalletsWithSystem::storage_info();
@@ -1268,7 +1268,7 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, pallet_deip_proposal, DeipProposal);
             add_benchmark!(params, batches, pallet_deip_dao, DeipDao);
             add_benchmark!(params, batches, pallet_deip_portal, DeipPortal);
-            add_benchmark!(params, batches, pallet_deip, Deip);
+            // add_benchmark!(params, batches, pallet_deip, Deip);
             add_benchmark!(params, batches, pallet_deip_investment_opportunity, DeipInvestmentOpportunity);
 
             Ok(batches)

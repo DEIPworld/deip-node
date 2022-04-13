@@ -80,7 +80,7 @@ pub use contract::{
 
 use deip_transaction_ctx::PortalCtxT;
 
-pub mod benchmarking;
+// pub mod benchmarking;
 pub mod weights;
 use system::pallet_prelude::OriginFor;
 pub use weights::{WeightInfo, Weights};

@@ -181,12 +181,12 @@ fn _add_balance<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
     asset_id: pallet_deip_assets::DeipAssetIdOf<T>,
 ) -> DispatchResultWithPostInfo
 {
-    pallet_balances::Pallet::<T>::set_balance(
-        RawOrigin::Root.into(),
-        T::Lookup::unlookup(party.clone()),
-        <T as BalancesConfig>::Balance::max_value(),
-        <T as BalancesConfig>::Balance::from(0u16),
-    ).unwrap();
+    // pallet_balances::Pallet::<T>::set_balance(
+    //     RawOrigin::Root.into(),
+    //     T::Lookup::unlookup(party.clone()),
+    //     <T as BalancesConfig>::Balance::max_value(),
+    //     <T as BalancesConfig>::Balance::from(0u16),
+    // ).unwrap();
 
     let asset_admin: <T as DeipAssetsConfig>::DeipAccountId = party.clone().into();
     let min_balance = <T as AssetsConfig>::Balance::from(200u16);
@@ -196,7 +196,6 @@ fn _add_balance<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
         asset_id.clone(),
         asset_admin.clone(),
         min_balance.clone(),
-        None
     ).unwrap();
 
     DeipAssets::<T>::deip_mint(
@@ -215,12 +214,12 @@ fn _create_asset<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
     min_balance: <T as AssetsConfig>::Balance,
 ) -> DispatchResultWithPostInfo
 {
-    pallet_balances::Pallet::<T>::set_balance(
-        RawOrigin::Root.into(),
-        T::Lookup::unlookup(admin.clone()),
-        <T as BalancesConfig>::Balance::max_value(),
-        <T as BalancesConfig>::Balance::min_value(),
-    )?;
+    // pallet_balances::Pallet::<T>::set_balance(
+    //     RawOrigin::Root.into(),
+    //     T::Lookup::unlookup(admin.clone()),
+    //     <T as BalancesConfig>::Balance::max_value(),
+    //     <T as BalancesConfig>::Balance::min_value(),
+    // )?;
 
     let asset_admin: <T as DeipAssetsConfig>::DeipAccountId = admin.clone().into();
 
@@ -229,7 +228,6 @@ fn _create_asset<T: Config + AssetsConfig + DeipAssetsConfig + BalancesConfig>(
         asset_id,
         asset_admin,
         min_balance,
-        None
     )
 }
 
