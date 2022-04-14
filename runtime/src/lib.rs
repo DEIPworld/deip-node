@@ -910,14 +910,28 @@ impl pallet_deip_vesting::Config for Runtime {
     type VestingWeightInfo = pallet_deip_vesting::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    /// The basic amount of funds that must be reserved for an FNft asset.
+    pub const FNftDeposit: Balance = 10 * currency::UNITS;
+}
+
 impl pallet_deip_f_nft::Config for Runtime {
     type Event = Event;
     type FNftId = NftClassId;
+    type Currency = Balances;
+    type FNftDeposit = FNftDeposit;
+}
+
+parameter_types! {
+    /// The basic amount of funds that must be reserved for an NFT chest.
+    pub const ChestDeposit: Balance = 10 * currency::UNITS;
 }
 
 impl pallet_deip_nft_chest::Config for Runtime {
     type Event = Event;
     type ChestId = ChestId;
+    type Currency = Balances;
+    type ChestDeposit = ChestDeposit;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

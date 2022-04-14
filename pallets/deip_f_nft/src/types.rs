@@ -1,37 +1,29 @@
+use crate::Config;
 use codec::{Decode, Encode};
+use frame_support::traits::Currency;
 use scale_info::TypeInfo;
-use sp_std::vec::Vec;
 
-use crate::traits::GetToken;
+pub(super) type DepositBalanceOf<T, I = ()> =
+    <<T as Config<I>>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 #[derive(Clone, Encode, Decode, TypeInfo)]
-pub struct PayloadDetails<AccountId, PayloadAssetId> {
-    pub owner: AccountId,
-    pub assets: Vec<PayloadAssetId>,
-}
-
-#[derive(Debug, Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]
-pub enum PayloadAssetId<AssetId, ClassId, InstanceId> {
-    Ft(AssetId),
-    Nft { class: ClassId, instance: InstanceId },
-}
-
-impl<AssetId, ClassId, InstanceId> GetToken<AssetId, ClassId, InstanceId>
-    for PayloadAssetId<AssetId, ClassId, InstanceId>
-{
-    fn ft_asset_id(&self) -> Option<&AssetId> {
-        if let Self::Ft(id) = self {
-            Some(id)
-        } else {
-            None
-        }
-    }
-
-    fn nft_class_id(&self) -> Option<(&ClassId, &InstanceId)> {
-        if let Self::Nft { class, instance } = self {
-            Some((class, instance))
-        } else {
-            None
-        }
-    }
+pub struct FNftDetails<AccountId, DepositBalance, NftClassId, InstanceId, AssetId> {
+    /// Can change `owner`, `issuer`, `freezer` and `admin` accounts.
+    pub(super) owner: AccountId,
+    /// @TODO
+    pub(super) issuer: AccountId,
+    /// @TODO
+    pub(super) admin: AccountId,
+    /// @TODO
+    pub(super) freezer: AccountId,
+    /// @TODO
+    pub(super) total_deposit: DepositBalance,
+    /// @TODO
+    pub(super) is_frozen: bool,
+    /// Fractionalized NFT class.
+    pub(super) class: NftClassId,
+    /// Fractionalized NFT class instance.
+    pub(super) instance: InstanceId,
+    /// Fractionalized NFT corresponding token id,
+    pub(super) token: AssetId,
 }

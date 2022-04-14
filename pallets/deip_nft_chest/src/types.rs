@@ -1,8 +1,7 @@
+use crate::Config;
 use codec::{Decode, Encode};
 use frame_support::traits::Currency;
 use scale_info::TypeInfo;
-
-use crate::Config;
 
 pub(super) type DepositBalanceOf<T, I = ()> =
     <<T as Config<I>>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
@@ -11,11 +10,11 @@ pub(super) type DepositBalanceOf<T, I = ()> =
 pub struct ChestDetails<AccountId, DepositBalance> {
     /// Can change `owner`, `issuer`, `freezer` and `admin` accounts.
     pub(super) owner: AccountId,
-    /// Can mint tokens.
+    /// @TODO
     pub(super) issuer: AccountId,
-    /// Can thaw tokens, force transfers and burn tokens from any account.
+    /// @TODO
     pub(super) admin: AccountId,
-    /// Can freeze tokens.
+    /// @TODO
     pub(super) freezer: AccountId,
     /// The total balance deposited for the all storage associated with this asset class.
     /// Used by `destroy`.

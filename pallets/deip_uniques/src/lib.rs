@@ -554,6 +554,16 @@ pub mod pallet {
             Ok(())
         }
 
+        pub fn unlock(
+            origin: T::AccountId,
+            class: T::ClassId,
+            instance: T::InstanceId,
+        ) -> DispatchResult {
+            frame_support::log::error!("❗️❗️❗️ unlock @TODO ❗️❗️❗️");
+
+            Ok(())
+        }
+
         /// Convert DeipNftClassId to origin class id.
         fn deip_to_origin_class_id(class: DeipNftClassIdOf<T>) -> Result<T::NftClassId, Error<T>> {
             NftClassIdByDeipNftClassIdV1::<T>::get(class)
