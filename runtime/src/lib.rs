@@ -78,13 +78,13 @@ pub type AssetExtra = ();
 /// Identifier for the class of the NFT asset.
 pub type NftClassId = u32;
 
-pub type PayloadAssetId = pallet_deip_f_nft::types::PayloadAssetId<AssetId, NftClassId, InstanceId>;
-
 /// Deip indentifier for the class of the NFT asset.
 pub type DeipNftClassId = H160;
 
 /// The type used to identify a unique asset within an asset class.
 pub type InstanceId = u32;
+
+pub type ChestId = u32;
 
 /// Type used for expressing timestamp.
 pub type Moment = u64;
@@ -915,6 +915,11 @@ impl pallet_deip_f_nft::Config for Runtime {
     type FNftId = NftClassId;
 }
 
+impl pallet_deip_nft_chest::Config for Runtime {
+    type Event = Event;
+    type ChestId = ChestId;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -949,6 +954,7 @@ construct_runtime!(
         Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config},
         DeipAssets: pallet_deip_assets::{Pallet, Call, Storage, Config<T>},
         DeipFNft: pallet_deip_f_nft,
+        DeipNftChest: pallet_deip_nft_chest,
         DeipUniques: pallet_deip_uniques::{Pallet, Call, Storage, Config<T>},
         DeipProposal: pallet_deip_proposal::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
         DeipDao: pallet_deip_dao::{Pallet, Call, Storage, Event<T>, Config},
