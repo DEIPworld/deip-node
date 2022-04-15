@@ -564,6 +564,12 @@ pub mod pallet {
             Ok(())
         }
 
+        pub fn is_locked(origin: T::AccountId, class: T::ClassId, instance: T::InstanceId) -> bool {
+            frame_support::log::error!("❗️❗️❗️ check is locked @TODO ❗️❗️❗️");
+
+            true
+        }
+
         /// Convert DeipNftClassId to origin class id.
         fn deip_to_origin_class_id(class: DeipNftClassIdOf<T>) -> Result<T::NftClassId, Error<T>> {
             NftClassIdByDeipNftClassIdV1::<T>::get(class)

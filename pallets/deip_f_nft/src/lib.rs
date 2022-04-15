@@ -10,19 +10,22 @@ pub mod pallet {
     use crate::types::{DepositBalanceOf, FNftDetails};
     use codec::HasCompact;
     use frame_support::{
-        dispatch::DispatchResult,
         ensure,
         log::error,
-        pallet_prelude::{Get, IsType, Member, StorageMap},
-        sp_runtime::traits::StaticLookup,
+        pallet_prelude::{
+            DispatchError, DispatchResult, DispatchResultWithPostInfo, Get, IsType, Member,
+            StorageMap,
+        },
+        sp_runtime::traits::{StaticLookup, Zero},
         traits::ReservableCurrency,
         Blake2_128Concat, Parameter,
     };
     use frame_system::{ensure_signed, pallet_prelude::OriginFor};
+    use pallet_deip_assets::pallet_assets::DestroyWitness as AssetsDestroyWitness;
 
-    type Uniques<T> = pallet_deip_uniques::Pallet<T>;
     type Assets<T> = pallet_deip_assets::pallet_assets::Pallet<T>;
     type AssetIdOf<T> = <T as pallet_deip_assets::pallet_assets::Config>::AssetId;
+    type AssetsBalanceOf<T> = <T as pallet_deip_assets::pallet_assets::Config>::Balance;
     type CurrencyOf<T, I> = <T as Config<I>>::Currency;
 
     #[pallet::config]
@@ -46,18 +49,47 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(fn deposit_event)]
     pub enum Event<T: Config<I>, I: 'static = ()> {
-        Fractionalized { token: AssetIdOf<T>, amount: T::Balance },
-        Fused,
+        Created { id: T::FNftId, class: T::ClassId, instance: T::InstanceId },
+        TokenAssetCreated { id: T::FNftId, token: AssetIdOf<T> },
+        TokenAssetMinted { id: T::FNftId, token: AssetIdOf<T>, amount: AssetsBalanceOf<T> },
+        Fractionalized { id: T::FNftId },
+        Fused { id: T::FNftId },
+        TokenAssetBurned { id: T::FNftId, token: AssetIdOf<T>, amount: AssetsBalanceOf<T> },
+        TokenAssetDestroyed { id: T::FNftId, token: AssetIdOf<T> },
+        Destroyed { id: T::FNftId },
     }
 
     #[pallet::error]
     pub enum Error<T, I = ()> {
         /// `FNftId` not found.
         FNftIdNotFound,
-        /// Operation can be performed only by admin.
-        WrongAdmin,
+        /// Operation can be performed only by owner.
+        WrongOwner,
         /// `FNftId` is already taken.
         InUse,
+        /// NFT must be locked before fractionalization.
+        NotLocked,
+        /// F-Nft corresponding class is created.
+        UnknownClass,
+        /// F-Nft corresponding class is not minted and cannot be used for F-Nft.
+        ClassIsNotMinted,
+        /// F-Nft corresponding token is not created.
+        UnknownToken,
+        /// F-Nft corresponding token is already minted and cannot be used for F-Nft.
+        TokenIsAlreadyMinted,
+        /// Nft is already fractionalized. Some operations are unavailable.
+        NftIsFractionalized,
+        /// Token asset must be locked before fractionalization.
+        /// Token asset should have been locked in `token_asset_mint`.
+        TokenAssetIsNotLocked,
+        /// Nft is not fractionalized so it cannot be fused.
+        NftIsNotFractionalized,
+        /// Owner must collect all tokens on it's account for F-NFT to be fused.
+        OwnerDoesNotHaveAllTokens,
+        /// F-Nft corresponding token should be burned, for eg before `destroy_token_asset`.
+        TokenAssetNotBurned,
+        /// F-Nft corresponding token should be destroyed before F-NFT destruction.
+        TokenAssetNotDestroyed,
     }
 
     #[pallet::storage]
@@ -71,6 +103,7 @@ pub mod pallet {
             T::NftClassId,
             T::InstanceId,
             T::AssetsAssetId,
+            AssetsBalanceOf<T>,
         >,
     >;
 
@@ -80,28 +113,24 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config<I>, I: 'static> Pallet<T, I> {
         #[pallet::weight(1)]
-        pub fn fractionalize(
+        pub fn create(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::FNftId,
             class: T::ClassId,
             instance: T::InstanceId,
-            token: AssetIdOf<T>,
-            min_balance: T::Balance,
-            amount: T::Balance,
         ) -> DispatchResult {
-            let account = ensure_signed(origin.clone())?;
+            let account = ensure_signed(origin)?;
 
             ensure!(!FNft::<T, I>::contains_key(id), Error::<T, I>::InUse);
+            error!("❗️❗️❗️ ensure class and instance exists @TODO ❗️❗️❗️");
+            ensure!(true, Error::<T, I>::UnknownClass);
+            error!("❗️❗️❗️ ensure class and instance is minted @TODO ❗️❗️❗️");
+            ensure!(true, Error::<T, I>::ClassIsNotMinted);
+
+            error!("❗️❗️❗️ lock NFT @TODO ❗️❗️❗️");
 
             let deposit = T::FNftDeposit::get();
             CurrencyOf::<T, I>::reserve(&account, deposit)?;
-
-            Uniques::<T>::lock(account.clone(), class, instance)?;
-
-            let admin = <T::Lookup as StaticLookup>::unlookup(account.clone());
-            Assets::<T>::create(origin.clone(), token, admin.clone(), min_balance)?;
-
-            Assets::<T>::mint(origin, token, admin, amount)?;
 
             FNft::<T, I>::insert(
                 id,
@@ -114,13 +143,91 @@ pub mod pallet {
                     is_frozen: false,
                     class,
                     instance,
-                    token,
+                    token: None,
+                    amount: Zero::zero(),
+                    is_fractionalized: false,
                 },
             );
 
-            error!("❗️❗️❗️ fractionalize @TODO ❗️❗️❗️");
+            let event = Event::Created { id, class, instance };
+            Self::deposit_event(event);
+            Ok(())
+        }
 
-            let event = Event::Fractionalized { token, amount };
+        #[pallet::weight(1)]
+        pub fn create_token_asset(
+            origin: OriginFor<T>,
+            #[pallet::compact] id: T::FNftId,
+            token: AssetIdOf<T>,
+            min_balance: T::Balance,
+        ) -> DispatchResult {
+            let account = ensure_signed(origin.clone())?;
+
+            FNft::<T, I>::mutate(id, |details| -> DispatchResult {
+                let details = details.as_mut().ok_or(Error::<T, I>::FNftIdNotFound)?;
+                ensure!(account == details.owner, Error::<T, I>::WrongOwner);
+                ensure!(!details.is_fractionalized, Error::<T, I>::NftIsFractionalized);
+                let admin = <T::Lookup as StaticLookup>::unlookup(account);
+                Assets::<T>::create(origin, token, admin, min_balance)?;
+                details.token = Some(token);
+                Ok(())
+            })?;
+
+            let event = Event::TokenAssetCreated { id, token };
+            Self::deposit_event(event);
+
+            Ok(())
+        }
+
+        #[pallet::weight(1)]
+        pub fn mint_token_asset(
+            origin: OriginFor<T>,
+            #[pallet::compact] id: T::FNftId,
+            amount: T::Balance,
+        ) -> DispatchResult {
+            let account = ensure_signed(origin.clone())?;
+            let token = FNft::<T, I>::mutate(id, |details| -> Result<_, DispatchError> {
+                let details = details.as_mut().ok_or(Error::<T, I>::FNftIdNotFound)?;
+                ensure!(account == details.owner, Error::<T, I>::WrongOwner);
+                ensure!(!details.is_fractionalized, Error::<T, I>::NftIsFractionalized);
+
+                let beneficiary = <T::Lookup as StaticLookup>::unlookup(account);
+                let token_id = details.token.ok_or(Error::<T, I>::UnknownToken)?;
+                Assets::<T>::mint(origin, token_id, beneficiary, amount)?;
+
+                error!("❗️❗️❗️ lock token asset @TODO ❗️❗️❗️");
+
+                details.amount = amount;
+
+                Ok(token_id)
+            })?;
+
+            let event = Event::TokenAssetMinted { id, token, amount };
+            Self::deposit_event(event);
+
+            Ok(())
+        }
+
+        #[pallet::weight(1)]
+        pub fn fractionalize(
+            origin: OriginFor<T>,
+            #[pallet::compact] id: T::FNftId,
+        ) -> DispatchResult {
+            let account = ensure_signed(origin)?;
+            FNft::<T, I>::mutate(id, |details| -> DispatchResult {
+                let details = details.as_mut().ok_or(Error::<T, I>::FNftIdNotFound)?;
+                ensure!(account == details.owner, Error::<T, I>::WrongOwner);
+                ensure!(!details.is_fractionalized, Error::<T, I>::NftIsFractionalized);
+                ensure!(true, Error::<T, I>::TokenAssetIsNotLocked);
+
+                details.is_fractionalized = true;
+
+                error!("❗️❗️❗️ unlock token asset, but leave protection against burn/destroy @TODO ❗️❗️❗️");
+
+                Ok(())
+            })?;
+
+            let event = Event::Fractionalized { id };
             Self::deposit_event(event);
             Ok(())
         }
@@ -129,22 +236,95 @@ pub mod pallet {
         pub fn fuse(origin: OriginFor<T>, #[pallet::compact] id: T::FNftId) -> DispatchResult {
             let account = ensure_signed(origin)?;
 
-            let details = FNft::<T, I>::get(id).ok_or(Error::<T, I>::FNftIdNotFound)?;
+            FNft::<T, I>::mutate(id, |details| -> DispatchResult {
+                let details = details.as_mut().ok_or(Error::<T, I>::FNftIdNotFound)?;
+                ensure!(account == details.owner, Error::<T, I>::WrongOwner);
+                ensure!(details.is_fractionalized, Error::<T, I>::NftIsNotFractionalized);
 
-            ensure!(account == details.admin, Error::<T, I>::WrongAdmin);
+                error!("❗️❗️❗️ lock tokens @TODO ❗️❗️❗️");
 
-            error!("❗️❗️❗️ check that origin is admin @TODO ❗️❗️❗️");
-            error!("❗️❗️❗️ check that origin has all tokens free on its balance @TODO ❗️❗️❗️");
+                details.is_fractionalized = false;
+                Ok(())
+            })?;
 
-            error!("❗️❗️❗️ burn all tokens @TODO ❗️❗️❗️");
-            error!("❗️❗️❗️ destroy token AssetId @TODO ❗️❗️❗️");
-
-            FNft::<T, I>::remove(id);
-
-            Uniques::<T>::unlock(account, details.class, details.instance)?;
-
-            let event = Event::Fused;
+            let event = Event::Fused { id };
             Self::deposit_event(event);
+            Ok(())
+        }
+
+        #[pallet::weight(1)]
+        pub fn burn_token_asset(
+            origin: OriginFor<T>,
+            #[pallet::compact] id: T::FNftId,
+        ) -> DispatchResult {
+            let account = ensure_signed(origin.clone())?;
+
+            let (token, amount) =
+                FNft::<T, I>::mutate(id, |details| -> Result<_, DispatchError> {
+                    let details = details.as_mut().ok_or(Error::<T, I>::FNftIdNotFound)?;
+                    ensure!(account == details.owner, Error::<T, I>::WrongOwner);
+                    ensure!(!details.is_fractionalized, Error::<T, I>::NftIsFractionalized);
+
+                    let who = <T::Lookup as StaticLookup>::unlookup(account);
+                    let token_id = details.token.ok_or(Error::<T, I>::UnknownToken)?;
+                    let amount = details.amount;
+                    Assets::<T>::burn(origin, token_id, who, amount)?;
+                    details.amount = Zero::zero();
+
+                    Ok((token_id, amount))
+                })?;
+
+            let event = Event::TokenAssetBurned { id, token, amount };
+            Self::deposit_event(event);
+
+            Ok(())
+        }
+
+        #[pallet::weight(1)]
+        pub fn destroy_token_asset(
+            origin: OriginFor<T>,
+            #[pallet::compact] id: T::FNftId,
+            witness: AssetsDestroyWitness,
+        ) -> DispatchResultWithPostInfo {
+            let account = ensure_signed(origin.clone())?;
+            FNft::<T, I>::mutate(id, |details| -> DispatchResultWithPostInfo {
+                let details = details.as_mut().ok_or(Error::<T, I>::FNftIdNotFound)?;
+                ensure!(account == details.owner, Error::<T, I>::WrongOwner);
+                ensure!(!details.is_fractionalized, Error::<T, I>::NftIsFractionalized);
+                ensure!(details.amount.is_zero(), Error::<T, I>::TokenAssetNotBurned);
+
+                let token = details.token.ok_or(Error::<T, I>::UnknownToken)?;
+                let info = Assets::<T>::destroy(origin, token, witness)?;
+
+                details.token = None;
+
+                let event = Event::TokenAssetDestroyed { id, token };
+                Self::deposit_event(event);
+
+                Ok(info)
+            })
+        }
+
+        #[pallet::weight(1)]
+        pub fn destroy(origin: OriginFor<T>, #[pallet::compact] id: T::FNftId) -> DispatchResult {
+            let account = ensure_signed(origin)?;
+            FNft::<T, I>::mutate_exists(id, |details| {
+                if let Some(details) = details {
+                    ensure!(account == details.owner, Error::<T, I>::WrongOwner);
+                    ensure!(!details.is_fractionalized, Error::<T, I>::NftIsFractionalized);
+                    ensure!(details.amount.is_zero(), Error::<T, I>::TokenAssetNotBurned);
+                    ensure!(details.token.is_none(), Error::<T, I>::TokenAssetNotDestroyed);
+                } else {
+                    return Err(Error::<T, I>::FNftIdNotFound)
+                }
+                *details = None;
+
+                Ok(())
+            })?;
+
+            let event = Event::Destroyed { id };
+            Self::deposit_event(event);
+
             Ok(())
         }
     }

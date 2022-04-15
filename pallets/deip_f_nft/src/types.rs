@@ -7,7 +7,7 @@ pub(super) type DepositBalanceOf<T, I = ()> =
     <<T as Config<I>>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 #[derive(Clone, Encode, Decode, TypeInfo)]
-pub struct FNftDetails<AccountId, DepositBalance, NftClassId, InstanceId, AssetId> {
+pub struct FNftDetails<AccountId, DepositBalance, NftClassId, InstanceId, AssetId, TokenBalance> {
     /// Can change `owner`, `issuer`, `freezer` and `admin` accounts.
     pub(super) owner: AccountId,
     /// @TODO
@@ -24,6 +24,10 @@ pub struct FNftDetails<AccountId, DepositBalance, NftClassId, InstanceId, AssetI
     pub(super) class: NftClassId,
     /// Fractionalized NFT class instance.
     pub(super) instance: InstanceId,
-    /// Fractionalized NFT corresponding token id,
-    pub(super) token: AssetId,
+    /// Fractionalized NFT corresponding token id.
+    pub(super) token: Option<AssetId>,
+    /// Fractionalized NFT corresponding token minted amount.
+    pub(super) amount: TokenBalance,
+    /// Is NFT fractionalized.
+    pub(super) is_fractionalized: bool,
 }
