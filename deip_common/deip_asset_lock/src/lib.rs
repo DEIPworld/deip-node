@@ -1,30 +1,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use core::marker::PhantomData;
+use pallet_assets::Pallet as Assets;
+use pallet_uniques::Pallet as Uniques;
 
-pub struct LockableAsset<T, Id> {
-    runtime: PhantomData<T>,
-    id: PhantomData<Id>,
-}
-
-pub trait Lockable<T, Id> {
-    fn lock(id: impl Into<Id>) -> Result;
-    fn unlock(id: Id) -> Result;
-    fn is_locked(id: Id) -> bool;
-}
-
-impl<T, Id> Lockable<T, Id> for LockableAsset<T, Id> {
-    fn lock(id: impl Into<Id>) -> Result {
-        todo!()
-    }
-
-    fn unlock(id: Id) -> Result {
-        todo!()
-    }
-
-    fn is_locked(id: Id) -> bool {
-        todo!()
-    }
+pub trait LockableAsset {
+    fn lock() -> Result;
+    fn unlock() -> Result;
+    fn is_locked() -> bool;
 }
 
 #[derive(Debug, Clone)]
@@ -37,3 +19,33 @@ pub enum Error {
 }
 
 pub type Result = core::result::Result<(), Error>;
+
+impl<T, I: 'static> LockableAsset for Assets<T, I> {
+    fn lock() -> Result {
+        Self::lock_asset();
+        Ok(())
+    }
+
+    fn unlock() -> Result {
+        todo!()
+    }
+
+    fn is_locked() -> bool {
+        todo!()
+    }
+}
+
+impl<T, I: 'static> LockableAsset for Uniques<T, I> {
+    fn lock() -> Result {
+        Self::lock_asset();
+        Ok(())
+    }
+
+    fn unlock() -> Result {
+        todo!()
+    }
+
+    fn is_locked() -> bool {
+        todo!()
+    }
+}
