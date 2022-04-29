@@ -256,11 +256,15 @@ pub mod pallet {
                 let details = details.as_mut().ok_or(Error::<T, I>::FNftIdNotFound)?;
                 ensure!(account == details.owner, Error::<T, I>::WrongOwner);
                 ensure!(!details.is_fractionalized, Error::<T, I>::NftIsFractionalized);
-                ensure!(T::Fungible::is_locked(), Error::<T, I>::TokenAssetIsNotLocked);
+                ensure!(
+                    T::Fungible::is_locked(details.token.ok_or(Error::<T, I>::UnknownToken)?),
+                    Error::<T, I>::TokenAssetIsNotLocked
+                );
 
                 details.is_fractionalized = true;
 
-                T::Fungible::unlock().unwrap();
+                T::Fungible::unlock(&account, details.token.ok_or(Error::<T, I>::UnknownToken)?)
+                    .unwrap();
 
                 error!("❗️❗️❗️ leave protection against burn/destroy @TODO ❗️❗️❗️");
 
@@ -358,7 +362,7 @@ pub mod pallet {
                     ensure!(!details.is_fractionalized, Error::<T, I>::NftIsFractionalized);
                     ensure!(details.amount.is_zero(), Error::<T, I>::TokenAssetNotBurned);
                     ensure!(details.token.is_none(), Error::<T, I>::TokenAssetNotDestroyed);
-                    T::NonFungible::unlock().unwrap();
+                    T::NonFungible::unlock(&account, (details.class, details.instance)).unwrap();
                     T::Currency::unreserve(&account, details.deposit);
                 } else {
                     return Err(Error::<T, I>::FNftIdNotFound)
