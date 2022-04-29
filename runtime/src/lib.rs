@@ -920,6 +920,13 @@ impl pallet_deip_f_nft::Config for Runtime {
     type FNftId = NftClassId;
     type Currency = Balances;
     type FNftDeposit = FNftDeposit;
+    type AssetId = <Self as pallet_assets::Config>::AssetId;
+    type ClassId = <Self as pallet_uniques::Config>::ClassId;
+    type DestroyWitness = pallet_assets::DestroyWitness;
+    type Fungible = pallet_assets::Pallet<Self>;
+    type FungibleBalance = <Self as pallet_assets::Config>::Balance;
+    type InstanceId = <Self as pallet_uniques::Config>::InstanceId;
+    type NonFungible = pallet_uniques::Pallet<Self>;
 }
 
 parameter_types! {

@@ -10,14 +10,14 @@ pub(super) type DepositBalanceOf<T, I = ()> =
 pub struct FNftDetails<AccountId, DepositBalance, NftClassId, InstanceId, AssetId, TokenBalance> {
     /// Can change `owner`, `issuer`, `freezer` and `admin` accounts.
     pub(super) owner: AccountId,
-    /// @TODO
+    /// Can mint corresponding token and fractionalize NFT.
     pub(super) issuer: AccountId,
     /// @TODO
     pub(super) admin: AccountId,
     /// @TODO
     pub(super) freezer: AccountId,
     /// @TODO
-    pub(super) total_deposit: DepositBalance,
+    pub(super) deposit: DepositBalance,
     /// @TODO
     pub(super) is_frozen: bool,
     /// Fractionalized NFT class.

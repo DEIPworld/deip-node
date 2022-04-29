@@ -20,6 +20,7 @@ beefy-primitives = { git = "https://github.com/paritytech/substrate.git", branch
 borsh = { version = "=0.9.1", default-features = false }
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
 
+deip-asset-lock = { path = "../deip_common/deip_asset_lock", default-features = false }
 deip-assets-error = { path = "../deip_common/deip_assets_error", default-features = false }
 deip-projects-info = { path = "../deip_common/deip_projects_info", default-features = false }
 deip-asset-system = { path = "../deip_common/deip_asset_system", default-features = false }
@@ -33,7 +34,7 @@ frame-system-rpc-runtime-api = { git = "https://github.com/paritytech/substrate.
 getrandom = { version = "0.2.4", features = ["js"] }
 hex-literal = { version = "0.3.4", optional = true }
 log = { version = "0.4.14", default-features = false }
-pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-assets = { path = "../../substrate/frame/assets", default-features = false }
 pallet-authorship = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-babe = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-balances = { git = "https://github.com/DEIPworld/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
@@ -64,7 +65,7 @@ pallet-sudo = { git = "https://github.com/paritytech/substrate.git", branch = "p
 pallet-timestamp = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-transaction-payment = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-pallet-uniques = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-uniques = { path = "../../substrate/frame/uniques", default-features = false }
 pallet-utility = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 scale-info = { version = "1.0", default-features = false, features = ["derive"] }
 serde = { version = "1.0.130", features = ["derive"], default-features = false, optional = true }
@@ -161,4 +162,5 @@ std = [
     "pallet-deip-investment-opportunity/std",
     "deip-asset-system/std",
     "pallet-octopus-appchain/std",
+    "deip-asset-lock/std",
 ]
