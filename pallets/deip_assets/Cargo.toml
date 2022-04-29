@@ -18,7 +18,7 @@ scale-info = { version = "1.0", default-features = false, features = ["derive"] 
 
 frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-assets = { path = "../../../substrate/frame/assets", default-features = false }
 pallet-balances = { git = "https://github.com/DEIPworld/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-sudo = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-transaction-payment = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
@@ -27,7 +27,6 @@ sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkado
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 
-deip-asset-lock = { path = "../../deip_common/deip_asset_lock", default-features = false }
 deip-assets-error = { path = "../../deip_common/deip_assets_error", default-features = false }
 deip-projects-info = {path = "../../deip_common/deip_projects_info", default-features = false }
 deip_serializable_u128 = { path = "../../deip_common/deip_serializable_u128", default-features = false }
@@ -49,7 +48,6 @@ std = [
     "sp-io/std",
     "sp-runtime/std",
     "sp-std/std",
-    "deip-asset-lock/std",
     "deip-assets-error/std",
     "deip-projects-info/std",
     "deip_serializable_u128/std",

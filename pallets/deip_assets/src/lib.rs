@@ -42,8 +42,9 @@ pub use pallet::*;
 #[frame_support::pallet]
 #[doc(hidden)]
 pub mod pallet {
-    use deip_asset_lock::{Error as LockError, Result as LockResult};
+    use codec::HasCompact;
     use frame_support::{
+        dispatch::Weight,
         pallet_prelude::{
             ensure, Blake2_128Concat, Decode, DispatchResultWithPostInfo, Encode, Get, Hooks,
             Identity, MaxEncodedLen, Member, OptionQuery, Parameter, Pays, StorageDoubleMap,
@@ -59,9 +60,6 @@ pub mod pallet {
     use scale_info::TypeInfo;
     use sp_runtime::traits::{CheckedAdd, One, StaticLookup, Zero};
     use sp_std::prelude::*;
-
-    use codec::HasCompact;
-    use frame_support::dispatch::Weight;
 
     #[cfg(feature = "std")]
     use frame_support::traits::GenesisBuild;
@@ -313,10 +311,6 @@ pub mod pallet {
     #[pallet::storage]
     pub(super) type FtBalanceMap<T: Config> =
         StorageMap<_, Identity, DeipAssetIdOf<T>, Vec<AccountIdOf<T>>, OptionQuery>;
-
-    #[pallet::storage]
-    pub(super) type LockedAssets<T: Config> =
-        StorageMap<_, Blake2_128Concat, <T as Config>::AssetsAssetId, (), OptionQuery>;
 
     #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq, Eq, TypeInfo)]
     pub(super) struct AssetMetadata<U8> {
@@ -658,28 +652,6 @@ pub mod pallet {
             let call =
                 pallet_assets::Call::<T>::set_metadata { id: asset_id, name, symbol, decimals };
             call.dispatch_bypass_filter(origin)
-        }
-
-        pub fn lock_asset(id: <T as Config>::AssetsAssetId) -> LockResult {
-            LockedAssets::<T>::mutate_exists(id, |maybe_asset| {
-                if maybe_asset.is_some() {
-                    Err(LockError::AlreadyLocked)
-                } else {
-                    *maybe_asset = Some(());
-                    Ok(())
-                }
-            })
-        }
-
-        pub fn unlock_asset(id: <T as Config>::AssetsAssetId) -> LockResult {
-            LockedAssets::<T>::mutate_exists(id, |maybe_asset| {
-                if maybe_asset.is_none() {
-                    Err(LockError::NotLocked)
-                } else {
-                    *maybe_asset = None;
-                    Ok(())
-                }
-            })
         }
     }
 
