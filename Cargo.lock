@@ -4618,7 +4618,6 @@ dependencies = [
 name = "pallet-deip-uniques"
 version = "3.0.0"
 dependencies = [
- "deip-asset-lock",
  "deip-projects-info",
  "frame-support 4.0.0-dev (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.13)",
  "frame-system 4.0.0-dev (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.13)",

@@ -9,12 +9,11 @@ pub mod pallet {
     #[cfg(feature = "std")]
     use frame_support::traits::GenesisBuild;
 
-    use deip_asset_lock::{Error as LockError, LockableAsset, Result as LockResult};
     use deip_projects_info::DeipProjectsInfo;
     use frame_support::{
         dispatch::{DispatchResult, DispatchResultWithPostInfo, UnfilteredDispatchable, Weight},
         ensure,
-        pallet_prelude::{OptionQuery, StorageDoubleMap, StorageMap, StorageValue, ValueQuery},
+        pallet_prelude::{OptionQuery, StorageMap, StorageValue, ValueQuery},
         sp_runtime::traits::{CheckedAdd, One, StaticLookup},
         traits::{Get, Hooks},
         Blake2_128Concat, BoundedVec, Identity, Parameter,
@@ -544,32 +543,6 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        pub fn lock(
-            origin: T::AccountId,
-            class: T::ClassId,
-            instance: T::InstanceId,
-        ) -> DispatchResult {
-            frame_support::log::error!("❗️❗️❗️ lock @TODO ❗️❗️❗️");
-
-            Ok(())
-        }
-
-        pub fn unlock(
-            origin: T::AccountId,
-            class: T::ClassId,
-            instance: T::InstanceId,
-        ) -> DispatchResult {
-            frame_support::log::error!("❗️❗️❗️ unlock @TODO ❗️❗️❗️");
-
-            Ok(())
-        }
-
-        pub fn is_locked(origin: T::AccountId, class: T::ClassId, instance: T::InstanceId) -> bool {
-            frame_support::log::error!("❗️❗️❗️ check is locked @TODO ❗️❗️❗️");
-
-            true
-        }
-
         /// Convert DeipNftClassId to origin class id.
         fn deip_to_origin_class_id(class: DeipNftClassIdOf<T>) -> Result<T::NftClassId, Error<T>> {
             NftClassIdByDeipNftClassIdV1::<T>::get(class)
