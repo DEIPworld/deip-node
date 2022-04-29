@@ -1,10 +1,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use frame_support::dispatch::DispatchResult;
 use pallet_assets::Pallet as Assets;
 use pallet_uniques::Pallet as Uniques;
 
-pub trait LockableAsset {
-    fn lock() -> Result;
+pub trait LockableAsset<AccountId> {
+    type AssetId;
+
+    fn lock(who: &AccountId, id: Self::AssetId) -> DispatchResult;
     fn unlock() -> Result;
     fn is_locked() -> bool;
 }
@@ -20,32 +23,39 @@ pub enum Error {
 
 pub type Result = core::result::Result<(), Error>;
 
-impl<T, I: 'static> LockableAsset for Assets<T, I> {
-    fn lock() -> Result {
+impl<T: pallet_assets::Config<I>, I: 'static> LockableAsset<<T as frame_system::Config>::AccountId>
+    for Assets<T, I>
+{
+    type AssetId = ();
+
+    fn lock(who: &<T as frame_system::Config>::AccountId, id: Self::AssetId) -> DispatchResult {
         Self::lock_asset();
         Ok(())
     }
 
     fn unlock() -> Result {
-        todo!()
+        Ok(())
     }
 
     fn is_locked() -> bool {
-        todo!()
+        true
     }
 }
 
-impl<T, I: 'static> LockableAsset for Uniques<T, I> {
-    fn lock() -> Result {
-        Self::lock_asset();
-        Ok(())
+impl<T: pallet_uniques::Config<I>, I: 'static> LockableAsset<<T as frame_system::Config>::AccountId>
+    for Uniques<T, I>
+{
+    type AssetId = (T::ClassId, T::InstanceId);
+
+    fn lock(who: &<T as frame_system::Config>::AccountId, id: Self::AssetId) -> DispatchResult {
+        Self::lock_asset(who, id.0, id.1)
     }
 
     fn unlock() -> Result {
-        todo!()
+        Ok(())
     }
 
     fn is_locked() -> bool {
-        todo!()
+        true
     }
 }
