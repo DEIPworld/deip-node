@@ -23,6 +23,7 @@ use app::{
     OffchainActorInput, OffchainActorOutput, OffchainActorOutputData, SendEventResult,
     SubscriptionBuffer, SubscriptionBufferIn,
 };
+use clap::{Arg, Command};
 use config::OffchainConfig;
 use futures::{
     stream::{FuturesOrdered, StreamExt},
@@ -110,17 +111,14 @@ async fn main() {
         .unwrap();
     info!("logger initialized");
 
-    let args = clap::App::new("event-proxy")
-        .arg(
-            clap::Arg::new("config")
-                .long("config")
-                .value_name("FILE")
-                .help("Config file")
-                .takes_value(true)
-                .forbid_empty_values(true)
-                .required(true),
-        )
-        .get_matches();
+    let config_arg = Arg::new("config")
+        .long("config")
+        .value_name("FILE")
+        .help("Config file")
+        .takes_value(true)
+        .forbid_empty_values(true)
+        .required(true);
+    let args = Command::new("event-proxy").arg(config_arg).get_matches();
 
     let config_file: String = args.value_of_t_or_exit("config");
     info!("config: {}", config_file);
