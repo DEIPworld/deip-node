@@ -166,22 +166,20 @@ pub mod pallet {
             let deposit = T::FNftDeposit::get();
             T::Currency::reserve(&account, deposit)?;
 
-            FNft::<T, I>::insert(
-                id,
-                FNftDetails {
-                    owner: account.clone(),
-                    issuer: account.clone(),
-                    admin: account.clone(),
-                    freezer: account,
-                    deposit,
-                    is_frozen: false,
-                    class,
-                    instance,
-                    token: None,
-                    amount: Zero::zero(),
-                    is_fractionalized: false,
-                },
-            );
+            let details = FNftDetails {
+                owner: account.clone(),
+                issuer: account.clone(),
+                admin: account.clone(),
+                freezer: account,
+                deposit,
+                is_frozen: false,
+                class,
+                instance,
+                token: None,
+                amount: Zero::zero(),
+                is_fractionalized: false,
+            };
+            FNft::<T, I>::insert(id, details);
 
             let event = Event::Created { id, class, instance };
             Self::deposit_event(event);
@@ -202,9 +200,9 @@ pub mod pallet {
                 let details = details.as_mut().ok_or(Error::<T, I>::FNftIdNotFound)?;
                 ensure!(account == details.owner, Error::<T, I>::WrongOwner);
                 ensure!(!details.is_fractionalized, Error::<T, I>::NftIsFractionalized);
-                T::Fungible::create(token, account, is_sufficient, min_balance)?;
+                T::Fungible::create(token, account.clone(), is_sufficient, min_balance)?;
 
-                error!("❗️❗️❗️ protect from minting token asset @TODO ❗️❗️❗️");
+                T::Fungible::lock_minting(&account, token)?;
 
                 details.token = Some(token);
                 Ok(())
@@ -263,10 +261,8 @@ pub mod pallet {
 
                 details.is_fractionalized = true;
 
-                T::Fungible::unlock(&account, details.token.ok_or(Error::<T, I>::UnknownToken)?)
-                    .unwrap();
-
-                error!("❗️❗️❗️ leave protection against burn/destroy @TODO ❗️❗️❗️");
+                let token = details.token.ok_or(Error::<T, I>::UnknownToken)?;
+                T::Fungible::unlock_transfer(&account, token).unwrap();
 
                 Ok(())
             })?;

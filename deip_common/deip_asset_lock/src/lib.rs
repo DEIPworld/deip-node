@@ -8,7 +8,11 @@ pub trait LockableAsset<AccountId> {
     type AssetId;
 
     fn lock(who: &AccountId, id: Self::AssetId) -> DispatchResult;
+    fn lock_minting(who: &AccountId, id: Self::AssetId) -> DispatchResult;
+
     fn unlock(who: &AccountId, id: Self::AssetId) -> DispatchResult;
+    fn unlock_transfer(who: &AccountId, id: Self::AssetId) -> DispatchResult;
+
     fn is_locked(id: Self::AssetId) -> bool;
 }
 
@@ -32,8 +36,22 @@ impl<T: pallet_assets::Config<I>, I: 'static> LockableAsset<<T as frame_system::
         Self::lock_asset(who, id)
     }
 
+    fn lock_minting(
+        who: &<T as frame_system::Config>::AccountId,
+        id: Self::AssetId,
+    ) -> DispatchResult {
+        Self::lock_asset_minting(who, id)
+    }
+
     fn unlock(who: &<T as frame_system::Config>::AccountId, id: Self::AssetId) -> DispatchResult {
         Self::unlock_asset(who, id)
+    }
+
+    fn unlock_transfer(
+        who: &<T as frame_system::Config>::AccountId,
+        id: Self::AssetId,
+    ) -> DispatchResult {
+        Self::unlock_asset_transfer(who, id)
     }
 
     fn is_locked(id: Self::AssetId) -> bool {
@@ -50,8 +68,22 @@ impl<T: pallet_uniques::Config<I>, I: 'static> LockableAsset<<T as frame_system:
         Self::lock_asset(who, id.0, id.1)
     }
 
+    fn lock_minting(
+        who: &<T as frame_system::Config>::AccountId,
+        id: Self::AssetId,
+    ) -> DispatchResult {
+        Self::lock_asset_minting(who, id.0, id.1)
+    }
+
     fn unlock(who: &<T as frame_system::Config>::AccountId, id: Self::AssetId) -> DispatchResult {
         Self::unlock_asset(who, id.0, id.1)
+    }
+
+    fn unlock_transfer(
+        who: &<T as frame_system::Config>::AccountId,
+        id: Self::AssetId,
+    ) -> DispatchResult {
+        Self::unlock_asset_transfer(who, id.0, id.1)
     }
 
     fn is_locked(id: Self::AssetId) -> bool {
