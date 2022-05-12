@@ -3824,6 +3824,7 @@ pub mod api {
                 Eq,
                 PartialEq,
                 scale_info :: TypeInfo,
+                serde::Serialize,
             )]
             pub struct Created {
                 pub class: ::core::primitive::u32,
@@ -3842,6 +3843,7 @@ pub mod api {
                 Eq,
                 PartialEq,
                 scale_info :: TypeInfo,
+                serde::Serialize,
             )]
             pub struct ForceCreated {
                 pub class: ::core::primitive::u32,
@@ -3860,6 +3862,7 @@ pub mod api {
                 PartialEq,
                 scale_info :: TypeInfo,
                 :: subxt :: codec :: CompactAs,
+                serde::Serialize,
             )]
             pub struct Destroyed {
                 pub class: ::core::primitive::u32,
@@ -3876,6 +3879,7 @@ pub mod api {
                 Eq,
                 PartialEq,
                 scale_info :: TypeInfo,
+                serde::Serialize,
             )]
             pub struct Issued {
                 pub class: ::core::primitive::u32,
@@ -3894,6 +3898,7 @@ pub mod api {
                 Eq,
                 PartialEq,
                 scale_info :: TypeInfo,
+                serde::Serialize,
             )]
             pub struct Transferred {
                 pub class: ::core::primitive::u32,
@@ -3913,6 +3918,7 @@ pub mod api {
                 Eq,
                 PartialEq,
                 scale_info :: TypeInfo,
+                serde::Serialize,
             )]
             pub struct Burned {
                 pub class: ::core::primitive::u32,
@@ -3931,6 +3937,7 @@ pub mod api {
                 Eq,
                 PartialEq,
                 scale_info :: TypeInfo,
+                serde::Serialize,
             )]
             pub struct Frozen {
                 pub class: ::core::primitive::u32,
@@ -3948,6 +3955,7 @@ pub mod api {
                 Eq,
                 PartialEq,
                 scale_info :: TypeInfo,
+                serde::Serialize,
             )]
             pub struct Thawed {
                 pub class: ::core::primitive::u32,
@@ -3962,6 +3970,7 @@ pub mod api {
                 :: subxt :: codec :: Decode,
                 Debug,
                 :: subxt :: codec :: CompactAs,
+                serde::Serialize,
             )]
             pub struct ClassFrozen {
                 pub class: ::core::primitive::u32,
@@ -3979,6 +3988,7 @@ pub mod api {
                 PartialEq,
                 scale_info :: TypeInfo,
                 :: subxt :: codec :: CompactAs,
+                serde::Serialize,
             )]
             pub struct ClassThawed {
                 pub class: ::core::primitive::u32,
@@ -3995,6 +4005,7 @@ pub mod api {
                 Eq,
                 PartialEq,
                 scale_info :: TypeInfo,
+                serde::Serialize,
             )]
             pub struct OwnerChanged {
                 pub class: ::core::primitive::u32,
@@ -4012,6 +4023,7 @@ pub mod api {
                 Eq,
                 PartialEq,
                 scale_info :: TypeInfo,
+                serde::Serialize,
             )]
             pub struct TeamChanged {
                 pub class: ::core::primitive::u32,
@@ -4031,6 +4043,7 @@ pub mod api {
                 Eq,
                 PartialEq,
                 scale_info :: TypeInfo,
+                serde::Serialize,
             )]
             pub struct ApprovedTransfer {
                 pub class: ::core::primitive::u32,
@@ -4050,6 +4063,7 @@ pub mod api {
                 Eq,
                 PartialEq,
                 scale_info :: TypeInfo,
+                serde::Serialize,
             )]
             pub struct ApprovalCancelled {
                 pub class: ::core::primitive::u32,
@@ -4070,6 +4084,7 @@ pub mod api {
                 PartialEq,
                 scale_info :: TypeInfo,
                 :: subxt :: codec :: CompactAs,
+                serde::Serialize,
             )]
             pub struct AssetStatusChanged {
                 pub class: ::core::primitive::u32,
@@ -4086,9 +4101,11 @@ pub mod api {
                 Eq,
                 PartialEq,
                 scale_info :: TypeInfo,
+                serde::Serialize,
             )]
             pub struct ClassMetadataSet {
                 pub class: ::core::primitive::u32,
+                #[serde(skip)]
                 pub data: runtime_types::frame_support::storage::bounded_vec::BoundedVec<
                     ::core::primitive::u8,
                 >,
@@ -4107,6 +4124,7 @@ pub mod api {
                 PartialEq,
                 scale_info :: TypeInfo,
                 :: subxt :: codec :: CompactAs,
+                serde::Serialize,
             )]
             pub struct ClassMetadataCleared {
                 pub class: ::core::primitive::u32,
@@ -4123,10 +4141,12 @@ pub mod api {
                 Eq,
                 PartialEq,
                 scale_info :: TypeInfo,
+                serde::Serialize,
             )]
             pub struct MetadataSet {
                 pub class: ::core::primitive::u32,
                 pub instance: ::core::primitive::u32,
+                #[serde(skip)]
                 pub data: runtime_types::frame_support::storage::bounded_vec::BoundedVec<
                     ::core::primitive::u8,
                 >,
@@ -4144,6 +4164,7 @@ pub mod api {
                 Eq,
                 PartialEq,
                 scale_info :: TypeInfo,
+                serde::Serialize,
             )]
             pub struct MetadataCleared {
                 pub class: ::core::primitive::u32,
@@ -4161,6 +4182,7 @@ pub mod api {
                 Eq,
                 PartialEq,
                 scale_info :: TypeInfo,
+                serde::Serialize,
             )]
             pub struct Redeposited {
                 pub class: ::core::primitive::u32,
@@ -4178,13 +4200,16 @@ pub mod api {
                 Eq,
                 PartialEq,
                 scale_info :: TypeInfo,
+                serde::Serialize,
             )]
             pub struct AttributeSet {
                 pub class: ::core::primitive::u32,
                 pub maybe_instance: ::core::option::Option<::core::primitive::u32>,
+                #[serde(skip)]
                 pub key: runtime_types::frame_support::storage::bounded_vec::BoundedVec<
                     ::core::primitive::u8,
                 >,
+                #[serde(skip)]
                 pub value: runtime_types::frame_support::storage::bounded_vec::BoundedVec<
                     ::core::primitive::u8,
                 >,
@@ -4201,10 +4226,12 @@ pub mod api {
                 Eq,
                 PartialEq,
                 scale_info :: TypeInfo,
+                serde::Serialize,
             )]
             pub struct AttributeCleared {
                 pub class: ::core::primitive::u32,
                 pub maybe_instance: ::core::option::Option<::core::primitive::u32>,
+                #[serde(skip)]
                 pub key: runtime_types::frame_support::storage::bounded_vec::BoundedVec<
                     ::core::primitive::u8,
                 >,
