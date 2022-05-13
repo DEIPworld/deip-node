@@ -2,7 +2,7 @@ use frame_support::{
     dispatch::DispatchResult,
     sp_runtime::traits::Zero,
     traits::{
-        fungibles::{Create, Inspect},
+        fungibles::Inspect,
         tokens::{DepositConsequence, WithdrawConsequence},
     },
 };
@@ -72,16 +72,5 @@ impl<T: Config<I>, I: 'static> Inspect<T::AccountId> for Pallet<T, I> {
         } else {
             WithdrawConsequence::UnknownAsset
         }
-    }
-}
-
-impl<T: Config<I>, I: 'static> Create<T::AccountId> for Pallet<T, I> {
-    fn create(
-        id: Self::AssetId,
-        admin: T::AccountId,
-        is_sufficient: bool,
-        min_balance: Self::Balance,
-    ) -> DispatchResult {
-        todo!()
     }
 }

@@ -1,12 +1,12 @@
 use crate::Config;
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::traits::Currency;
 use scale_info::TypeInfo;
 
 pub(super) type DepositBalanceOf<T, I = ()> =
     <<T as Config<I>>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-#[derive(Clone, Encode, Decode, TypeInfo)]
+#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub struct FNftDetails<AccountId, DepositBalance, NftClassId, InstanceId, AssetId, TokenBalance> {
     /// Can change `owner`, `issuer`, `freezer` and `admin` accounts.
     pub(super) owner: AccountId,

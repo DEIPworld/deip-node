@@ -16,7 +16,7 @@ pub mod pallet {
         log::error,
         pallet_prelude::{
             DispatchError, DispatchResult, Get, IsType, MaxEncodedLen, MaybeSerializeDeserialize,
-            Member, StorageDoubleMap, StorageMap, StorageNMap,
+            Member, StorageDoubleMap, StorageMap,
         },
         sp_runtime::traits::{AtLeast32BitUnsigned, StaticLookup, Zero},
         traits::{
@@ -37,7 +37,7 @@ pub mod pallet {
         type Event: From<Event<Self, I>> + IsType<<Self as frame_system::Config>::Event>;
 
         /// Identifier for the F-NFT asset.
-        type FNftId: Member + Parameter + Default + Copy + HasCompact;
+        type FNftId: Member + Parameter + Default + Copy + HasCompact + MaxEncodedLen;
 
         /// The currency mechanism, used for paying for reserves.
         type Currency: ReservableCurrency<Self::AccountId>;
@@ -47,16 +47,16 @@ pub mod pallet {
         type FNftDeposit: Get<DepositBalanceOf<Self, I>>;
 
         /// Identifier for the FT asset.
-        type AssetId: Member + Parameter + Default + Copy + HasCompact;
+        type AssetId: Member + Parameter + Default + Copy + HasCompact + MaxEncodedLen;
 
         /// Identifier for the NFT asset class.
-        type ClassId: Member + Parameter + Default + Copy + HasCompact;
+        type ClassId: Member + Parameter + Default + Copy + HasCompact + MaxEncodedLen;
 
         /// Identifier for the NFT asset instance.
-        type InstanceId: Member + Parameter + Default + Copy + HasCompact;
+        type InstanceId: Member + Parameter + Default + Copy + HasCompact + MaxEncodedLen;
 
         /// Witness data for the destroy transactions.
-        type DestroyWitness: Parameter;
+        type DestroyWitness: Parameter + MaxEncodedLen;
 
         /// The fungible assets mechanism.
         type Fungible: LockableAsset<Self::AccountId, AssetId = Self::AssetId>
@@ -153,6 +153,8 @@ pub mod pallet {
     >;
 
     #[pallet::pallet]
+    #[pallet::generate_store(pub(super) trait Store)]
+    #[pallet::generate_storage_info]
     pub struct Pallet<T, I = ()>(_);
 
     #[pallet::call]
@@ -213,7 +215,7 @@ pub mod pallet {
                 ensure!(!details.is_fractionalized, Error::<T, I>::NftIsFractionalized);
                 T::Fungible::create(token, account.clone(), is_sufficient, min_balance)?;
 
-                T::Fungible::lock_minting(&account, token)?;
+                T::Fungible::lock(&account, token)?;
 
                 details.token = Some(token);
                 NftClassInstanceToFtAssetId::<T, I>::insert(details.class, details.instance, token);
@@ -240,6 +242,8 @@ pub mod pallet {
                 ensure!(details.amount == Zero::zero(), Error::<T, I>::TokenIsAlreadyMinted);
 
                 let token_id = details.token.ok_or(Error::<T, I>::UnknownToken)?;
+
+                T::Fungible::unlock_mint(&account, token_id).unwrap();
 
                 T::Fungible::mint_into(token_id, &account, amount)?;
 
