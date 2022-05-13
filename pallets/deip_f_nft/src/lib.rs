@@ -1,6 +1,7 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+mod impl_fungibles;
 pub mod types;
 
 pub use pallet::*;
@@ -15,7 +16,7 @@ pub mod pallet {
         log::error,
         pallet_prelude::{
             DispatchError, DispatchResult, Get, IsType, MaxEncodedLen, MaybeSerializeDeserialize,
-            Member, StorageMap,
+            Member, StorageDoubleMap, StorageMap, StorageNMap,
         },
         sp_runtime::traits::{AtLeast32BitUnsigned, StaticLookup, Zero},
         traits::{
@@ -59,8 +60,8 @@ pub mod pallet {
 
         /// The fungible assets mechanism.
         type Fungible: LockableAsset<Self::AccountId, AssetId = Self::AssetId>
-            + Create<Self::AccountId>
             + FtInspect<Self::AccountId, AssetId = Self::AssetId, Balance = Self::FungibleBalance>
+            + Create<Self::AccountId>
             + Mutate<Self::AccountId, AssetId = Self::AssetId, Balance = Self::FungibleBalance>
             + Destroy<
                 Self::AccountId,
@@ -141,6 +142,16 @@ pub mod pallet {
         >,
     >;
 
+    #[pallet::storage]
+    pub(super) type NftClassInstanceToFtAssetId<T: Config<I>, I: 'static = ()> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        T::ClassId,
+        Blake2_128Concat,
+        T::InstanceId,
+        T::AssetId,
+    >;
+
     #[pallet::pallet]
     pub struct Pallet<T, I = ()>(_);
 
@@ -205,6 +216,7 @@ pub mod pallet {
                 T::Fungible::lock_minting(&account, token)?;
 
                 details.token = Some(token);
+                NftClassInstanceToFtAssetId::<T, I>::insert(details.class, details.instance, token);
                 Ok(())
             })?;
 
@@ -341,6 +353,7 @@ pub mod pallet {
                 T::Fungible::destroy(token, witness, Some(account))?;
 
                 details.token = None;
+                NftClassInstanceToFtAssetId::<T, I>::remove(details.class, details.instance);
 
                 let event = Event::TokenAssetDestroyed { id, token };
                 Self::deposit_event(event);
@@ -397,6 +410,15 @@ pub mod pallet {
             })?;
 
             Ok(())
+        }
+    }
+
+    impl<T: Config<I>, I: 'static> Pallet<T, I> {
+        pub(crate) fn class_instance_to_ft_id(
+            class: T::ClassId,
+            instance: T::InstanceId,
+        ) -> Option<T::AssetId> {
+            NftClassInstanceToFtAssetId::<T, I>::get(class, instance)
         }
     }
 }
