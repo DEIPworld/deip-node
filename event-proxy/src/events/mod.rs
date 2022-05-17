@@ -16,9 +16,10 @@ use subxt::RawEvent;
 
 use crate::{
     appchain_deip::{
-        deip::events as deip_events, deip_dao::events as dao_events,
+        assets::events as assets_events, deip::events as deip_events,
+        deip_dao::events as dao_events,
         deip_investment_opportunity::events as deip_investment_opportunity_events,
-        deip_proposal::events as proposal_events, assets::events as assets_events,
+        deip_proposal::events as proposal_events, uniques::events as uniques_events,
     },
     frame::deip_proposal::{self, DeipProposal},
 };
@@ -185,6 +186,28 @@ where
             AssetTransferredApproved(e) => e.serialize(serializer),
             #[cfg(feature = "octopus")]
             AssetStatusChanged(e) => e.serialize(serializer),
+            ApprovalCancelled(e) => e.serialize(serializer),
+            ApprovedTransfer(e) => e.serialize(serializer),
+            NftAssetStatusChanged(e) => e.serialize(serializer),
+            AttributeCleared(e) => e.serialize(serializer),
+            AttributeSet(e) => e.serialize(serializer),
+            Burned(e) => e.serialize(serializer),
+            ClassFrozen(e) => e.serialize(serializer),
+            ClassMetadataCleared(e) => e.serialize(serializer),
+            ClassMetadataSet(e) => e.serialize(serializer),
+            ClassThawed(e) => e.serialize(serializer),
+            Created(e) => e.serialize(serializer),
+            Destroyed(e) => e.serialize(serializer),
+            ForceCreated(e) => e.serialize(serializer),
+            Frozen(e) => e.serialize(serializer),
+            Issued(e) => e.serialize(serializer),
+            MetadataCleared(e) => e.serialize(serializer),
+            MetadataSet(e) => e.serialize(serializer),
+            OwnerChanged(e) => e.serialize(serializer),
+            Redeposited(e) => e.serialize(serializer),
+            TeamChanged(e) => e.serialize(serializer),
+            Thawed(e) => e.serialize(serializer),
+            Transferred(e) => e.serialize(serializer),
         }
     }
 }
@@ -193,12 +216,13 @@ where
 pub enum LegacyEvent<Current, Legacy> {
     Current(Current),
     #[allow(dead_code)]
-    Legacy(Legacy)
+    Legacy(Legacy),
 }
 impl<C: Serialize, L: Serialize> Serialize for LegacyEvent<C, L> {
-    fn serialize<S: Serializer>(&self, serializer: S)
-        -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    {
+    fn serialize<S: Serializer>(
+        &self,
+        serializer: S,
+    ) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error> {
         match self {
             Self::Current(current) => current.serialize(serializer),
             Self::Legacy(legacy) => legacy.serialize(serializer),
@@ -231,26 +255,19 @@ pub enum DomainEventData<T: DeipProposal> {
     ContractAgreementFinalized(deip_events::ContractAgreementFinalized),
     ContractAgreementRejected(deip_events::ContractAgreementRejected),
     // DeipInvestmentOpportunity:
-    SimpleCrowdfundingCreated(LegacyEvent<
-        deip_investment_opportunity_events::SimpleCrowdfundingCreated,
-        (),
-    >),
-    SimpleCrowdfundingActivated(LegacyEvent<
-        deip_investment_opportunity_events::SimpleCrowdfundingActivated,
-        (),
-    >),
-    SimpleCrowdfundingFinished(LegacyEvent<
-        deip_investment_opportunity_events::SimpleCrowdfundingFinished,
-        (),
-    >),
-    SimpleCrowdfundingExpired(LegacyEvent<
-        deip_investment_opportunity_events::SimpleCrowdfundingExpired,
-        (),
-    >),
-    Invested(LegacyEvent<
-        deip_investment_opportunity_events::Invested,
-        (),
-    >),
+    SimpleCrowdfundingCreated(
+        LegacyEvent<deip_investment_opportunity_events::SimpleCrowdfundingCreated, ()>,
+    ),
+    SimpleCrowdfundingActivated(
+        LegacyEvent<deip_investment_opportunity_events::SimpleCrowdfundingActivated, ()>,
+    ),
+    SimpleCrowdfundingFinished(
+        LegacyEvent<deip_investment_opportunity_events::SimpleCrowdfundingFinished, ()>,
+    ),
+    SimpleCrowdfundingExpired(
+        LegacyEvent<deip_investment_opportunity_events::SimpleCrowdfundingExpired, ()>,
+    ),
+    Invested(LegacyEvent<deip_investment_opportunity_events::Invested, ()>),
     // DeipDao:
     DaoCreate(dao_events::DaoCreate),
     DaoAlterAuthority(dao_events::DaoAlterAuthority),
@@ -279,6 +296,28 @@ pub enum DomainEventData<T: DeipProposal> {
     AssetTransferredApproved(assets_events::TransferredApproved),
     #[cfg(feature = "octopus")]
     AssetStatusChanged(assets_events::AssetStatusChanged),
+    ApprovalCancelled(uniques_events::ApprovalCancelled),
+    ApprovedTransfer(uniques_events::ApprovedTransfer),
+    NftAssetStatusChanged(uniques_events::AssetStatusChanged),
+    AttributeCleared(uniques_events::AttributeCleared),
+    AttributeSet(uniques_events::AttributeSet),
+    Burned(uniques_events::Burned),
+    ClassFrozen(uniques_events::ClassFrozen),
+    ClassMetadataCleared(uniques_events::ClassMetadataCleared),
+    ClassMetadataSet(uniques_events::ClassMetadataSet),
+    ClassThawed(uniques_events::ClassThawed),
+    Created(uniques_events::Created),
+    Destroyed(uniques_events::Destroyed),
+    ForceCreated(uniques_events::ForceCreated),
+    Frozen(uniques_events::Frozen),
+    Issued(uniques_events::Issued),
+    MetadataCleared(uniques_events::MetadataCleared),
+    MetadataSet(uniques_events::MetadataSet),
+    OwnerChanged(uniques_events::OwnerChanged),
+    Redeposited(uniques_events::Redeposited),
+    TeamChanged(uniques_events::TeamChanged),
+    Thawed(uniques_events::Thawed),
+    Transferred(uniques_events::Transferred),
 }
 
 pub fn known_domain_events<T>(
@@ -428,7 +467,7 @@ where
         ) => DomainEvent {
             name: "project_tokenSaleCreated".to_string(),
             data: DomainEventData::SimpleCrowdfundingCreated(
-                decode_event_data(raw).map(LegacyEvent::Current)?
+                decode_event_data(raw).map(LegacyEvent::Current)?,
             ),
             meta,
         },
@@ -438,7 +477,7 @@ where
         ) => DomainEvent {
             name: "project_tokenSaleActivated".to_string(),
             data: DomainEventData::SimpleCrowdfundingActivated(
-                decode_event_data(raw).map(LegacyEvent::Current)?
+                decode_event_data(raw).map(LegacyEvent::Current)?,
             ),
             meta,
         },
@@ -448,7 +487,7 @@ where
         ) => DomainEvent {
             name: "project_tokenSaleFinished".to_string(),
             data: DomainEventData::SimpleCrowdfundingFinished(
-                decode_event_data(raw).map(LegacyEvent::Current)?
+                decode_event_data(raw).map(LegacyEvent::Current)?,
             ),
             meta,
         },
@@ -458,13 +497,13 @@ where
         ) => DomainEvent {
             name: "project_tokenSaleExpired".to_string(),
             data: DomainEventData::SimpleCrowdfundingExpired(
-                decode_event_data(raw).map(LegacyEvent::Current)?
+                decode_event_data(raw).map(LegacyEvent::Current)?,
             ),
             meta,
         },
         (
             deip_investment_opportunity_events::Invested::PALLET,
-            deip_investment_opportunity_events::Invested::EVENT
+            deip_investment_opportunity_events::Invested::EVENT,
         ) => DomainEvent {
             name: "project_tokenSaleContributed".to_string(),
             data: DomainEventData::Invested(decode_event_data(raw).map(LegacyEvent::Current)?),
@@ -589,6 +628,128 @@ where
                 data: decode_event_data(raw).map(DomainEventData::AssetStatusChanged)?,
                 meta,
             },
+        (uniques_events::ApprovalCancelled::PALLET, uniques_events::ApprovalCancelled::EVENT) =>
+            DomainEvent {
+                name: "uniques_approval_canceled".to_string(),
+                data: decode_event_data(raw).map(DomainEventData::ApprovalCancelled)?,
+                meta,
+            },
+        (uniques_events::ApprovedTransfer::PALLET, uniques_events::ApprovedTransfer::EVENT) =>
+            DomainEvent {
+                name: "uniques_approved_transfer".to_string(),
+                data: decode_event_data(raw).map(DomainEventData::ApprovedTransfer)?,
+                meta,
+            },
+        (uniques_events::AssetStatusChanged::PALLET, uniques_events::AssetStatusChanged::EVENT) =>
+            DomainEvent {
+                name: "uniques_asset_status_changed".to_string(),
+                data: decode_event_data(raw).map(DomainEventData::NftAssetStatusChanged)?,
+                meta,
+            },
+        (uniques_events::AttributeCleared::PALLET, uniques_events::AttributeCleared::EVENT) =>
+            DomainEvent {
+                name: "uniques_attribute_cleared".to_string(),
+                data: decode_event_data(raw).map(DomainEventData::AttributeCleared)?,
+                meta,
+            },
+        (uniques_events::AttributeSet::PALLET, uniques_events::AttributeSet::EVENT) =>
+            DomainEvent {
+                name: "uniques_attribute_set".to_string(),
+                data: decode_event_data(raw).map(DomainEventData::AttributeSet)?,
+                meta,
+            },
+        (uniques_events::Burned::PALLET, uniques_events::Burned::EVENT) => DomainEvent {
+            name: "uniques_burned".to_string(),
+            data: decode_event_data(raw).map(DomainEventData::Burned)?,
+            meta,
+        },
+        (uniques_events::ClassFrozen::PALLET, uniques_events::ClassFrozen::EVENT) => DomainEvent {
+            name: "uniques_class_frozen".to_string(),
+            data: decode_event_data(raw).map(DomainEventData::ClassFrozen)?,
+            meta,
+        },
+        (
+            uniques_events::ClassMetadataCleared::PALLET,
+            uniques_events::ClassMetadataCleared::EVENT,
+        ) => DomainEvent {
+            name: "uniques_class_metadata_cleared".to_string(),
+            data: decode_event_data(raw).map(DomainEventData::ClassMetadataCleared)?,
+            meta,
+        },
+        (uniques_events::ClassMetadataSet::PALLET, uniques_events::ClassMetadataSet::EVENT) =>
+            DomainEvent {
+                name: "uniques_class_metadata_set".to_string(),
+                data: decode_event_data(raw).map(DomainEventData::ClassMetadataSet)?,
+                meta,
+            },
+        (uniques_events::ClassThawed::PALLET, uniques_events::ClassThawed::EVENT) => DomainEvent {
+            name: "uniques_class_thawed".to_string(),
+            data: decode_event_data(raw).map(DomainEventData::ClassThawed)?,
+            meta,
+        },
+        (uniques_events::Created::PALLET, uniques_events::Created::EVENT) => DomainEvent {
+            name: "uniques_created".to_string(),
+            data: decode_event_data(raw).map(DomainEventData::Created)?,
+            meta,
+        },
+        (uniques_events::Destroyed::PALLET, uniques_events::Destroyed::EVENT) => DomainEvent {
+            name: "uniques_destroyed".to_string(),
+            data: decode_event_data(raw).map(DomainEventData::Destroyed)?,
+            meta,
+        },
+        (uniques_events::ForceCreated::PALLET, uniques_events::ForceCreated::EVENT) =>
+            DomainEvent {
+                name: "uniques_force_created".to_string(),
+                data: decode_event_data(raw).map(DomainEventData::ForceCreated)?,
+                meta,
+            },
+        (uniques_events::Frozen::PALLET, uniques_events::Frozen::EVENT) => DomainEvent {
+            name: "uniques_frozen".to_string(),
+            data: decode_event_data(raw).map(DomainEventData::Frozen)?,
+            meta,
+        },
+        (uniques_events::Issued::PALLET, uniques_events::Issued::EVENT) => DomainEvent {
+            name: "uniques_issued".to_string(),
+            data: decode_event_data(raw).map(DomainEventData::Issued)?,
+            meta,
+        },
+        (uniques_events::MetadataCleared::PALLET, uniques_events::MetadataCleared::EVENT) =>
+            DomainEvent {
+                name: "uniques_metadata_cleared".to_string(),
+                data: decode_event_data(raw).map(DomainEventData::MetadataCleared)?,
+                meta,
+            },
+        (uniques_events::MetadataSet::PALLET, uniques_events::MetadataSet::EVENT) => DomainEvent {
+            name: "uniques_metadata_set".to_string(),
+            data: decode_event_data(raw).map(DomainEventData::MetadataSet)?,
+            meta,
+        },
+        (uniques_events::OwnerChanged::PALLET, uniques_events::OwnerChanged::EVENT) =>
+            DomainEvent {
+                name: "uniques_owner_changed".to_string(),
+                data: decode_event_data(raw).map(DomainEventData::OwnerChanged)?,
+                meta,
+            },
+        (uniques_events::Redeposited::PALLET, uniques_events::Redeposited::EVENT) => DomainEvent {
+            name: "uniques_redeposited".to_string(),
+            data: decode_event_data(raw).map(DomainEventData::Redeposited)?,
+            meta,
+        },
+        (uniques_events::TeamChanged::PALLET, uniques_events::TeamChanged::EVENT) => DomainEvent {
+            name: "uniques_team_changed".to_string(),
+            data: decode_event_data(raw).map(DomainEventData::TeamChanged)?,
+            meta,
+        },
+        (uniques_events::Thawed::PALLET, uniques_events::Thawed::EVENT) => DomainEvent {
+            name: "uniques_thawed".to_string(),
+            data: decode_event_data(raw).map(DomainEventData::Thawed)?,
+            meta,
+        },
+        (uniques_events::Transferred::PALLET, uniques_events::Transferred::EVENT) => DomainEvent {
+            name: "uniques_transferred".to_string(),
+            data: decode_event_data(raw).map(DomainEventData::Transferred)?,
+            meta,
+        },
         _ => return Ok(None),
     };
     info!("Event decoded: {}", event.name);
