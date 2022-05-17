@@ -636,35 +636,35 @@ where
             },
         (uniques_events::ApprovedTransfer::PALLET, uniques_events::ApprovedTransfer::EVENT) =>
             DomainEvent {
-                name: "uniques".to_string(),
+                name: "uniques_approved_transfer".to_string(),
                 data: decode_event_data(raw).map(DomainEventData::ApprovedTransfer)?,
                 meta,
             },
         (uniques_events::AssetStatusChanged::PALLET, uniques_events::AssetStatusChanged::EVENT) =>
             DomainEvent {
-                name: "uniques".to_string(),
+                name: "uniques_asset_status_changed".to_string(),
                 data: decode_event_data(raw).map(DomainEventData::NftAssetStatusChanged)?,
                 meta,
             },
         (uniques_events::AttributeCleared::PALLET, uniques_events::AttributeCleared::EVENT) =>
             DomainEvent {
-                name: "uniques".to_string(),
+                name: "uniques_attribute_cleared".to_string(),
                 data: decode_event_data(raw).map(DomainEventData::AttributeCleared)?,
                 meta,
             },
         (uniques_events::AttributeSet::PALLET, uniques_events::AttributeSet::EVENT) =>
             DomainEvent {
-                name: "uniques".to_string(),
+                name: "uniques_attribute_set".to_string(),
                 data: decode_event_data(raw).map(DomainEventData::AttributeSet)?,
                 meta,
             },
         (uniques_events::Burned::PALLET, uniques_events::Burned::EVENT) => DomainEvent {
-            name: "uniques".to_string(),
+            name: "uniques_burned".to_string(),
             data: decode_event_data(raw).map(DomainEventData::Burned)?,
             meta,
         },
         (uniques_events::ClassFrozen::PALLET, uniques_events::ClassFrozen::EVENT) => DomainEvent {
-            name: "uniques".to_string(),
+            name: "uniques_class_frozen".to_string(),
             data: decode_event_data(raw).map(DomainEventData::ClassFrozen)?,
             meta,
         },
@@ -672,81 +672,81 @@ where
             uniques_events::ClassMetadataCleared::PALLET,
             uniques_events::ClassMetadataCleared::EVENT,
         ) => DomainEvent {
-            name: "uniques".to_string(),
+            name: "uniques_class_metadata_cleared".to_string(),
             data: decode_event_data(raw).map(DomainEventData::ClassMetadataCleared)?,
             meta,
         },
         (uniques_events::ClassMetadataSet::PALLET, uniques_events::ClassMetadataSet::EVENT) =>
             DomainEvent {
-                name: "uniques".to_string(),
+                name: "uniques_class_metadata_set".to_string(),
                 data: decode_event_data(raw).map(DomainEventData::ClassMetadataSet)?,
                 meta,
             },
         (uniques_events::ClassThawed::PALLET, uniques_events::ClassThawed::EVENT) => DomainEvent {
-            name: "uniques".to_string(),
+            name: "uniques_class_thawed".to_string(),
             data: decode_event_data(raw).map(DomainEventData::ClassThawed)?,
             meta,
         },
         (uniques_events::Created::PALLET, uniques_events::Created::EVENT) => DomainEvent {
-            name: "uniques".to_string(),
+            name: "uniques_created".to_string(),
             data: decode_event_data(raw).map(DomainEventData::Created)?,
             meta,
         },
         (uniques_events::Destroyed::PALLET, uniques_events::Destroyed::EVENT) => DomainEvent {
-            name: "uniques".to_string(),
+            name: "uniques_destroyed".to_string(),
             data: decode_event_data(raw).map(DomainEventData::Destroyed)?,
             meta,
         },
         (uniques_events::ForceCreated::PALLET, uniques_events::ForceCreated::EVENT) =>
             DomainEvent {
-                name: "uniques".to_string(),
+                name: "uniques_force_created".to_string(),
                 data: decode_event_data(raw).map(DomainEventData::ForceCreated)?,
                 meta,
             },
         (uniques_events::Frozen::PALLET, uniques_events::Frozen::EVENT) => DomainEvent {
-            name: "uniques".to_string(),
+            name: "uniques_frozen".to_string(),
             data: decode_event_data(raw).map(DomainEventData::Frozen)?,
             meta,
         },
         (uniques_events::Issued::PALLET, uniques_events::Issued::EVENT) => DomainEvent {
-            name: "uniques".to_string(),
+            name: "uniques_issued".to_string(),
             data: decode_event_data(raw).map(DomainEventData::Issued)?,
             meta,
         },
         (uniques_events::MetadataCleared::PALLET, uniques_events::MetadataCleared::EVENT) =>
             DomainEvent {
-                name: "uniques".to_string(),
+                name: "uniques_metadata_cleared".to_string(),
                 data: decode_event_data(raw).map(DomainEventData::MetadataCleared)?,
                 meta,
             },
         (uniques_events::MetadataSet::PALLET, uniques_events::MetadataSet::EVENT) => DomainEvent {
-            name: "uniques".to_string(),
+            name: "uniques_metadata_set".to_string(),
             data: decode_event_data(raw).map(DomainEventData::MetadataSet)?,
             meta,
         },
         (uniques_events::OwnerChanged::PALLET, uniques_events::OwnerChanged::EVENT) =>
             DomainEvent {
-                name: "uniques".to_string(),
+                name: "uniques_owner_changed".to_string(),
                 data: decode_event_data(raw).map(DomainEventData::OwnerChanged)?,
                 meta,
             },
         (uniques_events::Redeposited::PALLET, uniques_events::Redeposited::EVENT) => DomainEvent {
-            name: "uniques".to_string(),
+            name: "uniques_redeposited".to_string(),
             data: decode_event_data(raw).map(DomainEventData::Redeposited)?,
             meta,
         },
         (uniques_events::TeamChanged::PALLET, uniques_events::TeamChanged::EVENT) => DomainEvent {
-            name: "uniques".to_string(),
+            name: "uniques_team_changed".to_string(),
             data: decode_event_data(raw).map(DomainEventData::TeamChanged)?,
             meta,
         },
         (uniques_events::Thawed::PALLET, uniques_events::Thawed::EVENT) => DomainEvent {
-            name: "uniques".to_string(),
+            name: "uniques_thawed".to_string(),
             data: decode_event_data(raw).map(DomainEventData::Thawed)?,
             meta,
         },
         (uniques_events::Transferred::PALLET, uniques_events::Transferred::EVENT) => DomainEvent {
-            name: "uniques".to_string(),
+            name: "uniques_transferred".to_string(),
             data: decode_event_data(raw).map(DomainEventData::Transferred)?,
             meta,
         },
