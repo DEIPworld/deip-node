@@ -18,13 +18,25 @@ sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkad
 
 deip-asset-lock = { path = "../../deip_common/deip_asset_lock", default-features = false }
 
+frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
+sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
+pallet-balances  = { git = "https://github.com/DEIPworld/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
+
 [features]
 default = ["std"]
 std = [
     "codec/std",
     "scale-info/std",
+    "frame-benchmarking/std",
     "frame-support/std",
     "frame-system/std",
     "sp-std/std",
     "deip-asset-lock/std",
+    "sp-io/std",
+    "pallet-balances/std"
+]
+runtime-benchmarks = [
+    "frame-benchmarking",
+    "sp-io",
+    "pallet-balances",
 ]
