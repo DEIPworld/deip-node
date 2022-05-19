@@ -20,6 +20,7 @@ use crate::{
         deip_dao::events as dao_events,
         deip_investment_opportunity::events as deip_investment_opportunity_events,
         deip_proposal::events as proposal_events, uniques::events as uniques_events,
+        balances::events as balances_events,
     },
     frame::deip_proposal::{self, DeipProposal},
 };
@@ -185,6 +186,7 @@ where
             #[cfg(feature = "octopus")]
             AssetTransferredApproved(e) => e.serialize(serializer),
             #[cfg(feature = "octopus")]
+            // NFTs:
             AssetStatusChanged(e) => e.serialize(serializer),
             ApprovalCancelled(e) => e.serialize(serializer),
             ApprovedTransfer(e) => e.serialize(serializer),
@@ -208,6 +210,8 @@ where
             TeamChanged(e) => e.serialize(serializer),
             Thawed(e) => e.serialize(serializer),
             Transferred(e) => e.serialize(serializer),
+            // Native token:
+            BalancesTransfer(e) => e.serialize(serializer),
         }
     }
 }
@@ -295,6 +299,7 @@ pub enum DomainEventData<T: DeipProposal> {
     #[cfg(feature = "octopus")]
     AssetTransferredApproved(assets_events::TransferredApproved),
     #[cfg(feature = "octopus")]
+    // NFT:
     AssetStatusChanged(assets_events::AssetStatusChanged),
     ApprovalCancelled(uniques_events::ApprovalCancelled),
     ApprovedTransfer(uniques_events::ApprovedTransfer),
@@ -318,6 +323,8 @@ pub enum DomainEventData<T: DeipProposal> {
     TeamChanged(uniques_events::TeamChanged),
     Thawed(uniques_events::Thawed),
     Transferred(uniques_events::Transferred),
+    // Native token:
+    BalancesTransfer(balances_events::Transfer),
 }
 
 pub fn known_domain_events<T>(
@@ -628,6 +635,7 @@ where
                 data: decode_event_data(raw).map(DomainEventData::AssetStatusChanged)?,
                 meta,
             },
+        // NFTs:
         (uniques_events::ApprovalCancelled::PALLET, uniques_events::ApprovalCancelled::EVENT) =>
             DomainEvent {
                 name: "uniques_approval_canceled".to_string(),
@@ -748,6 +756,12 @@ where
         (uniques_events::Transferred::PALLET, uniques_events::Transferred::EVENT) => DomainEvent {
             name: "uniques_transferred".to_string(),
             data: decode_event_data(raw).map(DomainEventData::Transferred)?,
+            meta,
+        },
+        // Native token:
+        (balances_events::Transfer::PALLET, balances_events::Transfer::EVENT) => DomainEvent {
+            name: "native_ft_transfer".to_string(),
+            data: decode_event_data(raw).map(DomainEventData::BalancesTransfer)?,
             meta,
         },
         _ => return Ok(None),
