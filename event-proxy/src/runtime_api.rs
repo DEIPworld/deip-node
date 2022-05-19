@@ -3465,7 +3465,7 @@ pub mod api {
                 pub free_balance: ::core::primitive::u128,
             }
             impl ::subxt::Event for Endowed {
-                const PALLET: &'static str = "ParityTechBalances";
+                const PALLET: &'static str = "Balances";
                 const EVENT: &'static str = "Endowed";
             }
             #[derive(
@@ -3482,7 +3482,7 @@ pub mod api {
                 pub amount: ::core::primitive::u128,
             }
             impl ::subxt::Event for DustLost {
-                const PALLET: &'static str = "ParityTechBalances";
+                const PALLET: &'static str = "Balances";
                 const EVENT: &'static str = "DustLost";
             }
             #[derive(
@@ -3493,6 +3493,7 @@ pub mod api {
                 Eq,
                 PartialEq,
                 scale_info :: TypeInfo,
+                serde::Serialize
             )]
             pub struct Transfer {
                 pub from: ::subxt::sp_core::crypto::AccountId32,
@@ -3500,7 +3501,7 @@ pub mod api {
                 pub amount: ::core::primitive::u128,
             }
             impl ::subxt::Event for Transfer {
-                const PALLET: &'static str = "ParityTechBalances";
+                const PALLET: &'static str = "Balances";
                 const EVENT: &'static str = "Transfer";
             }
             #[derive(
@@ -3518,7 +3519,7 @@ pub mod api {
                 pub reserved: ::core::primitive::u128,
             }
             impl ::subxt::Event for BalanceSet {
-                const PALLET: &'static str = "ParityTechBalances";
+                const PALLET: &'static str = "Balances";
                 const EVENT: &'static str = "BalanceSet";
             }
             #[derive(
@@ -3535,7 +3536,7 @@ pub mod api {
                 pub amount: ::core::primitive::u128,
             }
             impl ::subxt::Event for Reserved {
-                const PALLET: &'static str = "ParityTechBalances";
+                const PALLET: &'static str = "Balances";
                 const EVENT: &'static str = "Reserved";
             }
             #[derive(
@@ -3552,7 +3553,7 @@ pub mod api {
                 pub amount: ::core::primitive::u128,
             }
             impl ::subxt::Event for Unreserved {
-                const PALLET: &'static str = "ParityTechBalances";
+                const PALLET: &'static str = "Balances";
                 const EVENT: &'static str = "Unreserved";
             }
             #[derive(
@@ -3572,7 +3573,7 @@ pub mod api {
                     runtime_types::frame_support::traits::tokens::misc::BalanceStatus,
             }
             impl ::subxt::Event for ReserveRepatriated {
-                const PALLET: &'static str = "ParityTechBalances";
+                const PALLET: &'static str = "Balances";
                 const EVENT: &'static str = "ReserveRepatriated";
             }
             #[derive(
@@ -3589,7 +3590,7 @@ pub mod api {
                 pub amount: ::core::primitive::u128,
             }
             impl ::subxt::Event for Deposit {
-                const PALLET: &'static str = "ParityTechBalances";
+                const PALLET: &'static str = "Balances";
                 const EVENT: &'static str = "Deposit";
             }
             #[derive(
@@ -3606,7 +3607,7 @@ pub mod api {
                 pub amount: ::core::primitive::u128,
             }
             impl ::subxt::Event for Withdraw {
-                const PALLET: &'static str = "ParityTechBalances";
+                const PALLET: &'static str = "Balances";
                 const EVENT: &'static str = "Withdraw";
             }
             #[derive(
@@ -3623,7 +3624,7 @@ pub mod api {
                 pub amount: ::core::primitive::u128,
             }
             impl ::subxt::Event for Slashed {
-                const PALLET: &'static str = "ParityTechBalances";
+                const PALLET: &'static str = "Balances";
                 const EVENT: &'static str = "Slashed";
             }
         }
@@ -3631,7 +3632,7 @@ pub mod api {
             use super::runtime_types;
             pub struct TotalIssuance;
             impl ::subxt::StorageEntry for TotalIssuance {
-                const PALLET: &'static str = "ParityTechBalances";
+                const PALLET: &'static str = "Balances";
                 const STORAGE: &'static str = "TotalIssuance";
                 type Value = ::core::primitive::u128;
                 fn key(&self) -> ::subxt::StorageEntryKey {
@@ -3640,7 +3641,7 @@ pub mod api {
             }
             pub struct Account<'a>(pub &'a ::subxt::sp_core::crypto::AccountId32);
             impl ::subxt::StorageEntry for Account<'_> {
-                const PALLET: &'static str = "ParityTechBalances";
+                const PALLET: &'static str = "Balances";
                 const STORAGE: &'static str = "Account";
                 type Value = runtime_types::pallet_balances::AccountData<::core::primitive::u128>;
                 fn key(&self) -> ::subxt::StorageEntryKey {
@@ -3652,7 +3653,7 @@ pub mod api {
             }
             pub struct Locks<'a>(pub &'a ::subxt::sp_core::crypto::AccountId32);
             impl ::subxt::StorageEntry for Locks<'_> {
-                const PALLET: &'static str = "ParityTechBalances";
+                const PALLET: &'static str = "Balances";
                 const STORAGE: &'static str = "Locks";
                 type Value =
                     runtime_types::frame_support::storage::weak_bounded_vec::WeakBoundedVec<
@@ -3667,7 +3668,7 @@ pub mod api {
             }
             pub struct Reserves<'a>(pub &'a ::subxt::sp_core::crypto::AccountId32);
             impl ::subxt::StorageEntry for Reserves<'_> {
-                const PALLET: &'static str = "ParityTechBalances";
+                const PALLET: &'static str = "Balances";
                 const STORAGE: &'static str = "Reserves";
                 type Value = runtime_types::frame_support::storage::bounded_vec::BoundedVec<
                     runtime_types::pallet_balances::ReserveData<
@@ -3684,7 +3685,7 @@ pub mod api {
             }
             pub struct StorageVersion;
             impl ::subxt::StorageEntry for StorageVersion {
-                const PALLET: &'static str = "ParityTechBalances";
+                const PALLET: &'static str = "Balances";
                 const STORAGE: &'static str = "StorageVersion";
                 type Value = runtime_types::pallet_balances::Releases;
                 fn key(&self) -> ::subxt::StorageEntryKey {
