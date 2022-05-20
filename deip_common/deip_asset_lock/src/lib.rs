@@ -9,6 +9,7 @@ pub trait LockableAsset<AccountId> {
     type AssetId;
 
     fn lock(who: &AccountId, id: Self::AssetId) -> DispatchResult;
+    fn lock_transfer(who: &AccountId, id: Self::AssetId) -> DispatchResult;
 
     fn unlock(who: &AccountId, id: Self::AssetId) -> DispatchResult;
     fn unlock_mint(who: &AccountId, id: Self::AssetId) -> DispatchResult;
@@ -37,6 +38,10 @@ impl<T: pallet_assets::Config<I>, I: 'static> LockableAsset<<T as Config>::Accou
         Self::lock_asset(who, id)
     }
 
+    fn lock_transfer(who: &<T as Config>::AccountId, id: Self::AssetId) -> DispatchResult {
+        Self::lock_asset_transfer(who, id)
+    }
+
     fn unlock(who: &<T as Config>::AccountId, id: Self::AssetId) -> DispatchResult {
         Self::unlock_asset(who, id)
     }
@@ -61,6 +66,10 @@ impl<T: pallet_uniques::Config<I>, I: 'static> LockableAsset<<T as Config>::Acco
 
     fn lock(who: &<T as Config>::AccountId, id: Self::AssetId) -> DispatchResult {
         Self::lock_asset(who, id.0, id.1)
+    }
+
+    fn lock_transfer(who: &<T as Config>::AccountId, id: Self::AssetId) -> DispatchResult {
+        Self::lock_asset_transfer(who, id.0, id.1)
     }
 
     fn unlock(who: &<T as Config>::AccountId, id: Self::AssetId) -> DispatchResult {
