@@ -7,12 +7,18 @@ mod impl_fungibles;
 #[cfg(test)]
 mod mock;
 pub mod types;
+mod weights;
 
 pub use pallet::*;
+pub use weights::SubstrateWeight;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use crate::types::{DepositBalanceOf, FNftDetails};
+    use crate::{
+        types::{DepositBalanceOf, FNftDetails},
+        weights::WeightInfo,
+    };
+
     use codec::HasCompact;
     use deip_asset_lock::LockableAsset;
     use frame_support::{
@@ -25,8 +31,11 @@ pub mod pallet {
         sp_runtime::traits::{AtLeast32BitUnsigned, StaticLookup, Zero},
         traits::{
             tokens::{
-                fungibles::{Create, Destroy, Inspect as FtInspect, Mutate},
-                nonfungibles::Inspect as NftInspect,
+                fungibles::{Create, Destroy, Inspect as FtInspect, Mutate as FtMutate},
+                nonfungibles::{
+                    Create as NftCreate, Inspect as NftInspect, Mutate as NftMutate,
+                    Transfer as NftTransfer,
+                },
             },
             ReservableCurrency,
         },
@@ -66,7 +75,7 @@ pub mod pallet {
         type Fungible: LockableAsset<Self::AccountId, AssetId = Self::AssetId>
             + FtInspect<Self::AccountId, AssetId = Self::AssetId, Balance = Self::FungibleBalance>
             + Create<Self::AccountId>
-            + Mutate<Self::AccountId, AssetId = Self::AssetId, Balance = Self::FungibleBalance>
+            + FtMutate<Self::AccountId, AssetId = Self::AssetId, Balance = Self::FungibleBalance>
             + Destroy<
                 Self::AccountId,
                 AssetId = Self::AssetId,
@@ -75,8 +84,18 @@ pub mod pallet {
             >;
 
         /// The non-fungible assets mechanism.
+        #[cfg(not(feature = "runtime-benchmarks"))]
         type NonFungible: LockableAsset<Self::AccountId, AssetId = (Self::ClassId, Self::InstanceId)>
-            + NftInspect<Self::AccountId, ClassId = Self::ClassId, InstanceId = Self::InstanceId>;
+            + NftInspect<Self::AccountId, ClassId = Self::ClassId, InstanceId = Self::InstanceId>
+            + NftTransfer<Self::AccountId, ClassId = Self::ClassId, InstanceId = Self::InstanceId>;
+
+        /// For benchmarking purposes `Create` trait is required.
+        #[cfg(feature = "runtime-benchmarks")]
+        type NonFungible: LockableAsset<Self::AccountId, AssetId = (Self::ClassId, Self::InstanceId)>
+            + NftInspect<Self::AccountId, ClassId = Self::ClassId, InstanceId = Self::InstanceId>
+            + NftCreate<Self::AccountId>
+            + NftMutate<Self::AccountId>
+            + NftTransfer<Self::AccountId, ClassId = Self::ClassId, InstanceId = Self::InstanceId>;
 
         /// The units in which `Self::Fungible` records balances.
         type FungibleBalance: Member
@@ -87,6 +106,9 @@ pub mod pallet {
             + MaybeSerializeDeserialize
             + MaxEncodedLen
             + TypeInfo;
+
+        /// Weight information for extrinsics in this pallet.
+        type WeightInfo: WeightInfo;
     }
 
     #[pallet::event]
@@ -100,6 +122,7 @@ pub mod pallet {
         TokenAssetBurned { id: T::FNftId, token: T::AssetId, amount: T::FungibleBalance },
         TokenAssetDestroyed { id: T::FNftId, token: T::AssetId },
         Destroyed { id: T::FNftId },
+        Transferred { id: T::FNftId, from: T::AccountId, to: T::AccountId },
     }
 
     #[pallet::error]
@@ -163,7 +186,7 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config<I>, I: 'static> Pallet<T, I> {
-        #[pallet::weight(1)]
+        #[pallet::weight(T::WeightInfo::create())]
         pub fn create(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::FNftId,
@@ -203,7 +226,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1)]
+        #[pallet::weight(T::WeightInfo::create_token_asset())]
         pub fn create_token_asset(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::FNftId,
@@ -232,7 +255,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1)]
+        #[pallet::weight(T::WeightInfo::mint_token_asset())]
         pub fn mint_token_asset(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::FNftId,
@@ -255,7 +278,7 @@ pub mod pallet {
 
                 details.amount = amount;
 
-                Ok(token_id)
+                Ok(Default::default())
             })?;
 
             let event = Event::TokenAssetMinted { id, token, amount };
@@ -264,7 +287,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1)]
+        #[pallet::weight(T::WeightInfo::fractionalize())]
         pub fn fractionalize(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::FNftId,
@@ -292,7 +315,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1)]
+        #[pallet::weight(T::WeightInfo::fuse())]
         pub fn fuse(origin: OriginFor<T>, #[pallet::compact] id: T::FNftId) -> DispatchResult {
             let account = ensure_signed(origin)?;
 
@@ -316,7 +339,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1)]
+        #[pallet::weight(T::WeightInfo::burn_token_asset())]
         pub fn burn_token_asset(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::FNftId,
@@ -331,7 +354,12 @@ pub mod pallet {
 
                     let token_id = details.token.ok_or(Error::<T, I>::UnknownToken)?;
                     let amount = details.amount;
+
+                    T::Fungible::unlock(&account, token_id).unwrap();
+
                     T::Fungible::burn_from(token_id, &account, amount)?;
+
+                    T::Fungible::lock(&account, token_id).unwrap();
 
                     details.amount = Zero::zero();
 
@@ -344,7 +372,8 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1)]
+        // @TODO somehow to figure out how to include Fungible::destroy weight.
+        #[pallet::weight(T::WeightInfo::destroy_token_asset())]
         pub fn destroy_token_asset(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::FNftId,
@@ -358,7 +387,10 @@ pub mod pallet {
                 ensure!(details.amount.is_zero(), Error::<T, I>::TokenAssetNotBurned);
 
                 let token = details.token.ok_or(Error::<T, I>::UnknownToken)?;
-                T::Fungible::destroy(token, witness, Some(account))?;
+
+                T::Fungible::unlock(&account, token).unwrap();
+
+                let witness = T::Fungible::destroy(token, witness, Some(account))?;
 
                 details.token = None;
                 NftClassInstanceToFtAssetId::<T, I>::remove(details.class, details.instance);
@@ -370,7 +402,7 @@ pub mod pallet {
             })
         }
 
-        #[pallet::weight(1)]
+        #[pallet::weight(T::WeightInfo::destroy())]
         pub fn destroy(origin: OriginFor<T>, #[pallet::compact] id: T::FNftId) -> DispatchResult {
             let account = ensure_signed(origin)?;
             FNft::<T, I>::mutate_exists(id, |details| {
@@ -395,7 +427,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1)]
+        #[pallet::weight(T::WeightInfo::transfer())]
         pub fn transfer(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::FNftId,
@@ -404,18 +436,21 @@ pub mod pallet {
             let account = ensure_signed(origin)?;
             let dest = T::Lookup::lookup(dest)?;
 
-            FNft::<T, I>::mutate_exists(id, |details| -> DispatchResult {
+            FNft::<T, I>::mutate(id, |details| -> DispatchResult {
                 let details = details.as_mut().ok_or(Error::<T, I>::FNftIdNotFound)?;
                 ensure!(account == details.owner, Error::<T, I>::WrongOwner);
+                ensure!(details.is_fractionalized, Error::<T, I>::NftIsNotFractionalized);
+
+                T::NonFungible::unlock_transfer(&account, (details.class, details.instance))?;
 
                 details.owner = dest.clone();
-                details.admin = dest.clone();
-                details.freezer = dest;
+                T::NonFungible::transfer(&details.class, &details.instance, &dest)?;
 
-                error!("❗️❗️❗️ add missing checks and transfer logic @TODO ❗️❗️❗️");
-
-                Ok(())
+                T::NonFungible::lock_transfer(&dest, (details.class, details.instance))
             })?;
+
+            let event = Event::Transferred { id, from: account, to: dest };
+            Self::deposit_event(event);
 
             Ok(())
         }
