@@ -102,6 +102,7 @@ runtime-benchmarks = [
     "pallet-deip/runtime-benchmarks",
     "pallet-deip-ecosystem-fund/runtime-benchmarks",
     "pallet-deip-investment-opportunity/runtime-benchmarks",
+    "pallet-deip-f-nft/runtime-benchmarks",
 ]
 std = [
     "serde",

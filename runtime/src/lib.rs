@@ -927,6 +927,7 @@ impl pallet_deip_f_nft::Config for Runtime {
     type FungibleBalance = <Self as pallet_assets::Config>::Balance;
     type InstanceId = <Self as pallet_uniques::Config>::InstanceId;
     type NonFungible = pallet_uniques::Pallet<Self>;
+    type WeightInfo = pallet_deip_f_nft::SubstrateWeight<Self>;
 }
 
 parameter_types! {
@@ -1264,6 +1265,7 @@ impl_runtime_apis! {
             list_benchmark!(list, extra, pallet_deip_portal, DeipPortal);
             // list_benchmark!(list, extra, pallet_deip, Deip);
             list_benchmark!(list, extra, pallet_deip_investment_opportunity, DeipInvestmentOpportunity);
+            list_benchmark!(list, extra, pallet_deip_f_nft, DeipFNft);
 
             let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -1305,6 +1307,7 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, pallet_deip_portal, DeipPortal);
             // add_benchmark!(params, batches, pallet_deip, Deip);
             add_benchmark!(params, batches, pallet_deip_investment_opportunity, DeipInvestmentOpportunity);
+            add_benchmark!(params, batches, pallet_deip_f_nft, DeipFNft);
 
             Ok(batches)
         }
