@@ -55,6 +55,7 @@ use sp_std::prelude::*;
 use sp_version::NativeVersion;
 
 pub mod deip_account;
+mod f_nft;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -76,15 +77,15 @@ pub type AssetBalance = u128;
 pub type AssetExtra = ();
 
 /// Identifier for the class of the NFT asset.
-pub type NftClassId = u32;
+pub type NftClassId = u32; // ??? what is class id right type
+
+pub type FNftId = u32;
 
 /// Deip indentifier for the class of the NFT asset.
 pub type DeipNftClassId = H160;
 
 /// The type used to identify a unique asset within an asset class.
-pub type InstanceId = u32;
-
-pub type ChestId = u32;
+pub type InstanceId = u32; // ??? correct type
 
 /// Type used for expressing timestamp.
 pub type Moment = u64;
@@ -910,38 +911,6 @@ impl pallet_deip_vesting::Config for Runtime {
     type VestingWeightInfo = pallet_deip_vesting::weights::SubstrateWeight<Runtime>;
 }
 
-parameter_types! {
-    /// The basic amount of funds that must be reserved for an FNft asset.
-    pub const FNftDeposit: Balance = 10 * currency::UNITS;
-}
-
-impl pallet_deip_f_nft::Config for Runtime {
-    type Event = Event;
-    type FNftId = NftClassId;
-    type Currency = Balances;
-    type FNftDeposit = FNftDeposit;
-    type AssetId = <Self as pallet_assets::Config>::AssetId;
-    type ClassId = <Self as pallet_uniques::Config>::ClassId;
-    type DestroyWitness = pallet_assets::DestroyWitness;
-    type Fungible = pallet_assets::Pallet<Self>;
-    type FungibleBalance = <Self as pallet_assets::Config>::Balance;
-    type InstanceId = <Self as pallet_uniques::Config>::InstanceId;
-    type NonFungible = pallet_uniques::Pallet<Self>;
-    type WeightInfo = pallet_deip_f_nft::SubstrateWeight<Self>;
-}
-
-parameter_types! {
-    /// The basic amount of funds that must be reserved for an NFT chest.
-    pub const ChestDeposit: Balance = 10 * currency::UNITS;
-}
-
-impl pallet_deip_nft_chest::Config for Runtime {
-    type Event = Event;
-    type ChestId = ChestId;
-    type Currency = Balances;
-    type ChestDeposit = ChestDeposit;
-}
-
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -974,10 +943,9 @@ construct_runtime!(
         Multisig: pallet_multisig::{Pallet, Call, Storage, Event<T>},
         Utility: pallet_utility::{Pallet, Call, Event},
         Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config},
-        DeipAssets: pallet_deip_assets::{Pallet, Call, Storage, Config<T>},
+        DeipAssets: pallet_deip_assets::{Pallet, Storage, Config<T>},
+        DeipUniques: pallet_deip_uniques::{Pallet, Storage, Config<T>},
         DeipFNft: pallet_deip_f_nft,
-        DeipNftChest: pallet_deip_nft_chest,
-        DeipUniques: pallet_deip_uniques::{Pallet, Call, Storage, Config<T>},
         DeipProposal: pallet_deip_proposal::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
         DeipDao: pallet_deip_dao::{Pallet, Call, Storage, Event<T>, Config},
         DeipPortal: pallet_deip_portal::{Pallet, Call, Storage, Config, ValidateUnsigned},
@@ -1265,7 +1233,6 @@ impl_runtime_apis! {
             list_benchmark!(list, extra, pallet_deip_portal, DeipPortal);
             // list_benchmark!(list, extra, pallet_deip, Deip);
             list_benchmark!(list, extra, pallet_deip_investment_opportunity, DeipInvestmentOpportunity);
-            list_benchmark!(list, extra, pallet_deip_f_nft, DeipFNft);
 
             let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -1307,7 +1274,6 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, pallet_deip_portal, DeipPortal);
             // add_benchmark!(params, batches, pallet_deip, Deip);
             add_benchmark!(params, batches, pallet_deip_investment_opportunity, DeipInvestmentOpportunity);
-            add_benchmark!(params, batches, pallet_deip_f_nft, DeipFNft);
 
             Ok(batches)
         }
