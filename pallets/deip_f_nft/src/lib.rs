@@ -23,7 +23,6 @@ pub mod pallet {
     use deip_asset_lock::LockableAsset;
     use frame_support::{
         ensure,
-        log::error,
         pallet_prelude::{
             DispatchError, DispatchResult, Get, IsType, MaxEncodedLen, MaybeSerializeDeserialize,
             Member, StorageDoubleMap, StorageMap,
@@ -37,7 +36,7 @@ pub mod pallet {
                     Transfer as NftTransfer,
                 },
             },
-            ReservableCurrency,
+            BalanceStatus, ReservableCurrency,
         },
         Blake2_128Concat, Parameter,
     };
@@ -442,6 +441,9 @@ pub mod pallet {
                 ensure!(details.is_fractionalized, Error::<T, I>::NftIsNotFractionalized);
 
                 T::NonFungible::unlock_transfer(&account, (details.class, details.instance))?;
+
+                let status = BalanceStatus::Reserved;
+                T::Currency::repatriate_reserved(&details.owner, &dest, details.deposit, status)?;
 
                 details.owner = dest.clone();
                 T::NonFungible::transfer(&details.class, &details.instance, &dest)?;
