@@ -2874,7 +2874,7 @@ pub mod api {
                 pub owner: ::subxt::sp_core::crypto::AccountId32,
             }
             impl ::subxt::Event for Created {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const EVENT: &'static str = "Created";
             }
             #[derive(
@@ -2893,7 +2893,7 @@ pub mod api {
                 pub total_supply: ::core::primitive::u128,
             }
             impl ::subxt::Event for Issued {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const EVENT: &'static str = "Issued";
             }
             #[derive(
@@ -2913,7 +2913,7 @@ pub mod api {
                 pub amount: ::core::primitive::u128,
             }
             impl ::subxt::Event for Transferred {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const EVENT: &'static str = "Transferred";
             }
             #[derive(
@@ -2932,7 +2932,7 @@ pub mod api {
                 pub balance: ::core::primitive::u128,
             }
             impl ::subxt::Event for Burned {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const EVENT: &'static str = "Burned";
             }
             #[derive(
@@ -2952,7 +2952,7 @@ pub mod api {
                 pub freezer: ::subxt::sp_core::crypto::AccountId32,
             }
             impl ::subxt::Event for TeamChanged {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const EVENT: &'static str = "TeamChanged";
             }
             #[derive(
@@ -2970,7 +2970,7 @@ pub mod api {
                 pub owner: ::subxt::sp_core::crypto::AccountId32,
             }
             impl ::subxt::Event for OwnerChanged {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const EVENT: &'static str = "OwnerChanged";
             }
             #[derive(
@@ -2988,7 +2988,7 @@ pub mod api {
                 pub who: ::subxt::sp_core::crypto::AccountId32,
             }
             impl ::subxt::Event for Frozen {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const EVENT: &'static str = "Frozen";
             }
             #[derive(
@@ -3006,7 +3006,7 @@ pub mod api {
                 pub who: ::subxt::sp_core::crypto::AccountId32,
             }
             impl ::subxt::Event for Thawed {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const EVENT: &'static str = "Thawed";
             }
             #[derive(
@@ -3024,7 +3024,7 @@ pub mod api {
                 pub asset_id: ::core::primitive::u32,
             }
             impl ::subxt::Event for AssetFrozen {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const EVENT: &'static str = "AssetFrozen";
             }
             #[derive(
@@ -3042,7 +3042,7 @@ pub mod api {
                 pub asset_id: ::core::primitive::u32,
             }
             impl ::subxt::Event for AssetThawed {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const EVENT: &'static str = "AssetThawed";
             }
             #[derive(
@@ -3060,7 +3060,7 @@ pub mod api {
                 pub asset_id: ::core::primitive::u32,
             }
             impl ::subxt::Event for Destroyed {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const EVENT: &'static str = "Destroyed";
             }
             #[derive(
@@ -3078,7 +3078,7 @@ pub mod api {
                 pub owner: ::subxt::sp_core::crypto::AccountId32,
             }
             impl ::subxt::Event for ForceCreated {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const EVENT: &'static str = "ForceCreated";
             }
             #[derive(
@@ -3099,7 +3099,7 @@ pub mod api {
                 pub is_frozen: ::core::primitive::bool,
             }
             impl ::subxt::Event for MetadataSet {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const EVENT: &'static str = "MetadataSet";
             }
             #[derive(
@@ -3117,7 +3117,7 @@ pub mod api {
                 pub asset_id: ::core::primitive::u32,
             }
             impl ::subxt::Event for MetadataCleared {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const EVENT: &'static str = "MetadataCleared";
             }
             #[derive(
@@ -3137,7 +3137,7 @@ pub mod api {
                 pub amount: ::core::primitive::u128,
             }
             impl ::subxt::Event for ApprovedTransfer {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const EVENT: &'static str = "ApprovedTransfer";
             }
             #[derive(
@@ -3156,7 +3156,7 @@ pub mod api {
                 pub delegate: ::subxt::sp_core::crypto::AccountId32,
             }
             impl ::subxt::Event for ApprovalCancelled {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const EVENT: &'static str = "ApprovalCancelled";
             }
             #[derive(
@@ -3177,7 +3177,7 @@ pub mod api {
                 pub amount: ::core::primitive::u128,
             }
             impl ::subxt::Event for TransferredApproved {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const EVENT: &'static str = "TransferredApproved";
             }
             #[derive(
@@ -3195,7 +3195,7 @@ pub mod api {
                 pub asset_id: ::core::primitive::u32,
             }
             impl ::subxt::Event for AssetStatusChanged {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const EVENT: &'static str = "AssetStatusChanged";
             }
         }
@@ -3203,7 +3203,7 @@ pub mod api {
             use super::runtime_types;
             pub struct Asset<'a>(pub &'a ::core::primitive::u32);
             impl ::subxt::StorageEntry for Asset<'_> {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const STORAGE: &'static str = "Asset";
                 type Value = runtime_types::pallet_assets::types::AssetDetails<
                     ::core::primitive::u128,
@@ -3222,7 +3222,7 @@ pub mod api {
                 pub &'a ::subxt::sp_core::crypto::AccountId32,
             );
             impl ::subxt::StorageEntry for Account<'_> {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const STORAGE: &'static str = "Account";
                 type Value =
                     runtime_types::pallet_assets::types::AssetBalance<::core::primitive::u128, ()>;
@@ -3245,7 +3245,7 @@ pub mod api {
                 pub &'a ::subxt::sp_core::crypto::AccountId32,
             );
             impl ::subxt::StorageEntry for Approvals<'_> {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const STORAGE: &'static str = "Approvals";
                 type Value = runtime_types::pallet_assets::types::Approval<
                     ::core::primitive::u128,
@@ -3270,7 +3270,7 @@ pub mod api {
             }
             pub struct Metadata<'a>(pub &'a ::core::primitive::u32);
             impl ::subxt::StorageEntry for Metadata<'_> {
-                const PALLET: &'static str = "ParityTechAssets";
+                const PALLET: &'static str = "Assets";
                 const STORAGE: &'static str = "Metadata";
                 type Value = runtime_types::pallet_assets::types::AssetMetadata<
                     ::core::primitive::u128,
@@ -3833,7 +3833,7 @@ pub mod api {
                 pub owner: ::subxt::sp_core::crypto::AccountId32,
             }
             impl ::subxt::Event for Created {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "Created";
             }
             #[derive(
@@ -3851,7 +3851,7 @@ pub mod api {
                 pub owner: ::subxt::sp_core::crypto::AccountId32,
             }
             impl ::subxt::Event for ForceCreated {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "ForceCreated";
             }
             #[derive(
@@ -3869,7 +3869,7 @@ pub mod api {
                 pub class: ::core::primitive::u32,
             }
             impl ::subxt::Event for Destroyed {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "Destroyed";
             }
             #[derive(
@@ -3888,7 +3888,7 @@ pub mod api {
                 pub owner: ::subxt::sp_core::crypto::AccountId32,
             }
             impl ::subxt::Event for Issued {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "Issued";
             }
             #[derive(
@@ -3908,7 +3908,7 @@ pub mod api {
                 pub to: ::subxt::sp_core::crypto::AccountId32,
             }
             impl ::subxt::Event for Transferred {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "Transferred";
             }
             #[derive(
@@ -3927,7 +3927,7 @@ pub mod api {
                 pub owner: ::subxt::sp_core::crypto::AccountId32,
             }
             impl ::subxt::Event for Burned {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "Burned";
             }
             #[derive(
@@ -3945,7 +3945,7 @@ pub mod api {
                 pub instance: ::core::primitive::u32,
             }
             impl ::subxt::Event for Frozen {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "Frozen";
             }
             #[derive(
@@ -3963,7 +3963,7 @@ pub mod api {
                 pub instance: ::core::primitive::u32,
             }
             impl ::subxt::Event for Thawed {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "Thawed";
             }
             #[derive(
@@ -3977,7 +3977,7 @@ pub mod api {
                 pub class: ::core::primitive::u32,
             }
             impl ::subxt::Event for ClassFrozen {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "ClassFrozen";
             }
             #[derive(
@@ -3995,7 +3995,7 @@ pub mod api {
                 pub class: ::core::primitive::u32,
             }
             impl ::subxt::Event for ClassThawed {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "ClassThawed";
             }
             #[derive(
@@ -4013,7 +4013,7 @@ pub mod api {
                 pub new_owner: ::subxt::sp_core::crypto::AccountId32,
             }
             impl ::subxt::Event for OwnerChanged {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "OwnerChanged";
             }
             #[derive(
@@ -4033,7 +4033,7 @@ pub mod api {
                 pub freezer: ::subxt::sp_core::crypto::AccountId32,
             }
             impl ::subxt::Event for TeamChanged {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "TeamChanged";
             }
             #[derive(
@@ -4053,7 +4053,7 @@ pub mod api {
                 pub delegate: ::subxt::sp_core::crypto::AccountId32,
             }
             impl ::subxt::Event for ApprovedTransfer {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "ApprovedTransfer";
             }
             #[derive(
@@ -4073,7 +4073,7 @@ pub mod api {
                 pub delegate: ::subxt::sp_core::crypto::AccountId32,
             }
             impl ::subxt::Event for ApprovalCancelled {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "ApprovalCancelled";
             }
             #[derive(
@@ -4091,7 +4091,7 @@ pub mod api {
                 pub class: ::core::primitive::u32,
             }
             impl ::subxt::Event for AssetStatusChanged {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "AssetStatusChanged";
             }
             #[derive(
@@ -4113,7 +4113,7 @@ pub mod api {
                 pub is_frozen: ::core::primitive::bool,
             }
             impl ::subxt::Event for ClassMetadataSet {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "ClassMetadataSet";
             }
             #[derive(
@@ -4131,7 +4131,7 @@ pub mod api {
                 pub class: ::core::primitive::u32,
             }
             impl ::subxt::Event for ClassMetadataCleared {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "ClassMetadataCleared";
             }
             #[derive(
@@ -4154,7 +4154,7 @@ pub mod api {
                 pub is_frozen: ::core::primitive::bool,
             }
             impl ::subxt::Event for MetadataSet {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "MetadataSet";
             }
             #[derive(
@@ -4172,7 +4172,7 @@ pub mod api {
                 pub instance: ::core::primitive::u32,
             }
             impl ::subxt::Event for MetadataCleared {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "MetadataCleared";
             }
             #[derive(
@@ -4190,7 +4190,7 @@ pub mod api {
                 pub successful_instances: ::std::vec::Vec<::core::primitive::u32>,
             }
             impl ::subxt::Event for Redeposited {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "Redeposited";
             }
             #[derive(
@@ -4216,7 +4216,7 @@ pub mod api {
                 >,
             }
             impl ::subxt::Event for AttributeSet {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "AttributeSet";
             }
             #[derive(
@@ -4238,7 +4238,7 @@ pub mod api {
                 >,
             }
             impl ::subxt::Event for AttributeCleared {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const EVENT: &'static str = "AttributeCleared";
             }
         }
@@ -4246,7 +4246,7 @@ pub mod api {
             use super::runtime_types;
             pub struct Class<'a>(pub &'a ::core::primitive::u32);
             impl ::subxt::StorageEntry for Class<'_> {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const STORAGE: &'static str = "Class";
                 type Value = runtime_types::pallet_uniques::types::ClassDetails<
                     ::subxt::sp_core::crypto::AccountId32,
@@ -4265,7 +4265,7 @@ pub mod api {
                 pub &'a ::core::primitive::u32,
             );
             impl ::subxt::StorageEntry for Account<'_> {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const STORAGE: &'static str = "Account";
                 type Value = ();
                 fn key(&self) -> ::subxt::StorageEntryKey {
@@ -4287,7 +4287,7 @@ pub mod api {
             }
             pub struct Asset<'a>(pub &'a ::core::primitive::u32, pub &'a ::core::primitive::u32);
             impl ::subxt::StorageEntry for Asset<'_> {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const STORAGE: &'static str = "Asset";
                 type Value = runtime_types::pallet_uniques::types::InstanceDetails<
                     ::subxt::sp_core::crypto::AccountId32,
@@ -4308,7 +4308,7 @@ pub mod api {
             }
             pub struct ClassMetadataOf<'a>(pub &'a ::core::primitive::u32);
             impl ::subxt::StorageEntry for ClassMetadataOf<'_> {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const STORAGE: &'static str = "ClassMetadataOf";
                 type Value =
                     runtime_types::pallet_uniques::types::ClassMetadata<::core::primitive::u128>;
@@ -4324,7 +4324,7 @@ pub mod api {
                 pub &'a ::core::primitive::u32,
             );
             impl ::subxt::StorageEntry for InstanceMetadataOf<'_> {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const STORAGE: &'static str = "InstanceMetadataOf";
                 type Value =
                     runtime_types::pallet_uniques::types::InstanceMetadata<::core::primitive::u128>;
@@ -4349,7 +4349,7 @@ pub mod api {
                 >,
             );
             impl ::subxt::StorageEntry for Attribute<'_> {
-                const PALLET: &'static str = "ParityTechUniques";
+                const PALLET: &'static str = "Uniques";
                 const STORAGE: &'static str = "Attribute";
                 type Value = (
                     runtime_types::frame_support::storage::bounded_vec::BoundedVec<
