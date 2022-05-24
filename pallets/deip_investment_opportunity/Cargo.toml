@@ -19,7 +19,6 @@ frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", bran
 
 frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
-#pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-timestamp = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 #pallet-sudo = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-transaction-payment = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
@@ -38,7 +37,6 @@ deip-asset-system = { path = "../../deip_common/deip_asset_system", default-feat
 # Benchmarking deips:
 pallet-balances = { git = "https://github.com/DEIPworld/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
 pallet-deip-assets = { path = "../deip_assets", default-features = false, optional = true }
-pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
 deip-projects-info = {path = "../../deip_common/deip_projects_info", default-features = false, optional = true }
 
 # alias "parity-scale-code" to "codec"
@@ -55,7 +53,6 @@ runtime-benchmarks = [
     "pallet-balances",
     "pallet-deip-assets",
     "deip-projects-info",
-    "pallet-assets",
 ]
 
 std = [
@@ -66,7 +63,6 @@ std = [
     "frame-system/std",
     "pallet-balances/std",
     "pallet-deip-assets/std",
-    "pallet-assets/std",
     "pallet-timestamp/std",
 #    "pallet-sudo/std",
     "pallet-transaction-payment/std",
