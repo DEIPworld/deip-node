@@ -1,3 +1,37 @@
+//! # Deip F-NFT
+//!
+//! A pallet for dealing with fractionalization of non-fungible assets.
+//!
+//! ## Overview
+//!
+//! The Deip F-NFT pallet provides functionality for management of fractionalized assets.
+//!
+//! To use it in runtime it is required to implement [`Config`].
+//!
+//! The supported dispatchable functions are documented in the [`Call`] enum.
+//!
+//! ### Goals
+//!
+//! * Provide functionality for fractionalization of a NFT asset.
+//! * Ensure lock of an underlying NFT asset during the whole F-NFT life cycle.
+//! * Issue/mint fungible token (FT) for fractions.
+//! * Allow F-NFTs to be fused if all fractions are collected on owner's account.
+//!
+//! ## Interface
+//!
+//! * `create`: Creates new F-NFT /container/, taking the required deposit.
+//! * `create_token_asset`: Creates new FT to be used for NFT fractions.
+//! * `mint_token_asset`: Mints provided amount of fractions.
+//! * `fractionalize`: Unlocks operations with fractions.
+//! * `fuse`: Restores original NFT from fractions. But further actions required to unlock it.
+//! * `burn_token_asset`: Reduces amount of locked FT fractions to zero.
+//! * `release_token_asset`: Uncouples FT asset from F-NFT. To destroy it [`Fungible`] pallet should be used.
+//! * `destroy`: Destroys F-NFT /container/, releasing underlying NFT.
+//! * `transfer`: Transfers F-NFT /container/ to dest account.
+//!
+//! Please refer to the [`Call`] enum and its associated variants for documentation on each
+//! function.
+
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -113,14 +147,23 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(fn deposit_event)]
     pub enum Event<T: Config<I>, I: 'static = ()> {
+        /// Some `FNftId` /container/ was created.
         Created { id: T::FNftId, class: T::ClassId, instance: T::InstanceId },
+        /// FT for fractions was created.
         TokenAssetCreated { id: T::FNftId, token: T::AssetId },
+        /// FT for fractions was minted.
         TokenAssetMinted { id: T::FNftId, token: T::AssetId, amount: T::FungibleBalance },
+        /// NFT was fractionalized, fractions were unlocked.
         Fractionalized { id: T::FNftId },
+        /// Fractions were locked, NFT was fused.
         Fused { id: T::FNftId },
+        /// FT for fractions was burned.
         TokenAssetBurned { id: T::FNftId, token: T::AssetId, amount: T::FungibleBalance },
+        /// FT for fractions was decupled from F-NFT.
         TokenAssetReleased { id: T::FNftId, token: T::AssetId },
+        /// Some `FNftId` /container/ was destroyed.
         Destroyed { id: T::FNftId },
+        /// Some `FNftId` /container/ was transferred.
         Transferred { id: T::FNftId, from: T::AccountId, to: T::AccountId },
     }
 
@@ -154,6 +197,7 @@ pub mod pallet {
     }
 
     #[pallet::storage]
+    /// Details for a F-NFT asset.
     pub(super) type FNft<T: Config<I>, I: 'static = ()> = StorageMap<
         _,
         Blake2_128Concat,
@@ -169,6 +213,7 @@ pub mod pallet {
     >;
 
     #[pallet::storage]
+    /// Id mapping of NFT and fractions.
     pub(super) type NftClassInstanceToFtAssetId<T: Config<I>, I: 'static = ()> = StorageDoubleMap<
         _,
         Blake2_128Concat,
@@ -185,6 +230,27 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config<I>, I: 'static> Pallet<T, I> {
+        /// Create a new F-NFT /container/ from a public origin with provided NFT.
+        /// 
+        /// The new F-NFT has no fractions initially and its owner is the origin.
+        /// 
+        /// The origin must be Signed and the sender must have sufficient funds free.
+        /// The origin must be an owner of the provided NFT.
+        /// 
+        /// NFT must be unlocked according to [`LockableAsset`] trait.
+        /// Because further fractionalization requires NFT to be locked by origin in this operation.
+        /// 
+        /// Funds of sender are reserved by `FNftDeposit`.
+        ///
+        /// Parameters:
+        /// - `id`: The identifier of the new F-NFT /container/.
+        /// This must not be currently in use to identify an existing F-NFT.
+        /// - `class`: The identifier of the class of the NFT to be fractionalized.
+        /// - `instance`: The identifier of the isntance of the NFT to be fractionalized.
+        /// 
+        /// Emits `Created` event when successful.
+        /// 
+        /// Weight: `O(1)`
         #[pallet::weight(T::WeightInfo::create())]
         pub fn create(
             origin: OriginFor<T>,
