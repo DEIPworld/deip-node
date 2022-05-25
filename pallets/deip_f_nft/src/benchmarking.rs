@@ -5,10 +5,7 @@ use frame_support::{
     assert_ok,
     sp_runtime::traits::{Bounded, StaticLookup},
     traits::{
-        tokens::{
-            fungibles::Destroy,
-            nonfungibles::{Create, Mutate},
-        },
+        tokens::nonfungibles::{Create, Mutate},
         Currency,
     },
 };
@@ -81,14 +78,13 @@ fn burn_default_token_asset<T: Config<I>, I: 'static>(
     assert_ok!(Pallet::<T, I>::burn_token_asset(signed_origin(caller), Default::default()));
 }
 
-fn destroy_default_token_asset<T: Config<I>, I: 'static>(
+fn release_default_token_asset<T: Config<I>, I: 'static>(
     caller: T::AccountId,
     amount: T::FungibleBalance,
 ) {
     burn_default_token_asset::<T, I>(caller.clone(), amount);
-    let witness = T::Fungible::get_destroy_witness(&Default::default()).unwrap();
     let origin = signed_origin(caller);
-    let res = Pallet::<T, I>::destroy_token_asset(origin, Default::default(), witness);
+    let res = Pallet::<T, I>::release_token_asset(origin, Default::default());
     assert_ok!(res);
 }
 
@@ -151,21 +147,20 @@ benchmarks_instance_pallet! {
         assert_last_event::<T, I>(event);
     }
 
-    destroy_token_asset {
+    release_token_asset {
         let caller: T::AccountId = whitelisted_caller();
         let amount = T::FungibleBalance::from(100u32);
         burn_default_token_asset::<T, I>(caller.clone(), amount);
-        let witness = T::Fungible::get_destroy_witness(&Default::default()).unwrap();
-    }: _(SystemOrigin::Signed(caller), Default::default(), witness)
+    }: _(SystemOrigin::Signed(caller), Default::default())
     verify {
-        let event = Event::TokenAssetDestroyed { id: Default::default(), token: Default::default() }.into();
+        let event = Event::TokenAssetReleased { id: Default::default(), token: Default::default() }.into();
         assert_last_event::<T, I>(event);
     }
 
     destroy {
         let caller: T::AccountId = whitelisted_caller();
         let amount = T::FungibleBalance::from(100u32);
-        destroy_default_token_asset::<T, I>(caller.clone(), amount);
+        release_default_token_asset::<T, I>(caller.clone(), amount);
     }: _(SystemOrigin::Signed(caller), Default::default())
     verify {
         let event = Event::Destroyed { id: Default::default() }.into();
@@ -178,6 +173,7 @@ benchmarks_instance_pallet! {
         let dest: T::AccountId = account("dest", 0, SEED);
         let dest_lookup = T::Lookup::unlookup(dest.clone());
         fractionalize_default_f_nft::<T, I>(caller.clone(), amount);
+        T::Currency::make_free_balance_be(&dest, DepositBalanceOf::<T, I>::max_value());
     }: _(SystemOrigin::Signed(caller.clone()), Default::default(), dest_lookup)
     verify {
         let event = Event::Transferred { id: Default::default(), from: caller, to: dest }.into();

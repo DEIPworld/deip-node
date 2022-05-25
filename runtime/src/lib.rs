@@ -1230,6 +1230,7 @@ impl_runtime_apis! {
             list_benchmark!(list, extra, pallet_timestamp, Timestamp);
             list_benchmark!(list, extra, pallet_deip_proposal, DeipProposal);
             list_benchmark!(list, extra, pallet_deip_dao, DeipDao);
+            list_benchmark!(list, extra, pallet_deip_f_nft, DeipFNft);
             list_benchmark!(list, extra, pallet_deip_portal, DeipPortal);
             // list_benchmark!(list, extra, pallet_deip, Deip);
             list_benchmark!(list, extra, pallet_deip_investment_opportunity, DeipInvestmentOpportunity);
@@ -1271,6 +1272,7 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, pallet_timestamp, Timestamp);
             add_benchmark!(params, batches, pallet_deip_proposal, DeipProposal);
             add_benchmark!(params, batches, pallet_deip_dao, DeipDao);
+            add_benchmark!(params, batches, pallet_deip_f_nft, DeipFNft);
             add_benchmark!(params, batches, pallet_deip_portal, DeipPortal);
             // add_benchmark!(params, batches, pallet_deip, Deip);
             add_benchmark!(params, batches, pallet_deip_investment_opportunity, DeipInvestmentOpportunity);

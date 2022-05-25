@@ -31,10 +31,7 @@ pub mod pallet {
         traits::{
             tokens::{
                 fungibles::{Create, Destroy, Inspect as FtInspect, Mutate as FtMutate},
-                nonfungibles::{
-                    Create as NftCreate, Inspect as NftInspect, Mutate as NftMutate,
-                    Transfer as NftTransfer,
-                },
+                nonfungibles::{Inspect as NftInspect, Transfer as NftTransfer},
             },
             BalanceStatus, ReservableCurrency,
         },
@@ -42,6 +39,9 @@ pub mod pallet {
     };
     use frame_system::{ensure_signed, pallet_prelude::OriginFor};
     use scale_info::TypeInfo;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    use frame_support::traits::tokens::nonfungibles::{Create as NftCreate, Mutate as NftMutate};
 
     #[pallet::config]
     pub trait Config<I: 'static = ()>: frame_system::Config {
@@ -119,7 +119,7 @@ pub mod pallet {
         Fractionalized { id: T::FNftId },
         Fused { id: T::FNftId },
         TokenAssetBurned { id: T::FNftId, token: T::AssetId, amount: T::FungibleBalance },
-        TokenAssetDestroyed { id: T::FNftId, token: T::AssetId },
+        TokenAssetReleased { id: T::FNftId, token: T::AssetId },
         Destroyed { id: T::FNftId },
         Transferred { id: T::FNftId, from: T::AccountId, to: T::AccountId },
     }
@@ -371,12 +371,10 @@ pub mod pallet {
             Ok(())
         }
 
-        // @TODO somehow to figure out how to include Fungible::destroy weight.
-        #[pallet::weight(T::WeightInfo::destroy_token_asset())]
-        pub fn destroy_token_asset(
+        #[pallet::weight(T::WeightInfo::release_token_asset())]
+        pub fn release_token_asset(
             origin: OriginFor<T>,
             #[pallet::compact] id: T::FNftId,
-            witness: <T::Fungible as Destroy<T::AccountId>>::DestroyWitness,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
             FNft::<T, I>::mutate(id, |details| -> DispatchResult {
@@ -389,12 +387,10 @@ pub mod pallet {
 
                 T::Fungible::unlock(&account, token).unwrap();
 
-                let witness = T::Fungible::destroy(token, witness, Some(account))?;
-
                 details.token = None;
                 NftClassInstanceToFtAssetId::<T, I>::remove(details.class, details.instance);
 
-                let event = Event::TokenAssetDestroyed { id, token };
+                let event = Event::TokenAssetReleased { id, token };
                 Self::deposit_event(event);
 
                 Ok(())
