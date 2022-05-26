@@ -1,0 +1,22 @@
+name: Build & Deploy Docs
+
+on:
+  push:
+    # branches: [ develop ]
+  
+  workflow_dispatch:
+
+jobs:
+  rustdoc:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set-Up
+
+      - name: Install Rustup
+
+      - name: Docs Build
+
+      - name: Docs Deploy
