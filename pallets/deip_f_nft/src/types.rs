@@ -8,25 +8,17 @@ pub(super) type DepositBalanceOf<T, I = ()> =
 
 #[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub struct FNftDetails<AccountId, DepositBalance, NftClassId, InstanceId, AssetId, TokenBalance> {
-    /// Can change `owner`, `issuer`, `freezer` and `admin` accounts.
+    /// Can perform operations with this asset.
     pub(super) owner: AccountId,
-    /// Can mint corresponding token and fractionalize NFT.
-    pub(super) issuer: AccountId,
-    /// @TODO
-    pub(super) admin: AccountId,
-    /// @TODO
-    pub(super) freezer: AccountId,
-    /// @TODO
+    /// The balance deposited for this asset. This pays for the data stored here.
     pub(super) deposit: DepositBalance,
-    /// @TODO
-    pub(super) is_frozen: bool,
-    /// Fractionalized NFT class.
+    /// Class of the fractionalized NFT.
     pub(super) class: NftClassId,
-    /// Fractionalized NFT class instance.
+    /// Instance of the fractionalized NFT.
     pub(super) instance: InstanceId,
-    /// Fractionalized NFT corresponding token id.
+    /// FT `AssetId` of F-NFT shares.
     pub(super) token: Option<AssetId>,
-    /// Fractionalized NFT corresponding token minted amount.
+    /// Amount of shares minted for this F-NFT.
     pub(super) amount: TokenBalance,
     /// Is NFT fractionalized.
     pub(super) is_fractionalized: bool,

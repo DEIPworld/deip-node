@@ -270,12 +270,8 @@ pub mod pallet {
             T::Currency::reserve(&account, deposit)?;
 
             let details = FNftDetails {
-                owner: account.clone(),
-                issuer: account.clone(),
-                admin: account.clone(),
-                freezer: account,
+                owner: account,
                 deposit,
-                is_frozen: false,
                 class,
                 instance,
                 token: None,
