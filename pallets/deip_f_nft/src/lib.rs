@@ -25,7 +25,7 @@
 //! * `fractionalize`: Unlocks operations with fractions.
 //! * `fuse`: Restores original NFT from fractions. But further actions required to unlock it.
 //! * `burn_token_asset`: Reduces amount of locked FT fractions to zero.
-//! * `release_token_asset`: Uncouples FT asset from F-NFT. To destroy it [`Fungible`] pallet should be used.
+//! * `release_token_asset`: Uncouples FT asset from F-NFT. To destroy it [`Config::Fungible`] pallet should be used.
 //! * `destroy`: Destroys F-NFT /container/, releasing underlying NFT.
 //! * `transfer`: Transfers F-NFT /container/ to dest account.
 //!
@@ -38,8 +38,6 @@
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 mod impl_fungibles;
-#[cfg(test)]
-mod mock;
 pub mod types;
 mod weights;
 
@@ -191,7 +189,7 @@ pub mod pallet {
         /// F-Nft corresponding token should be burned, for eg before `destroy_token_asset`.
         TokenAssetNotBurned,
         /// F-Nft corresponding token should be destroyed before F-NFT destruction.
-        TokenAssetNotDestroyed,
+        TokenAssetNotReleased,
         /// NFT asset doesn’t exist (or somehow has no owner).
         UnknownClassInstance,
     }
@@ -231,25 +229,25 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config<I>, I: 'static> Pallet<T, I> {
         /// Create a new F-NFT /container/ from a public origin with provided NFT.
-        /// 
+        ///
         /// The new F-NFT has no fractions initially and its owner is the origin.
-        /// 
+        ///
         /// The origin must be Signed and the sender must have sufficient funds free.
         /// The origin must be an owner of the provided NFT.
-        /// 
+        ///
         /// NFT must be unlocked according to [`LockableAsset`] trait.
         /// Because further fractionalization requires NFT to be locked by origin in this operation.
-        /// 
+        ///
         /// Funds of sender are reserved by `FNftDeposit`.
         ///
         /// Parameters:
         /// - `id`: The identifier of the new F-NFT /container/.
         /// This must not be currently in use to identify an existing F-NFT.
         /// - `class`: The identifier of the class of the NFT to be fractionalized.
-        /// - `instance`: The identifier of the isntance of the NFT to be fractionalized.
-        /// 
+        /// - `instance`: The identifier of the instance of the NFT to be fractionalized.
+        ///
         /// Emits `Created` event when successful.
-        /// 
+        ///
         /// Weight: `O(1)`
         #[pallet::weight(T::WeightInfo::create())]
         pub fn create(
@@ -291,6 +289,24 @@ pub mod pallet {
             Ok(())
         }
 
+        /// Create a new FT to be used for fractions.
+        ///
+        /// The origin must be Signed and must be an owner of the provided F-NFT.
+        ///
+        /// F-NFT must not be fractionalized.
+        /// FT `AssetId` must not be currently in use.
+        ///
+        /// Parameters:
+        /// - `id`: The identifier of the existing F-NFT /container/.
+        /// - `token`: The identifier of the FT to be created.
+        /// - `is_sufficient`: Whether a non-zero balance of the FT is deposit of sufficient
+		/// value to account for the state bloat associated with its balance storage.
+        /// - `min_balance`: The minimum balance of the FT that any single account must
+		/// have. If an account's balance is reduced below this, then it collapses to zero.
+        ///
+        /// Emits `TokenAssetCreated` event when successful.
+        ///
+        /// Weight: `O(1)`
         #[pallet::weight(T::WeightInfo::create_token_asset())]
         pub fn create_token_asset(
             origin: OriginFor<T>,
@@ -320,6 +336,22 @@ pub mod pallet {
             Ok(())
         }
 
+
+        /// Mint the FT to be used for fractions.
+        ///
+        /// The origin must be Signed and must be an owner of the provided F-NFT.
+        ///
+        /// F-NFT must not be fractionalized.
+        /// FT must not be minted before.
+        /// FT `AssetId` must be created with `create_token_asset` operation before minting.
+        ///
+        /// Parameters:
+        /// - `id`: The identifier of the existing F-NFT /container/.
+        /// - `amount`: The amount of the FT to be minted.
+        ///
+        /// Emits `TokenAssetMinted` event when successful.
+        ///
+        /// Weight: `O(1)`
         #[pallet::weight(T::WeightInfo::mint_token_asset())]
         pub fn mint_token_asset(
             origin: OriginFor<T>,
@@ -352,6 +384,19 @@ pub mod pallet {
             Ok(())
         }
 
+        /// Creates the full-fledged fractions of the NFT.
+        ///
+        /// The origin must be Signed and must be an owner of the provided F-NFT.
+        ///
+        /// F-NFT must not be fractionalized.
+        /// FT must be locked. If everything is correct, it should be locked on `mint_token_asset` stage.
+        ///
+        /// Parameters:
+        /// - `id`: The identifier of the existing F-NFT /container/.
+        ///
+        /// Emits `Fractionalized` event when successful.
+        ///
+        /// Weight: `O(1)`
         #[pallet::weight(T::WeightInfo::fractionalize())]
         pub fn fractionalize(
             origin: OriginFor<T>,
@@ -380,6 +425,20 @@ pub mod pallet {
             Ok(())
         }
 
+        /// Fuses fractions of the NFT into original asset.
+        ///
+        /// The origin must be Signed and must be an owner of the provided F-NFT.
+        ///
+        /// F-NFT must be fractionalized.
+        /// Balance of the owner account must be equal to fractions total minted amount.
+        /// I.e. owner must have all fractions to fuse original NFT.
+        ///
+        /// Parameters:
+        /// - `id`: The identifier of the existing F-NFT /container/.
+        ///
+        /// Emits `Fused` event when successful.
+        ///
+        /// Weight: `O(1)`
         #[pallet::weight(T::WeightInfo::fuse())]
         pub fn fuse(origin: OriginFor<T>, #[pallet::compact] id: T::FNftId) -> DispatchResult {
             let account = ensure_signed(origin)?;
@@ -393,7 +452,7 @@ pub mod pallet {
                 let balance = T::Fungible::balance(token, &account);
                 ensure!(balance == details.amount, Error::<T, I>::OwnerDoesNotHaveAllTokens);
 
-                T::Fungible::lock(&account, token).unwrap();
+                T::Fungible::lock(&account, token)?;
 
                 details.is_fractionalized = false;
                 Ok(())
@@ -404,6 +463,18 @@ pub mod pallet {
             Ok(())
         }
 
+        /// Burns all fractions of the F-NFT.
+        ///
+        /// The origin must be Signed and must be an owner of the provided F-NFT.
+        ///
+        /// F-NFT must not be fractionalized.
+        ///
+        /// Parameters:
+        /// - `id`: The identifier of the existing F-NFT /container/.
+        ///
+        /// Emits `TokenAssetBurned` event when successful.
+        ///
+        /// Weight: `O(1)`
         #[pallet::weight(T::WeightInfo::burn_token_asset())]
         pub fn burn_token_asset(
             origin: OriginFor<T>,
@@ -437,6 +508,19 @@ pub mod pallet {
             Ok(())
         }
 
+        /// Releases FT `AssetId` used for fractions.
+        /// Destruction of the FT asset class, can be performed via pallet used in [`Config::Fungible`].
+        ///
+        /// The origin must be Signed and must be an owner of the provided F-NFT.
+        /// F-NFT must not be fractionalized.
+        /// All FT must be burned to this point.
+        ///
+        /// Parameters:
+        /// - `id`: The identifier of the existing F-NFT /container/.
+        ///
+        /// Emits `TokenAssetReleased` event when successful.
+        ///
+        /// Weight: `O(1)`
         #[pallet::weight(T::WeightInfo::release_token_asset())]
         pub fn release_token_asset(
             origin: OriginFor<T>,
@@ -463,6 +547,21 @@ pub mod pallet {
             })
         }
 
+        /// Destroys `FNftId` /container/. Completely releases underlying NFT.
+        ///
+        /// The origin must be Signed and must be an owner of the provided F-NFT.
+        /// F-NFT must not be fractionalized.
+        /// All FT must be burned to this point.
+        /// FT `AssetId` must be released.
+        /// 
+        /// Funds of owner will be unreserved by `FNftDeposit`.
+        ///
+        /// Parameters:
+        /// - `id`: The identifier of the existing F-NFT /container/.
+        ///
+        /// Emits `Destroyed` event when successful.
+        ///
+        /// Weight: `O(1)`
         #[pallet::weight(T::WeightInfo::destroy())]
         pub fn destroy(origin: OriginFor<T>, #[pallet::compact] id: T::FNftId) -> DispatchResult {
             let account = ensure_signed(origin)?;
@@ -471,7 +570,7 @@ pub mod pallet {
                     ensure!(account == details.owner, Error::<T, I>::WrongOwner);
                     ensure!(!details.is_fractionalized, Error::<T, I>::NftIsFractionalized);
                     ensure!(details.amount.is_zero(), Error::<T, I>::TokenAssetNotBurned);
-                    ensure!(details.token.is_none(), Error::<T, I>::TokenAssetNotDestroyed);
+                    ensure!(details.token.is_none(), Error::<T, I>::TokenAssetNotReleased);
                     T::NonFungible::unlock(&account, (details.class, details.instance)).unwrap();
                     T::Currency::unreserve(&account, details.deposit);
                 } else {
@@ -488,6 +587,20 @@ pub mod pallet {
             Ok(())
         }
 
+        /// Moves `FNftId` /container/ with underlying NFT from the sender account to another.
+        ///
+        /// The origin must be Signed and must be an owner of the provided F-NFT.
+        /// F-NFT must be fractionalized.
+        /// 
+        /// Funds of owner will be unreserved by `FNftDeposit`.
+        ///
+        /// Parameters:
+        /// - `id`: The identifier of the existing F-NFT /container/.
+        /// - `dest`: The account F-NFT will be transferred to.
+        ///
+        /// Emits `Transferred` event when successful.
+        ///
+        /// Weight: `O(1)`
         #[pallet::weight(T::WeightInfo::transfer())]
         pub fn transfer(
             origin: OriginFor<T>,
