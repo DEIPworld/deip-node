@@ -561,7 +561,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::destroy())]
         pub fn destroy(origin: OriginFor<T>, #[pallet::compact] id: T::FNftId) -> DispatchResult {
             let account = ensure_signed(origin)?;
-            FNft::<T, I>::mutate_exists(id, |details| {
+            FNft::<T, I>::mutate_exists(id, |details| -> DispatchResult{
                 if let Some(details) = details {
                     ensure!(account == details.owner, Error::<T, I>::WrongOwner);
                     ensure!(!details.is_fractionalized, Error::<T, I>::NftIsFractionalized);
@@ -570,7 +570,7 @@ pub mod pallet {
                     T::NonFungible::unlock(&account, (details.class, details.instance))?;
                     T::Currency::unreserve(&account, details.deposit);
                 } else {
-                    return Err(Error::<T, I>::FNftIdNotFound)
+                    return Err(Error::<T, I>::FNftIdNotFound.into())
                 }
                 *details = None;
 
