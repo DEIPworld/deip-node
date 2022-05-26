@@ -264,7 +264,7 @@ pub mod pallet {
                 .ok_or(Error::<T, I>::UnknownClassInstance)?;
             ensure!(account == owner, Error::<T, I>::WrongOwner);
 
-            T::NonFungible::lock(&account, (class, instance)).unwrap();
+            T::NonFungible::lock(&account, (class, instance))?;
 
             let deposit = T::FNftDeposit::get();
             T::Currency::reserve(&account, deposit)?;
@@ -363,11 +363,11 @@ pub mod pallet {
 
                 let token_id = details.token.ok_or(Error::<T, I>::UnknownToken)?;
 
-                T::Fungible::unlock_mint(&account, token_id).unwrap();
+                T::Fungible::unlock_mint(&account, token_id)?;
 
                 T::Fungible::mint_into(token_id, &account, amount)?;
 
-                T::Fungible::lock(&account, token_id).unwrap();
+                T::Fungible::lock(&account, token_id)?;
 
                 details.amount = amount;
 
@@ -411,7 +411,7 @@ pub mod pallet {
                 details.is_fractionalized = true;
 
                 let token = details.token.ok_or(Error::<T, I>::UnknownToken)?;
-                T::Fungible::unlock_transfer(&account, token).unwrap();
+                T::Fungible::unlock_transfer(&account, token)?;
 
                 Ok(())
             })?;
@@ -487,11 +487,11 @@ pub mod pallet {
                     let token_id = details.token.ok_or(Error::<T, I>::UnknownToken)?;
                     let amount = details.amount;
 
-                    T::Fungible::unlock(&account, token_id).unwrap();
+                    T::Fungible::unlock(&account, token_id)?;
 
                     T::Fungible::burn_from(token_id, &account, amount)?;
 
-                    T::Fungible::lock(&account, token_id).unwrap();
+                    T::Fungible::lock(&account, token_id)?;
 
                     details.amount = Zero::zero();
 
@@ -531,7 +531,7 @@ pub mod pallet {
 
                 let token = details.token.ok_or(Error::<T, I>::UnknownToken)?;
 
-                T::Fungible::unlock(&account, token).unwrap();
+                T::Fungible::unlock(&account, token)?;
 
                 details.token = None;
                 NftClassInstanceToFtAssetId::<T, I>::remove(details.class, details.instance);
@@ -567,7 +567,7 @@ pub mod pallet {
                     ensure!(!details.is_fractionalized, Error::<T, I>::NftIsFractionalized);
                     ensure!(details.amount.is_zero(), Error::<T, I>::TokenAssetNotBurned);
                     ensure!(details.token.is_none(), Error::<T, I>::TokenAssetNotReleased);
-                    T::NonFungible::unlock(&account, (details.class, details.instance)).unwrap();
+                    T::NonFungible::unlock(&account, (details.class, details.instance))?;
                     T::Currency::unreserve(&account, details.deposit);
                 } else {
                     return Err(Error::<T, I>::FNftIdNotFound)
