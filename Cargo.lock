@@ -208,6 +208,7 @@ dependencies = [
  "pallet-deip-market",
  "pallet-deip-portal",
  "pallet-deip-proposal",
+ "pallet-deip-stake-voting",
  "pallet-deip-uniques",
  "pallet-deip-vesting",
  "pallet-grandpa",
@@ -4490,6 +4491,29 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-deip-stake-voting"
+version = "0.1.0"
+dependencies = [
+ "deip-asset-system",
+ "deip-storage-ops",
+ "deip-transaction-ctx",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-assets",
+ "pallet-balances",
+ "pallet-deip-assets",
  "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",

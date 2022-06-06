@@ -1,0 +1,57 @@
+[package]
+name = "pallet-deip-stake-voting"
+version = "0.1.0"
+authors = ["Alex Sarapulov <ialexsarapulov@gmail.com>"]
+edition = "2021"
+license = "Apache-2.0"
+homepage = "https://deip.world/"
+repository = "https://github.com/DEIPworld/deip-node/"
+description = "DEIP stake voting pallet"
+readme = "README.md"
+
+[dependencies]
+deip-storage-ops = { path = "../../deip_common/deip_storage_ops", default-features = false }
+deip-transaction-ctx = { path = "../../deip_common/deip_transaction_ctx", default-features = false }
+deip-asset-system = { path = "../../deip_common/deip_asset_system", default-features = false }
+
+frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
+
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-timestamp = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-balances = { git = "https://github.com/DEIPworld/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-deip-assets = { path = "../deip_assets", default-features = false }
+scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+serde = { version = "1.0.130", features = ["derive"], optional = true }
+sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+
+# alias "parity-scale-code" to "codec"
+[dependencies.codec]
+default-features = false
+features = ["derive"]
+package = "parity-scale-codec"
+version = "2.0.0"
+
+[features]
+default = ["std"]
+runtime-benchmarks = ["frame-benchmarking"]
+std = [
+    "codec/std",
+    "serde",
+    "frame-support/std",
+    "frame-system/std",
+    "sp-std/std",
+    "sp-runtime/std",
+    "sp-core/std",
+    "sp-io/std",
+    "pallet-timestamp/std",
+    "pallet-balances/std",
+    "pallet-assets/std",
+    "deip-storage-ops/std",
+    "deip-transaction-ctx/std",
+    "frame-benchmarking/std",
+]
