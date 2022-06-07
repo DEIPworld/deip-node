@@ -196,14 +196,17 @@ pub mod pallet {
 	pub type Votings<T: Config> =
 		StorageMap<_, Identity, VotingId, VotingOf<T>>;
 
+	/// The set of open voting operation states.
 	#[pallet::storage]
 	pub type States<T: Config> =
 		StorageMap<_, Identity, VotingId, State<T::AssetBalance>>;
 
+	/// The set of votes. [Need to unlock holders' assets]
 	#[pallet::storage]
 	pub type Votes<T: Config> =
 		StorageDoubleMap<_, Identity, (T::AccountId, T::AssetId), Identity, VotingId, Sign>;
 
+	/// The set of call data to be executed and reserved balance for it
 	#[pallet::storage]
 	pub type Calls<T: Config> =
 		StorageMap<_, Identity, CallHash, (OpaqueCall<T>, T::AccountId, BalanceOf<T>)>;
@@ -220,10 +223,8 @@ pub mod pallet {
 		NotVoted,
 		/// Unknown asset or unexpected total issuance
 		BadAsset,
-		/// Unexpected voter account
-		UnexpectedVoter,
-		/// Unexpected author account
-		UnexpectedAuthor,
+		/// Unknown depositoraccount
+		UnknownDepositor,
 		/// Insufficent asset minimum balance for an account
 		InsufficientAssetBalance,
 		/// Voting operation wasn't found
@@ -249,23 +250,23 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// A new voting has begun.
+		/// A new voting operation has begun.
 		Created {
 			id: VotingId,
 			voting: VotingOf<T>,
 		},
-		/// Some asset's holder has made voting update (vote/unvote).
+		/// The asset's holder has made voting update (voted/unvoted).
 		Updated {
 			id: VotingId,
 			author: T::AccountId,
 		},
-		/// A voting has been executed.
+		/// A voting operation has been finished, its call has been executed.
 		Executed {
 			id: VotingId,
 			voting: VotingOf<T>,
 			result: DispatchResult,
 		},
-		/// A voting has been cancelled.
+		/// A voting has been cancelled by an asset's holder.
 		Cancelled {
 			id: VotingId,
 			voting: VotingOf<T>,
@@ -274,6 +275,20 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		/// Create a new voting operation and put a positive vote for the call
+		///
+		/// If caller's asset balance reaches the threshold, then dispatch the call.
+		///
+		/// Payment: `DepositBase` will be reserved if this is the first approval.
+		/// It is returned once this dispatch happens or is cancelled.
+		///
+		/// The dispatch origin for this call must be _Signed_.
+		///
+		/// - `asset`: Asset identifier to restrict a voting around it
+		/// - `start`: Voting activation timepoint (optional); initialized with the extrinsic call timepoint if it's empty
+		/// - `end`: Voting deactivation timepoint (optional); permanent voting if it's empty
+		/// - `threshold`: Absolute or relative asset balance threshold; minimum sum of asset holders' balances for operation to be executed
+		/// - `call`: The call to be executed
 		#[pallet::weight((T::WeightInfo::create(call.encoded_len() as u32), DispatchClass::Normal))]
 		pub fn create(
 			origin: OriginFor<T>,
@@ -337,6 +352,12 @@ pub mod pallet {
 			}
 		}
 
+		/// Add a new vote into the active voting operation
+		///
+		/// The dispatch origin for this call must be _Signed_.
+		///
+		/// - `id`: Voting unique identifier (voting struct hash)
+		/// - `sign`: Vote value (sign: positive (yes) | neutral | negative (no))
 		#[pallet::weight((T::WeightInfo::vote(), DispatchClass::Operational))]
 		pub fn vote(
 			origin: OriginFor<T>,
@@ -376,6 +397,11 @@ pub mod pallet {
 			}
 		}
 
+		/// Remove vote from the active voting operation
+		///
+		/// The dispatch origin for this call must be _Signed_.
+		///
+		/// - `id`: Voting unique identifier (hash)
 		#[pallet::weight((T::WeightInfo::unvote(), DispatchClass::Normal))]
 		pub fn cancel(
 			origin: OriginFor<T>,
@@ -418,6 +444,11 @@ pub mod pallet {
 			Ok(Some(w).into())
 		}
 
+		/// Return control on the asset to its holder
+		///
+		/// The dispatch origin for this call must be _Signed_.
+		///
+		/// - `asset`: Asset identifier to be unlocked for the holder (caller)
 		#[pallet::weight((T::WeightInfo::retain_asset(), DispatchClass::Normal))]
 		pub fn retain_asset(
 			origin: OriginFor<T>,
@@ -482,7 +513,7 @@ impl<T: Config> Pallet<T> {
 		Votings::<T>::remove(&id);
 		States::<T>::remove(&id);
 		let (_call, depositor, deposit) = Calls::<T>::take(&v.call_hash).ok_or_else(|| Error::<T>::NoCall)?;
-		ensure!(depositor == v.author, Error::<T>::UnexpectedAuthor);
+		ensure!(depositor == v.author, Error::<T>::UnknownDepositor);
 		let reserved = T::Currency::reserved_balance(&depositor);
 		ensure!(reserved >= deposit, Error::<T>::UnexpectedLowReservedBalance);
 		T::Currency::unreserve(&depositor, deposit); // should be reserved within `create` call
