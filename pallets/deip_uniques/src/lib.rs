@@ -1,6 +1,8 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+mod impl_nonfungibles;
+
 pub use pallet::*;
 pub use pallet_uniques;
 
@@ -9,14 +11,8 @@ pub mod pallet {
     #[cfg(feature = "std")]
     use frame_support::traits::GenesisBuild;
 
-    use frame_support::{
-        dispatch::{DispatchResult, DispatchResultWithPostInfo, UnfilteredDispatchable, Weight},
-        ensure,
-        pallet_prelude::{OptionQuery, StorageMap, StorageValue, ValueQuery},
-        sp_runtime::traits::{CheckedAdd, One, StaticLookup},
-        traits::{Get, Hooks},
-        Blake2_128Concat, BoundedVec, Identity, Parameter,
-    };
+    use frame_support::{dispatch::{DispatchResult, DispatchResultWithPostInfo, UnfilteredDispatchable, Weight}, ensure, pallet_prelude::{OptionQuery, StorageMap, StorageValue, ValueQuery}, sp_runtime::traits::{CheckedAdd, One, StaticLookup}, traits::{Get, Hooks}, Blake2_128Concat, BoundedVec, Identity, Parameter, Twox64Concat};
+    use frame_support::pallet_prelude::{NMapKey};
     use frame_system::pallet_prelude::{BlockNumberFor, OriginFor};
     use pallet_uniques::{
         Call as UniquesCall, DestroyWitness, Pallet as UniquesPallet, WeightInfo,
@@ -28,7 +24,9 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config:
-        frame_system::Config + pallet_uniques::Config<ClassId = Self::NftClassId>
+        frame_system::Config +
+        pallet_uniques::Config<ClassId = Self::NftClassId> +
+        pallet_assets::Config
     {
         /// Deip class id.
         type DeipNftClassId: Parameter + Copy;
@@ -44,6 +42,12 @@ pub mod pallet {
 
         /// Max class id available for asset creation via origin `pallet_uniques::Call`.
         type MaxOriginClassId: Get<Self::ClassId>;
+
+        type Fungibles: deip_asset_system::FTImplT<
+            Account=Self::AccountId,
+            FTokenId=Self::AssetId,
+            FTokenAmount=Self::Balance
+        >;
     }
 
     use frame_support::traits::{GetStorageVersion, StorageVersion};
@@ -190,6 +194,56 @@ pub mod pallet {
     #[pallet::storage]
     pub(super) type NextNftClassId<T> = StorageValue<_, <T as Config>::NftClassId, ValueQuery>;
 
+    /////
+
+    #[pallet::storage]
+    pub type NextCollectionId<T: Config> = StorageValue<_, T::ClassId, ValueQuery>;
+
+    use frame_support::pallet_prelude::*;
+
+    #[pallet::storage]
+    pub type CollectionRepo<T: Config> = StorageNMap<_,
+        (
+            NMapKey<Blake2_128Concat, T::AccountId>,
+            NMapKey<Blake2_128Concat, T::Hash>,
+        ),
+        deip_asset_system::NFTokenCollectionRecord<
+            T::AccountId,
+            (T::Hash, T::ClassId),
+            T::InstanceId
+        >
+    >;
+
+    #[pallet::storage]
+    pub type ItemRepo<T: Config> = StorageNMap<_,
+        (
+            NMapKey<Blake2_128Concat, T::Hash>,
+            NMapKey<Blake2_128Concat, T::AccountId>,
+            NMapKey<Twox64Concat, T::InstanceId>
+        ),
+        deip_asset_system::NFTokenItemRecord<
+            T::AccountId,
+            (T::Hash, T::InstanceId),
+            T::ClassId,
+            (T::AssetId, T::Balance)
+        >
+    >;
+
+    #[pallet::storage]
+    pub type FractionRepo<T: Config> = StorageNMap<_,
+        (
+            NMapKey<Blake2_128Concat, T::Hash>,
+            NMapKey<Blake2_128Concat, T::AccountId>,
+            NMapKey<Twox64Concat, T::InstanceId>
+        ),
+        deip_asset_system::NFTokenFractionRecord<
+            T::AccountId,
+            (T::Hash, T::InstanceId),
+            (T::AssetId, T::Balance),
+            T::Balance
+        >
+    >;
+
     #[pallet::error]
     pub enum Error<T> {
         DeipNftClassIdExists,
@@ -204,7 +258,7 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        #[pallet::weight(T::WeightInfo::create())]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::create())]
         pub fn deip_create(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
@@ -238,7 +292,7 @@ pub mod pallet {
             res
         }
 
-        #[pallet::weight(T::WeightInfo::mint())]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::mint())]
         pub fn deip_mint(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
@@ -259,7 +313,7 @@ pub mod pallet {
             call.dispatch_bypass_filter(origin)
         }
 
-        #[pallet::weight(T::WeightInfo::burn())]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::burn())]
         pub fn deip_burn(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
@@ -281,7 +335,7 @@ pub mod pallet {
             call.dispatch_bypass_filter(origin)
         }
 
-        #[pallet::weight(T::WeightInfo::transfer())]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::transfer())]
         pub fn deip_transfer(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
@@ -302,7 +356,7 @@ pub mod pallet {
             call.dispatch_bypass_filter(origin)
         }
 
-        #[pallet::weight(T::WeightInfo::redeposit(instances.len() as u32))]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::redeposit(instances.len() as u32))]
         pub fn deip_redeposit(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
@@ -312,7 +366,7 @@ pub mod pallet {
             UniquesPallet::<T>::redeposit(origin, origin_class_id, instances)
         }
 
-        #[pallet::weight(T::WeightInfo::freeze())]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::freeze())]
         pub fn deip_freeze(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
@@ -331,7 +385,7 @@ pub mod pallet {
             call.dispatch_bypass_filter(origin)
         }
 
-        #[pallet::weight(T::WeightInfo::thaw())]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::thaw())]
         pub fn deip_thaw(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
@@ -344,7 +398,7 @@ pub mod pallet {
             call.dispatch_bypass_filter(origin)
         }
 
-        #[pallet::weight(T::WeightInfo::freeze_class())]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::freeze_class())]
         pub fn deip_freeze_class(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
@@ -362,7 +416,7 @@ pub mod pallet {
             call.dispatch_bypass_filter(origin)
         }
 
-        #[pallet::weight(T::WeightInfo::thaw_class())]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::thaw_class())]
         pub fn deip_thaw_class(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
@@ -374,7 +428,7 @@ pub mod pallet {
             call.dispatch_bypass_filter(origin)
         }
 
-        #[pallet::weight(T::WeightInfo::transfer_ownership())]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::transfer_ownership())]
         pub fn deip_transfer_ownership(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
@@ -393,7 +447,7 @@ pub mod pallet {
             call.dispatch_bypass_filter(origin)
         }
 
-        #[pallet::weight(T::WeightInfo::set_team())]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::set_team())]
         pub fn deip_set_team(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
@@ -418,7 +472,7 @@ pub mod pallet {
         }
 
         /// Approve an instance to be transferred by a delegated third-party account.
-        #[pallet::weight(T::WeightInfo::approve_transfer())]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::approve_transfer())]
         pub fn deip_approve_transfer(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
@@ -431,7 +485,7 @@ pub mod pallet {
             UniquesPallet::<T>::approve_transfer(origin, class, instance, delegate)
         }
 
-        #[pallet::weight(T::WeightInfo::cancel_approval())]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::cancel_approval())]
         pub fn deip_cancel_approval(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
@@ -445,7 +499,7 @@ pub mod pallet {
             UniquesPallet::<T>::cancel_approval(origin, class, instance, maybe_check_delegate)
         }
 
-        #[pallet::weight(T::WeightInfo::set_attribute())]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::set_attribute())]
         pub fn deip_set_attribute(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
@@ -457,7 +511,7 @@ pub mod pallet {
             UniquesPallet::<T>::set_attribute(origin, class, maybe_instance, key, value)
         }
 
-        #[pallet::weight(T::WeightInfo::clear_attribute())]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::clear_attribute())]
         pub fn deip_clear_attribute(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
@@ -468,12 +522,12 @@ pub mod pallet {
             UniquesPallet::<T>::clear_attribute(origin, class, maybe_instance, key)
         }
 
-        #[pallet::weight(T::WeightInfo::set_metadata())]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::set_metadata())]
         pub fn deip_set_metadata(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
             instance: T::InstanceId,
-            data: BoundedVec<u8, T::StringLimit>,
+            data: BoundedVec<u8, <T as pallet_uniques::Config>::StringLimit>,
             is_frozen: bool,
         ) -> DispatchResultWithPostInfo {
             let origin_class_id = Self::deip_to_origin_class_id(class)?;
@@ -488,7 +542,7 @@ pub mod pallet {
             call.dispatch_bypass_filter(origin)
         }
 
-        #[pallet::weight(T::WeightInfo::clear_metadata())]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::clear_metadata())]
         pub fn deip_clear_metadata(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
@@ -499,11 +553,11 @@ pub mod pallet {
         }
 
         /// Set the metadata for an asset class.
-        #[pallet::weight(T::WeightInfo::set_class_metadata())]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::set_class_metadata())]
         pub fn deip_set_class_metadata(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,
-            data: BoundedVec<u8, T::StringLimit>,
+            data: BoundedVec<u8, <T as pallet_uniques::Config>::StringLimit>,
             is_frozen: bool,
         ) -> DispatchResult {
             let class = Self::deip_to_origin_class_id(class)?;
@@ -511,7 +565,7 @@ pub mod pallet {
         }
 
         /// Clear the metadata for an asset class.
-        #[pallet::weight(T::WeightInfo::clear_class_metadata())]
+        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::clear_class_metadata())]
         pub fn deip_clear_class_metadata(
             origin: OriginFor<T>,
             class: DeipNftClassIdOf<T>,

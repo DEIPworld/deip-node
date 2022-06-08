@@ -13,7 +13,7 @@ use sp_std::prelude::*;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::default::Default;
 use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
-use deip_asset_system::asset::{Asset, FTokenT, GenericAssetT, TransferUnitT};
+use deip_asset_system::asset::{Asset};
 use deip_transaction_ctx::{TransactionCtxId, TransactionCtxT};
 
 use crate::module::{*};
@@ -77,14 +77,15 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
         amount: T::AssetAmount
     ) -> Result<T::FundAsset, crate::Error<T>>
     {
-        T::FundAsset::pick(self.v1.asset_id, account, amount)
+        T::FundAsset::pick_ft(self.v1.asset_id, account)
             .ok_or_else(|| crate::Error::BalanceIsNotEnough)
     }
 
     fn fund_balance(&self) -> Result<T::FundAsset, crate::Error<T>> {
         let balance
-            = T::FundAsset::balance(&self.v1.asset_id, self.account())
-            .ok_or_else(|| crate::Error::BalanceIsNotEnough)?;
+            = *T::FundAsset::pick_ft(self.v1.asset_id, self.account())
+            .ok_or_else(|| crate::Error::BalanceIsNotEnough)?
+            .balance();
         self.fund(self.account(), balance)
     }
 
@@ -133,9 +134,10 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
         self.shares.saturating_inc();
         let (id, amount) = shares;
         Ok(SharesTransfer::<T>::new(
-            T::SharesAsset::pick(id, self.creator(), amount)
+            T::SharesAsset::pick_fraction(self.creator(), id)
                 .ok_or_else(|| crate::Error::BalanceIsNotEnough)?,
-            self.account()
+            self.account(),
+            amount
         ))
     }
 
@@ -148,9 +150,10 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
         self.shares.saturating_dec();
         let (id, amount) = shares;
         Ok(SharesTransfer::<T>::new(
-            T::SharesAsset::pick(id, self.account(), amount)
+            T::SharesAsset::pick_fraction(self.account(), id)
                 .ok_or_else(|| crate::Error::ImpossibleSituation)?,
-            self.creator()
+            self.creator(),
+            amount
         ))
     }
 
@@ -199,8 +202,9 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
         self.payouts.saturating_accrue(self.shares());
 
         Ok(Purchase::<T, Self> {
-            unit: self.fund(investor, accepted_amount)?,
-            cf: self
+            asset: self.fund(investor, accepted_amount)?,
+            cf: self,
+            amount: accepted_amount
         })
     }
 
@@ -229,15 +233,15 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
             &shares
         );
 
-        let unit = T::SharesAsset::pick(
-            shares.0,
+        let (id, _) = shares;
+        let asset = T::SharesAsset::pick_fraction(
             self.account(),
-            amount.calc()
+            id,
         ).ok_or_else(|| crate::Error::ImpossibleSituation)?;
 
         self.payouts.saturating_dec();
 
-        Ok(Payout { unit, investment })
+        Ok(Payout { asset, investment, amount: amount.calc() })
     }
 
     fn no_payouts(&self) -> bool {
@@ -246,22 +250,24 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
 }
 
 pub struct SharesTransfer<'a, T: Config> {
-    unit: T::SharesAsset,
+    asset: T::SharesAsset,
     to: &'a T::AccountId,
+    amount: T::AssetAmount
 }
 
 impl<'a, T: Config> SharesTransfer<'a, T> {
-    fn new(unit: T::SharesAsset, to: &'a T::AccountId) -> Self {
-        Self { unit, to }
+    fn new(asset: T::SharesAsset, to: &'a T::AccountId, amount: T::AssetAmount) -> Self {
+        Self { asset, to, amount }
     }
     pub fn transfer(self) {
-        self.unit.transfer(self.to)
+        self.asset.transfer_amount(self.to, self.amount);
     }
 }
 
 pub struct Payout<'a, T: Config, I: InvestmentT<T>> {
-    unit: T::SharesAsset,
+    asset: T::SharesAsset,
     investment: &'a mut I,
+    amount: T::AssetAmount
 }
 
 impl<'a, T: Config, I: InvestmentT<T>> Payout<'a, T, I>
@@ -280,8 +286,8 @@ impl<'a, T: Config, I: InvestmentT<T>> Payout<'a, T, I>
     }
 
     pub fn payout(self) {
-        let Self { unit, investment } = self;
-        unit.transfer(investment.investor());
+        let Self { asset: unit, investment, amount } = self;
+        unit.transfer_amount(investment.investor(), amount);
         investment.payout();
         if investment.no_payouts() {
             frame_system::Pallet::<T>::dec_consumers(investment.investor());
@@ -310,37 +316,38 @@ impl<Amount: FixedPointOperand + One> PayoutAmount<Amount>
 }
 
 pub struct Purchase<'a, T: Config, CF: CrowdfundingT<T>> {
-    unit: T::FundAsset,
+    asset: T::FundAsset,
+    amount: T::AssetAmount,
     cf: &'a CF
 }
 
 impl<T: Config, CF: CrowdfundingT<T>> Purchase<'_, T, CF> {
 
     pub fn accepted_amount(&self) -> &T::AssetAmount {
-        self.unit.amount()
+        &self.amount
     }
 
     pub fn investor(&self) -> &T::AccountId {
-        self.unit.account()
+        self.asset.account()
     }
 
     pub fn invest(self, time: T::Moment) -> CF::Investment {
         let investment = CF::Investment::new(
             self.cf,
             self.investor().clone(),
-            *self.accepted_amount(),
+            self.amount,
             time
         );
         // If the account executes the extrinsic then it exists, so it should have at least one provider
         // so this cannot fail... but being defensive anyway.
         let _ = frame_system::Pallet::<T>::inc_consumers(self.investor());
-        self.unit.transfer(self.cf.account());
+        self.asset.transfer_amount(self.cf.account(), self.amount);
         investment
     }
 
     pub fn increase_investment(self, investment: &mut CF::Investment) {
         investment.increase_amount(*self.accepted_amount());
-        self.unit.transfer(self.cf.account());
+        self.asset.transfer_amount(self.cf.account(), self.amount);
     }
 }
 
@@ -470,6 +477,7 @@ pub trait CrowdfundingT<T: crate::Config>: Sized
 }
 
 use frame_support::storage::{IterableStorageMap, StorageMap};
+use deip_asset_system::{FTokenT, NFTokenFractionT};
 
 impl<T: Config> StateTransitionT<T> for CrowdfundingStatus {
     type IncompleteR = IncompleteRepo<T>;

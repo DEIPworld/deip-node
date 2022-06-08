@@ -65,7 +65,7 @@ pub mod pallet {
     use crate::module::{*};
 
     use crate::weights::WeightInfo;
-    use deip_asset_system::{asset::{GenericAssetT, TransferUnitT}};
+    use deip_asset_system::{NFTImplT, NFTokenItemIdT, FTImplT, NFTokenFractionT, FTokenT};
     use deip_transaction_ctx::{PortalCtxT, TransactionCtxId};
 
     /// Configuration trait
@@ -99,32 +99,26 @@ pub mod pallet {
             Clone + Parameter + Member + Copy;
 
         type FundAssetId: Default + AtLeast32BitUnsigned + Clone + Parameter + Member + Copy;
-        type FundAssetPayload: Default + Parameter + Member + Clone + Copy;
-        type FundAssetImpl;
 
-        type FundAsset:
-            GenericAssetT<
-                Self::FundAssetId,
-                Self::FundAssetPayload,
-                Self::AccountId,
-                Self::AssetAmount,
-                Self::FundAssetImpl
-            > +
-            TransferUnitT<Self::AccountId, Self::AssetAmount, Self::FundAssetImpl>;
+        type FundAssetImpl: FTImplT<
+            Account=Self::AccountId,
+            FTokenId=Self::FundAssetId,
+            FTokenAmount=Self::AssetAmount
+        >;
 
-        type SharesAssetId: Default + Parameter + Member + Clone + Copy;
-        type SharesAssetPayload: Default + Parameter + Member + Clone + Copy;
-        type SharesAssetImpl;
+        type FundAsset: FTokenT<Self::FundAssetImpl>;
 
-        type SharesAsset:
-            GenericAssetT<
-                Self::SharesAssetId,
-                Self::SharesAssetPayload,
-                Self::AccountId,
-                Self::AssetAmount,
-                Self::SharesAssetImpl
-            > +
-            TransferUnitT<Self::AccountId, Self::AssetAmount, Self::SharesAssetImpl>;
+        type SharesAssetId:
+            NFTokenItemIdT<Self::SharesAssetImpl> +
+            Default + Parameter + Member + Clone + Copy;
+
+        type SharesAssetImpl: NFTImplT<
+            Account=Self::AccountId,
+            FTokenAmount=Self::AssetAmount,
+            NFTokenItemId=Self::SharesAssetId
+        >;
+
+        type SharesAsset: NFTokenFractionT<Self::SharesAssetImpl>;
     }
 
     use frame_support::traits::StorageVersion;

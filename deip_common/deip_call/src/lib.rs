@@ -288,44 +288,92 @@ impl WrappedCall<Call> {
         use pallet_deip_investment_opportunity::Call::*;
 
         match deip_call {
-            create_investment_opportunity { external_id, creator, shares, funding_model } =>
+            create { id, creator, shares, fund } =>
                 CallObject {
-                    module: "deip",
-                    call: "create_investment_opportunity",
-                    args: &DeipCreateInvestmentOpportunityCallArgs {
-                        external_id,
+                    module: "crowdfunding",
+                    call: "create",
+                    args: &CrowdfundingCreateCallArgs {
+                        id,
                         creator,
                         shares,
-                        funding_model,
+                        fund,
                     },
                 }
                 .serialize(serializer),
 
-            activate_crowdfunding { sale_id } => CallObject {
-                module: "deip",
-                call: "activate_crowdfunding",
-                args: &DeipActivateCrowdfundingCallArgs { sale_id },
+            commit_shares { id, shares } => CallObject {
+                module: "crowdfunding",
+                call: "commit_shares",
+                args: &CrowdfundingCommitSharesCallArgs { id, shares },
             }
             .serialize(serializer),
 
-            expire_crowdfunding { sale_id } => CallObject {
-                module: "deip",
-                call: "expire_crowdfunding",
-                args: &DeipExpireCrowdfundingCallArgs { sale_id },
+            rollback_shares { id, shares } => CallObject {
+                module: "crowdfunding",
+                call: "rollback_shares",
+                args: &CrowdfundingRollbackSharesCallArgs { id, shares },
             }
             .serialize(serializer),
 
-            finish_crowdfunding { sale_id } => CallObject {
-                module: "deip",
-                call: "finish_crowdfunding",
-                args: &DeipFinishCrowdfundingCallArgs { sale_id },
+            ready { id, start_time, end_time, soft_cap, hard_cap } => CallObject {
+                module: "crowdfunding",
+                call: "ready",
+                args: &CrowdfundingReadyCallArgs {
+                    id,
+                    start_time,
+                    end_time,
+                    soft_cap,
+                    hard_cap
+                },
             }
             .serialize(serializer),
 
-            invest { id, asset } => CallObject {
-                module: "deip",
+            activate { id } => CallObject {
+                module: "crowdfunding",
+                call: "activate",
+                args: &CrowdfundingActivateCallArgs { id },
+            }
+            .serialize(serializer),
+
+            invest { id, amount } => CallObject {
+                module: "crowdfunding",
                 call: "invest",
-                args: &DeipInvestCallArgs { id, amount: asset },
+                args: &CrowdfundingInvestCallArgs { id, amount },
+            }
+            .serialize(serializer),
+
+            payout { investor, id, shares } => CallObject {
+                module: "crowdfunding",
+                call: "payout",
+                args: &CrowdfundingPayoutCallArgs { investor, id, shares },
+            }
+            .serialize(serializer),
+
+            raise { id } => CallObject {
+                module: "crowdfunding",
+                call: "raise",
+                args: &CrowdfundingRaiseCallArgs { id },
+            }
+            .serialize(serializer),
+
+            expire { id } => CallObject {
+                module: "crowdfunding",
+                call: "expire",
+                args: &CrowdfundingExpireCallArgs { id },
+            }
+            .serialize(serializer),
+
+            refund { investor, id } => CallObject {
+                module: "crowdfunding",
+                call: "refund",
+                args: &CrowdfundingRefundCallArgs { investor, id },
+            }
+            .serialize(serializer),
+
+            release_shares { id, shares } => CallObject {
+                module: "crowdfunding",
+                call: "release_shares",
+                args: &CrowdfundingReleaseSharesCallArgs { id, shares },
             }
             .serialize(serializer),
 
@@ -747,10 +795,46 @@ struct DeipCreateProjectContentCallArgs<A, B, C, D, E, F, G, H> {
 }
 
 #[derive(Serialize)]
-struct DeipInvestCallArgs<A, B> {
+struct CrowdfundingActivateCallArgs<A> {
+    id: A,
+}
+
+#[derive(Serialize)]
+struct CrowdfundingInvestCallArgs<A, B> {
     id: A,
     amount: B,
 }
+
+#[derive(Serialize)]
+struct CrowdfundingPayoutCallArgs<A, B, C> {
+    investor: A,
+    id: B,
+    shares: C,
+}
+
+#[derive(Serialize)]
+struct CrowdfundingRaiseCallArgs<A> {
+    id: A,
+}
+
+#[derive(Serialize)]
+struct CrowdfundingExpireCallArgs<A> {
+    id: A,
+}
+
+#[derive(Serialize)]
+struct CrowdfundingRefundCallArgs<A, B> {
+    investor: A,
+    id: B,
+}
+
+#[derive(Serialize)]
+struct CrowdfundingReleaseSharesCallArgs<A, B> {
+    id: A,
+    shares: B,
+}
+
+//
 
 #[derive(Serialize)]
 struct DeipUpdateProjectCallArgs<A, B, C> {
@@ -760,26 +844,32 @@ struct DeipUpdateProjectCallArgs<A, B, C> {
 }
 
 #[derive(Serialize)]
-struct DeipFinishCrowdfundingCallArgs<A> {
-    sale_id: A,
+struct CrowdfundingReadyCallArgs<A, B, C ,D, E> {
+    id: A,
+    start_time: B,
+    end_time: C,
+    soft_cap: D,
+    hard_cap: E
 }
 
 #[derive(Serialize)]
-struct DeipExpireCrowdfundingCallArgs<A> {
-    sale_id: A,
+struct CrowdfundingRollbackSharesCallArgs<A, B> {
+    id: A,
+    shares: B,
 }
 
 #[derive(Serialize)]
-struct DeipActivateCrowdfundingCallArgs<A> {
-    sale_id: A,
+struct CrowdfundingCommitSharesCallArgs<A, B> {
+    id: A,
+    shares: B,
 }
 
 #[derive(Serialize)]
-struct DeipCreateInvestmentOpportunityCallArgs<A, B, C, D> {
-    external_id: A,
+struct CrowdfundingCreateCallArgs<A, B, C, D> {
+    id: A,
     creator: B,
     shares: C,
-    funding_model: D,
+    fund: D,
 }
 
 #[derive(Serialize)]

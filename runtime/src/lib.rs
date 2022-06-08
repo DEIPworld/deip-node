@@ -652,6 +652,7 @@ impl pallet_deip_uniques::Config for Runtime {
     type ProjectId = pallet_deip::ProjectId;
     type NftClassId = <Self as pallet_uniques::Config>::ClassId;
     type MaxOriginClassId = MaxOriginClassId;
+    type Fungibles = DeipAssets;
 }
 
 impl pallet_beefy::Config for Runtime {
@@ -756,8 +757,7 @@ impl pallet_deip::Config for Runtime {
     type MaxNdaParties = MaxNdaParties;
 }
 
-use deip_asset_system::{GenericFToken, GenericFNFToken, DummyDeipAssetsPallet};
-use frame_support::traits::{fungibles, tokens::nonfungibles};
+use deip_asset_system::{FToken, NFTokenFraction};
 
 impl pallet_deip_investment_opportunity::Config for Runtime {
     type DeipInvestmentWeightInfo = pallet_deip_investment_opportunity::weights::Weights<Self>;
@@ -769,38 +769,22 @@ impl pallet_deip_investment_opportunity::Config for Runtime {
 
     type Crowdfunding = pallet_deip_investment_opportunity::crowdfunding::SimpleCrowdfundingV2<Self>;
 
-    type AssetAmount = <Assets as fungibles::Inspect<Self::AccountId>>::Balance;
+    type AssetAmount = <Self as pallet_assets::Config>::Balance;
 
-    type FundAssetId = <Assets as fungibles::Inspect<Self::AccountId>>::AssetId;
-    type FundAssetPayload = ();
-    type FundAssetImpl = Assets;
-    type FundAsset = GenericFToken<
-        Self::FundAssetId,
-        Self::FundAssetPayload,
-        Self::AccountId,
-        Self::AssetAmount,
-        Self::FundAssetImpl
-    >;
+    type FundAssetId = <Self as pallet_assets::Config>::AssetId;
 
-    type SharesAssetId = Self::Hash;
-    type SharesAssetPayload = (
-        <Uniques as nonfungibles::Inspect<Self::AccountId>>::ClassId,
-        <Uniques as nonfungibles::Inspect<Self::AccountId>>::InstanceId,
-        <Assets as fungibles::Inspect<Self::AccountId>>::AssetId
+    type FundAssetImpl = DeipAssets;
+
+    type FundAsset = FToken<Self::FundAssetImpl>;
+
+    type SharesAssetId = (
+        Self::Hash,
+        <Self as pallet_uniques::Config>::InstanceId
     );
-    type SharesAssetImpl = DummyDeipAssetsPallet<
-        Uniques,
-        Assets,
-        Self::AccountId,
-        Self::Hashing,
-    >;
-    type SharesAsset = GenericFNFToken<
-        Self::SharesAssetId,
-        Self::SharesAssetPayload,
-        Self::AccountId,
-        Self::AssetAmount,
-        Self::SharesAssetImpl
-    >;
+
+    type SharesAssetImpl = DeipUniques;
+
+    type SharesAsset = NFTokenFraction<Self::SharesAssetImpl>;
 }
 
 parameter_types! {

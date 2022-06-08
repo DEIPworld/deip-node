@@ -262,6 +262,12 @@ pub mod pallet {
     >;
 
     #[pallet::storage]
+    pub type NextFTokenId<T: Config> = StorageValue<_,
+        <T as pallet_assets::Config>::AssetId,
+        ValueQuery
+    >;
+
+    #[pallet::storage]
     pub(super) type NextAssetId<T> = StorageValue<_, AssetsAssetIdOf<T>, ValueQuery>;
 
     /// Deprecated

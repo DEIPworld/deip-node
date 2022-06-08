@@ -1,19 +1,33 @@
 use frame_support::{
     dispatch::DispatchResult,
     traits::{
-        fungibles::{Inspect, Mutate},
+        fungibles::{Inspect, Mutate, Create, Transfer},
         tokens::{DepositConsequence, WithdrawConsequence},
     },
 };
 use frame_system::Config as SystemConfig;
 use sp_runtime::DispatchError;
+use sp_runtime::traits::AtLeast32BitUnsigned;
 
 use crate::{Config, Pallet};
+
+use deip_asset_system::FTImplT;
+
+impl<T: Config> FTImplT for Pallet<T>
+    where
+        <T as pallet_assets::Config>::AssetId: AtLeast32BitUnsigned
+{
+    type Account = T::AccountId;
+    type FTokenId = <T as pallet_assets::Config>::AssetId;
+    type FTokenAmount = T::Balance;
+    type NextFTokenId = crate::NextFTokenId<T>;
+    type Fungibles = Self;
+}
 
 impl<T: Config> Inspect<<T as SystemConfig>::AccountId> for Pallet<T> {
     type AssetId = <T as pallet_assets::Config>::AssetId;
 
-    type Balance = <T as pallet_assets::Config>::Balance;
+    type Balance = T::Balance;
 
     fn total_issuance(asset: Self::AssetId) -> Self::Balance {
         pallet_assets::Pallet::<T>::total_issuance(asset)
@@ -67,5 +81,17 @@ impl<T: Config> Mutate<<T as SystemConfig>::AccountId> for Pallet<T> {
         amount: Self::Balance,
     ) -> Result<Self::Balance, DispatchError> {
         pallet_assets::Pallet::<T>::burn_from(asset, who, amount)
+    }
+}
+
+impl<T: Config> Create<<T as SystemConfig>::AccountId> for Pallet<T> {
+    fn create(id: Self::AssetId, admin: <T as SystemConfig>::AccountId, is_sufficient: bool, min_balance: Self::Balance) -> DispatchResult {
+        <pallet_assets::Pallet::<T> as Create<T::AccountId>>::create(id, admin, is_sufficient, min_balance)
+    }
+}
+
+impl<T: Config> Transfer<<T as SystemConfig>::AccountId> for Pallet<T> {
+    fn transfer(asset: Self::AssetId, source: &<T as SystemConfig>::AccountId, dest: &<T as SystemConfig>::AccountId, amount: Self::Balance, keep_alive: bool) -> Result<Self::Balance, DispatchError> {
+        <pallet_assets::Pallet::<T> as Transfer<T::AccountId>>::transfer(asset, source, dest, amount, keep_alive)
     }
 }

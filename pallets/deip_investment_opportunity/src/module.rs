@@ -23,7 +23,7 @@ use scale_info::TypeInfo;
 use sp_core::H160;
 use sp_std::prelude::*;
 use crate::{Config, Error, Event, Call, Pallet};
-use deip_asset_system::{ReserveError, UnreserveError};
+use deip_asset_system::{FTokenT, ReserveError, UnreserveError};
 pub use crate::crowdfunding::*;
 pub use deip_asset_system::asset::*;
 use crate::{
@@ -288,7 +288,7 @@ pub(crate) trait ModuleT<T: Config>: CrowdfundingAccount<T>
 
         cf.is_creator(&creator)?;
 
-        cf.fund_balance()?.transfer(
+        cf.fund_balance()?.transfer_all(
             cf.creator(),
         );
         T::_destroy_account(&cf);
@@ -339,8 +339,9 @@ pub(crate) trait ModuleT<T: Config>: CrowdfundingAccount<T>
 
         let inv = S::RefundR::find_investment(&cf, investor.clone())?;
 
-        cf.fund(cf.account(), *inv.amount())?.transfer(
+        cf.fund(cf.account(), *inv.amount())?.transfer_amount(
             &investor,
+            *inv.amount()
         );
         deposit_event::<T>(Event::Refund(id, investor.clone()));
 
