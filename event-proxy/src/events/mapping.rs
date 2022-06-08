@@ -269,26 +269,7 @@ where
     use pallet_deip_investment_opportunity::Event::*;
 
     match e {
-        Created(..) => {
-            // deip::SimpleCrowdfundingCreatedEvent
-            unimplemented!()
-        },
-        Activated(..) => {
-            // deip::SimpleCrowdfundingActivatedEvent
-            unimplemented!()
-        },
-        SimpleCrowdfundingFinished(..) => {
-            // deip::SimpleCrowdfundingFinishedEvent
-            unimplemented!()
-        },
-        Expired(..) => {
-            // deip::SimpleCrowdfundingExpiredEvent
-            unimplemented!()
-        },
-        Invested(..) => {
-            // deip::InvestedEvent
-            unimplemented!()
-        },
         __Ignore { .. } => unreachable!(),
+        _ => unimplemented!()
     }
 }
