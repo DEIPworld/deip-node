@@ -4404,6 +4404,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-deip-nft"
+version = "3.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-uniques",
+ "parity-scale-codec",
+ "scale-info",
+]
+
+[[package]]
 name = "pallet-deip-portal"
 version = "3.0.0"
 dependencies = [
