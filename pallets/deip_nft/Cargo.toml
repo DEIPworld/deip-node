@@ -10,17 +10,19 @@ version = "3.0.0"
 
 [dependencies]
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
-scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+deip-asset-system = { path = "../../deip_common/deip_asset_system", default-features = false }
 frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-uniques = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+scale-info = { version = "1.0", default-features = false, features = ["derive"] }
 
 [features]
 default = ["std"]
 std = [
     "codec/std",
-    "scale-info/std",
+    "deip-asset-system/std",
     "frame-support/std",
     "frame-system/std",
     "pallet-uniques/std",
+    "scale-info/std",
 ]
