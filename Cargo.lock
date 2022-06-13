@@ -4407,6 +4407,7 @@ dependencies = [
 name = "pallet-deip-nft"
 version = "3.0.0"
 dependencies = [
+ "deip-asset-system",
  "frame-support",
  "frame-system",
  "pallet-uniques",
