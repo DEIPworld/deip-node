@@ -204,7 +204,7 @@ pub mod pallet {
 	/// The set of votes. [Need to unlock holders' assets]
 	#[pallet::storage]
 	pub type Votes<T: Config> =
-		StorageDoubleMap<_, Identity, (T::AccountId, T::AssetId), Identity, VotingId, Sign>;
+		StorageDoubleMap<_, Blake2_128Concat, (T::AccountId, T::AssetId), Identity, VotingId, Sign>;
 
 	/// The set of call data to be executed and reserved balance for it
 	#[pallet::storage]
@@ -245,6 +245,8 @@ pub mod pallet {
 		BadCallEncoding,
 		/// Too much votings with the asset are running
 		LimitVotingsPerAsset,
+		/// The maximum weight information provided was too low.
+		MaxWeightTooLow,
 	}
 
 	#[pallet::event]
@@ -289,7 +291,15 @@ pub mod pallet {
 		/// - `end`: Voting deactivation timepoint (optional); permanent voting if it's empty
 		/// - `threshold`: Absolute or relative asset balance threshold; minimum sum of asset holders' balances for operation to be executed
 		/// - `call`: The call to be executed
-		#[pallet::weight((T::WeightInfo::create(call.encoded_len() as u32), DispatchClass::Normal))]
+		#[pallet::weight({
+			let z = call.encoded_len() as u32;
+			(
+				T::WeightInfo::create(z)
+				.max(T::WeightInfo::create_and_execute(z))
+				.saturating_add(*max_weight),
+				DispatchClass::Normal
+			)
+		})]
 		pub fn create(
 			origin: OriginFor<T>,
 			asset: T::AssetId,
@@ -297,6 +307,7 @@ pub mod pallet {
 			end: Option<TimeOf<T>>,
 			threshold: ThresholdOf<T>,
 			call: OpaqueCall<T>,
+			max_weight: Weight,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 			let zero = T::AssetBalance::zero();
@@ -341,7 +352,7 @@ pub mod pallet {
 				}
 			};
 			if approved {
-				let res = Self::execute(id, v)?.actual_weight;
+				let res = Self::execute(id, v, max_weight)?.actual_weight;
 				Votes::<T>::remove(&(who.clone(), asset), &id);
 				Self::try_return_asset(&who, asset);
 				Ok(res.map(|w| {
@@ -358,11 +369,21 @@ pub mod pallet {
 		///
 		/// - `id`: Voting unique identifier (voting struct hash)
 		/// - `sign`: Vote value (sign: positive (yes) | neutral | negative (no))
-		#[pallet::weight((T::WeightInfo::vote(), DispatchClass::Operational))]
+		/// - `max_weight`: Maximum call execution weight
+		#[pallet::weight({
+			(
+				T::WeightInfo::vote()
+				.max(T::WeightInfo::vote_and_execute())
+				.saturating_add(*max_weight),
+				DispatchClass::Normal,
+				Pays::No
+			)
+		})]
 		pub fn vote(
 			origin: OriginFor<T>,
 			id: VotingId,
 			sign: Sign,
+			max_weight: Weight,
 		) -> DispatchResultWithPostInfo {
 			let voter = ensure_signed(origin)?;
 			let v = Votings::<T>::get(&id).ok_or_else(|| Error::<T>::NotFound)?;
@@ -383,11 +404,11 @@ pub mod pallet {
 				}
 			};
 			if approved {
-				let res = Self::execute(id, v)?.actual_weight;
+				let res = Self::execute(id, v, max_weight)?.actual_weight;
 				Votes::<T>::remove(&(voter.clone(), asset), &id);
 				Self::try_return_asset(&voter, asset);
 				Ok(res.map(|w| {
-					T::WeightInfo::vote_and_execute(0).saturating_add(w)
+					T::WeightInfo::vote_and_execute().saturating_add(w)
 				}).into())
 			} else {
 				Self::deposit_event(Event::<T>::Updated { id, author: voter });
@@ -402,10 +423,20 @@ pub mod pallet {
 		/// The dispatch origin for this call must be _Signed_.
 		///
 		/// - `id`: Voting unique identifier (hash)
-		#[pallet::weight((T::WeightInfo::unvote(), DispatchClass::Normal))]
+		/// - `max_weight`: Maximum call execution weight
+		#[pallet::weight({
+			(
+				T::WeightInfo::unvote()
+				.max(T::WeightInfo::unvote_and_cancel())
+				.max(T::WeightInfo::unvote_and_execute())
+				.saturating_add(*max_weight),
+				DispatchClass::Normal
+			)
+		})]
 		pub fn cancel(
 			origin: OriginFor<T>,
 			id: VotingId,
+			max_weight: Weight,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 			let v = Votings::<T>::get(&id).ok_or_else(|| Error::<T>::NotFound)?;
@@ -429,10 +460,10 @@ pub mod pallet {
 						}
 					};
 					if approved {
-						let res = Self::execute(id, v)?.actual_weight;
+						let res = Self::execute(id, v, max_weight)?.actual_weight;
 						Votes::<T>::remove(&(who, asset), &id);
 						return Ok(res.map(|w| {
-							T::WeightInfo::unvote_and_execute(0).saturating_add(w)
+							T::WeightInfo::unvote_and_execute().saturating_add(w)
 						}).into())
 					} else {
 						Self::deposit_event(Event::<T>::Updated { id, author: who.clone() });
@@ -449,20 +480,21 @@ pub mod pallet {
 		/// The dispatch origin for this call must be _Signed_.
 		///
 		/// - `asset`: Asset identifier to be unlocked for the holder (caller)
-		#[pallet::weight((T::WeightInfo::retain_asset(), DispatchClass::Normal))]
+		#[pallet::weight((T::WeightInfo::retain_asset(T::MaxVotesPerAccountAsset::get() as u32), DispatchClass::Normal))]
 		pub fn retain_asset(
 			origin: OriginFor<T>,
 			asset: T::AssetId,
-		) -> DispatchResult {
+		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 			let key = (who, asset);
 			let ids: Vec<_> = Votes::<T>::iter_prefix(&key).map(|p| p.0).collect();
+			let num = ids.len() as u32;
 			for id in ids {
 				ensure!(!Votings::<T>::contains_key(&id), Error::<T>::StillProcessing);
 				Votes::<T>::remove(&key, &id);
 			}
 			Self::try_return_asset(&key.0, asset);
-			Ok(())
+			Ok(Some(T::WeightInfo::retain_asset(num)).into())
 		}
 
 		/*
@@ -559,14 +591,14 @@ impl<T: Config> Pallet<T> {
 		// TODO unlock account's asset
 	}
 
-	pub fn execute(id: VotingId, voting: VotingOf<T>) -> DispatchResultWithPostInfo {
+	pub fn execute(id: VotingId, voting: VotingOf<T>, max_weight: Weight) -> DispatchResultWithPostInfo {
+		let (data, author, balance) = Calls::<T>::get(&voting.call_hash).ok_or_else(|| Error::<T>::NoCall)?;
+		let call = data.try_decode().ok_or_else(|| Error::<T>::BadCallEncoding)?;
+		let dispatch_info = call.get_dispatch_info();
+		ensure!(max_weight >= dispatch_info.weight, Error::<T>::MaxWeightTooLow);
 		Votings::<T>::remove(id);
 		States::<T>::remove(id);
-		let call_hash = voting.call_hash;
-		let call_info = Calls::<T>::take(&call_hash);
-		ensure!(call_info.is_some(), Error::<T>::NoCall);
-		let (data, author, balance) = call_info.unwrap();
-		let call = data.try_decode().ok_or_else(|| Error::<T>::BadCallEncoding)?;
+		Calls::<T>::remove(&voting.call_hash);
 		ensure!(T::Currency::reserved_balance(&author) >= balance, Error::<T>::UnexpectedLowReservedBalance);
 		T::Currency::unreserve(&author, balance); // should be reserved within `create` call
 		let result = call.dispatch(RawOrigin::Signed(voting.delegate.clone()).into());

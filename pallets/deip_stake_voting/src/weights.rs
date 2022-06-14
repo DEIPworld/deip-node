@@ -49,11 +49,11 @@ pub trait WeightInfo {
 	fn create(z: u32) -> Weight;
 	fn create_and_execute(z: u32) -> Weight;
 	fn vote() -> Weight;
-	fn vote_and_execute(z: u32) -> Weight;
+	fn vote_and_execute() -> Weight;
 	fn unvote() -> Weight;
-	fn unvote_and_execute(z: u32) -> Weight;
+	fn unvote_and_execute() -> Weight;
 	fn unvote_and_cancel() -> Weight;
-	fn retain_asset() -> Weight;
+	fn retain_asset(u: u32) -> Weight;
 }
 
 /// Weights for pallet_multisig using the Substrate node and recommended hardware.
@@ -103,10 +103,9 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
 	// Storage: unknown [0x3a65787472696e7369635f696e646578] (r:1 w:0)
 	// Storage: DeipStakeVoting States (r:1 w:1)
 	// Storage: DeipStakeVoting Calls (r:1 w:1)
-	fn vote_and_execute(z: u32, ) -> Weight {
+	fn vote_and_execute() -> Weight {
 		(141_230_000 as Weight)
 			// Standard Error: 0
-			.saturating_add((1_000 as Weight).saturating_mul(z as Weight))
 			.saturating_add(T::DbWeight::get().reads(8 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
@@ -128,10 +127,9 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
 	// Storage: unknown [0x3a65787472696e7369635f696e646578] (r:1 w:0)
 	// Storage: Assets Asset (r:1 w:0)
 	// Storage: DeipStakeVoting Calls (r:1 w:1)
-	fn unvote_and_execute(z: u32) -> Weight {
+	fn unvote_and_execute() -> Weight {
 		(104_508_000 as Weight)
 			// Standard Error: 0
-			.saturating_add((1_000 as Weight).saturating_mul(z as Weight))
 			.saturating_add(T::DbWeight::get().reads(7 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
@@ -148,9 +146,10 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
 	}
 	// Storage: DeipStakeVoting Votes (r:2 w:1)
 	// Storage: DeipStakeVoting Votings (r:1 w:0)
-	fn retain_asset() -> Weight {
+	fn retain_asset(u: u32) -> Weight {
+		let dbw = T::DbWeight::get();
 		(39_224_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(dbw.reads((u * 2 + 1) as Weight))
+			.saturating_add(dbw.writes(u as Weight))
 	}
 }
