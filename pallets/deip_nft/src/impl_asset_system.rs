@@ -1,6 +1,10 @@
-use deip_asset_system::NFTImplT;
+use deip_asset_system::{
+    NFTImplT, NFTokenCollectionRecord, NFTokenFractionRecord, NFTokenItemRecord,
+};
 
-use crate::{Config, Pallet};
+use crate::{
+    CollectionByAccount, Config, FractionByAccount, ItemByAccount, NextCollectionId, Pallet,
+};
 
 impl<T: Config> NFTImplT for Pallet<T> {
     type Fungibles = T::Fungibles;
@@ -28,19 +32,27 @@ impl<T: Config> NFTImplT for Pallet<T> {
     /// @TODO bad name.
     type Fractional = (Self::FTokenId, Self::FTokenAmount);
 
-    type CollectionRecord;
+    type CollectionRecord =
+        NFTokenCollectionRecord<Self::Account, Self::NFTokenCollectionId, Self::ItemId>;
 
-    type ItemRecord;
+    type ItemRecord =
+        NFTokenItemRecord<Self::Account, Self::NFTokenItemId, Self::CollectionId, Self::Fractional>;
 
-    type FractionRecord;
+    type FractionRecord = NFTokenFractionRecord<
+        Self::Account,
+        Self::NFTokenItemId,
+        Self::Fractional,
+        Self::FTokenAmount,
+    >;
 
-    type CollectionRepo;
+    type CollectionRepo = CollectionByAccount<T>;
 
-    type ItemRepo;
+    type ItemRepo = ItemByAccount<T>;
 
-    type FractionRepo;
+    type FractionRepo = FractionByAccount<T>;
 
-    type NextCollectionId;
+    type NextCollectionId = NextCollectionId<T>;
 
-    type Nonfungibles;
+    //@TODO questionable.
+    type Nonfungibles = Self;
 }
