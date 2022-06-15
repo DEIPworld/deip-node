@@ -810,9 +810,9 @@ impl pallet_deip_stake_voting::Config for Runtime {
     type Call = Call;
     type Currency = Balances;
     type DepositBase = DepositBase;
-    type Assets = Assets;
-    type AssetId = <Assets as Inspect<Self::AccountId>>::AssetId;
-    type AssetBalance = <Assets as Inspect<Self::AccountId>>::Balance;
+    type Assets = DeipAssets;
+    type AssetId = <Self as pallet_assets::Config>::AssetId;
+    type AssetBalance = <Self as pallet_assets::Config>::Balance;
     type RelativeThresholdLimit = RelativeThresholdLimit;
     type MaxVotesPerAccountAsset = MaxVotesPerAccountAsset;
     type WeightInfo = pallet_deip_stake_voting::weights::Weights<Runtime>;
