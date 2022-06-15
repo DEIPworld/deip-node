@@ -32,7 +32,7 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
         creator: T::AccountId,
         account: T::AccountId,
         external_id: CrowdfundingId,
-        fund: T::FundAssetId,
+        fund: T::AssetId,
     ) -> Self
     {
         SimpleCrowdfundingV2 {
@@ -75,17 +75,17 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
         &self,
         account: &T::AccountId,
         amount: T::AssetAmount
-    ) -> Result<T::FundAsset, crate::Error<T>>
+    ) -> Result<T::Asset, crate::Error<T>>
     {
-        T::FundAsset::pick_ft(self.v1.asset_id, account)
+        T::Asset::pick_fraction(account, self.v1.asset_id)
             .ok_or_else(|| crate::Error::BalanceIsNotEnough)
     }
 
-    fn fund_balance(&self) -> Result<T::FundAsset, crate::Error<T>> {
+    fn fund_balance(&self) -> Result<T::Asset, crate::Error<T>> {
         let balance
-            = *T::FundAsset::pick_ft(self.v1.asset_id, self.account())
+            = *T::Asset::pick_fraction(self.account(), self.v1.asset_id)
             .ok_or_else(|| crate::Error::BalanceIsNotEnough)?
-            .balance();
+            .amount();
         self.fund(self.account(), balance)
     }
 
@@ -127,14 +127,14 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
 
     fn commit_shares(
         &mut self,
-        shares: (T::SharesAssetId, T::AssetAmount)
+        shares: (T::AssetId, T::AssetAmount)
     ) -> Result<SharesTransfer<'_, T>, crate::Error<T>>
     {
         ensure!(self.shares < T::MaxShares::get(), crate::Error::TooMuchShares);
         self.shares.saturating_inc();
         let (id, amount) = shares;
         Ok(SharesTransfer::<T>::new(
-            T::SharesAsset::pick_fraction(self.creator(), id)
+            T::Asset::pick_fraction(self.creator(), id)
                 .ok_or_else(|| crate::Error::BalanceIsNotEnough)?,
             self.account(),
             amount
@@ -143,14 +143,14 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
 
     fn rollback_shares(
         &mut self,
-        shares: (T::SharesAssetId, T::AssetAmount)
+        shares: (T::AssetId, T::AssetAmount)
     ) -> Result<SharesTransfer<'_, T>, crate::Error<T>>
     {
         ensure!(self.shares > 0, crate::Error::NoShares);
         self.shares.saturating_dec();
         let (id, amount) = shares;
         Ok(SharesTransfer::<T>::new(
-            T::SharesAsset::pick_fraction(self.account(), id)
+            T::Asset::pick_fraction(self.account(), id)
                 .ok_or_else(|| crate::Error::ImpossibleSituation)?,
             self.creator(),
             amount
@@ -222,7 +222,7 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
     fn payout<'a>(
         &mut self,
         investment: &'a mut Self::Investment,
-        shares: (T::SharesAssetId, T::AssetAmount),
+        shares: (T::AssetId, T::AssetAmount),
     ) -> Result<Payout<'a, T, Self::Investment>, crate::Error<T>>
     {
         ensure!(!self.no_payouts(), crate::Error::ImpossibleSituation);
@@ -234,7 +234,7 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
         );
 
         let (id, _) = shares;
-        let asset = T::SharesAsset::pick_fraction(
+        let asset = T::Asset::pick_fraction(
             self.account(),
             id,
         ).ok_or_else(|| crate::Error::ImpossibleSituation)?;
@@ -250,13 +250,13 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
 }
 
 pub struct SharesTransfer<'a, T: Config> {
-    asset: T::SharesAsset,
+    asset: T::Asset,
     to: &'a T::AccountId,
     amount: T::AssetAmount
 }
 
 impl<'a, T: Config> SharesTransfer<'a, T> {
-    fn new(asset: T::SharesAsset, to: &'a T::AccountId, amount: T::AssetAmount) -> Self {
+    fn new(asset: T::Asset, to: &'a T::AccountId, amount: T::AssetAmount) -> Self {
         Self { asset, to, amount }
     }
     pub fn transfer(self) {
@@ -265,7 +265,7 @@ impl<'a, T: Config> SharesTransfer<'a, T> {
 }
 
 pub struct Payout<'a, T: Config, I: InvestmentT<T>> {
-    asset: T::SharesAsset,
+    asset: T::Asset,
     investment: &'a mut I,
     amount: T::AssetAmount
 }
@@ -275,7 +275,7 @@ impl<'a, T: Config, I: InvestmentT<T>> Payout<'a, T, I>
     pub fn amount(
         cf: &impl CrowdfundingT<T>,
         investment: &'a I,
-        shares: &(T::SharesAssetId, T::AssetAmount)
+        shares: &(T::AssetId, T::AssetAmount)
     ) -> PayoutAmount<T::AssetAmount>
     {
         PayoutAmount {
@@ -316,7 +316,7 @@ impl<Amount: FixedPointOperand + One> PayoutAmount<Amount>
 }
 
 pub struct Purchase<'a, T: Config, CF: CrowdfundingT<T>> {
-    asset: T::FundAsset,
+    asset: T::Asset,
     amount: T::AssetAmount,
     cf: &'a CF
 }
@@ -362,7 +362,7 @@ pub trait CrowdfundingT<T: crate::Config>: Sized
         creator: T::AccountId,
         account: T::AccountId,
         external_id: CrowdfundingId,
-        fund: T::FundAssetId,
+        fund: T::AssetId,
     ) -> Self;
 
     // Getters:
@@ -379,9 +379,9 @@ pub trait CrowdfundingT<T: crate::Config>: Sized
         &self,
         account: &T::AccountId,
         amount: T::AssetAmount
-    ) -> Result<T::FundAsset, crate::Error<T>>;
+    ) -> Result<T::Asset, crate::Error<T>>;
 
-    fn fund_balance(&self) -> Result<T::FundAsset, crate::Error<T>>;
+    fn fund_balance(&self) -> Result<T::Asset, crate::Error<T>>;
 
     fn start_time(&self) -> &T::Moment;
 
@@ -407,12 +407,12 @@ pub trait CrowdfundingT<T: crate::Config>: Sized
 
     fn commit_shares(
         &mut self,
-        shares: (T::SharesAssetId, T::AssetAmount)
+        shares: (T::AssetId, T::AssetAmount)
     ) -> Result<SharesTransfer<T>, crate::Error<T>>;
 
     fn rollback_shares(
         &mut self,
-        shares: (T::SharesAssetId, T::AssetAmount)
+        shares: (T::AssetId, T::AssetAmount)
     ) -> Result<SharesTransfer<T>, crate::Error<T>>;
 
     fn ready(
@@ -438,7 +438,7 @@ pub trait CrowdfundingT<T: crate::Config>: Sized
     fn payout<'a>(
         &mut self,
         investment: &'a mut Self::Investment,
-        shares: (T::SharesAssetId, T::AssetAmount),
+        shares: (T::AssetId, T::AssetAmount),
     ) -> Result<Payout<'a, T, Self::Investment>, crate::Error<T>>;
 
     // Invariants:
@@ -477,7 +477,7 @@ pub trait CrowdfundingT<T: crate::Config>: Sized
 }
 
 use frame_support::storage::{IterableStorageMap, StorageMap};
-use deip_asset_system::{FTokenT, NFTokenFractionT};
+use deip_asset_system::{NFTokenFractionT};
 
 impl<T: Config> StateTransitionT<T> for CrowdfundingStatus {
     type IncompleteR = IncompleteRepo<T>;
@@ -596,7 +596,7 @@ pub trait RepositoryT<T: crate::Config>
 
     fn insert_shares(
         cf: &T::Crowdfunding,
-        shares: (T::SharesAssetId, T::AssetAmount)
+        shares: (T::AssetId, T::AssetAmount)
     ) {
         let (id, amount) = shares;
         SharesMapV2::<T>::insert(*cf.id(), id, amount);
@@ -604,8 +604,8 @@ pub trait RepositoryT<T: crate::Config>
 
     fn find_shares(
         cf: &T::Crowdfunding,
-        shares: T::SharesAssetId
-    ) -> Result<(T::SharesAssetId, T::AssetAmount), crate::Error<T>>
+        shares: T::AssetId
+    ) -> Result<(T::AssetId, T::AssetAmount), crate::Error<T>>
     {
         let amount = SharesMapV2::<T>::try_get(*cf.id(), shares)
             .map_err(|_| crate::Error::NotFound)?;
@@ -614,8 +614,8 @@ pub trait RepositoryT<T: crate::Config>
 
     fn take_shares(
         cf: &T::Crowdfunding,
-        shares: T::SharesAssetId
-    ) -> Result<(T::SharesAssetId, T::AssetAmount), crate::Error<T>>
+        shares: T::AssetId
+    ) -> Result<(T::AssetId, T::AssetAmount), crate::Error<T>>
     {
         let amount = SharesMapV2::<T>::take(*cf.id(), shares)
             .ok_or_else(|| crate::Error::NotFound)?;
@@ -692,7 +692,7 @@ pub trait RepositoryT<T: crate::Config>
     fn insert_payout(
         cf: &T::Crowdfunding,
         investment: &Investment<T>,
-        shares: T::SharesAssetId
+        shares: T::AssetId
     )
     {
         PayoutMapV2::<T>::insert(
@@ -708,7 +708,7 @@ pub trait RepositoryT<T: crate::Config>
     fn not_exist_payout(
         cf: &T::Crowdfunding,
         investment: &Investment<T>,
-        shares: T::SharesAssetId
+        shares: T::AssetId
     ) -> Result<(), crate::Error<T>>
     {
         let exist = PayoutMapV2::<T>::contains_key(
@@ -867,7 +867,7 @@ pub fn fund_account<T: Config>(id: &[u8]) -> T::AccountId {
 pub struct SimpleCrowdfundingV2<T: crate::Config> {
     v1: SimpleCrowdfunding<
         T::Moment,
-        T::FundAssetId,
+        T::AssetId,
         T::AssetAmount,
         TransactionCtxId<T::TransactionCtx>
     >,

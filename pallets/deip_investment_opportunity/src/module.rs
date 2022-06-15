@@ -23,7 +23,7 @@ use scale_info::TypeInfo;
 use sp_core::H160;
 use sp_std::prelude::*;
 use crate::{Config, Error, Event, Call, Pallet};
-use deip_asset_system::{FTokenT, ReserveError, UnreserveError};
+use deip_asset_system::{NFTokenFractionT, ReserveError, UnreserveError};
 pub use crate::crowdfunding::*;
 pub use deip_asset_system::asset::*;
 use crate::{
@@ -35,7 +35,7 @@ use crate::weights::WeightInfo;
 
 pub type SimpleCrowdfundingOf<T: Config> = SimpleCrowdfunding<
     T::Moment,
-    T::FundAssetId,
+    T::AssetId,
     T::AssetAmount,
     TransactionCtxId<<T as Config>::TransactionCtx>,
 >;
@@ -85,8 +85,8 @@ pub(crate) trait ModuleT<T: Config>: CrowdfundingAccount<T>
     fn create<S: StateTransitionT<T>>(
         creator: T::AccountId,
         id: CrowdfundingId,
-        shares: (T::SharesAssetId, T::AssetAmount),
-        fund: T::FundAssetId,
+        shares: (T::AssetId, T::AssetAmount),
+        fund: T::AssetId,
     ) -> DispatchResult
     {
         S::not_exist(id)?;
@@ -113,7 +113,7 @@ pub(crate) trait ModuleT<T: Config>: CrowdfundingAccount<T>
     fn commit_shares<S: StateTransitionT<T>>(
         creator: T::AccountId,
         id: CrowdfundingId,
-        shares: (T::SharesAssetId, T::AssetAmount)
+        shares: (T::AssetId, T::AssetAmount)
     ) -> DispatchResult
     {
         let mut cf = S::IncompleteR::find(id)?;
@@ -137,7 +137,7 @@ pub(crate) trait ModuleT<T: Config>: CrowdfundingAccount<T>
     fn rollback_shares<S: StateTransitionT<T>>(
         creator: T::AccountId,
         id: CrowdfundingId,
-        shares: T::SharesAssetId
+        shares: T::AssetId
     ) -> DispatchResult
     {
         let mut cf = S::IncompleteR::find(id)?;
@@ -238,7 +238,7 @@ pub(crate) trait ModuleT<T: Config>: CrowdfundingAccount<T>
         who: T::AccountId,
         investor: Option<T::AccountId>,
         id: CrowdfundingId,
-        shares: T::SharesAssetId
+        shares: T::AssetId
     ) -> DispatchResult
     {
         let mut cf = S::PayoutR::find(id)?;
@@ -361,7 +361,7 @@ pub(crate) trait ModuleT<T: Config>: CrowdfundingAccount<T>
     fn release_shares<S: StateTransitionT<T>>(
         creator: T::AccountId,
         id: CrowdfundingId,
-        shares: T::SharesAssetId
+        shares: T::AssetId
     ) -> DispatchResult
     {
         let mut cf = S::ReleaseSharesR::find(id)?;
