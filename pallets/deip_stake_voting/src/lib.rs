@@ -32,7 +32,7 @@ pub mod weights;
 
 use codec::{Decode, Encode};
 use frame_support::dispatch::{DispatchResult, DispatchError, DispatchResultWithPostInfo, PostDispatchInfo, Codec};
-use frame_support::ensure;
+use frame_support::{ensure, transactional};
 use frame_support::traits::{Currency, Get, ReservableCurrency, WrapperKeepOpaque};
 use frame_support::traits::fungibles::Inspect;
 use frame_support::weights::{GetDispatchInfo, Weight};
@@ -300,6 +300,7 @@ pub mod pallet {
 				DispatchClass::Normal
 			)
 		})]
+		#[transactional]
 		pub fn create(
 			origin: OriginFor<T>,
 			asset: T::AssetId,
@@ -379,6 +380,7 @@ pub mod pallet {
 				Pays::No
 			)
 		})]
+		#[transactional]
 		pub fn vote(
 			origin: OriginFor<T>,
 			id: VotingId,
@@ -433,6 +435,7 @@ pub mod pallet {
 				DispatchClass::Normal
 			)
 		})]
+		#[transactional]
 		pub fn cancel(
 			origin: OriginFor<T>,
 			id: VotingId,
@@ -481,6 +484,7 @@ pub mod pallet {
 		///
 		/// - `asset`: Asset identifier to be unlocked for the holder (caller)
 		#[pallet::weight((T::WeightInfo::retain_asset(T::MaxVotesPerAccountAsset::get() as u32), DispatchClass::Normal))]
+		#[transactional]
 		pub fn retain_asset(
 			origin: OriginFor<T>,
 			asset: T::AssetId,
@@ -601,13 +605,10 @@ impl<T: Config> Pallet<T> {
 		Calls::<T>::remove(&voting.call_hash);
 		ensure!(T::Currency::reserved_balance(&author) >= balance, Error::<T>::UnexpectedLowReservedBalance);
 		T::Currency::unreserve(&author, balance); // should be reserved within `create` call
-		let result = call.dispatch(RawOrigin::Signed(voting.delegate.clone()).into());
-		Self::deposit_event(Event::<T>::Executed {
-			id,
-			voting,
-			result: result.map(|_| ()).map_err(|e| e.error),
-		});
-		Ok(get_result_weight(result).into())
+		let call_res = call.dispatch(RawOrigin::Signed(voting.delegate.clone()).into());
+		let result = call_res.map(|_| ()).map_err(|e| e.error);
+		Self::deposit_event(Event::<T>::Executed { id, voting, result });
+		Ok(get_result_weight(call_res).into())
 	}
 
 	/// The current `Timepoint`.
