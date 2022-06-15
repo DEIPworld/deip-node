@@ -127,7 +127,7 @@ pub mod pallet {
 
     pub const V0: StorageVersion = StorageVersion::new(0);
     pub const V1: StorageVersion = StorageVersion::new(1);
-    
+
 
     #[doc(hidden)]
     #[pallet::pallet]
@@ -143,50 +143,48 @@ pub mod pallet {
             let mut reads: usize = 0;
             let mut writes: usize = 0;
 
-            let reserve_fund = v1::from_ss58check::<T>("5CP7ESrfSG2gYGdfbLPex6nFj5Eotz3gzaW69F1cCAXLrqAH");
+            let reserve_fund = from_ss58check::<T>("5CP7ESrfSG2gYGdfbLPex6nFj5Eotz3gzaW69F1cCAXLrqAH");
 
             let allocations_to_return = vec![
-                v1::from_ss58check::<T>("5FUBk8tjkXUauTwKDvhjj3ujBGNswQH5evY3WkCFd1TxrUct"),
-                v1::from_ss58check::<T>("5GRdTZyJYjUM53ZC1FkrzTaNqSmw1N8WShTxDdKaWCbUe4su"),
-                v1::from_ss58check::<T>("5F2BhPMUZjU39PCGr4CRrgXTp2bxenvXYdUMNeHTrx5EWEfL"),
-                v1::from_ss58check::<T>("5Ebi4kE8kBwuuYvJH9GQmfmbF6v2trviVQS86Hv4PEpoDiML"),
-                v1::from_ss58check::<T>("5Gq4YB8A4keRLFu84cKQNizWo93RLCyt3TZqENMeFxxXpmTJ"),
-                v1::from_ss58check::<T>("5GHNyHmqtBUoDDxrZiYn5btVx2axrt7Yxaf9LxkjWJiXm2Ev"),
-                v1::from_ss58check::<T>("5Exf3FTXKUPJXDWPvHQC48un7ZkZ4EFbZYPz3GavrUeBJHXm"),
-                v1::from_ss58check::<T>("5HWF2Xz2gr4abfbtcEZPPRaETB7Hhp7L53bcW4ZLnoyfEZz7"),
+                from_ss58check::<T>("5FUBk8tjkXUauTwKDvhjj3ujBGNswQH5evY3WkCFd1TxrUct"),
+                from_ss58check::<T>("5GRdTZyJYjUM53ZC1FkrzTaNqSmw1N8WShTxDdKaWCbUe4su"),
+                from_ss58check::<T>("5F2BhPMUZjU39PCGr4CRrgXTp2bxenvXYdUMNeHTrx5EWEfL"),
+                from_ss58check::<T>("5Ebi4kE8kBwuuYvJH9GQmfmbF6v2trviVQS86Hv4PEpoDiML"),
+                from_ss58check::<T>("5Gq4YB8A4keRLFu84cKQNizWo93RLCyt3TZqENMeFxxXpmTJ"),
+                from_ss58check::<T>("5GHNyHmqtBUoDDxrZiYn5btVx2axrt7Yxaf9LxkjWJiXm2Ev"),
+                from_ss58check::<T>("5Exf3FTXKUPJXDWPvHQC48un7ZkZ4EFbZYPz3GavrUeBJHXm"),
+                from_ss58check::<T>("5HWF2Xz2gr4abfbtcEZPPRaETB7Hhp7L53bcW4ZLnoyfEZz7"),
             ];
 
-            VestingPlans::<T>::translate::<VestingPlan<BalanceOf<T>>, _>(|k: T::AccountId, vesting: VestingPlan<BalanceOf<T>>| {
-                
+            for to_return in allocations_to_return {
+                let vesting = VestingPlans::<T>::take(to_return.clone()).unwrap();
                 reads += 1;
+                writes += 1;
 
-                if allocations_to_return.contains(&k) {
+                T::Currency::remove_lock(VESTING_ID, &to_return);
+                reads += 6;
+                writes += 7;
 
-                    T::Currency::remove_lock(VESTING_ID, &k);
-                    writes += 1;
+                T::Currency::transfer(
+                    &to_return,
+                    &reserve_fund,
+                    vesting.total_amount,
+                    ExistenceRequirement::AllowDeath,
+                ).unwrap();
+                reads += 4;
+                writes += 3;
+            }
 
-                    T::Currency::transfer(
-                        &k,
-                        &reserve_fund,
-                        vesting.total_amount,
-                        ExistenceRequirement::AllowDeath,
-                    ).unwrap();
-                    writes += 1;
-
-                    return None;
-                }
-                
-                Some(vesting)
-            });
-            
-            T::DbWeight::get().reads_writes(reads as Weight , writes as Weight)
+            T::DbWeight::get().reads_writes(
+                reads.try_into().unwrap_or(Weight::MAX),
+                writes.try_into().unwrap_or(Weight::MAX),
+            )
         }
 
-
-        pub fn from_ss58check<T: Config>(address_str: &str) -> <T as frame_system::Config>::AccountId {
+        pub fn from_ss58check<T: Config>(address_str: &str) -> T::AccountId {
             let mut address_vec = Vec::new();
             address_vec.resize(35, 0u8);
-            
+
             bs58::decode(address_str).into(&mut address_vec).unwrap();
             let raw_account_vec:Vec<u8> = address_vec.drain(1..33).collect(); // https://docs.substrate.io/v3/advanced/ss58/
             let mut raw_account_arr = [0; 32];
@@ -194,12 +192,10 @@ pub mod pallet {
             raw_account_arr.copy_from_slice(bytes);
             let account32: AccountId32 = raw_account_arr.into();
             let mut account32_arr = AccountId32::as_ref(&account32);
-            let account_id: <T as frame_system::Config>::AccountId = <T as frame_system::Config>::AccountId::decode(&mut account32_arr).unwrap();
-            account_id
+            T::AccountId::decode(&mut account32_arr).unwrap()
         }
     }
 
- 
     #[doc(hidden)]
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
