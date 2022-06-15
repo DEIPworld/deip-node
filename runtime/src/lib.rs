@@ -757,7 +757,7 @@ impl pallet_deip::Config for Runtime {
     type MaxNdaParties = MaxNdaParties;
 }
 
-use deip_asset_system::{FToken, NFTokenFraction};
+use deip_asset_system::{NFTokenFraction};
 
 impl pallet_deip_investment_opportunity::Config for Runtime {
     type DeipInvestmentWeightInfo = pallet_deip_investment_opportunity::weights::Weights<Self>;
@@ -771,20 +771,14 @@ impl pallet_deip_investment_opportunity::Config for Runtime {
 
     type AssetAmount = <Self as pallet_assets::Config>::Balance;
 
-    type FundAssetId = <Self as pallet_assets::Config>::AssetId;
-
-    type FundAssetImpl = DeipAssets;
-
-    type FundAsset = FToken<Self::FundAssetImpl>;
-
-    type SharesAssetId = (
+    type AssetId = (
         Self::Hash,
         <Self as pallet_uniques::Config>::InstanceId
     );
 
-    type SharesAssetImpl = DeipUniques;
+    type AssetImpl = DeipUniques;
 
-    type SharesAsset = NFTokenFraction<Self::SharesAssetImpl>;
+    type Asset = NFTokenFraction<Self::AssetImpl>;
 }
 
 parameter_types! {

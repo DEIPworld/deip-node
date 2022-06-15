@@ -65,7 +65,7 @@ pub mod pallet {
     use crate::module::{*};
 
     use crate::weights::WeightInfo;
-    use deip_asset_system::{NFTImplT, NFTokenItemIdT, FTImplT, NFTokenFractionT, FTokenT};
+    use deip_asset_system::{NFTImplT, NFTokenItemIdT, FTImplT, NFTokenFractionT};
     use deip_transaction_ctx::{PortalCtxT, TransactionCtxId};
 
     /// Configuration trait
@@ -98,27 +98,17 @@ pub mod pallet {
             FixedPointOperand +
             Clone + Parameter + Member + Copy;
 
-        type FundAssetId: Default + AtLeast32BitUnsigned + Clone + Parameter + Member + Copy;
-
-        type FundAssetImpl: FTImplT<
-            Account=Self::AccountId,
-            FTokenId=Self::FundAssetId,
-            FTokenAmount=Self::AssetAmount
-        >;
-
-        type FundAsset: FTokenT<Self::FundAssetImpl>;
-
-        type SharesAssetId:
-            NFTokenItemIdT<Self::SharesAssetImpl> +
+        type AssetId:
+            NFTokenItemIdT<Self::AssetImpl> +
             Default + Parameter + Member + Clone + Copy;
 
-        type SharesAssetImpl: NFTImplT<
+        type AssetImpl: NFTImplT<
             Account=Self::AccountId,
             FTokenAmount=Self::AssetAmount,
-            NFTokenItemId=Self::SharesAssetId
+            NFTokenItemId=Self::AssetId
         >;
 
-        type SharesAsset: NFTokenFractionT<Self::SharesAssetImpl>;
+        type Asset: NFTokenFractionT<Self::AssetImpl>;
     }
 
     use frame_support::traits::StorageVersion;
@@ -234,11 +224,11 @@ pub mod pallet {
         HardCapReached(CrowdfundingId, T::AccountId),
         CommitShares {
             id: CrowdfundingId,
-            shares: (T::SharesAssetId, T::AssetAmount)
+            shares: (T::AssetId, T::AssetAmount)
         },
         RollbackShares{
             id: CrowdfundingId,
-            shares: (T::SharesAssetId, T::AssetAmount)
+            shares: (T::AssetId, T::AssetAmount)
         },
         Refund(CrowdfundingId, T::AccountId),
         Refunded(CrowdfundingId),
@@ -282,8 +272,8 @@ pub mod pallet {
             origin: OriginFor<T>,
             id: CrowdfundingId,
             creator: T::DeipAccountId,
-            shares: (T::SharesAssetId, T::AssetAmount),
-            fund: T::FundAssetId,
+            shares: (T::AssetId, T::AssetAmount),
+            fund: T::AssetId,
         ) -> DispatchResult
         {
             T::create::<CrowdfundingStatus>(
@@ -299,7 +289,7 @@ pub mod pallet {
         pub fn commit_shares(
             origin: OriginFor<T>,
             id: CrowdfundingId,
-            shares: (T::SharesAssetId, T::AssetAmount)
+            shares: (T::AssetId, T::AssetAmount)
         ) -> DispatchResult
         {
             T::commit_shares::<CrowdfundingStatus>(
@@ -317,7 +307,7 @@ pub mod pallet {
         pub fn rollback_shares(
             origin: OriginFor<T>,
             id: CrowdfundingId,
-            shares: T::SharesAssetId
+            shares: T::AssetId
         ) -> DispatchResult
         {
             T::rollback_shares::<CrowdfundingStatus>(
@@ -391,7 +381,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             investor: Option<T::AccountId>,
             id: CrowdfundingId,
-            shares: T::SharesAssetId
+            shares: T::AssetId
         ) -> DispatchResult
         {
             T::payout::<CrowdfundingStatus>(
@@ -457,7 +447,7 @@ pub mod pallet {
         pub fn release_shares(
             origin: OriginFor<T>,
             id: CrowdfundingId,
-            shares: T::SharesAssetId
+            shares: T::AssetId
         ) -> DispatchResult
         {
             T::release_shares::<CrowdfundingStatus>(
@@ -493,7 +483,7 @@ pub mod pallet {
         (
             NMapKey<Blake2_128Concat, CrowdfundingId>,
             NMapKey<Blake2_128Concat, T::AccountId>,
-            NMapKey<Blake2_128Concat, T::SharesAssetId>,
+            NMapKey<Blake2_128Concat, T::AssetId>,
         ),
         ()
     >;
@@ -517,7 +507,7 @@ pub mod pallet {
         Blake2_128Concat,
         CrowdfundingId,
         Blake2_128Concat,
-        T::SharesAssetId,
+        T::AssetId,
         T::AssetAmount
     >;
 

@@ -46,12 +46,16 @@ impl<T: Config> NFTImplT for Pallet<T>
         Self::Account,
         Self::NFTokenItemId,
         Self::Fractional,
-        Self::FTokenAmount
+        Self::FTokenAmount,
+        Self::FractionHoldGuard
     >;
 
     type CollectionRepo = crate::CollectionRepo<T>;
     type ItemRepo = crate::ItemRepo<T>;
     type FractionRepo = crate::FractionRepo<T>;
+    type FractionHolderId = sp_core::H160;
+    type FractionHoldGuard = u32;
+    type FractionHolds = crate::FractionHolds<T>;
 
     type NextCollectionId = crate::NextCollectionId<T>;
 

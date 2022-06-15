@@ -4,15 +4,13 @@ extern crate core;
 
 pub mod asset;
 pub mod nft_impl;
-pub mod nft;
+pub mod fnft;
 pub mod ft_impl;
-pub mod ft;
 
 pub use asset::*;
 pub use nft_impl::*;
-pub use nft::*;
+pub use fnft::*;
 pub use ft_impl::*;
-pub use ft::*;
 
 pub use deip_assets_error::{ReserveError, UnreserveError};
 use sp_std::prelude::*;

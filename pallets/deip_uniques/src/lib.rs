@@ -200,6 +200,7 @@ pub mod pallet {
     pub type NextCollectionId<T: Config> = StorageValue<_, T::ClassId, ValueQuery>;
 
     use frame_support::pallet_prelude::*;
+    use sp_runtime::app_crypto::sp_core;
 
     #[pallet::storage]
     pub type CollectionRepo<T: Config> = StorageNMap<_,
@@ -240,8 +241,20 @@ pub mod pallet {
             T::AccountId,
             (T::Hash, T::InstanceId),
             (T::AssetId, T::Balance),
-            T::Balance
+            T::Balance,
+            u32
         >
+    >;
+
+    #[pallet::storage]
+    pub type FractionHolds<T: Config> = StorageNMap<_,
+        (
+            NMapKey<Blake2_128Concat, T::Hash>,
+            NMapKey<Blake2_128Concat, T::AccountId>,
+            NMapKey<Blake2_128Concat, sp_core::H160>,
+            NMapKey<Blake2_128Concat, u32>,
+        ),
+        (sp_core::H160, u32)
     >;
 
     #[pallet::error]
