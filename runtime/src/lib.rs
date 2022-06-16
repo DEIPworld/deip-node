@@ -54,8 +54,8 @@ use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
-pub mod deip_account;
 mod asset_transfer;
+pub mod deip_account;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -767,7 +767,8 @@ impl pallet_deip_investment_opportunity::Config for Runtime {
     type MaxShares = MaxCrowdfundingShares;
     type Currency = Balances;
 
-    type Crowdfunding = pallet_deip_investment_opportunity::crowdfunding::SimpleCrowdfundingV2<Self>;
+    type Crowdfunding =
+        pallet_deip_investment_opportunity::crowdfunding::SimpleCrowdfundingV2<Self>;
 
     type AssetAmount = <Self as pallet_assets::Config>::Balance;
 
@@ -776,6 +777,14 @@ impl pallet_deip_investment_opportunity::Config for Runtime {
     type AssetImpl = DeipUniques;
 
     type Asset = NFTokenFraction<Self::AssetImpl>;
+    
+    type FundAsset = FToken<Self::FundAssetImpl>;
+
+    type SharesAssetId = (Self::Hash, <Self as pallet_uniques::Config>::InstanceId);
+
+    type SharesAssetImpl = DeipUniques;
+
+    type SharesAsset = NFTokenFraction<Self::SharesAssetImpl>;
 }
 
 parameter_types! {
@@ -862,6 +871,20 @@ impl pallet_deip_vesting::Config for Runtime {
     type VestingWeightInfo = pallet_deip_vesting::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_deip_nft::Config for Runtime {
+    type Event = Event;
+
+    type CollectionId = NftClassId; //@TODO
+
+    type ItemId = InstanceId; //@TODO
+
+    type AssetId = AssetId;
+
+    type FungiblesBalance = Balance;
+
+    type Fungibles = DeipAssets;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -902,6 +925,8 @@ construct_runtime!(
         DeipVesting: pallet_deip_vesting::{Pallet, Call, Storage, Event<T>, Config<T>},
         DeipEcosystemFund: pallet_deip_ecosystem_fund::{Pallet, Config<T>, Storage},
         DeipInvestmentOpportunity: pallet_deip_investment_opportunity,
+
+        DeipNft: pallet_deip_nft,
     }
 );
 
