@@ -1,9 +1,9 @@
 use deip_asset_system::{
-    NFTImplT, NFTokenCollectionRecord, NFTokenFractionRecord, NFTokenItemRecord,
+    error::NftError, NFTImplT, NFTokenCollectionRecord, NFTokenFractionRecord, NFTokenItemRecord,
 };
 
 use crate::{
-    CollectionByAccount, Config, FractionByAccount, ItemByAccount, NextCollectionId, Pallet,
+    CollectionByAccount, Config, Error, FractionByAccount, ItemByAccount, NextCollectionId, Pallet,
 };
 
 impl<T: Config> NFTImplT for Pallet<T> {
@@ -54,4 +54,20 @@ impl<T: Config> NFTImplT for Pallet<T> {
     type NextCollectionId = NextCollectionId<T>;
 
     type Nonfungibles = pallet_uniques::Pallet<T>;
+
+    type Error = Error<T>;
+}
+
+impl<T> NftError for Error<T> {
+    fn bad_value() -> Self {
+        Self::BadValue
+    }
+
+    fn unknown_collection() -> Self {
+        Self::UnknownCollection
+    }
+
+    fn other() -> Self {
+        Self::Other
+    }
 }
