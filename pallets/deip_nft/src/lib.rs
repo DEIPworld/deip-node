@@ -143,7 +143,8 @@ pub mod pallet {
 
     #[pallet::error]
     pub enum Error<T> {
-        CollectionIdInUse,
+        Other,
+        BadValue,
         UnknownCollection,
         UnknownItem,
     }
@@ -207,9 +208,7 @@ pub mod pallet {
             let record =
                 Self::find_collection(&owner, &collection).ok_or(Error::<T>::UnknownCollection)?;
 
-            frame_support::log::error!("before mint");
             Self::mint_item(record)?;
-            frame_support::log::error!("after mint");
 
             Self::deposit_event(Event::ItemMinted {
                 collection,
@@ -244,7 +243,7 @@ pub mod pallet {
             to: <T::Lookup as StaticLookup>::Source,
         ) -> DispatchResult {
             let origin_id = ensure_signed(origin)?;
-			let to = T::Lookup::lookup(to)?;
+            let to = T::Lookup::lookup(to)?;
 
             let record =
                 Self::find_item(collection, origin_id, item).ok_or(Error::<T>::UnknownItem)?;
