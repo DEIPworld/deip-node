@@ -19,7 +19,7 @@ impl<T: Config> NFTImplT for Pallet<T> {
 
     type FTokenId = T::AssetId;
 
-    type FTokenAmount = T::Balance;
+    type FTokenAmount = T::FungiblesBalance;
 
     type Account = T::AccountId;
 
@@ -53,6 +53,5 @@ impl<T: Config> NFTImplT for Pallet<T> {
 
     type NextCollectionId = NextCollectionId<T>;
 
-    //@TODO questionable.
-    type Nonfungibles = Self;
+    type Nonfungibles = pallet_uniques::Pallet<T>;
 }

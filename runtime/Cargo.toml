@@ -43,12 +43,13 @@ pallet-deip = { path = "../pallets/deip", default-features = false }
 pallet-deip-assets = { path = "../pallets/deip_assets", default-features = false }
 pallet-deip-balances = { path = "../pallets/deip_balances", default-features = false }
 pallet-deip-dao = { path = "../pallets/deip_dao", default-features = false }
+pallet-deip-ecosystem-fund = { path = "../pallets/deip_ecosystem_fund", default-features = false }
+pallet-deip-investment-opportunity = { path = "../pallets/deip_investment_opportunity", default-features = false }
+pallet-deip-nft = { path = "../pallets/deip_nft", default-features = false }
 pallet-deip-portal = { path = "../pallets/deip_portal", default-features = false }
 pallet-deip-proposal = { path = "../pallets/deip_proposal", default-features = false }
 pallet-deip-uniques = { path = "../pallets/deip_uniques", default-features = false }
 pallet-deip-vesting = { path = "../pallets/deip_vesting", default-features = false }
-pallet-deip-ecosystem-fund = { path = "../pallets/deip_ecosystem_fund", default-features = false }
-pallet-deip-investment-opportunity = { path = "../pallets/deip_investment_opportunity", default-features = false }
 pallet-grandpa = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-im-online = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-mmr = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
@@ -149,12 +150,13 @@ std = [
     "pallet-deip-assets/std",
     "pallet-deip-balances/std",
     "pallet-deip-dao/std",
+    "pallet-deip-ecosystem-fund/std",
+    "pallet-deip-investment-opportunity/std",
+    "pallet-deip-nft/std",
     "pallet-deip-portal/std",
     "pallet-deip-proposal/std",
     "pallet-deip-uniques/std",
     "pallet-deip-vesting/std",
-    "pallet-deip-ecosystem-fund/std",
-    "pallet-deip-investment-opportunity/std",
     "deip-asset-system/std",
     "pallet-octopus-appchain/std",
 ]
