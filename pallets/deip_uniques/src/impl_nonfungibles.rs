@@ -45,24 +45,19 @@ impl<T: Config> NFTImplT for Pallet<T>
         Self::Account,
         Self::Fingerprint,
         Self::Fractional,
-<<<<<<< HEAD
         Self::FractionAmount,
-        Self::FractionHoldGuard
-=======
-        Self::FTokenAmount
->>>>>>> d31ee93 (add error trait, replaced blank result with DispatchResult)
+        Self::FractionHoldGuard,
+        Self::FTokenAmount,
+        Self::FTokenAmount,
     >;
 
     type CollectionRepo = crate::CollectionRepo<T>;
     type ItemRepo = crate::ItemRepo<T>;
     type FractionRepo = crate::FractionRepo<T>;
-<<<<<<< HEAD
     type FractionalRepo = crate::FractionalRepo<T>;
     type FractionHolderId = sp_core::H160;
     type FractionHoldGuard = u32;
     type FractionHolds = crate::FractionHolds<T>;
-=======
->>>>>>> d31ee93 (add error trait, replaced blank result with DispatchResult)
 
     type NextCollectionId = crate::NextCollectionId<T>;
 

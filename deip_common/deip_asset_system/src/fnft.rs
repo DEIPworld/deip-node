@@ -174,16 +174,13 @@ pub mod unique_demo {
 //
 
 pub struct NFTokenCollection<Impl: NFTImplT>(Impl::CollectionRecord)
-where
-    Self: NFTokenCollectionT<Impl>;
+where Self: NFTokenCollectionT<Impl>;
 
 pub struct NFTokenItem<Impl: NFTImplT>(Impl::ItemRecord)
-where
-    Self: NFTokenItemT<Impl>;
+where Self: NFTokenItemT<Impl>;
 
 pub struct NFTokenFraction<Impl: NFTImplT>(Impl::FractionRecord)
-where
-    Self: NFTokenFractionT<Impl>;
+where Self: NFTokenFractionT<Impl>;
 
 //
 
@@ -292,8 +289,6 @@ pub trait NFTokenFractionT<Impl: NFTImplT>: Sized
         guard: Impl::FractionHoldGuard
     ) -> Result<(), ()>;
 }
-
-//
 
 impl<Impl: NFTImplT> NFTokenCollectionT<Impl> for NFTokenCollection<Impl>
 {
