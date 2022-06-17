@@ -1,5 +1,5 @@
 use sp_runtime::traits::{Hash, AtLeast32BitUnsigned, One, Zero, CheckedAdd, Saturating, CheckedSub};
-use frame_support::storage::{StorageNMap, StorageValue};
+use frame_support::storage::{StorageNMap, StorageValue, StorageMap, StorageDoubleMap};
 use frame_support::pallet_prelude::*;
 use codec::{Encode, Decode};
 use scale_info::TypeInfo;
@@ -9,26 +9,15 @@ use frame_support::traits::tokens::nonfungibles::{
     Mutate,
     Transfer
 };
-use crate::FTImplT;
+use crate::{FTImplT, Seal};
 
-
-pub type CollectionRecord<T> = <T as NFTImplT>::CollectionRecord;
-pub type ItemRecord<T> = <T as NFTImplT>::ItemRecord;
-pub type FractionRecord<T> = <T as NFTImplT>::FractionRecord;
-
-//
-
-pub type NFTokenCollectionId<T> = <T as NFTImplT>::NFTokenCollectionId;
-pub type NFTokenItemId<T> = <T as NFTImplT>::NFTokenItemId;
-
-//
 
 pub trait NFTImplT
 {
     type Fungibles: FTImplT<
         Account=Self::Account,
         FTokenId=Self::FTokenId,
-        FTokenAmount=Self::FTokenAmount
+        FTokenAmount=Self::FractionAmount
     >;
 
     type Fingerprint: Copy + Parameter + 'static;
@@ -38,43 +27,36 @@ pub trait NFTImplT
     type CollectionId: AtLeast32BitUnsigned + Copy + Parameter;
     type ItemId: AtLeast32BitUnsigned + Copy + Parameter + 'static;
     type FTokenId: AtLeast32BitUnsigned + Copy + Parameter;
-    type FTokenAmount: AtLeast32BitUnsigned + Copy + Parameter;
+
+    type FractionAmount: AtLeast32BitUnsigned + Copy + Parameter;
 
     type Account: Clone + Parameter + 'static;
 
-    type NFTokenCollectionId: NFTokenCollectionIdT<Self> + Copy; // (Self::Fingerprint, Self::CollectionId)
-    type NFTokenItemId: NFTokenItemIdT<Self> + Copy;             // (Self::Fingerprint, Self::ItemId)
-
-    type Fractional: FractionalT<Self> + Copy;                   // (Self::FTokenId, Self::FTokenAmount)
+    type Fractional: FractionalT<Self> + Copy + Parameter; // (Self::FTokenId, Self::FractionAmount)
 
     type CollectionRecord: CollectionRecordT<Self> + Parameter;
     type ItemRecord: ItemRecordT<Self> + Parameter;
     type FractionRecord: FractionRecordT<Self> + Parameter;
 
-    type CollectionRepo: StorageNMap<
-        (
-            NMapKey<Blake2_128Concat, Self::Account>,
-            NMapKey<Blake2_128Concat, Self::Fingerprint>
-        ),
+    type CollectionRepo: StorageMap<
+        Self::CollectionId,
         Self::CollectionRecord
     >;
 
-    type ItemRepo: StorageNMap<
-        (
-            NMapKey<Blake2_128Concat, Self::Fingerprint>,
-            NMapKey<Blake2_128Concat, Self::Account>,
-            NMapKey<Twox64Concat, Self::ItemId>
-        ),
+    type ItemRepo: StorageMap<
+        Self::Fingerprint,
         Self::ItemRecord
     >;
 
-    type FractionRepo: StorageNMap<
-        (
-            NMapKey<Blake2_128Concat, Self::Fingerprint>,
-            NMapKey<Blake2_128Concat, Self::Account>,
-            NMapKey<Twox64Concat, Self::ItemId>
-        ),
+    type FractionRepo: StorageDoubleMap<
+        Self::Fingerprint,
+        Self::Account,
         Self::FractionRecord
+    >;
+
+    type FractionalRepo: StorageMap<
+        Self::Fingerprint,
+        Self::Fractional
     >;
 
     type FractionHolderId: From<sp_core::H160> +  Copy + Parameter + 'static;
@@ -101,7 +83,7 @@ pub trait NFTImplT
         nonfungibles::Create<Self::Account> +
         nonfungibles::Mutate<Self::Account>;
 
-    fn _obtain_collection_id() -> Option<Self::CollectionId> {
+    fn _obtain_collection_id(_: Seal) -> Option<Self::CollectionId> {
         let id = Self::NextCollectionId::try_get()
             .unwrap_or(Self::CollectionId::zero());
         Self::NextCollectionId::put(id.checked_add(&Self::CollectionId::one())?);
@@ -109,94 +91,102 @@ pub trait NFTImplT
     }
 
     fn find_collection(
-        account: Self::Account,
-        fingerprint: Self::Fingerprint
+        id: Self::CollectionId,
+        _: Seal
     ) -> Option<Self::CollectionRecord>
     {
-        Self::CollectionRepo::try_get((account, fingerprint)).ok()
+        Self::CollectionRepo::try_get(id).ok()
     }
 
     fn find_item(
-        account: Self::Account,
-        id: Self::NFTokenItemId
+        fingerprint: Self::Fingerprint,
+        _: Seal
     ) -> Option<Self::ItemRecord>
     {
-        let (fingerprint, item_id) = id.split();
-        Self::ItemRepo::try_get((fingerprint, account, item_id)).ok()
+        Self::ItemRepo::try_get(fingerprint).ok()
     }
 
     fn find_fraction(
+        fingerprint: Self::Fingerprint,
         account: &Self::Account,
-        id: Self::NFTokenItemId
+        _: Seal
     ) -> Option<Self::FractionRecord>
     {
-        let (fingerprint, item_id) = id.split();
-        Self::FractionRepo::try_get((
-            fingerprint,
-            account.clone(),
-            item_id
-        )).ok()
+        Self::FractionRepo::try_get(fingerprint, account).ok()
+    }
+
+    fn find_fractional(
+        fingerprint: Self::Fingerprint,
+        _: Seal
+    ) -> Option<Self::Fractional>
+    {
+        Self::FractionalRepo::try_get(fingerprint).ok()
     }
 
     fn _insert_collection(
-        collection: Self::CollectionRecord
+        collection: Self::CollectionRecord,
+        _: Seal
     ) {
         Self::CollectionRepo::insert(
-            (
-                collection.account().clone(),
-                *collection.id().fingerprint()
-            ),
+            *collection.collection_id(),
             collection
         );
     }
 
     fn _insert_item(
-        item: Self::ItemRecord
+        item: Self::ItemRecord,
+        _: Seal
     ) {
         Self::ItemRepo::insert(
-            (
-                *item.id().fingerprint(),
-                item.account().clone(),
-                *item.id().item_id()
-            ),
+            *item.fingerprint(),
             item
         );
     }
 
     fn _insert_fraction(
-        fraction: Self::FractionRecord
+        fraction: Self::FractionRecord,
+        _: Seal
     ) {
         Self::FractionRepo::insert(
-            (
-                *fraction.id().fingerprint(),
-                fraction.account().clone(),
-                *fraction.id().item_id()
-            ),
+            *fraction.fingerprint(),
+            fraction.account().clone(),
             fraction
         );
     }
 
+    fn _insert_fractional(fraction: &Self::FractionRecord, _: Seal) {
+        Self::FractionalRepo::insert(
+            fraction.fingerprint(),
+            fraction.fractional()
+        );
+    }
+
     fn _remove_fraction(
-        fraction: &Self::FractionRecord
+        fraction: &Self::FractionRecord,
+        _: Seal
     ) {
-        Self::FractionRepo::remove((
-            *fraction.id().fingerprint(),
-            fraction.account().clone(),
-            *fraction.id().item_id()
-        ));
+        Self::FractionRepo::remove(
+            fraction.fingerprint(),
+            fraction.account()
+        );
+    }
+
+    fn _remove_fractional(fraction: &Self::FractionRecord, _: Seal) {
+        Self::FractionalRepo::remove(fraction.fingerprint());
     }
 
     fn _fraction_hold_key(
         fraction: &Self::FractionRecord,
         holder_id: Self::FractionHolderId,
-        guard: Self::FractionHoldGuard
+        guard: Self::FractionHoldGuard,
+        _: Seal
     ) -> (Self::Fingerprint,
           Self::Account,
           Self::FractionHolderId,
           Self::FractionHoldGuard)
     {
         (
-            *fraction.id().fingerprint(),
+            *fraction.fingerprint(),
             fraction.account().clone(),
             holder_id,
             guard
@@ -204,18 +194,14 @@ pub trait NFTImplT
     }
 
     fn create_collection(
-        fingerprint: Self::Fingerprint,
         account: &Self::Account,
-        max_items: Self::ItemId
+        max_items: Self::ItemId,
+        _: Seal
     ) -> Result<(), ()>
     {
         if max_items.is_zero() { return Err(()) }
 
-        if Self::find_collection(account.clone(), fingerprint).is_some() {
-            return Err(())
-        }
-
-        let id = Self::_obtain_collection_id().ok_or(())?;
+        let id = Self::_obtain_collection_id(Seal(())).ok_or(())?;
 
         Self::Nonfungibles::create_class(
             &id,
@@ -225,45 +211,51 @@ pub trait NFTImplT
 
         let collection = Self::CollectionRecord::new(
             account,
-            Self::NFTokenCollectionId::new(fingerprint, id),
+            id,
             max_items,
             Self::ItemId::zero()
         );
 
-        Self::_insert_collection(collection);
+        Self::_insert_collection(collection, Seal(()));
 
         Ok(())
     }
 
     fn mint_item(
         mut collection: Self::CollectionRecord,
+        fingerprint: Self::Fingerprint,
+        _: Seal
     ) -> Result<(), ()>
     {
+        if Self::ItemRepo::contains_key(fingerprint) { return Err(()) }
+
         let id = collection.obtain_item_id().ok_or(())?;
 
         let item = Self::ItemRecord::new(
             collection.account(),
+            fingerprint,
             id,
-            *collection.id().collection_id(),
+            *collection.collection_id(),
             None
         );
 
-        Self::_insert_collection(collection);
+        Self::_insert_collection(collection, Seal(()));
 
         Self::Nonfungibles::mint_into(
             item.collection_id(),
-            item.id().item_id(),
+            item.item_id(),
             item.account()
         ).map_err(|_| ())?;
 
-        Self::_insert_item(item);
+        Self::_insert_item(item, Seal(()));
 
         Ok(())
     }
 
     fn fractionalize(
         mut item: Self::ItemRecord,
-        total: Self::FTokenAmount,
+        total: Self::FractionAmount,
+        _: Seal
     ) -> Result<(), ()>
     {
         if item.is_fractional() { return Err(()) }
@@ -274,58 +266,66 @@ pub trait NFTImplT
 
         let ft_id = Self::Fungibles::create_ft(
             item.account().clone(),
-            minimum_balance
+            minimum_balance,
+            Seal(())
         )?;
 
         Self::Fungibles::mint_ft(
             ft_id,
             item.account(),
-            total
+            total,
+            Seal(())
         )?;
 
-        Self::Fungibles::lock_minting(ft_id, item.account())?;
+        Self::Fungibles::lock_minting(ft_id, item.account(), Seal(()))?;
 
         let fractional = Self::Fractional::new(ft_id, total);
 
-        Self::_insert_fraction(Self::FractionRecord::new(
+        let fraction = Self::FractionRecord::new(
             item.account(),
-            *item.id(),
+            *item.fingerprint(),
             fractional,
             total,
             <Self::FractionHoldGuard>::zero(),
-        ));
+        );
+
+        Self::_insert_fractional(&fraction, Seal(()));
+
+        Self::_insert_fraction(fraction, Seal(()));
 
         item.fractionalize(fractional);
 
-        Self::_insert_item(item);
+        Self::_insert_item(item, Seal(()));
 
         Ok(())
     }
 
     fn transfer_collection(
         mut collection: Self::CollectionRecord,
-        to: &Self::Account
+        to: &Self::Account,
+        _: Seal
     ) {
         collection.transfer_collection(to);
-        Self::_insert_collection(collection);
+        Self::_insert_collection(collection, Seal(()));
     }
 
     fn transfer_item(
         mut item: Self::ItemRecord,
         to: &Self::Account,
+        _: Seal
     ) -> Result<(), ()>
     {
         if item.is_fractional() { return Err(()) }
 
         Self::Nonfungibles::transfer(
             item.collection_id(),
-            item.id().item_id(),
+            item.item_id(),
             to
         ).map_err(|_| ())?;
 
         item.transfer_item(to);
 
-        Self::_insert_item(item);
+        Self::_insert_item(item, Seal(()));
 
         Ok(())
     }
@@ -333,7 +333,8 @@ pub trait NFTImplT
     fn transfer_fraction(
         mut donor: Self::FractionRecord,
         to: &Self::Account,
-        amount: Self::FTokenAmount
+        amount: Self::FractionAmount,
+        _: Seal
     ) -> Result<(), ()>
     {
         if donor.on_hold() { return Err(()) }
@@ -344,14 +345,14 @@ pub trait NFTImplT
 
         if donor.account() == to { return Err(()) }
 
-        let maybe_fraction = Self::find_fraction(to, *donor.id());
+        let maybe_fraction = Self::find_fraction(*donor.fingerprint(), to, Seal(()));
 
         let mut fraction = maybe_fraction.unwrap_or(
             Self::FractionRecord::new(
                 to,
-                *donor.id(),
+                *donor.fingerprint(),
                 *donor.fractional(),
-                <Self::FTokenAmount>::zero(),
+                <Self::FractionAmount>::zero(),
                 <Self::FractionHoldGuard>::zero(),
             )
         );
@@ -363,18 +364,19 @@ pub trait NFTImplT
             donor.account(),
             to,
             amount,
+            Seal(())
         )?;
 
         fraction.increase_amount(amount)?;
 
-        Self::_insert_fraction(fraction);
+        Self::_insert_fraction(fraction, Seal(()));
 
         donor.decrease_amount(amount)?;
 
         if donor.amount().is_zero() {
-            Self::_remove_fraction(&donor);
+            Self::_remove_fraction(&donor, Seal(()));
         } else {
-            Self::_insert_fraction(donor);
+            Self::_insert_fraction(donor, Seal(()));
         }
 
         Ok(())
@@ -383,10 +385,11 @@ pub trait NFTImplT
     fn hold_fraction(
         mut fraction: Self::FractionRecord,
         holder_id: Self::FractionHolderId,
-        guard: Self::FractionHoldGuard
+        guard: Self::FractionHoldGuard,
+        _: Seal
     ) -> Result<(), ()>
     {
-        let key = Self::_fraction_hold_key(&fraction, holder_id, guard);
+        let key = Self::_fraction_hold_key(&fraction, holder_id, guard, Seal(()));
 
         if Self::FractionHolds::contains_key(&key) { return Err(()) }
 
@@ -394,7 +397,7 @@ pub trait NFTImplT
 
         fraction.inc_holds()?;
 
-        Self::_insert_fraction(fraction);
+        Self::_insert_fraction(fraction, Seal(()));
 
         Ok(())
     }
@@ -402,10 +405,11 @@ pub trait NFTImplT
     fn unhold_fraction(
         mut fraction: Self::FractionRecord,
         holder_id: Self::FractionHolderId,
-        guard: Self::FractionHoldGuard
+        guard: Self::FractionHoldGuard,
+        _: Seal
     ) -> Result<(), ()>
     {
-        let key = Self::_fraction_hold_key(&fraction, holder_id, guard);
+        let key = Self::_fraction_hold_key(&fraction, holder_id, guard, Seal(()));
 
         if !Self::FractionHolds::contains_key(&key) { return Err(()) }
 
@@ -413,87 +417,9 @@ pub trait NFTImplT
 
         fraction.dec_holds()?;
 
-        Self::_insert_fraction(fraction);
+        Self::_insert_fraction(fraction, Seal(()));
 
         Ok(())
-    }
-}
-
-//
-
-pub trait NFTokenCollectionIdT<Impl: NFTImplT + ?Sized>: Sized
-{
-    fn fingerprint(&self) -> &Impl::Fingerprint;
-
-    fn collection_id(&self) -> &Impl::CollectionId;
-
-    fn split(self) -> (Impl::Fingerprint, Impl::CollectionId);
-
-    fn new(
-        fingerprint: Impl::Fingerprint,
-        collection_id: Impl::CollectionId
-    ) -> Self;
-}
-
-impl<Impl: NFTImplT + ?Sized> NFTokenCollectionIdT<Impl> for (Impl::Fingerprint, Impl::CollectionId)
-{
-    fn fingerprint(&self) -> &Impl::Fingerprint {
-        &self.0
-    }
-
-    fn collection_id(&self) -> &Impl::CollectionId {
-        &self.1
-    }
-
-    fn split(self) -> (Impl::Fingerprint, Impl::CollectionId) {
-        self
-    }
-
-    fn new(
-        fingerprint: Impl::Fingerprint,
-        collection_id: Impl::CollectionId
-    ) -> Self
-    {
-        (fingerprint, collection_id)
-    }
-}
-
-//
-
-pub trait NFTokenItemIdT<Impl: NFTImplT + ?Sized>: Sized
-{
-    fn fingerprint(&self) -> &Impl::Fingerprint;
-
-    fn item_id(&self) -> &Impl::ItemId;
-
-    fn split(self) -> (Impl::Fingerprint, Impl::ItemId);
-
-    fn new(
-        fingerprint: Impl::Fingerprint,
-        item_id: Impl::ItemId
-    ) -> Self;
-}
-
-impl<Impl: NFTImplT + ?Sized> NFTokenItemIdT<Impl> for (Impl::Fingerprint, Impl::ItemId)
-{
-    fn fingerprint(&self) -> &Impl::Fingerprint {
-        &self.0
-    }
-
-    fn item_id(&self) -> &Impl::ItemId {
-        &self.1
-    }
-
-    fn split(self) -> (Impl::Fingerprint, Impl::ItemId) {
-        self
-    }
-
-    fn new(
-        fingerprint: Impl::Fingerprint,
-        item_id: Impl::ItemId
-    ) -> Self
-    {
-        (fingerprint, item_id)
     }
 }
 
@@ -503,7 +429,7 @@ pub trait CollectionRecordT<Impl: NFTImplT + ?Sized>: Sized
 {
     fn account(&self) -> &Impl::Account;
 
-    fn id(&self) -> &Impl::NFTokenCollectionId;
+    fn collection_id(&self) -> &Impl::CollectionId;
 
     fn max_items(&self) -> &Impl::ItemId;
 
@@ -511,7 +437,7 @@ pub trait CollectionRecordT<Impl: NFTImplT + ?Sized>: Sized
 
     fn new(
         account: &Impl::Account,
-        id: Impl::NFTokenCollectionId,
+        collection_id: Impl::CollectionId,
         max_items: Impl::ItemId,
         items: Impl::ItemId
     ) -> Self;
@@ -520,16 +446,12 @@ pub trait CollectionRecordT<Impl: NFTImplT + ?Sized>: Sized
 
     fn _mut_account(&mut self) -> &mut Impl::Account;
 
-    fn obtain_item_id(&mut self) -> Option<Impl::NFTokenItemId>
+    fn obtain_item_id(&mut self) -> Option<Impl::ItemId>
     {
         if self.items() < self.max_items() {
             let id = *self.items();
             self._inc_items();
-            return Some(
-                Impl::NFTokenItemId::new(
-                    *self.id().fingerprint(),
-                    id)
-            )
+            return Some(id)
         }
         None
     }
@@ -545,7 +467,9 @@ pub trait ItemRecordT<Impl: NFTImplT + ?Sized>: Sized
 {
     fn account(&self) -> &Impl::Account;
 
-    fn id(&self) -> &Impl::NFTokenItemId;
+    fn fingerprint(&self) -> &Impl::Fingerprint;
+
+    fn item_id(&self) -> &Impl::ItemId;
 
     fn collection_id(&self) -> &Impl::CollectionId;
 
@@ -553,7 +477,8 @@ pub trait ItemRecordT<Impl: NFTImplT + ?Sized>: Sized
 
     fn new(
         account: &Impl::Account,
-        id: Impl::NFTokenItemId,
+        fingerprint: Impl::Fingerprint,
+        item_id: Impl::ItemId,
         collection_id: Impl::CollectionId,
         fractional: Option<Impl::Fractional>,
     ) -> Self;
@@ -585,27 +510,27 @@ pub trait FractionalT<Impl: NFTImplT + ?Sized>: Sized
 {
     fn ft_id(&self) -> &Impl::FTokenId;
 
-    fn total(&self) -> &Impl::FTokenAmount;
+    fn total(&self) -> &Impl::FractionAmount;
 
     fn new(
         ft_id: Impl::FTokenId,
-        total: Impl::FTokenAmount
+        total: Impl::FractionAmount
     ) -> Self;
 }
 
-impl<Impl: NFTImplT + ?Sized> FractionalT<Impl> for (Impl::FTokenId, Impl::FTokenAmount)
+impl<Impl: NFTImplT + ?Sized> FractionalT<Impl> for (Impl::FTokenId, Impl::FractionAmount)
 {
     fn ft_id(&self) -> &Impl::FTokenId {
         &self.0
     }
 
-    fn total(&self) -> &Impl::FTokenAmount {
+    fn total(&self) -> &Impl::FractionAmount {
         &self.1
     }
 
     fn new(
         ft_id: Impl::FTokenId,
-        total: Impl::FTokenAmount
+        total: Impl::FractionAmount
     ) -> Self
     {
         (ft_id, total)
@@ -618,23 +543,23 @@ pub trait FractionRecordT<Impl: NFTImplT + ?Sized>: Sized
 {
     fn account(&self) -> &Impl::Account;
 
-    fn id(&self) -> &Impl::NFTokenItemId;
+    fn fingerprint(&self) -> &Impl::Fingerprint;
 
     fn fractional(&self) -> &Impl::Fractional;
 
-    fn amount(&self) -> &Impl::FTokenAmount;
+    fn amount(&self) -> &Impl::FractionAmount;
 
     fn holds(&self) -> &Impl::FractionHoldGuard;
 
     fn new(
         account: &Impl::Account,
-        id: Impl::NFTokenItemId,
+        fingerprint: Impl::Fingerprint,
         fractional: Impl::Fractional,
-        amount: Impl::FTokenAmount,
+        amount: Impl::FractionAmount,
         holds: Impl::FractionHoldGuard
     ) -> Self;
 
-    fn _mut_amount(&mut self) -> &mut Impl::FTokenAmount;
+    fn _mut_amount(&mut self) -> &mut Impl::FractionAmount;
 
     fn _mut_holds(&mut self) -> &mut Impl::FractionHoldGuard;
 
@@ -646,13 +571,13 @@ pub trait FractionRecordT<Impl: NFTImplT + ?Sized>: Sized
         !self.holds().is_zero()
     }
 
-    fn increase_amount(&mut self, by: Impl::FTokenAmount) -> Result<(), ()>
+    fn increase_amount(&mut self, by: Impl::FractionAmount) -> Result<(), ()>
     {
         *self._mut_amount() = self.amount().checked_add(&by).ok_or(())?;
         Ok(())
     }
 
-    fn decrease_amount(&mut self, by: Impl::FTokenAmount) -> Result<(), ()>
+    fn decrease_amount(&mut self, by: Impl::FractionAmount) -> Result<(), ()>
     {
         *self._mut_amount() = self.amount().checked_sub(&by).ok_or(())?;
         Ok(())
@@ -672,9 +597,9 @@ pub trait FractionRecordT<Impl: NFTImplT + ?Sized>: Sized
 //
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, TypeInfo, Debug)]
-pub struct NFTokenCollectionRecord<Account, Id, ItemId> {
+pub struct NFTokenCollectionRecord<Account, CollectionId, ItemId> {
     pub account: Account,
-    pub id: Id,
+    pub collection_id: CollectionId,
     pub max_items: ItemId,
     pub items: ItemId
 }
@@ -682,7 +607,7 @@ pub struct NFTokenCollectionRecord<Account, Id, ItemId> {
 impl<Impl: NFTImplT + ?Sized> CollectionRecordT<Impl> for
     NFTokenCollectionRecord<
         Impl::Account,
-        Impl::NFTokenCollectionId,
+        Impl::CollectionId,
         Impl::ItemId
     >
 {
@@ -690,8 +615,8 @@ impl<Impl: NFTImplT + ?Sized> CollectionRecordT<Impl> for
         &self.account
     }
 
-    fn id(&self) -> &Impl::NFTokenCollectionId {
-        &self.id
+    fn collection_id(&self) -> &Impl::CollectionId {
+        &self.collection_id
     }
 
     fn max_items(&self) -> &Impl::ItemId {
@@ -704,14 +629,14 @@ impl<Impl: NFTImplT + ?Sized> CollectionRecordT<Impl> for
 
     fn new(
         account: &Impl::Account,
-        id: Impl::NFTokenCollectionId,
+        collection_id: Impl::CollectionId,
         max_items: Impl::ItemId,
         items: Impl::ItemId
     ) -> Self
     {
         Self {
             account: account.clone(),
-            id,
+            collection_id,
             max_items,
             items
         }
@@ -729,9 +654,10 @@ impl<Impl: NFTImplT + ?Sized> CollectionRecordT<Impl> for
 //
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, TypeInfo, Debug)]
-pub struct NFTokenItemRecord<Account, Id, CollectionId, Fractional> {
+pub struct NFTokenItemRecord<Account, Fingerprint, ItemId, CollectionId, Fractional> {
     pub account: Account,
-    pub id: Id,
+    pub fingerprint: Fingerprint,
+    pub item_id: ItemId,
     pub collection_id: CollectionId,
     pub fractional: Option<Fractional>
 }
@@ -739,7 +665,8 @@ pub struct NFTokenItemRecord<Account, Id, CollectionId, Fractional> {
 impl<Impl: NFTImplT + ?Sized> ItemRecordT<Impl> for
     NFTokenItemRecord<
         Impl::Account,
-        Impl::NFTokenItemId,
+        Impl::Fingerprint,
+        Impl::ItemId,
         Impl::CollectionId,
         Impl::Fractional
     >
@@ -748,8 +675,12 @@ impl<Impl: NFTImplT + ?Sized> ItemRecordT<Impl> for
         &self.account
     }
 
-    fn id(&self) -> &Impl::NFTokenItemId {
-        &self.id
+    fn fingerprint(&self) -> &Impl::Fingerprint {
+        &self.fingerprint
+    }
+
+    fn item_id(&self) -> &Impl::ItemId {
+        &self.item_id
     }
 
     fn collection_id(&self) -> &Impl::CollectionId {
@@ -762,14 +693,16 @@ impl<Impl: NFTImplT + ?Sized> ItemRecordT<Impl> for
 
     fn new(
         account: &Impl::Account,
-        id: Impl::NFTokenItemId,
+        fingerprint: Impl::Fingerprint,
+        item_id: Impl::ItemId,
         collection_id: Impl::CollectionId,
         fractional: Option<Impl::Fractional>
     ) -> Self
     {
         Self {
             account: account.clone(),
-            id,
+            fingerprint,
+            item_id,
             collection_id,
             fractional
         }
@@ -787,9 +720,9 @@ impl<Impl: NFTImplT + ?Sized> ItemRecordT<Impl> for
 //
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, TypeInfo, Debug)]
-pub struct NFTokenFractionRecord<Account, Id, Fractional, Amount, HoldGuard> {
+pub struct NFTokenFractionRecord<Account, Fingerprint, Fractional, Amount, HoldGuard> {
     account: Account,
-    id: Id,
+    fingerprint: Fingerprint,
     fractional: Fractional,
     amount: Amount,
     holds: HoldGuard,
@@ -798,9 +731,9 @@ pub struct NFTokenFractionRecord<Account, Id, Fractional, Amount, HoldGuard> {
 impl<Impl: NFTImplT + ?Sized> FractionRecordT<Impl> for
     NFTokenFractionRecord<
         Impl::Account,
-        Impl::NFTokenItemId,
+        Impl::Fingerprint,
         Impl::Fractional,
-        Impl::FTokenAmount,
+        Impl::FractionAmount,
         Impl::FractionHoldGuard
     >
 {
@@ -808,15 +741,15 @@ impl<Impl: NFTImplT + ?Sized> FractionRecordT<Impl> for
         &self.account
     }
 
-    fn id(&self) -> &Impl::NFTokenItemId {
-        &self.id
+    fn fingerprint(&self) -> &Impl::Fingerprint {
+        &self.fingerprint
     }
 
     fn fractional(&self) -> &Impl::Fractional {
         &self.fractional
     }
 
-    fn amount(&self) -> &Impl::FTokenAmount {
+    fn amount(&self) -> &Impl::FractionAmount {
         &self.amount
     }
 
@@ -826,22 +759,22 @@ impl<Impl: NFTImplT + ?Sized> FractionRecordT<Impl> for
 
     fn new(
         account: &Impl::Account,
-        id: Impl::NFTokenItemId,
+        fingerprint: Impl::Fingerprint,
         fractional: Impl::Fractional,
-        amount: Impl::FTokenAmount,
+        amount: Impl::FractionAmount,
         holds: Impl::FractionHoldGuard
     ) -> Self
     {
         Self {
             account: account.clone(),
-            id,
+            fingerprint,
             fractional,
             amount,
             holds
         }
     }
 
-    fn _mut_amount(&mut self) -> &mut Impl::FTokenAmount {
+    fn _mut_amount(&mut self) -> &mut Impl::FractionAmount {
         &mut self.amount
     }
 

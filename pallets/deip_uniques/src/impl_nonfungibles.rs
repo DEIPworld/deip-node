@@ -22,37 +22,37 @@ impl<T: Config> NFTImplT for Pallet<T>
     type CollectionId = T::ClassId;
     type ItemId = T::InstanceId;
     type FTokenId = T::AssetId;
-    type FTokenAmount = T::Balance;
+
+    type FractionAmount = T::Balance;
 
     type Account = T::AccountId;
 
-    type NFTokenCollectionId = (Self::Fingerprint, Self::CollectionId);
-    type NFTokenItemId = (Self::Fingerprint, Self::ItemId);
-
-    type Fractional = (Self::FTokenId, Self::FTokenAmount);
+    type Fractional = (Self::FTokenId, Self::FractionAmount);
 
     type CollectionRecord = NFTokenCollectionRecord<
         Self::Account,
-        Self::NFTokenCollectionId,
+        Self::CollectionId,
         Self::ItemId
     >;
     type ItemRecord = NFTokenItemRecord<
         Self::Account,
-        Self::NFTokenItemId,
+        Self::Fingerprint,
+        Self::ItemId,
         Self::CollectionId,
         Self::Fractional
     >;
     type FractionRecord = NFTokenFractionRecord<
         Self::Account,
-        Self::NFTokenItemId,
+        Self::Fingerprint,
         Self::Fractional,
-        Self::FTokenAmount,
+        Self::FractionAmount,
         Self::FractionHoldGuard
     >;
 
     type CollectionRepo = crate::CollectionRepo<T>;
     type ItemRepo = crate::ItemRepo<T>;
     type FractionRepo = crate::FractionRepo<T>;
+    type FractionalRepo = crate::FractionalRepo<T>;
     type FractionHolderId = sp_core::H160;
     type FractionHoldGuard = u32;
     type FractionHolds = crate::FractionHolds<T>;

@@ -203,47 +203,49 @@ pub mod pallet {
     use sp_runtime::app_crypto::sp_core;
 
     #[pallet::storage]
-    pub type CollectionRepo<T: Config> = StorageNMap<_,
-        (
-            NMapKey<Blake2_128Concat, T::AccountId>,
-            NMapKey<Blake2_128Concat, T::Hash>,
-        ),
+    pub type CollectionRepo<T: Config> = StorageMap<_,
+        Twox64Concat,
+        T::ClassId,
         deip_asset_system::NFTokenCollectionRecord<
             T::AccountId,
-            (T::Hash, T::ClassId),
+            T::ClassId,
             T::InstanceId
         >
     >;
 
     #[pallet::storage]
-    pub type ItemRepo<T: Config> = StorageNMap<_,
-        (
-            NMapKey<Blake2_128Concat, T::Hash>,
-            NMapKey<Blake2_128Concat, T::AccountId>,
-            NMapKey<Twox64Concat, T::InstanceId>
-        ),
+    pub type ItemRepo<T: Config> = StorageMap<_,
+        Blake2_128Concat,
+        T::Hash,
         deip_asset_system::NFTokenItemRecord<
             T::AccountId,
-            (T::Hash, T::InstanceId),
+            T::Hash,
+            T::InstanceId,
             T::ClassId,
             (T::AssetId, T::Balance)
         >
     >;
 
     #[pallet::storage]
-    pub type FractionRepo<T: Config> = StorageNMap<_,
-        (
-            NMapKey<Blake2_128Concat, T::Hash>,
-            NMapKey<Blake2_128Concat, T::AccountId>,
-            NMapKey<Twox64Concat, T::InstanceId>
-        ),
+    pub type FractionRepo<T: Config> = StorageDoubleMap<_,
+        Blake2_128Concat,
+        T::Hash,
+        Blake2_128Concat,
+        T::AccountId,
         deip_asset_system::NFTokenFractionRecord<
             T::AccountId,
-            (T::Hash, T::InstanceId),
+            T::Hash,
             (T::AssetId, T::Balance),
             T::Balance,
             u32
         >
+    >;
+
+    #[pallet::storage]
+    pub type FractionalRepo<T: Config> = StorageMap<_,
+        Blake2_128Concat,
+        T::Hash,
+        (T::AssetId, T::Balance)
     >;
 
     #[pallet::storage]
