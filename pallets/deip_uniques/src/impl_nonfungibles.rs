@@ -3,8 +3,8 @@ use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::sp_runtime;
 use frame_support::traits::tokens::nonfungibles::{Inspect, Create, Mutate, Transfer};
-use deip_asset_system::{NFTImplT, NFTokenCollectionRecord, NFTokenItemRecord, NFTokenFractionRecord};
-use crate::{Config, Pallet};
+use deip_asset_system::{NFTImplT, NFTokenCollectionRecord, NFTokenItemRecord, NFTokenFractionRecord, error::Error as NftError};
+use crate::{Config, Pallet, Error};
 use sp_runtime::traits::AtLeast32BitUnsigned;
 
 impl<T: Config> NFTImplT for Pallet<T>
@@ -45,21 +45,29 @@ impl<T: Config> NFTImplT for Pallet<T>
         Self::Account,
         Self::Fingerprint,
         Self::Fractional,
+<<<<<<< HEAD
         Self::FractionAmount,
         Self::FractionHoldGuard
+=======
+        Self::FTokenAmount
+>>>>>>> d31ee93 (add error trait, replaced blank result with DispatchResult)
     >;
 
     type CollectionRepo = crate::CollectionRepo<T>;
     type ItemRepo = crate::ItemRepo<T>;
     type FractionRepo = crate::FractionRepo<T>;
+<<<<<<< HEAD
     type FractionalRepo = crate::FractionalRepo<T>;
     type FractionHolderId = sp_core::H160;
     type FractionHoldGuard = u32;
     type FractionHolds = crate::FractionHolds<T>;
+=======
+>>>>>>> d31ee93 (add error trait, replaced blank result with DispatchResult)
 
     type NextCollectionId = crate::NextCollectionId<T>;
 
     type Nonfungibles = Self;
+    type Error = Error<T>;
 }
 
 impl<T: Config> Inspect<T::AccountId> for Pallet<T> {
@@ -162,3 +170,33 @@ impl<T: Config> Transfer<T::AccountId> for Pallet<T> {
         )
     }
 }
+
+impl<T> NftError for Error<T> {
+    fn bad_value() -> Self {
+        todo!()
+    }
+
+    fn bad_target() -> Self {
+        todo!()
+    }
+
+    fn unknown_collection() -> Self {
+        todo!()
+    }
+
+    fn other() -> Self {
+        todo!()
+    }
+
+    fn overflow() -> Self {
+        todo!()
+    }
+
+    fn insufficient_balance() -> Self {
+        todo!()
+    }
+
+    fn forbidden_for_fractionalized() -> Self {
+        todo!()
+    }
+} 

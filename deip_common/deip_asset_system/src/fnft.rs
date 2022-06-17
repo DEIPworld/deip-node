@@ -147,16 +147,15 @@ pub trait Unique<Impl: NFTImplT> {
 
 pub struct OpaqueUnique<Impl: NFTImplT>(pub Impl::Fingerprint);
 
-impl<Impl: NFTImplT> Unique<Impl> for OpaqueUnique<Impl>
-{
+impl<Impl: NFTImplT> Unique<Impl> for OpaqueUnique<Impl> {
     fn fingerprint(self) -> Impl::Fingerprint {
         self.0
     }
 }
 
 pub mod unique_demo {
-    use crate::NFTImplT;
     use super::Unique;
+    use crate::NFTImplT;
     use sp_runtime::traits::Hash;
 
     pub struct Dao {
@@ -175,21 +174,23 @@ pub mod unique_demo {
 //
 
 pub struct NFTokenCollection<Impl: NFTImplT>(Impl::CollectionRecord)
-    where Self: NFTokenCollectionT<Impl>;
+where
+    Self: NFTokenCollectionT<Impl>;
 
 pub struct NFTokenItem<Impl: NFTImplT>(Impl::ItemRecord)
-    where Self: NFTokenItemT<Impl>;
+where
+    Self: NFTokenItemT<Impl>;
 
 pub struct NFTokenFraction<Impl: NFTImplT>(Impl::FractionRecord)
-    where Self: NFTokenFractionT<Impl>;
+where
+    Self: NFTokenFractionT<Impl>;
 
 //
 
-pub trait NFTokenCollectionT<Impl: NFTImplT>: Sized
-{
+pub trait NFTokenCollectionT<Impl: NFTImplT>: Sized {
     fn create_collection(
         account: &Impl::Account,
-        max_items: Impl::ItemId
+        max_items: Impl::ItemId,
     ) -> Result<(), ()>;
 
     fn pick_collection(
@@ -218,12 +219,7 @@ pub trait NFTokenCollectionT<Impl: NFTImplT>: Sized
 pub trait NFTokenItemT<Impl: NFTImplT>: Sized
 {
     fn pick_item(
-        fingerprint: Impl::Fingerprint
     ) -> Option<Self>;
-
-    fn is_fractional(&self) -> bool;
-
-    fn account(&self) -> &Impl::Account;
 
     fn check_account(
         self,
