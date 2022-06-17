@@ -6,6 +6,7 @@ pub mod asset;
 pub mod nft_impl;
 pub mod fnft;
 pub mod ft_impl;
+pub mod error;
 
 pub use asset::*;
 pub use nft_impl::*;

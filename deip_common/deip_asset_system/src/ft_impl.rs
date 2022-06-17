@@ -24,6 +24,8 @@ pub trait FTImplT:
         fungibles::Mutate<Self::Account>
         // + LockableAsset<Self::AccountId>
         ;
+    
+    type Error: Error + Into<DispatchError>;
 
     fn _obtain_ft_id(_: Seal) -> Option<Self::FTokenId> {
         let id = Self::NextFTokenId::try_get()
@@ -67,12 +69,10 @@ pub trait FTImplT:
     {
         Self::_can_mint(id, account, Seal(()))?;
         let minimum_balance = Self::Fungibles::minimum_balance(id);
-        if amount < minimum_balance { return Err(()) }
-        Self::Fungibles::mint_into(
-            id,
-            account,
-            amount
-        ).map_err(|_| ())
+        if amount < minimum_balance {
+            return Err(Self::Error::insufficient_balance().into())
+        }
+        Self::Fungibles::mint_into(id, account, amount)
     }
 
     fn lock_minting(
@@ -127,15 +127,11 @@ pub trait FTImplT:
 
         if amount.is_zero() { return Err(()) }
 
-        if from == to { return Err(()) }
+        if from == to {
+            return Err(())
+        }
 
-        Self::Fungibles::transfer(
-            id,
-            from,
-            to,
-            amount,
-            true
-        ).map_err(|_| ())?;
+        Self::Fungibles::transfer(id, from, to, amount, true).map_err(|_| ())?;
 
         Ok(())
     }

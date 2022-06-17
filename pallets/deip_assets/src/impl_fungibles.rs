@@ -8,8 +8,9 @@ use frame_support::{
 use frame_system::Config as SystemConfig;
 use sp_runtime::DispatchError;
 use sp_runtime::traits::AtLeast32BitUnsigned;
+use deip_asset_system::error::Error as NftError;
 
-use crate::{Config, Pallet};
+use crate::{Config, Pallet, Error};
 
 use deip_asset_system::FTImplT;
 
@@ -22,6 +23,7 @@ impl<T: Config> FTImplT for Pallet<T>
     type FTokenAmount = T::Balance;
     type NextFTokenId = crate::NextFTokenId<T>;
     type Fungibles = Self;
+    type Error = Error<T>;
 }
 
 impl<T: Config> Inspect<<T as SystemConfig>::AccountId> for Pallet<T> {
@@ -93,5 +95,35 @@ impl<T: Config> Create<<T as SystemConfig>::AccountId> for Pallet<T> {
 impl<T: Config> Transfer<<T as SystemConfig>::AccountId> for Pallet<T> {
     fn transfer(asset: Self::AssetId, source: &<T as SystemConfig>::AccountId, dest: &<T as SystemConfig>::AccountId, amount: Self::Balance, keep_alive: bool) -> Result<Self::Balance, DispatchError> {
         <pallet_assets::Pallet::<T> as Transfer<T::AccountId>>::transfer(asset, source, dest, amount, keep_alive)
+    }
+}
+
+impl<T> NftError for Error<T> {
+    fn bad_value() -> Self {
+        todo!()
+    }
+
+    fn bad_target() -> Self {
+        todo!()
+    }
+
+    fn unknown_collection() -> Self {
+        todo!()
+    }
+
+    fn other() -> Self {
+        todo!()
+    }
+
+    fn overflow() -> Self {
+        todo!()
+    }
+
+    fn insufficient_balance() -> Self {
+        todo!()
+    }
+
+    fn forbidden_for_fractionalized() -> Self {
+        todo!()
     }
 }
