@@ -771,10 +771,7 @@ impl pallet_deip_investment_opportunity::Config for Runtime {
 
     type AssetAmount = <Self as pallet_assets::Config>::Balance;
 
-    type AssetId = (
-        Self::Hash,
-        <Self as pallet_uniques::Config>::InstanceId
-    );
+    type AssetId = Self::Hash;
 
     type AssetImpl = DeipUniques;
 

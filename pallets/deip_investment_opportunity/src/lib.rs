@@ -65,7 +65,7 @@ pub mod pallet {
     use crate::module::{*};
 
     use crate::weights::WeightInfo;
-    use deip_asset_system::{NFTImplT, NFTokenItemIdT, FTImplT, NFTokenFractionT};
+    use deip_asset_system::{NFTImplT, FTImplT, NFTokenFractionT};
     use deip_transaction_ctx::{PortalCtxT, TransactionCtxId};
 
     /// Configuration trait
@@ -98,14 +98,12 @@ pub mod pallet {
             FixedPointOperand +
             Clone + Parameter + Member + Copy;
 
-        type AssetId:
-            NFTokenItemIdT<Self::AssetImpl> +
-            Default + Parameter + Member + Clone + Copy;
+        type AssetId: Default + Parameter + Member + Clone + Copy;
 
         type AssetImpl: NFTImplT<
             Account=Self::AccountId,
-            FTokenAmount=Self::AssetAmount,
-            NFTokenItemId=Self::AssetId
+            FractionAmount=Self::AssetAmount,
+            Fingerprint=Self::AssetId
         >;
 
         type Asset: NFTokenFractionT<Self::AssetImpl>;

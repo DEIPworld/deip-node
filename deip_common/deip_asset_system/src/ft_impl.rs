@@ -2,6 +2,7 @@ use sp_runtime::traits::{AtLeast32BitUnsigned, One, Zero, CheckedAdd};
 use frame_support::storage::{StorageValue};
 use frame_support::traits::tokens::{fungibles::{self, Create, Mutate, Inspect, Transfer}};
 use frame_support::pallet_prelude::*;
+use crate::Seal;
 
 pub trait FTImplT:
 {
@@ -24,7 +25,7 @@ pub trait FTImplT:
         // + LockableAsset<Self::AccountId>
         ;
 
-    fn _obtain_ft_id() -> Option<Self::FTokenId> {
+    fn _obtain_ft_id(_: Seal) -> Option<Self::FTokenId> {
         let id = Self::NextFTokenId::try_get()
             .unwrap_or(Self::FTokenId::zero());
         Self::NextFTokenId::put(id.checked_add(&Self::FTokenId::one())?);
@@ -33,10 +34,11 @@ pub trait FTImplT:
 
     fn create_ft(
         account: Self::Account,
-        minimum_balance: Self::FTokenAmount
+        minimum_balance: Self::FTokenAmount,
+        _: Seal
     ) -> Result<Self::FTokenId, ()>
     {
-        let id = Self::_obtain_ft_id().ok_or(())?;
+        let id = Self::_obtain_ft_id(Seal(())).ok_or(())?;
         Self::Fungibles::create(
             id,
             account,
@@ -48,7 +50,8 @@ pub trait FTImplT:
 
     fn _can_mint(
         _id: Self::FTokenId,
-        _account: &Self::Account
+        _account: &Self::Account,
+        _: Seal
     ) -> Result<(), ()>
     {
         // Self::Fungibles::is_lock_mint()
@@ -58,10 +61,11 @@ pub trait FTImplT:
     fn mint_ft(
         id: Self::FTokenId,
         account: &Self::Account,
-        amount: Self::FTokenAmount
+        amount: Self::FTokenAmount,
+        _: Seal
     ) -> Result<(), ()>
     {
-        Self::_can_mint(id, account)?;
+        Self::_can_mint(id, account, Seal(()))?;
         let minimum_balance = Self::Fungibles::minimum_balance(id);
         if amount < minimum_balance { return Err(()) }
         Self::Fungibles::mint_into(
@@ -73,7 +77,8 @@ pub trait FTImplT:
 
     fn lock_minting(
         _id: Self::FTokenId,
-        _account: &Self::Account
+        _account: &Self::Account,
+        _: Seal
     ) -> Result<(), ()>
     {
         // Self::Fungibles::lock_mint()
@@ -82,7 +87,8 @@ pub trait FTImplT:
 
     fn balance(
         id: Self::FTokenId,
-        account: &Self::Account
+        account: &Self::Account,
+        _: Seal
     ) -> Self::FTokenAmount
     {
         Self::Fungibles::balance(
@@ -93,6 +99,7 @@ pub trait FTImplT:
 
     fn total_issuance(
         id: Self::FTokenId,
+        _: Seal
     ) -> Self::FTokenAmount
     {
         Self::Fungibles::total_issuance(id)
@@ -100,7 +107,8 @@ pub trait FTImplT:
 
     fn _can_transfer(
         _id: Self::FTokenId,
-        _account: &Self::Account
+        _account: &Self::Account,
+        _: Seal
     ) -> Result<(), ()>
     {
         // Self::Fungibles::is_lock_transfer()
@@ -111,10 +119,11 @@ pub trait FTImplT:
         id: Self::FTokenId,
         from: &Self::Account,
         to: &Self::Account,
-        amount: Self::FTokenAmount
+        amount: Self::FTokenAmount,
+        _: Seal
     ) -> Result<(), ()>
     {
-        Self::_can_transfer(id, from)?;
+        Self::_can_transfer(id, from, Seal(()))?;
 
         if amount.is_zero() { return Err(()) }
 
@@ -133,7 +142,8 @@ pub trait FTImplT:
 
     fn lock_transfer(
         _id: Self::FTokenId,
-        _account: &Self::Account
+        _account: &Self::Account,
+        _: Seal
     ) -> Result<(), ()>
     {
         // Self::Fungibles::lock_transfer()

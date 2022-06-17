@@ -15,6 +15,8 @@ pub use ft_impl::*;
 pub use deip_assets_error::{ReserveError, UnreserveError};
 use sp_std::prelude::*;
 
+pub struct Seal(());
+
 pub trait AssetIdInitT<AssetId> {
     fn asset_id(raw: &[u8]) -> AssetId;
 }

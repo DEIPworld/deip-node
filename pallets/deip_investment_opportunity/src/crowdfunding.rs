@@ -77,13 +77,13 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
         amount: T::AssetAmount
     ) -> Result<T::Asset, crate::Error<T>>
     {
-        T::Asset::pick_fraction(account, self.v1.asset_id)
+        T::Asset::pick_fraction(self.v1.asset_id, account)
             .ok_or_else(|| crate::Error::BalanceIsNotEnough)
     }
 
     fn fund_balance(&self) -> Result<T::Asset, crate::Error<T>> {
         let balance
-            = *T::Asset::pick_fraction(self.account(), self.v1.asset_id)
+            = *T::Asset::pick_fraction(self.v1.asset_id, self.account())
             .ok_or_else(|| crate::Error::BalanceIsNotEnough)?
             .amount();
         self.fund(self.account(), balance)
@@ -134,7 +134,7 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
         self.shares.saturating_inc();
         let (id, amount) = shares;
         Ok(SharesTransfer::<T>::new(
-            T::Asset::pick_fraction(self.creator(), id)
+            T::Asset::pick_fraction(id, self.creator())
                 .ok_or_else(|| crate::Error::BalanceIsNotEnough)?,
             self.account(),
             amount
@@ -150,7 +150,7 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
         self.shares.saturating_dec();
         let (id, amount) = shares;
         Ok(SharesTransfer::<T>::new(
-            T::Asset::pick_fraction(self.account(), id)
+            T::Asset::pick_fraction(id, self.account())
                 .ok_or_else(|| crate::Error::ImpossibleSituation)?,
             self.creator(),
             amount
@@ -235,8 +235,8 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
 
         let (id, _) = shares;
         let asset = T::Asset::pick_fraction(
-            self.account(),
             id,
+            self.account(),
         ).ok_or_else(|| crate::Error::ImpossibleSituation)?;
 
         self.payouts.saturating_dec();
