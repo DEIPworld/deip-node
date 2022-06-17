@@ -70,13 +70,15 @@ pub trait NFTImplT
 
     type NextCollectionId: StorageValue<Self::CollectionId>;
 
-    type Nonfungibles: nonfungibles::Inspect<
+    type Nonfungibles:
+        nonfungibles::Inspect<
             Self::Account,
             ClassId = Self::CollectionId,
             InstanceId = Self::ItemId,
-        > + nonfungibles::Transfer<Self::Account>
-        + nonfungibles::Create<Self::Account>
-        + nonfungibles::Mutate<Self::Account>;
+        > +
+        nonfungibles::Transfer<Self::Account> +
+        nonfungibles::Create<Self::Account> +
+        nonfungibles::Mutate<Self::Account>;
 
     type Error: Error + Into<DispatchError>;
 
@@ -200,7 +202,11 @@ pub trait NFTImplT
 
         let id = Self::_obtain_collection_id(Seal(())).ok_or(())?;
 
-        Self::Nonfungibles::create_class(&id, account, account)?;
+        Self::Nonfungibles::create_class(
+            &id,
+            account,
+            account
+        )?;
 
         let collection = Self::CollectionRecord::new(
             account,
@@ -253,9 +259,7 @@ pub trait NFTImplT
     {
         if item.is_fractional() { return Err(()) }
 
-        if total.is_zero() {
-            return Err(Self::Error::bad_value().into())
-        }
+        ensure!(!total.is_zero(), Self::Error::bad_value());
 
         let minimum_balance = One::one();
 
@@ -334,17 +338,13 @@ pub trait NFTImplT
         _: Seal
     ) -> Result<(), ()>
     {
-        if donor.on_hold() { return Err(()) }
-
-        if amount.is_zero() { return Err(()) }
-
-        if &amount > donor.amount() {
-            return Err(())
-        }
-
-        if donor.account() == to {
-            return Err(())
-        }
+        ensure!(donor.account() != to, Self::Error::bad_target());
+        
+        ensure!(!amount.is_zero(), Self::Error::bad_value());
+        
+        ensure!(!donor.on_hold(), Self::Error::no_permission());
+        
+        ensure!(&amount <= donor.amount(), Self::Error::insufficient_balance());
 
         let maybe_fraction = Self::find_fraction(*donor.fingerprint(), to, Seal(()));
 
@@ -358,7 +358,7 @@ pub trait NFTImplT
             )
         });
 
-        if fraction.on_hold() { return Err(()) }
+        ensure!(!fraction.on_hold(), Self::Error::no_permission());
 
         Self::Fungibles::transfer(
             *donor.fractional().ft_id(),
@@ -368,11 +368,11 @@ pub trait NFTImplT
             Seal(())
         )?;
 
-        fraction.increase_amount(amount)?;
+        fraction.increase_amount(amount).map_err(|_| Self::Error::overflow().into())?;
 
         Self::_insert_fraction(fraction, Seal(()));
 
-        donor.decrease_amount(amount)?;
+        donor.decrease_amount(amount).map_err(|_| Self::Error::overflow().into())?;
 
         if donor.amount().is_zero() {
             Self::_remove_fraction(&donor, Seal(()));

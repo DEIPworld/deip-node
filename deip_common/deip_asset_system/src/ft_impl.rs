@@ -69,10 +69,14 @@ pub trait FTImplT:
     {
         Self::_can_mint(id, account, Seal(()))?;
         let minimum_balance = Self::Fungibles::minimum_balance(id);
-        if amount < minimum_balance {
-            return Err(Self::Error::insufficient_balance().into())
-        }
-        Self::Fungibles::mint_into(id, account, amount)
+
+        ensure!(amount >= minimum_balance, Self::Error::insufficient_balance());
+
+        Self::Fungibles::mint_into(
+            id,
+            account,
+            amount
+        )
     }
 
     fn lock_minting(
@@ -125,13 +129,17 @@ pub trait FTImplT:
     {
         Self::_can_transfer(id, from, Seal(()))?;
 
-        if amount.is_zero() { return Err(()) }
+        ensure!(!amount.is_zero(), Self::Error::bad_value());
+        
+        ensure!(from != to, Self::Error::bad_target());
 
-        if from == to {
-            return Err(())
-        }
-
-        Self::Fungibles::transfer(id, from, to, amount, true).map_err(|_| ())?;
+        Self::Fungibles::transfer(
+            id,
+            from,
+            to,
+            amount,
+            true
+        )?;
 
         Ok(())
     }
