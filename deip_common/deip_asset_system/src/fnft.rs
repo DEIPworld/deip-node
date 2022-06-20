@@ -1,4 +1,4 @@
-use crate::{FractionalT, FractionRecordT, NFTImplT, Seal};
+use crate::{CollectionRecordT, FractionalT, FractionRecordT, NFTImplT, Seal};
 
 
 // Fraction ops:
@@ -17,8 +17,7 @@ pub fn hold_fraction<Impl: NFTImplT>(
     guard: Impl::FractionHoldGuard
 ) -> Result<(), ()>
 {
-    NFTokenFraction::<Impl>::pick_fraction(fingerprint, account)
-        .ok_or(())?
+    pick_fraction::<Impl>(account, fingerprint)?
         .hold(holder_id, guard)
 }
 
@@ -29,17 +28,115 @@ pub fn unhold_fraction<Impl: NFTImplT>(
     guard: Impl::FractionHoldGuard
 ) -> Result<(), ()>
 {
-    NFTokenFraction::<Impl>::pick_fraction(fingerprint, account)
-        .ok_or(())?
+    pick_fraction::<Impl>(account, fingerprint)?
         .unhold(holder_id, guard)
+}
+
+pub fn transfer_fraction<Impl: NFTImplT>(
+    fingerprint: Impl::Fingerprint,
+    from: &Impl::Account,
+    to: &Impl::Account,
+    amount: Impl::FractionAmount
+) -> Result<(), ()>
+{
+    pick_fraction::<Impl>(from, fingerprint)?
+        .transfer_amount(to, amount)
+}
+
+pub fn transfer_fraction_full<Impl: NFTImplT>(
+    fingerprint: Impl::Fingerprint,
+    from: &Impl::Account,
+    to: &Impl::Account,
+) -> Result<(), ()>
+{
+    pick_fraction::<Impl>(from, fingerprint)?
+        .check_account(from)?
+        .transfer_all(to)
+
 }
 
 pub fn pick_fraction<Impl: NFTImplT>(
     account: &Impl::Account,
     fingerprint: Impl::Fingerprint,
-) -> Option<impl NFTokenFractionT<Impl>>
+) -> Result<impl NFTokenFractionT<Impl>, ()>
 {
     NFTokenFraction::<Impl>::pick_fraction(fingerprint, account)
+        .ok_or_else(|| ())
+}
+
+// Item ops:
+
+pub fn transfer_item<Impl: NFTImplT>(
+    fingerprint: Impl::Fingerprint,
+    from: &Impl::Account,
+    to: &Impl::Account,
+) -> Result<(), ()>
+{
+    pick_item::<Impl>(fingerprint)?
+        .check_account(from)?
+        .transfer_item(to)
+}
+
+pub fn fractionalize_item<Impl: NFTImplT>(
+    fingerprint: Impl::Fingerprint,
+    account: &Impl::Account,
+    total: Impl::FractionAmount
+) -> Result<(), ()>
+{
+    pick_item::<Impl>(fingerprint)?
+        .check_account(account)?
+        .fractionalize(total)
+}
+
+pub fn pick_item<Impl: NFTImplT>(
+    fingerprint: Impl::Fingerprint
+) -> Result<impl NFTokenItemT<Impl>, ()>
+{
+    NFTokenItem::<Impl>::pick_item(fingerprint)
+        .ok_or_else(|| ())
+}
+
+// Collection ops:
+
+pub fn create_collection<Impl: NFTImplT>(
+    account: &Impl::Account,
+    max_items: Impl::ItemId
+) -> Result<(), ()>
+{
+    NFTokenCollection::<Impl>::create_collection(
+        account,
+        max_items
+    )
+}
+
+pub fn transfer_collection<Impl: NFTImplT>(
+    id: Impl::CollectionId,
+    from: &Impl::Account,
+    to: &Impl::Account
+) -> Result<(), ()>
+{
+    pick_collection::<Impl>(id)?
+        .check_account(from)?
+        .transfer_collection(to)
+}
+
+pub fn mint_item<Impl: NFTImplT>(
+    id: Impl::CollectionId,
+    account: &Impl::Account,
+    unique: impl Unique<Impl>
+) -> Result<(), ()>
+{
+    pick_collection::<Impl>(id)?
+        .check_account(account)?
+        .mint_item(unique)
+}
+
+pub fn pick_collection<Impl: NFTImplT>(
+    id: Impl::CollectionId
+) -> Result<impl NFTokenCollectionT<Impl>, ()>
+{
+    NFTokenCollection::<Impl>::pick_collection(id)
+        .ok_or_else(|| ())
 }
 
 //
@@ -99,7 +196,21 @@ pub trait NFTokenCollectionT<Impl: NFTImplT>: Sized
         id: Impl::CollectionId
     ) -> Option<Self>;
 
-    fn transfer_collection(self, to: &Impl::Account);
+    fn account(&self) -> &Impl::Account;
+
+    fn check_account(
+        self,
+        account: &Impl::Account
+    ) -> Result<Self, ()>
+    {
+        if self.account() == account {
+            Ok(self)
+        } else {
+            Err(())
+        }
+    }
+
+    fn transfer_collection(self, to: &Impl::Account) -> Result<(), ()>;
 
     fn mint_item(self, unique: impl Unique<Impl>) -> Result<(), ()>;
 }
@@ -111,6 +222,20 @@ pub trait NFTokenItemT<Impl: NFTImplT>: Sized
     ) -> Option<Self>;
 
     fn is_fractional(&self) -> bool;
+
+    fn account(&self) -> &Impl::Account;
+
+    fn check_account(
+        self,
+        account: &Impl::Account
+    ) -> Result<Self, ()>
+    {
+        if self.account() == account {
+            Ok(self)
+        } else {
+            Err(())
+        }
+    }
 
     fn transfer_item(self, to: &Impl::Account) -> Result<(), ()>;
 
@@ -129,6 +254,18 @@ pub trait NFTokenFractionT<Impl: NFTImplT>: Sized
     fn amount(&self) -> &Impl::FractionAmount;
 
     fn fractional(&self) -> &Impl::Fractional;
+
+    fn check_account(
+        self,
+        account: &Impl::Account
+    ) -> Result<Self, ()>
+    {
+        if self.account() == account {
+            Ok(self)
+        } else {
+            Err(())
+        }
+    }
 
     fn transfer_amount(
         self,
@@ -183,9 +320,13 @@ impl<Impl: NFTImplT> NFTokenCollectionT<Impl> for NFTokenCollection<Impl>
         Some(Self(Impl::find_collection(id, Seal(()))?))
     }
 
-    fn transfer_collection(self, to: &Impl::Account) {
+    fn account(&self) -> &Impl::Account {
+        self.0.account()
+    }
+
+    fn transfer_collection(self, to: &Impl::Account) -> Result<(), ()> {
         let Self(collection) = self;
-        Impl::transfer_collection(collection, to, Seal(()));
+        Impl::transfer_collection(collection, to, Seal(()))
     }
 
     fn mint_item(self, unique: impl Unique<Impl>) -> Result<(), ()> {
@@ -209,6 +350,10 @@ impl<Impl: NFTImplT> NFTokenItemT<Impl> for NFTokenItem<Impl>
 
     fn is_fractional(&self) -> bool {
         self.0.is_fractional()
+    }
+
+    fn account(&self) -> &Impl::Account {
+        self.0.account()
     }
 
     fn transfer_item(self, to: &Impl::Account) -> Result<(), ()> {
