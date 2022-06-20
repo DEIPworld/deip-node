@@ -304,9 +304,11 @@ pub trait NFTImplT
         mut collection: Self::CollectionRecord,
         to: &Self::Account,
         _: Seal
-    ) {
+    ) -> Result<(), ()>
+    {
         collection.transfer_collection(to);
         Self::_insert_collection(collection, Seal(()));
+        Ok(())
     }
 
     fn transfer_item(
