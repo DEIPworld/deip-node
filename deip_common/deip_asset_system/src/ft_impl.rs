@@ -2,7 +2,8 @@ use sp_runtime::traits::{AtLeast32BitUnsigned, One, Zero, CheckedAdd};
 use frame_support::storage::{StorageValue};
 use frame_support::traits::tokens::{fungibles::{self, Create, Mutate, Inspect, Transfer}};
 use frame_support::pallet_prelude::*;
-use crate::Seal;
+
+use crate::{Seal, error::Error};
 
 pub trait FTImplT:
 {
@@ -38,15 +39,16 @@ pub trait FTImplT:
         account: Self::Account,
         minimum_balance: Self::FTokenAmount,
         _: Seal
-    ) -> Result<Self::FTokenId, ()>
+    ) -> Result<Self::FTokenId, DispatchError>
     {
-        let id = Self::_obtain_ft_id(Seal(())).ok_or(())?;
+        let id = Self::_obtain_ft_id(Seal(()))
+            .ok_or_else(|| Self::Error::unknown_f_token_id().into())?;
         Self::Fungibles::create(
             id,
             account,
             true,
             minimum_balance
-        ).map_err(|_| ())?;
+        )?;
         Ok(id)
     }
 
@@ -54,7 +56,7 @@ pub trait FTImplT:
         _id: Self::FTokenId,
         _account: &Self::Account,
         _: Seal
-    ) -> Result<(), ()>
+    ) -> DispatchResult
     {
         // Self::Fungibles::is_lock_mint()
         Ok(())
@@ -65,7 +67,7 @@ pub trait FTImplT:
         account: &Self::Account,
         amount: Self::FTokenAmount,
         _: Seal
-    ) -> Result<(), ()>
+    ) -> DispatchResult
     {
         Self::_can_mint(id, account, Seal(()))?;
         let minimum_balance = Self::Fungibles::minimum_balance(id);
@@ -83,7 +85,7 @@ pub trait FTImplT:
         _id: Self::FTokenId,
         _account: &Self::Account,
         _: Seal
-    ) -> Result<(), ()>
+    ) -> DispatchResult
     {
         // Self::Fungibles::lock_mint()
         Ok(())
@@ -113,7 +115,7 @@ pub trait FTImplT:
         _id: Self::FTokenId,
         _account: &Self::Account,
         _: Seal
-    ) -> Result<(), ()>
+    ) -> DispatchResult
     {
         // Self::Fungibles::is_lock_transfer()
         Ok(())
@@ -125,7 +127,7 @@ pub trait FTImplT:
         to: &Self::Account,
         amount: Self::FTokenAmount,
         _: Seal
-    ) -> Result<(), ()>
+    ) -> DispatchResult
     {
         Self::_can_transfer(id, from, Seal(()))?;
 

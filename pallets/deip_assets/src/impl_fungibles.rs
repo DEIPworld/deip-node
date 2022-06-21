@@ -122,8 +122,24 @@ impl<T> NftError for Error<T> {
     fn insufficient_balance() -> Self {
         todo!()
     }
+    
+    fn wrong_owner() -> Self {
+        todo!()
+    }
 
-    fn forbidden_for_fractionalized() -> Self {
+    fn unknown_f_token_id() -> Self {
+        todo!()
+    }
+
+    fn unknown_item() -> Self {
+        todo!()
+    }
+
+    fn no_permission() -> Self {
+        todo!()
+    }
+
+    fn not_fractionalized() -> Self {
         todo!()
     }
 }
