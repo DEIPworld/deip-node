@@ -47,8 +47,6 @@ impl<T: Config> NFTImplT for Pallet<T>
         Self::Fractional,
         Self::FractionAmount,
         Self::FractionHoldGuard,
-        Self::FTokenAmount,
-        Self::FTokenAmount,
     >;
 
     type CollectionRepo = crate::CollectionRepo<T>;
@@ -191,7 +189,24 @@ impl<T> NftError for Error<T> {
         todo!()
     }
 
-    fn forbidden_for_fractionalized() -> Self {
+    fn wrong_owner() -> Self {
+        todo!()
+    }
+    
+
+    fn unknown_f_token_id() -> Self {
+        todo!()
+    }
+
+    fn unknown_item() -> Self {
+        todo!()
+    }
+
+    fn no_permission() -> Self {
+        todo!()
+    }
+
+    fn not_fractionalized() -> Self {
         todo!()
     }
 } 

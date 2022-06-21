@@ -1,4 +1,7 @@
-use crate::{CollectionRecordT, FractionalT, FractionRecordT, NFTImplT, Seal};
+use frame_support::dispatch::DispatchResult;
+use sp_runtime::DispatchError;
+
+use crate::{CollectionRecordT, FractionalT, FractionRecordT, NFTImplT, Seal, error::Error};
 
 
 // Fraction ops:
@@ -15,7 +18,7 @@ pub fn hold_fraction<Impl: NFTImplT>(
     fingerprint: Impl::Fingerprint,
     holder_id: Impl::FractionHolderId,
     guard: Impl::FractionHoldGuard
-) -> Result<(), ()>
+) -> DispatchResult
 {
     pick_fraction::<Impl>(account, fingerprint)?
         .hold(holder_id, guard)
@@ -26,7 +29,7 @@ pub fn unhold_fraction<Impl: NFTImplT>(
     fingerprint: Impl::Fingerprint,
     holder_id: Impl::FractionHolderId,
     guard: Impl::FractionHoldGuard
-) -> Result<(), ()>
+) -> DispatchResult
 {
     pick_fraction::<Impl>(account, fingerprint)?
         .unhold(holder_id, guard)
@@ -37,7 +40,7 @@ pub fn transfer_fraction<Impl: NFTImplT>(
     from: &Impl::Account,
     to: &Impl::Account,
     amount: Impl::FractionAmount
-) -> Result<(), ()>
+) -> DispatchResult
 {
     pick_fraction::<Impl>(from, fingerprint)?
         .transfer_amount(to, amount)
@@ -47,10 +50,11 @@ pub fn transfer_fraction_full<Impl: NFTImplT>(
     fingerprint: Impl::Fingerprint,
     from: &Impl::Account,
     to: &Impl::Account,
-) -> Result<(), ()>
+) -> DispatchResult
 {
     pick_fraction::<Impl>(from, fingerprint)?
-        .check_account(from)?
+        .check_account(from)
+        .map_err(|_| Impl::Error::wrong_owner().into())?
         .transfer_all(to)
 
 }
@@ -58,10 +62,10 @@ pub fn transfer_fraction_full<Impl: NFTImplT>(
 pub fn pick_fraction<Impl: NFTImplT>(
     account: &Impl::Account,
     fingerprint: Impl::Fingerprint,
-) -> Result<impl NFTokenFractionT<Impl>, ()>
+) -> Result<impl NFTokenFractionT<Impl>, DispatchError>
 {
     NFTokenFraction::<Impl>::pick_fraction(fingerprint, account)
-        .ok_or_else(|| ())
+        .ok_or_else(|| Impl::Error::not_fractionalized().into())
 }
 
 // Item ops:
@@ -70,10 +74,11 @@ pub fn transfer_item<Impl: NFTImplT>(
     fingerprint: Impl::Fingerprint,
     from: &Impl::Account,
     to: &Impl::Account,
-) -> Result<(), ()>
+) -> DispatchResult
 {
     pick_item::<Impl>(fingerprint)?
-        .check_account(from)?
+        .check_account(from)
+        .map_err(|_| Impl::Error::wrong_owner().into())?
         .transfer_item(to)
 }
 
@@ -81,19 +86,20 @@ pub fn fractionalize_item<Impl: NFTImplT>(
     fingerprint: Impl::Fingerprint,
     account: &Impl::Account,
     total: Impl::FractionAmount
-) -> Result<(), ()>
+) -> DispatchResult
 {
     pick_item::<Impl>(fingerprint)?
-        .check_account(account)?
+        .check_account(account)
+        .map_err(|_| Impl::Error::wrong_owner().into())?
         .fractionalize(total)
 }
 
 pub fn pick_item<Impl: NFTImplT>(
     fingerprint: Impl::Fingerprint
-) -> Result<impl NFTokenItemT<Impl>, ()>
+) -> Result<impl NFTokenItemT<Impl>, DispatchError>
 {
     NFTokenItem::<Impl>::pick_item(fingerprint)
-        .ok_or_else(|| ())
+        .ok_or_else(|| Impl::Error::unknown_item().into())
 }
 
 // Collection ops:
@@ -101,7 +107,7 @@ pub fn pick_item<Impl: NFTImplT>(
 pub fn create_collection<Impl: NFTImplT>(
     account: &Impl::Account,
     max_items: Impl::ItemId
-) -> Result<(), ()>
+) -> DispatchResult
 {
     NFTokenCollection::<Impl>::create_collection(
         account,
@@ -188,7 +194,7 @@ pub trait NFTokenCollectionT<Impl: NFTImplT>: Sized {
     fn create_collection(
         account: &Impl::Account,
         max_items: Impl::ItemId,
-    ) -> Result<(), ()>;
+    ) -> DispatchResult;
 
     fn pick_collection(
         id: Impl::CollectionId
@@ -216,7 +222,12 @@ pub trait NFTokenCollectionT<Impl: NFTImplT>: Sized {
 pub trait NFTokenItemT<Impl: NFTImplT>: Sized
 {
     fn pick_item(
+        fingerprint: Impl::Fingerprint,
     ) -> Option<Self>;
+
+    fn is_fractional(&self) -> bool;
+
+    fn account(&self) -> &Impl::Account;
 
     fn check_account(
         self,
@@ -230,9 +241,9 @@ pub trait NFTokenItemT<Impl: NFTImplT>: Sized
         }
     }
 
-    fn transfer_item(self, to: &Impl::Account) -> Result<(), ()>;
+    fn transfer_item(self, to: &Impl::Account) -> DispatchResult;
 
-    fn fractionalize(self, total: Impl::FractionAmount) -> Result<(), ()>;
+    fn fractionalize(self, total: Impl::FractionAmount) -> DispatchResult;
 }
 
 pub trait NFTokenFractionT<Impl: NFTImplT>: Sized
@@ -264,12 +275,12 @@ pub trait NFTokenFractionT<Impl: NFTImplT>: Sized
         self,
         to: &Impl::Account,
         amount: Impl::FractionAmount
-    ) -> Result<(), ()>;
+    ) -> DispatchResult;
 
     fn transfer_all(
         self,
         to: &Impl::Account,
-    ) -> Result<(), ()>
+    ) -> DispatchResult
     {
         let amount = *self.amount();
         self.transfer_amount(to, amount)
@@ -281,13 +292,13 @@ pub trait NFTokenFractionT<Impl: NFTImplT>: Sized
         self,
         holder_id: Impl::FractionHolderId,
         guard: Impl::FractionHoldGuard
-    ) -> Result<(), ()>;
+    ) -> DispatchResult;
 
     fn unhold(
         self,
         holder_id: Impl::FractionHolderId,
         guard: Impl::FractionHoldGuard
-    ) -> Result<(), ()>;
+    ) -> DispatchResult;
 }
 
 impl<Impl: NFTImplT> NFTokenCollectionT<Impl> for NFTokenCollection<Impl>
@@ -295,7 +306,7 @@ impl<Impl: NFTImplT> NFTokenCollectionT<Impl> for NFTokenCollection<Impl>
     fn create_collection(
         account: &Impl::Account,
         max_items: Impl::ItemId
-    ) -> Result<(), ()>
+    ) -> DispatchResult
     {
         Impl::create_collection(
             account,
@@ -347,12 +358,12 @@ impl<Impl: NFTImplT> NFTokenItemT<Impl> for NFTokenItem<Impl>
         self.0.account()
     }
 
-    fn transfer_item(self, to: &Impl::Account) -> Result<(), ()> {
+    fn transfer_item(self, to: &Impl::Account) -> DispatchResult {
         let Self(item) = self;
         Impl::transfer_item(item, to, Seal(()))
     }
 
-    fn fractionalize(self, total: Impl::FractionAmount) -> Result<(), ()> {
+    fn fractionalize(self, total: Impl::FractionAmount) -> DispatchResult {
         let Self(item) = self;
         Impl::fractionalize(item, total, Seal(()))
     }
@@ -386,7 +397,7 @@ impl<Impl: NFTImplT> NFTokenFractionT<Impl> for NFTokenFraction<Impl>
         self,
         to: &Impl::Account,
         amount: Impl::FractionAmount
-    ) -> Result<(), ()>
+    ) -> DispatchResult
     {
         let Self(fraction) = self;
         Impl::transfer_fraction(fraction, to, amount, Seal(()))
@@ -400,7 +411,7 @@ impl<Impl: NFTImplT> NFTokenFractionT<Impl> for NFTokenFraction<Impl>
         self,
         holder_id: Impl::FractionHolderId,
         guard: Impl::FractionHoldGuard
-    ) -> Result<(), ()>
+    ) -> DispatchResult
     {
         let Self(fraction) = self;
         Impl::hold_fraction(fraction, holder_id, guard, Seal(()))
@@ -410,7 +421,7 @@ impl<Impl: NFTImplT> NFTokenFractionT<Impl> for NFTokenFraction<Impl>
         self,
         holder_id: Impl::FractionHolderId,
         guard: Impl::FractionHoldGuard
-    ) -> Result<(), ()>
+    ) -> DispatchResult
     {
         let Self(fraction) = self;
         Impl::unhold_fraction(fraction, holder_id, guard, Seal(()))

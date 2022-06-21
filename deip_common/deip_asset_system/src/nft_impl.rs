@@ -1,12 +1,11 @@
-use sp_runtime::traits::{Hash, AtLeast32BitUnsigned, One, Zero, CheckedAdd, Saturating, CheckedSub};
+use frame_support::traits::tokens::nonfungibles::{self, *};
 use frame_support::storage::{StorageNMap, StorageValue, StorageMap, StorageDoubleMap};
 use frame_support::pallet_prelude::*;
+use sp_runtime::traits::{Hash, AtLeast32BitUnsigned, One, Zero, CheckedAdd, Saturating, CheckedSub};
 use codec::{Encode, Decode};
 use scale_info::TypeInfo;
-use sp_runtime::traits::{
-    AtLeast32BitUnsigned, CheckedAdd, CheckedSub, Hash, One, Saturating, Zero,
-};
-use crate::{FTImplT, Seal};
+
+use crate::{error::Error, FTImplT, Seal};
 
 
 pub trait NFTImplT
@@ -196,11 +195,12 @@ pub trait NFTImplT
         account: &Self::Account,
         max_items: Self::ItemId,
         _: Seal
-    ) -> Result<(), ()>
+    ) -> DispatchResult
     {
-        if max_items.is_zero() { return Err(()) }
+        ensure!(!max_items.is_zero(), Self::Error::bad_value());
 
-        let id = Self::_obtain_collection_id(Seal(())).ok_or(())?;
+        let id = Self::_obtain_collection_id(Seal(()))
+            .ok_or_else(|| Self::Error::unknown_collection().into())?;
 
         Self::Nonfungibles::create_class(
             &id,
@@ -255,11 +255,11 @@ pub trait NFTImplT
         mut item: Self::ItemRecord,
         total: Self::FractionAmount,
         _: Seal
-    ) -> Result<(), ()>
+    ) -> DispatchResult
     {
-        if item.is_fractional() { return Err(()) }
-
         ensure!(!total.is_zero(), Self::Error::bad_value());
+
+        ensure!(!item.is_fractional(), Self::Error::no_permission());
 
         let minimum_balance = One::one();
 
@@ -314,15 +314,15 @@ pub trait NFTImplT
         mut item: Self::ItemRecord,
         to: &Self::Account,
         _: Seal
-    ) -> Result<(), ()>
+    ) -> DispatchResult
     {
-        if item.is_fractional() { return Err(()) }
+        ensure!(!item.is_fractional(), Self::Error::no_permission());
 
         Self::Nonfungibles::transfer(
             item.collection_id(),
             item.item_id(),
             to
-        ).map_err(|_| ())?;
+        )?;
 
         item.transfer_item(to);
 
@@ -336,7 +336,7 @@ pub trait NFTImplT
         to: &Self::Account,
         amount: Self::FractionAmount,
         _: Seal
-    ) -> Result<(), ()>
+    ) -> DispatchResult
     {
         ensure!(donor.account() != to, Self::Error::bad_target());
         
@@ -388,15 +388,15 @@ pub trait NFTImplT
         holder_id: Self::FractionHolderId,
         guard: Self::FractionHoldGuard,
         _: Seal
-    ) -> Result<(), ()>
+    ) -> DispatchResult
     {
         let key = Self::_fraction_hold_key(&fraction, holder_id, guard, Seal(()));
 
-        if Self::FractionHolds::contains_key(&key) { return Err(()) }
+        ensure!(!Self::FractionHolds::contains_key(&key), Self::Error::no_permission());
 
         Self::FractionHolds::insert(key, (holder_id, guard));
 
-        fraction.inc_holds()?;
+        fraction.inc_holds().map_err(|_| Self::Error::overflow().into())?;
 
         Self::_insert_fraction(fraction, Seal(()));
 
@@ -408,15 +408,15 @@ pub trait NFTImplT
         holder_id: Self::FractionHolderId,
         guard: Self::FractionHoldGuard,
         _: Seal
-    ) -> Result<(), ()>
+    ) -> DispatchResult
     {
         let key = Self::_fraction_hold_key(&fraction, holder_id, guard, Seal(()));
 
-        if !Self::FractionHolds::contains_key(&key) { return Err(()) }
+        ensure!(Self::FractionHolds::contains_key(&key), Self::Error::no_permission());
 
         Self::FractionHolds::remove(key);
 
-        fraction.dec_holds()?;
+        fraction.dec_holds().map_err(|_| Self::Error::overflow().into())?;
 
         Self::_insert_fraction(fraction, Seal(()));
 
