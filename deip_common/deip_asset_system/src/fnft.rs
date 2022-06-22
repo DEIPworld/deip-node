@@ -107,7 +107,7 @@ pub fn pick_item<Impl: NFTImplT>(
 pub fn create_collection<Impl: NFTImplT>(
     account: &Impl::Account,
     max_items: Impl::ItemId
-) -> DispatchResult
+) -> Result<Impl::CollectionId, DispatchError>
 {
     NFTokenCollection::<Impl>::create_collection(
         account,
@@ -194,7 +194,7 @@ pub trait NFTokenCollectionT<Impl: NFTImplT>: Sized {
     fn create_collection(
         account: &Impl::Account,
         max_items: Impl::ItemId,
-    ) -> DispatchResult;
+    ) -> Result<Impl::CollectionId, DispatchError>;
 
     fn pick_collection(
         id: Impl::CollectionId
@@ -306,7 +306,7 @@ impl<Impl: NFTImplT> NFTokenCollectionT<Impl> for NFTokenCollection<Impl>
     fn create_collection(
         account: &Impl::Account,
         max_items: Impl::ItemId
-    ) -> DispatchResult
+    ) -> Result<Impl::CollectionId, DispatchError>
     {
         Impl::create_collection(
             account,

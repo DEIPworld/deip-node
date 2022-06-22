@@ -195,7 +195,7 @@ pub trait NFTImplT
         account: &Self::Account,
         max_items: Self::ItemId,
         _: Seal
-    ) -> DispatchResult
+    ) -> Result<Self::CollectionId, DispatchError>
     {
         ensure!(!max_items.is_zero(), Self::Error::bad_value());
 
@@ -217,7 +217,7 @@ pub trait NFTImplT
 
         Self::_insert_collection(collection, Seal(()));
 
-        Ok(())
+        Ok(id)
     }
 
     fn mint_item(
@@ -339,11 +339,11 @@ pub trait NFTImplT
     ) -> DispatchResult
     {
         ensure!(donor.account() != to, Self::Error::bad_target());
-        
+
         ensure!(!amount.is_zero(), Self::Error::bad_value());
-        
+
         ensure!(!donor.on_hold(), Self::Error::no_permission());
-        
+
         ensure!(&amount <= donor.amount(), Self::Error::insufficient_balance());
 
         let maybe_fraction = Self::find_fraction(*donor.fingerprint(), to, Seal(()));
