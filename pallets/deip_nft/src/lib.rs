@@ -11,24 +11,23 @@ pub use pallet_uniques;
 #[frame_support::pallet]
 pub mod pallet {
     use deip_asset_system::{
-        FTImplT, NFTImplT, NFTokenCollectionRecord, NFTokenFractionRecord, NFTokenItemRecord,
+        mint_item, FTImplT, NFTImplT, NFTokenCollectionRecord, NFTokenFractionRecord,
+        NFTokenItemRecord,
     };
     use frame_support::{
-        dispatch::{DispatchResult, DispatchResultWithPostInfo},
-        ensure,
+        dispatch::DispatchResult,
         pallet_prelude::{Member, NMapKey, StorageMap, StorageNMap, StorageValue, ValueQuery},
-        sp_runtime::traits::{AtLeast32BitUnsigned, One, StaticLookup},
-        traits::{fungible::ItemOf, IsType},
+        sp_runtime::traits::{AtLeast32BitUnsigned, StaticLookup},
+        traits::IsType,
         transactional, Blake2_128Concat, Parameter, Twox64Concat,
     };
     use frame_system::{ensure_signed, pallet_prelude::OriginFor};
-    use pallet_uniques::{DestroyWitness, Pallet as Uniques};
 
     use crate::types::CollectionDetails;
 
     type ItemIdOf<T> = <Pallet<T> as NFTImplT>::ItemId;
     type CollectionRecordOf<T> = <Pallet<T> as NFTImplT>::CollectionRecord;
-    type FTokenAmountOf<T> = <Pallet<T> as NFTImplT>::FTokenAmount;
+    type FractionAmountOf<T> = <Pallet<T> as NFTImplT>::FractionAmount;
 
     #[pallet::config]
     pub trait Config:
@@ -81,7 +80,8 @@ pub mod pallet {
         ),
         NFTokenItemRecord<
             T::AccountId,
-            (T::Hash, T::ItemId),
+            T::Hash,
+            T::ItemId,
             T::CollectionId,
             (T::AssetId, T::FungiblesBalance),
         >,
@@ -98,9 +98,10 @@ pub mod pallet {
         ),
         NFTokenFractionRecord<
             T::AccountId,
-            (T::Hash, T::ItemId),
+            T::Hash,
+            T::ItemId,
             (T::AssetId, T::FungiblesBalance),
-            T::FungiblesBalance,
+            u32,
         >,
     >;
 
@@ -117,12 +118,12 @@ pub mod pallet {
     pub enum Event<T: Config> {
         CollectionCreated {
             issuer: T::AccountId,
-            collection: T::Hash,
+            collection: T::CollectionId,
             max_items: ItemIdOf<T>,
         },
         ItemMinted {
             collection: T::Hash,
-            // item: T::Hash,
+            item: T::Hash,
             owner: T::AccountId,
         },
         ItemBurned {
@@ -132,7 +133,7 @@ pub mod pallet {
         ItemFractionalized {
             collection: T::Hash,
             item: ItemIdOf<T>,
-            total_amount: FTokenAmountOf<T>,
+            total_amount: FractionAmountOf<T>,
         },
         ItemTransferred {
             collection: T::Hash,
@@ -160,14 +161,10 @@ pub mod pallet {
         ///     [`Event::CollectionCreated`] when successful.
         #[pallet::weight(1_000_000)]
         #[transactional]
-        pub fn create(
-            origin: OriginFor<T>,
-            collection: T::Hash,
-            max_items: ItemIdOf<T>,
-        ) -> DispatchResult {
+        pub fn create(origin: OriginFor<T>, max_items: ItemIdOf<T>) -> DispatchResult {
             let issuer = ensure_signed(origin.clone())?;
 
-            Self::create_collection(collection, &issuer, max_items)?;
+            let collection = Self::create_collection(&issuer, &issuer, max_items)?;
 
             Self::deposit_event(Event::CollectionCreated { issuer, collection, max_items });
             Ok(())
@@ -200,21 +197,17 @@ pub mod pallet {
         // #[transactional] @TODO
         pub fn mint(
             origin: OriginFor<T>,
-            collection: T::Hash,
-            //  item: T::Hash @TODO does item has hash???
+            collection: T::CollectionId,
+            item: T::Hash,
         ) -> DispatchResult {
             let owner = ensure_signed(origin)?;
 
             let record =
                 Self::find_collection(&owner, &collection).ok_or(Error::<T>::UnknownCollection)?;
 
-            Self::mint_item(record)?;
+            mint_item(record, &owner, item)?;
 
-            Self::deposit_event(Event::ItemMinted {
-                collection,
-                // item, @TODO
-                owner,
-            });
+            Self::deposit_event(Event::ItemMinted { collection, item, owner });
             Ok(())
         }
 
@@ -465,7 +458,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             collection: T::Hash,
             item: ItemIdOf<T>,
-            total_amount: FTokenAmountOf<T>,
+            total_amount: FractionAmountOf<T>,
         ) -> DispatchResult {
             let origin_id = ensure_signed(origin)?;
 

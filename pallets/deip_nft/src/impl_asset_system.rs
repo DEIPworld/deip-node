@@ -1,5 +1,6 @@
 use deip_asset_system::{
-    error::NftError, NFTImplT, NFTokenCollectionRecord, NFTokenFractionRecord, NFTokenItemRecord,
+    error::Error as NftError, NFTImplT, NFTokenCollectionRecord, NFTokenFractionRecord,
+    NFTokenItemRecord,
 };
 
 use crate::{
@@ -19,30 +20,27 @@ impl<T: Config> NFTImplT for Pallet<T> {
 
     type FTokenId = T::AssetId;
 
-    type FTokenAmount = T::FungiblesBalance;
-
     type Account = T::AccountId;
 
-    /// @TODO bad name.
-    type NFTokenCollectionId = (Self::Fingerprint, Self::CollectionId);
-
-    /// @TODO bad name.
-    type NFTokenItemId = (Self::Fingerprint, Self::ItemId);
-
-    /// @TODO bad name.
-    type Fractional = (Self::FTokenId, Self::FTokenAmount);
+    type Fractional = (Self::FTokenId, Self::FractionAmount);
 
     type CollectionRecord =
-        NFTokenCollectionRecord<Self::Account, Self::NFTokenCollectionId, Self::ItemId>;
+        NFTokenCollectionRecord<Self::Account, Self::CollectionId, Self::ItemId>;
 
-    type ItemRecord =
-        NFTokenItemRecord<Self::Account, Self::NFTokenItemId, Self::CollectionId, Self::Fractional>;
+    type ItemRecord = NFTokenItemRecord<
+        Self::Account,
+        Self::Fingerprint,
+        Self::ItemId,
+        Self::CollectionId,
+        Self::Fractional,
+    >;
 
     type FractionRecord = NFTokenFractionRecord<
         Self::Account,
-        Self::NFTokenItemId,
+        Self::Fingerprint,
         Self::Fractional,
-        Self::FTokenAmount,
+        Self::FractionAmount,
+        Self::FractionHoldGuard,
     >;
 
     type CollectionRepo = CollectionByAccount<T>;
