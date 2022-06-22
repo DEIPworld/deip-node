@@ -572,7 +572,7 @@ impl pallet_assets::Config for Runtime {
 
 impl deip_projects_info::DeipProjectsInfo<AccountId> for Runtime {
     type ProjectId = pallet_deip::ProjectId;
-    type InvestmentId = pallet_deip_investment_opportunity::crowdfunding::CrowdfundingId;
+    type InvestmentId = pallet_deip_crowdfunding::crowdfunding::CrowdfundingId;
 
     fn try_get_project_team(id: &Self::ProjectId) -> Option<AccountId> {
         Deip::try_get_project_team(id)
@@ -759,16 +759,15 @@ impl pallet_deip::Config for Runtime {
 
 use deip_asset_system::{NFTokenFraction};
 
-impl pallet_deip_investment_opportunity::Config for Runtime {
-    type DeipInvestmentWeightInfo = pallet_deip_investment_opportunity::weights::Weights<Self>;
+impl pallet_deip_crowdfunding::Config for Runtime {
+    type DeipInvestmentWeightInfo = pallet_deip_crowdfunding::weights::Weights<Self>;
     type Event = Event;
     type TransactionCtx = TransactionCtx;
     type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
     type MaxShares = MaxCrowdfundingShares;
     type Currency = Balances;
 
-    type Crowdfunding =
-        pallet_deip_investment_opportunity::crowdfunding::SimpleCrowdfundingV2<Self>;
+    type Crowdfunding = pallet_deip_crowdfunding::crowdfunding::SimpleCrowdfundingV2<Self>;
 
     type AssetAmount = <Self as pallet_assets::Config>::Balance;
 
@@ -916,8 +915,7 @@ construct_runtime!(
         DeipPortal: pallet_deip_portal::{Pallet, Call, Storage, Config, ValidateUnsigned},
         DeipVesting: pallet_deip_vesting::{Pallet, Call, Storage, Event<T>, Config<T>},
         DeipEcosystemFund: pallet_deip_ecosystem_fund::{Pallet, Config<T>, Storage},
-        DeipInvestmentOpportunity: pallet_deip_investment_opportunity,
-
+        DeipCrowdfunding: pallet_deip_crowdfunding,
         DeipNft: pallet_deip_nft,
     }
 );
@@ -1199,7 +1197,7 @@ impl_runtime_apis! {
             list_benchmark!(list, extra, pallet_deip_dao, DeipDao);
             list_benchmark!(list, extra, pallet_deip_portal, DeipPortal);
             // list_benchmark!(list, extra, pallet_deip, Deip);
-            list_benchmark!(list, extra, pallet_deip_investment_opportunity, DeipInvestmentOpportunity);
+            list_benchmark!(list, extra, pallet_deip_crowdfunding, DeipCrowdfunding);
 
             let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -1240,7 +1238,7 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, pallet_deip_dao, DeipDao);
             add_benchmark!(params, batches, pallet_deip_portal, DeipPortal);
             // add_benchmark!(params, batches, pallet_deip, Deip);
-            add_benchmark!(params, batches, pallet_deip_investment_opportunity, DeipInvestmentOpportunity);
+            add_benchmark!(params, batches, pallet_deip_crowdfunding, DeipCrowdfunding);
 
             Ok(batches)
         }

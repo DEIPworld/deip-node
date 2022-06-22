@@ -1,10 +1,10 @@
 [package]
 authors = ["DEIP world <https://github.com/DEIPworld>"]
-description = "FRAME pallet for investment opportunities"
+description = "FRAME pallet for crowdfunding"
 edition = "2018"
 homepage = "https://deip.world/"
 license = "Apache-2.0"
-name = "pallet-deip-investment-opportunity"
+name = "pallet-deip-crowdfunding"
 repository = "https://github.com/DEIPworld/deip-polkadot"
 version = "3.0.0"
 

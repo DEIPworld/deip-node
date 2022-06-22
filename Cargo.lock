@@ -201,9 +201,9 @@ dependencies = [
  "pallet-deip",
  "pallet-deip-assets",
  "pallet-deip-balances",
+ "pallet-deip-crowdfunding",
  "pallet-deip-dao",
  "pallet-deip-ecosystem-fund",
- "pallet-deip-investment-opportunity",
  "pallet-deip-nft",
  "pallet-deip-portal",
  "pallet-deip-proposal",
@@ -1035,8 +1035,8 @@ dependencies = [
  "frame-support",
  "pallet-deip",
  "pallet-deip-assets",
+ "pallet-deip-crowdfunding",
  "pallet-deip-dao",
- "pallet-deip-investment-opportunity",
  "pallet-deip-proposal",
  "parity-scale-codec",
  "scale-info",
@@ -4355,6 +4355,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-deip-crowdfunding"
+version = "3.0.0"
+dependencies = [
+ "deip-asset-system",
+ "deip-projects-info",
+ "deip-transaction-ctx",
+ "deip_serializable_u128",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-assets",
+ "pallet-balances",
+ "pallet-deip-assets",
+ "pallet-timestamp",
+ "pallet-transaction-payment",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-deip-dao"
 version = "3.0.0"
 dependencies = [
@@ -4389,31 +4414,6 @@ dependencies = [
  "scale-info",
  "serde",
  "sp-core",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-deip-investment-opportunity"
-version = "3.0.0"
-dependencies = [
- "deip-asset-system",
- "deip-projects-info",
- "deip-transaction-ctx",
- "deip_serializable_u128",
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "pallet-assets",
- "pallet-balances",
- "pallet-deip-assets",
- "pallet-timestamp",
- "pallet-transaction-payment",
- "parity-scale-codec",
- "scale-info",
- "serde",
- "sp-core",
- "sp-io",
  "sp-runtime",
  "sp-std",
 ]
