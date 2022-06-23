@@ -70,49 +70,46 @@ impl<T: Config> NFTImplT for Pallet<T> {
 
 impl<T> NftError for Error<T> {
     fn other() -> Self {
-        // Self::Other
-        todo!()
+        Self::Other
     }
 
     fn bad_value() -> Self {
-        // Self::BadValue
-        todo!()
+        Self::BadValue
     }
 
     fn bad_target() -> Self {
-        todo!()
+        Self::BadTarget
     }
 
     fn wrong_owner() -> Self {
-        todo!()
+        Self::WrongOwner
     }
 
     fn unknown_collection() -> Self {
-        // Self::UnknownCollection
-        todo!()
+        Self::UnknownCollection
     }
 
     fn unknown_f_token_id() -> Self {
-        todo!()
+        Self::UnknownFTokenId
     }
 
     fn unknown_item() -> Self {
-        todo!()
+        Self::UnknownItem
     }
 
     fn overflow() -> Self {
-        todo!()
+        Self::Overflow
     }
 
     fn insufficient_balance() -> Self {
-        todo!()
+        Self::InsufficientBalance
     }
 
     fn no_permission() -> Self {
-        todo!()
+        Self::NoPermission
     }
 
     fn not_fractionalized() -> Self {
-        todo!()
+        Self::NotFractionalized
     }
 }
