@@ -11,27 +11,31 @@ pub use pallet_uniques;
 #[frame_support::pallet]
 pub mod pallet {
     use deip_asset_system::{
-        mint_item, FTImplT, NFTImplT, NFTokenCollectionRecord, NFTokenFractionRecord,
-        NFTokenItemRecord,
+        create_collection, fractionalize_item, mint_item, transfer_item, FTImplT, NFTImplT,
+        NFTokenCollectionRecord, NFTokenFractionRecord, NFTokenItemRecord, OpaqueUnique,
     };
     use frame_support::{
         dispatch::DispatchResult,
-        pallet_prelude::{Member, NMapKey, StorageMap, StorageNMap, StorageValue, ValueQuery},
-        sp_runtime::traits::{AtLeast32BitUnsigned, StaticLookup},
+        pallet_prelude::{
+            Member, NMapKey, StorageDoubleMap, StorageMap, StorageNMap, StorageValue, ValueQuery,
+        },
+        sp_runtime::{
+            app_crypto::sp_core::H160,
+            traits::{AtLeast32BitUnsigned, StaticLookup},
+        },
         traits::IsType,
         transactional, Blake2_128Concat, Parameter, Twox64Concat,
     };
     use frame_system::{ensure_signed, pallet_prelude::OriginFor};
 
-    use crate::types::CollectionDetails;
-
     type ItemIdOf<T> = <Pallet<T> as NFTImplT>::ItemId;
-    type CollectionRecordOf<T> = <Pallet<T> as NFTImplT>::CollectionRecord;
+    pub(crate) type AssetIdOf<T> = <T as Config>::AssetId;
     type FractionAmountOf<T> = <Pallet<T> as NFTImplT>::FractionAmount;
 
     #[pallet::config]
     pub trait Config:
         frame_system::Config
+        + pallet_assets::Config<AssetId = <Self as Config>::AssetId>
         + pallet_uniques::Config<ClassId = Self::CollectionId, InstanceId = Self::ItemId>
     {
         /// Because this pallet emits events, it depends on the runtime's definition of an event.
@@ -46,63 +50,65 @@ pub mod pallet {
         /// Id of a fungible token asset.
         type AssetId: Member + Parameter + AtLeast32BitUnsigned + Copy;
 
-        /// Balance of a fungible token asset.
-        type FungiblesBalance: Member + Parameter + AtLeast32BitUnsigned + Copy;
-
         /// Pallet with low level control over fungible tokens.
         type Fungibles: FTImplT<
-            FTokenId = Self::AssetId,
-            FTokenAmount = Self::FungiblesBalance,
+            FTokenId = AssetIdOf<Self>,
             Account = Self::AccountId,
+            FTokenAmount = Self::Balance,
         >;
     }
 
-    #[pallet::storage]
-    pub(crate) type Collection<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::CollectionId, CollectionDetails>;
-
     /// Records of an  NFT collection by (account & fingerprint).
     #[pallet::storage]
-    pub type CollectionByAccount<T: Config> = StorageNMap<
+    pub type CollectionRepo<T: Config> = StorageMap<
         _,
-        (NMapKey<Blake2_128Concat, T::AccountId>, NMapKey<Blake2_128Concat, T::Hash>),
-        NFTokenCollectionRecord<T::AccountId, (T::Hash, T::CollectionId), T::ItemId>,
+        Twox64Concat,
+        T::CollectionId,
+        NFTokenCollectionRecord<T::AccountId, T::CollectionId, T::ItemId>,
     >;
 
     /// Records of an NFT by fingerprint, account and NFT id.
     #[pallet::storage]
-    pub type ItemByAccount<T: Config> = StorageNMap<
+    pub type ItemRepo<T: Config> = StorageMap<
         _,
-        (
-            NMapKey<Blake2_128Concat, T::Hash>,
-            NMapKey<Blake2_128Concat, T::AccountId>,
-            NMapKey<Twox64Concat, T::ItemId>,
-        ),
+        Blake2_128Concat,
+        T::Hash,
         NFTokenItemRecord<
             T::AccountId,
             T::Hash,
             T::ItemId,
             T::CollectionId,
-            (T::AssetId, T::FungiblesBalance),
+            (AssetIdOf<T>, T::Balance),
         >,
     >;
 
     /// Records of a NFT fractions by fingerpring, account and NFT id.
     #[pallet::storage]
-    pub type FractionByAccount<T: Config> = StorageNMap<
+    pub type FractionRepo<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        T::Hash,
+        Blake2_128Concat,
+        T::AccountId,
+        NFTokenFractionRecord<T::AccountId, T::Hash, (AssetIdOf<T>, T::Balance), T::Balance, u32>,
+    >;
+
+    /// @TODO Documentation
+    #[pallet::storage]
+    pub type FractionalRepo<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::Hash, (AssetIdOf<T>, T::Balance)>;
+
+    /// @TODO Documentation
+    #[pallet::storage]
+    pub type FractionHolds<T: Config> = StorageNMap<
         _,
         (
             NMapKey<Blake2_128Concat, T::Hash>,
             NMapKey<Blake2_128Concat, T::AccountId>,
-            NMapKey<Twox64Concat, T::ItemId>,
+            NMapKey<Blake2_128Concat, H160>,
+            NMapKey<Blake2_128Concat, u32>,
         ),
-        NFTokenFractionRecord<
-            T::AccountId,
-            T::Hash,
-            T::ItemId,
-            (T::AssetId, T::FungiblesBalance),
-            u32,
-        >,
+        (H160, u32),
     >;
 
     /// Id of the next collection to be created.
@@ -122,32 +128,32 @@ pub mod pallet {
             max_items: ItemIdOf<T>,
         },
         ItemMinted {
-            collection: T::Hash,
+            collection: T::CollectionId,
             item: T::Hash,
             owner: T::AccountId,
         },
-        ItemBurned {
-            collection: T::CollectionId,
-            item: T::ItemId,
-        },
+        //     ItemBurned {
+        //         collection: T::CollectionId,
+        //         item: T::ItemId,
+        //     },
         ItemFractionalized {
-            collection: T::Hash,
-            item: ItemIdOf<T>,
+            item: T::Hash,
+            issuer: T::AccountId,
             total_amount: FractionAmountOf<T>,
         },
         ItemTransferred {
-            collection: T::Hash,
-            item: ItemIdOf<T>,
+            item: T::Hash,
+            from: T::AccountId,
             to: T::AccountId,
         },
     }
 
     #[pallet::error]
     pub enum Error<T> {
-        Other,
-        BadValue,
-        UnknownCollection,
-        UnknownItem,
+        //     Other,
+        //     BadValue,
+        //     UnknownCollection,
+        //     UnknownItem,
     }
 
     #[pallet::call]
@@ -164,19 +170,19 @@ pub mod pallet {
         pub fn create(origin: OriginFor<T>, max_items: ItemIdOf<T>) -> DispatchResult {
             let issuer = ensure_signed(origin.clone())?;
 
-            let collection = Self::create_collection(&issuer, &issuer, max_items)?;
+            let collection = create_collection::<Self>(&issuer, max_items)?;
 
             Self::deposit_event(Event::CollectionCreated { issuer, collection, max_items });
             Ok(())
         }
 
-        /// Destroys collection.
-        ///
-        /// Parameters:
-        /// - @TODO
-        ///
-        /// Emits:
-        ///     [`Event::CollectionDestroyed`] when successful.
+        // /// Destroys collection.
+        // ///
+        // /// Parameters:
+        // /// - @TODO
+        // ///
+        // /// Emits:
+        // ///     [`Event::CollectionDestroyed`] when successful.
         // #[pallet::weight(1_000_000)]
         // #[transactional] @TODO
         // pub fn destroy(
@@ -194,7 +200,7 @@ pub mod pallet {
 
         /// Mints itme into collection.
         #[pallet::weight(1_000_000)]
-        // #[transactional] @TODO
+        #[transactional]
         pub fn mint(
             origin: OriginFor<T>,
             collection: T::CollectionId,
@@ -202,10 +208,7 @@ pub mod pallet {
         ) -> DispatchResult {
             let owner = ensure_signed(origin)?;
 
-            let record =
-                Self::find_collection(&owner, &collection).ok_or(Error::<T>::UnknownCollection)?;
-
-            mint_item(record, &owner, item)?;
+            mint_item(collection, &owner, OpaqueUnique::<Self>(item)).unwrap();
 
             Self::deposit_event(Event::ItemMinted { collection, item, owner });
             Ok(())
@@ -231,19 +234,15 @@ pub mod pallet {
         #[transactional]
         pub fn transfer(
             origin: OriginFor<T>,
-            collection: T::Hash,
-            item: T::ItemId,
+            item: T::Hash,
             to: <T::Lookup as StaticLookup>::Source,
         ) -> DispatchResult {
-            let origin_id = ensure_signed(origin)?;
+            let from = ensure_signed(origin)?;
             let to = T::Lookup::lookup(to)?;
 
-            let record =
-                Self::find_item(collection, origin_id, item).ok_or(Error::<T>::UnknownItem)?;
+            transfer_item::<Self>(item, &from, &to)?;
 
-            Self::transfer_item(record, &to)?;
-
-            Self::deposit_event(Event::<T>::ItemTransferred { collection, item, to });
+            Self::deposit_event(Event::ItemTransferred { item, from, to });
             Ok(())
         }
 
@@ -456,18 +455,14 @@ pub mod pallet {
         #[transactional]
         pub fn fractionalize(
             origin: OriginFor<T>,
-            collection: T::Hash,
-            item: ItemIdOf<T>,
+            item: T::Hash,
             total_amount: FractionAmountOf<T>,
         ) -> DispatchResult {
-            let origin_id = ensure_signed(origin)?;
+            let issuer = ensure_signed(origin)?;
 
-            let record =
-                Self::find_item(collection, origin_id, item).ok_or(Error::<T>::UnknownItem)?;
+            fractionalize_item::<Self>(item, &issuer, total_amount)?;
 
-            <Self as NFTImplT>::fractionalize(record, total_amount)?;
-
-            Self::deposit_event(Event::<T>::ItemFractionalized { collection, item, total_amount });
+            Self::deposit_event(Event::ItemFractionalized { item, issuer, total_amount });
             Ok(())
         }
     }
