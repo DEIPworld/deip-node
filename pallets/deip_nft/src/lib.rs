@@ -93,7 +93,7 @@ pub mod pallet {
         NFTokenFractionRecord<T::AccountId, T::Hash, (AssetIdOf<T>, T::Balance), T::Balance, u32>,
     >;
 
-    /// @TODO Documentation
+    /// Records of fraction asset id and balance by item fingerprint.
     #[pallet::storage]
     pub type FractionalRepo<T: Config> =
         StorageMap<_, Blake2_128Concat, T::Hash, (AssetIdOf<T>, T::Balance)>;
@@ -132,10 +132,6 @@ pub mod pallet {
             item: T::Hash,
             owner: T::AccountId,
         },
-        //     ItemBurned {
-        //         collection: T::CollectionId,
-        //         item: T::ItemId,
-        //     },
         ItemFractionalized {
             item: T::Hash,
             issuer: T::AccountId,
@@ -161,7 +157,7 @@ pub mod pallet {
         /// Creates new collection. Returns collection id in event.
         ///
         /// Parameters
-        /// - @TODO
+        /// - `max_items`: Max number of items in the collection.
         ///
         /// Emits:
         ///     [`Event::CollectionCreated`] when successful.
@@ -176,29 +172,14 @@ pub mod pallet {
             Ok(())
         }
 
-        // /// Destroys collection.
-        // ///
-        // /// Parameters:
-        // /// - @TODO
-        // ///
-        // /// Emits:
-        // ///     [`Event::CollectionDestroyed`] when successful.
-        // #[pallet::weight(1_000_000)]
-        // #[transactional] @TODO
-        // pub fn destroy(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     witness: DestroyWitness,
-        // ) -> DispatchResultWithPostInfo {
-        //     let origin_id = ensure_signed(origin)?;
-
-        //     todo!();
-
-        // Self::deposit_event(Event::CollectionDestroyed { collection });
-        // Ok(())
-        // }
-
-        /// Mints itme into collection.
+        /// Mints item into collection.
+        /// 
+        /// Parameters
+        /// - `collection`: Id of the collection to be minted.
+        /// - `item`: Unique item identifier, eg hash.
+        /// 
+        /// Emits:
+        ///     [`Event::ItemMinted`] when successful.
         #[pallet::weight(1_000_000)]
         #[transactional]
         pub fn mint(
@@ -214,22 +195,15 @@ pub mod pallet {
             Ok(())
         }
 
-        // #[pallet::weight(1_000_000)]
-        // #[transactional]
-        // pub fn burn(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     item: T::ItemId,
-        //     check_owner: Option<<T::Lookup as StaticLookup>::Source>,
-        // ) -> DispatchResult {
-        //     let origin_id = ensure_signed(origin)?;
 
-        //     Uniques::<T>::burn(origin, collection, item, check_owner)?;
-
-        //     Self::deposit_event(Event::ItemBurned { collection, item });
-        //     todo!()
-        // }
-
+        /// Transfers ownership of the item to another account.
+        /// 
+        /// Parameters
+        /// - `item`: Unique identifier of the item to be transferred.
+        /// - `to`: Destination account.
+        /// 
+        /// Emits:
+        ///     [`Event::ItemTransferred`] when successful.
         #[pallet::weight(1_000_000)]
         #[transactional]
         pub fn transfer(
@@ -246,211 +220,14 @@ pub mod pallet {
             Ok(())
         }
 
-        // #[pallet::weight(1_000_000)]
-        // #[transactional]
-        // pub fn redeposit(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     item: T::ItemId,
-        //     owner: <T::Lookup as StaticLookup>::Source,
-        // ) -> DispatchResult {
-        //     let origin_id = ensure_signed(origin)?;
-        //     todo!()
-        // }
-
-        // #[pallet::weight(1_000_000)]
-        // #[transactional]
-        // pub fn freeze(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     item: T::ItemId,
-        //     owner: <T::Lookup as StaticLookup>::Source,
-        // ) -> DispatchResult {
-        //     let origin_id = ensure_signed(origin)?;
-        //     todo!()
-        // }
-
-        // #[pallet::weight(1_000_000)]
-        // #[transactional]
-        // pub fn thaw(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     item: T::ItemId,
-        //     owner: <T::Lookup as StaticLookup>::Source,
-        // ) -> DispatchResult {
-        //     let origin_id = ensure_signed(origin)?;
-        //     todo!()
-        // }
-
-        // #[pallet::weight(1_000_000)]
-        // #[transactional]
-        // pub fn freeze_collection(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     item: T::ItemId,
-        //     owner: <T::Lookup as StaticLookup>::Source,
-        // ) -> DispatchResult {
-        //     let origin_id = ensure_signed(origin)?;
-        //     todo!()
-        // }
-
-        // #[pallet::weight(1_000_000)]
-        // #[transactional]
-        // pub fn thaw_collection(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     item: T::ItemId,
-        //     owner: <T::Lookup as StaticLookup>::Source,
-        // ) -> DispatchResult {
-        //     let origin_id = ensure_signed(origin)?;
-        //     todo!()
-        // }
-
-        // #[pallet::weight(1_000_000)]
-        // #[transactional]
-        // pub fn transfer_ownership(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     item: T::ItemId,
-        //     owner: <T::Lookup as StaticLookup>::Source,
-        // ) -> DispatchResult {
-        //     let origin_id = ensure_signed(origin)?;
-        //     todo!()
-        // }
-
-        // #[pallet::weight(1_000_000)]
-        // #[transactional]
-        // pub fn set_team(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     item: T::ItemId,
-        //     owner: <T::Lookup as StaticLookup>::Source,
-        // ) -> DispatchResult {
-        //     let origin_id = ensure_signed(origin)?;
-        //     todo!()
-        // }
-
-        // #[pallet::weight(1_000_000)]
-        // #[transactional]
-        // pub fn approve_transfer(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     item: T::ItemId,
-        //     owner: <T::Lookup as StaticLookup>::Source,
-        // ) -> DispatchResult {
-        //     let origin_id = ensure_signed(origin)?;
-        //     todo!()
-        // }
-
-        // #[pallet::weight(1_000_000)]
-        // #[transactional]
-        // pub fn cancel_approval(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     item: T::ItemId,
-        //     owner: <T::Lookup as StaticLookup>::Source,
-        // ) -> DispatchResult {
-        //     let origin_id = ensure_signed(origin)?;
-        //     todo!()
-        // }
-
-        // #[pallet::weight(1_000_000)]
-        // #[transactional]
-        // pub fn set_attribute(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     item: T::ItemId,
-        //     owner: <T::Lookup as StaticLookup>::Source,
-        // ) -> DispatchResult {
-        //     let origin_id = ensure_signed(origin)?;
-        //     todo!()
-        // }
-
-        // #[pallet::weight(1_000_000)]
-        // #[transactional]
-        // pub fn clear_attribute(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     item: T::ItemId,
-        //     owner: <T::Lookup as StaticLookup>::Source,
-        // ) -> DispatchResult {
-        //     let origin_id = ensure_signed(origin)?;
-        //     todo!()
-        // }
-
-        // #[pallet::weight(1_000_000)]
-        // #[transactional]
-        // pub fn set_metadata(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     item: T::ItemId,
-        //     owner: <T::Lookup as StaticLookup>::Source,
-        // ) -> DispatchResult {
-        //     let origin_id = ensure_signed(origin)?;
-        //     todo!()
-        // }
-
-        // #[pallet::weight(1_000_000)]
-        // #[transactional]
-        // pub fn clear_metadata(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     item: T::ItemId,
-        //     owner: <T::Lookup as StaticLookup>::Source,
-        // ) -> DispatchResult {
-        //     let origin_id = ensure_signed(origin)?;
-        //     todo!()
-        // }
-
-        // #[pallet::weight(1_000_000)]
-        // #[transactional]
-        // pub fn set_collection_metadata(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     item: T::ItemId,
-        //     owner: <T::Lookup as StaticLookup>::Source,
-        // ) -> DispatchResult {
-        //     let origin_id = ensure_signed(origin)?;
-        //     todo!()
-        // }
-
-        // #[pallet::weight(1_000_000)]
-        // #[transactional]
-        // pub fn clear_collection_metadata(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     item: T::ItemId,
-        //     owner: <T::Lookup as StaticLookup>::Source,
-        // ) -> DispatchResult {
-        //     let origin_id = ensure_signed(origin)?;
-        //     todo!()
-        // }
-
-        // #[pallet::weight(1_000_000)]
-        // #[transactional]
-        // pub fn set_accept_ownership(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     item: T::ItemId,
-        //     owner: <T::Lookup as StaticLookup>::Source,
-        // ) -> DispatchResult {
-        //     let origin_id = ensure_signed(origin)?;
-        //     todo!()
-        // }
-
-        // #[pallet::weight(1_000_000)]
-        // #[transactional]
-        // pub fn set_collection_max_supply(
-        //     origin: OriginFor<T>,
-        //     collection: T::CollectionId,
-        //     item: T::ItemId,
-        //     owner: <T::Lookup as StaticLookup>::Source,
-        // ) -> DispatchResult {
-        //     let origin_id = ensure_signed(origin)?;
-        //     todo!()
-        // }
-
         /// Fractionalizes NFT.
+        /// 
+        /// Parameters
+        /// - `item`: Unique id of the item to be fractionalized.
+        /// - `total_amount`: Amount of the fractions.
+        /// 
+        /// Emits:
+        ///     [`Event::ItemFractionalized`] when successful.
         #[pallet::weight(1_000_000)]
         #[transactional]
         pub fn fractionalize(
