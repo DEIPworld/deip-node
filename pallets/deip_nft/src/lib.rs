@@ -10,8 +10,9 @@ pub use pallet_uniques;
 #[frame_support::pallet]
 pub mod pallet {
     use deip_asset_system::{
-        create_collection, fractionalize_item, mint_item, transfer_item, FTImplT, NFTImplT,
-        NFTokenCollectionRecord, NFTokenFractionRecord, NFTokenItemRecord, OpaqueUnique,
+        create_collection, fractionalize_item, mint_item, transfer_fraction, transfer_item,
+        FTImplT, NFTImplT, NFTokenCollectionRecord, NFTokenFractionRecord, NFTokenItemRecord,
+        OpaqueUnique,
     };
     use frame_support::{
         dispatch::DispatchResult,
@@ -141,6 +142,12 @@ pub mod pallet {
             from: T::AccountId,
             to: T::AccountId,
         },
+        FractionTransferred {
+            item: T::Hash,
+            from: T::AccountId,
+            to: T::AccountId,
+            amount: FractionAmountOf<T>,
+        },
     }
 
     #[pallet::error]
@@ -169,7 +176,7 @@ pub mod pallet {
         ///     [`Event::CollectionCreated`] when successful.
         #[pallet::weight(1_000_000)]
         #[transactional]
-        pub fn create(origin: OriginFor<T>, max_items: ItemIdOf<T>) -> DispatchResult {
+        pub fn create_collection(origin: OriginFor<T>, max_items: ItemIdOf<T>) -> DispatchResult {
             let issuer = ensure_signed(origin.clone())?;
 
             let collection = create_collection::<Self>(&issuer, max_items)?;
@@ -188,7 +195,7 @@ pub mod pallet {
         ///     [`Event::ItemMinted`] when successful.
         #[pallet::weight(1_000_000)]
         #[transactional]
-        pub fn mint(
+        pub fn mint_item(
             origin: OriginFor<T>,
             collection: T::CollectionId,
             item: T::Hash,
@@ -201,7 +208,7 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Transfers ownership of the item to another account.
+        /// Transfers item to another account.
         ///
         /// Parameters
         /// - `item`: Unique identifier of the item to be transferred.
@@ -211,7 +218,7 @@ pub mod pallet {
         ///     [`Event::ItemTransferred`] when successful.
         #[pallet::weight(1_000_000)]
         #[transactional]
-        pub fn transfer(
+        pub fn transfer_item(
             origin: OriginFor<T>,
             item: T::Hash,
             to: <T::Lookup as StaticLookup>::Source,
@@ -225,6 +232,32 @@ pub mod pallet {
             Ok(())
         }
 
+        /// Transfers fraction (fungible token) to another account.
+        ///
+        /// Parameters
+        /// - `item`: Unique id of the fractionalized item.
+        /// - `to`: Destination account.
+        /// - `amount`: Amount of fractions to be transferred.
+        ///
+        /// Emits:
+        ///     [`Event::FractionTransferred`] when successful.
+        #[pallet::weight(1_000_000)]
+        #[transactional]
+        pub fn transfer_fraction(
+            origin: OriginFor<T>,
+            item: T::Hash,
+            to: <T::Lookup as StaticLookup>::Source,
+            amount: FractionAmountOf<T>,
+        ) -> DispatchResult {
+            let from = ensure_signed(origin)?;
+            let to = T::Lookup::lookup(to)?;
+
+            transfer_fraction::<Self>(item, &from, &to, amount)?;
+
+            Self::deposit_event(Event::FractionTransferred { item, from, to, amount });
+            Ok(())
+        }
+
         /// Fractionalizes NFT.
         ///
         /// Parameters
@@ -235,7 +268,7 @@ pub mod pallet {
         ///     [`Event::ItemFractionalized`] when successful.
         #[pallet::weight(1_000_000)]
         #[transactional]
-        pub fn fractionalize(
+        pub fn fractionalize_item(
             origin: OriginFor<T>,
             item: T::Hash,
             total_amount: FractionAmountOf<T>,
