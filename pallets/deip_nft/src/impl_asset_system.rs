@@ -2,9 +2,11 @@ use deip_asset_system::{
     error::Error as NftError, NFTImplT, NFTokenCollectionRecord, NFTokenFractionRecord,
     NFTokenItemRecord,
 };
+use frame_support::sp_runtime::app_crypto::sp_core::H160;
 
 use crate::{
-    CollectionByAccount, Config, Error, FractionByAccount, ItemByAccount, NextCollectionId, Pallet,
+    AssetIdOf, CollectionRepo, Config, Error, FractionHolds, FractionRepo, FractionalRepo,
+    ItemRepo, NextCollectionId, Pallet,
 };
 
 impl<T: Config> NFTImplT for Pallet<T> {
@@ -18,7 +20,9 @@ impl<T: Config> NFTImplT for Pallet<T> {
 
     type ItemId = T::ItemId;
 
-    type FTokenId = T::AssetId;
+    type FTokenId = AssetIdOf<T>;
+
+    type FractionAmount = T::Balance;
 
     type Account = T::AccountId;
 
@@ -43,11 +47,19 @@ impl<T: Config> NFTImplT for Pallet<T> {
         Self::FractionHoldGuard,
     >;
 
-    type CollectionRepo = CollectionByAccount<T>;
+    type CollectionRepo = CollectionRepo<T>;
 
-    type ItemRepo = ItemByAccount<T>;
+    type ItemRepo = ItemRepo<T>;
 
-    type FractionRepo = FractionByAccount<T>;
+    type FractionRepo = FractionRepo<T>;
+
+    type FractionalRepo = FractionalRepo<T>;
+
+    type FractionHolderId = H160;
+
+    type FractionHoldGuard = u32;
+
+    type FractionHolds = FractionHolds<T>;
 
     type NextCollectionId = NextCollectionId<T>;
 
@@ -57,15 +69,50 @@ impl<T: Config> NFTImplT for Pallet<T> {
 }
 
 impl<T> NftError for Error<T> {
+    fn other() -> Self {
+        // Self::Other
+        todo!()
+    }
+
     fn bad_value() -> Self {
-        Self::BadValue
+        // Self::BadValue
+        todo!()
+    }
+
+    fn bad_target() -> Self {
+        todo!()
+    }
+
+    fn wrong_owner() -> Self {
+        todo!()
     }
 
     fn unknown_collection() -> Self {
-        Self::UnknownCollection
+        // Self::UnknownCollection
+        todo!()
     }
 
-    fn other() -> Self {
-        Self::Other
+    fn unknown_f_token_id() -> Self {
+        todo!()
+    }
+
+    fn unknown_item() -> Self {
+        todo!()
+    }
+
+    fn overflow() -> Self {
+        todo!()
+    }
+
+    fn insufficient_balance() -> Self {
+        todo!()
+    }
+
+    fn no_permission() -> Self {
+        todo!()
+    }
+
+    fn not_fractionalized() -> Self {
+        todo!()
     }
 }

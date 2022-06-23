@@ -777,14 +777,6 @@ impl pallet_deip_investment_opportunity::Config for Runtime {
     type AssetImpl = DeipUniques;
 
     type Asset = NFTokenFraction<Self::AssetImpl>;
-    
-    type FundAsset = FToken<Self::FundAssetImpl>;
-
-    type SharesAssetId = (Self::Hash, <Self as pallet_uniques::Config>::InstanceId);
-
-    type SharesAssetImpl = DeipUniques;
-
-    type SharesAsset = NFTokenFraction<Self::SharesAssetImpl>;
 }
 
 parameter_types! {
@@ -879,8 +871,6 @@ impl pallet_deip_nft::Config for Runtime {
     type ItemId = InstanceId; //@TODO
 
     type AssetId = AssetId;
-
-    type FungiblesBalance = Balance;
 
     type Fungibles = DeipAssets;
 }
