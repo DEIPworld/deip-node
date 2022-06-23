@@ -23,7 +23,7 @@ impl<T: Config> Create<T::AccountId> for Pallet<T> {
         who: &T::AccountId,
         admin: &T::AccountId,
     ) -> DispatchResult {
-        pallet_uniques::Pallet::<T>::create_class(class, who, admin)
+        todo!()
     }
 }
 

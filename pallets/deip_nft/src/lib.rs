@@ -3,7 +3,6 @@
 
 mod impl_asset_system;
 mod impl_nonfungibles;
-mod types;
 
 pub use pallet::*;
 pub use pallet_uniques;
@@ -146,10 +145,17 @@ pub mod pallet {
 
     #[pallet::error]
     pub enum Error<T> {
-        //     Other,
-        //     BadValue,
-        //     UnknownCollection,
-        //     UnknownItem,
+        Other,
+        BadValue,
+        UnknownCollection,
+        UnknownItem,
+        BadTarget,
+        WrongOwner,
+        UnknownFTokenId,
+        Overflow,
+        InsufficientBalance,
+        NoPermission,
+        NotFractionalized,
     }
 
     #[pallet::call]
@@ -173,11 +179,11 @@ pub mod pallet {
         }
 
         /// Mints item into collection.
-        /// 
+        ///
         /// Parameters
         /// - `collection`: Id of the collection to be minted.
         /// - `item`: Unique item identifier, eg hash.
-        /// 
+        ///
         /// Emits:
         ///     [`Event::ItemMinted`] when successful.
         #[pallet::weight(1_000_000)]
@@ -195,13 +201,12 @@ pub mod pallet {
             Ok(())
         }
 
-
         /// Transfers ownership of the item to another account.
-        /// 
+        ///
         /// Parameters
         /// - `item`: Unique identifier of the item to be transferred.
         /// - `to`: Destination account.
-        /// 
+        ///
         /// Emits:
         ///     [`Event::ItemTransferred`] when successful.
         #[pallet::weight(1_000_000)]
@@ -221,11 +226,11 @@ pub mod pallet {
         }
 
         /// Fractionalizes NFT.
-        /// 
+        ///
         /// Parameters
         /// - `item`: Unique id of the item to be fractionalized.
         /// - `total_amount`: Amount of the fractions.
-        /// 
+        ///
         /// Emits:
         ///     [`Event::ItemFractionalized`] when successful.
         #[pallet::weight(1_000_000)]
