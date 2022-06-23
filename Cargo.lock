@@ -4514,6 +4514,7 @@ dependencies = [
  "pallet-assets",
  "pallet-balances",
  "pallet-deip-assets",
+ "pallet-deip-uniques",
  "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",

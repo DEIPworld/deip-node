@@ -28,6 +28,7 @@ frame_support::construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Assets: pallet_deip_assets::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+        DeipUniques: pallet_deip_uniques::{Pallet, Storage, Config<T>},
 		StakeVoting: pallet_deip_stake_voting::{Pallet, Call, Storage, Event<T>},
 	}
 );

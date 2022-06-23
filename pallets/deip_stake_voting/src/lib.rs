@@ -26,22 +26,22 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-mod tests;
+pub(crate) mod tests;
 mod benchmarking;
 pub mod weights;
 
 use codec::{Decode, Encode};
 use frame_support::dispatch::{DispatchResult, DispatchError, DispatchResultWithPostInfo, PostDispatchInfo, Codec};
 use frame_support::{ensure, transactional};
-use frame_support::traits::{Currency, Get, ReservableCurrency, WrapperKeepOpaque};
-use frame_support::traits::fungibles::Inspect;
+use frame_support::traits::{Currency, Get, ReservableCurrency, WrapperKeepOpaque, PalletInfoAccess};
 use frame_support::weights::{GetDispatchInfo, Weight};
 use frame_support::RuntimeDebug;
 use frame_system::{Config as SystemConfig, RawOrigin};
 use scale_info::TypeInfo;
 use sp_io::hashing::blake2_256;
-use sp_runtime::traits::{AtLeast32BitUnsigned, AtLeast32Bit, TrailingZeroInput, Dispatchable, Zero};
+use sp_runtime::traits::{AtLeast32Bit, TrailingZeroInput, Dispatchable, Zero};
 use sp_std::prelude::*;
+use deip_asset_system::*;
 pub use weights::WeightInfo;
 
 pub use pallet::*;
@@ -53,6 +53,10 @@ type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Con
 type ThresholdOf<T> = Threshold<<T as Config>::AssetBalance>;
 
 type VotingOf<T> = Voting<<T as SystemConfig>::AccountId, <T as Config>::AssetId, TimeOf<T>, ThresholdOf<T>>;
+
+type HoldGuardOf<T> = <<T as Config>::AssetImpl as NFTImplT>::FractionHoldGuard;
+
+type Guard = u32;
 
 // A global extrinsic index, formed as the extrinsic index within a block, together with that
 /// block's height. This allows a transaction in which a multisig operation of a particular
@@ -163,17 +167,20 @@ pub mod pallet {
 		type DepositBase: Get<BalanceOf<Self>>;
 
 		/// Asset identifier
-        type AssetId: Member + Parameter + AtLeast32BitUnsigned + Default + Copy;
+		type AssetId: Member + Parameter + Default + Copy;
 
-		/// Asset balance
+		/// Asset balance value
 		type AssetBalance: Member + Parameter + AtLeast32Bit + Default + Copy;
 
 		/// Assets storage/provider
-		type Assets: Inspect<
-				Self::AccountId,
-				AssetId=Self::AssetId,
-				Balance=Self::AssetBalance,
+		type AssetImpl: NFTImplT<
+				Account=Self::AccountId,
+				Fingerprint=Self::AssetId,
+				FractionAmount=Self::AssetBalance,
 			>;
+
+		/// Asset system object
+		type Asset: NFTokenFractionT<Self::AssetImpl>;
 
 		#[pallet::constant]
 		/// Max value for relative threshold, it's equivalent to 100%
@@ -204,12 +211,20 @@ pub mod pallet {
 	/// The set of votes. [Need to unlock holders' assets]
 	#[pallet::storage]
 	pub type Votes<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, (T::AccountId, T::AssetId), Identity, VotingId, Sign>;
+		StorageDoubleMap<_, Blake2_128Concat, (T::AccountId, T::AssetId), Identity, VotingId, (Sign, Guard)>;
 
 	/// The set of call data to be executed and reserved balance for it
 	#[pallet::storage]
 	pub type Calls<T: Config> =
 		StorageMap<_, Identity, CallHash, (OpaqueCall<T>, T::AccountId, BalanceOf<T>)>;
+
+	#[pallet::storage]
+	pub type NextGuard<T: Config> =
+        StorageValue<_, Guard, ValueQuery>;
+
+	#[pallet::storage]
+	pub type Guards<T: Config> =
+		StorageMap<_, Blake2_128Concat, Guard, HoldGuardOf<T>>;
 
 	#[pallet::error]
 	pub enum Error<T> {
@@ -312,7 +327,7 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 			let zero = T::AssetBalance::zero();
-			let max_balance = T::Assets::total_issuance(asset);
+			let max_balance = Self::total(asset)?;
 			match threshold {
 				Threshold::Absolute(v) => {
 					ensure!(v > zero && v <= max_balance, Error::<T>::BadThresholdValue);
@@ -326,14 +341,13 @@ pub mod pallet {
 					ensure!(v >= zero && v < limit, Error::<T>::BadThresholdValue);
 				}
 			}
-			ensure!(max_balance >= T::Assets::minimum_balance(asset), Error::<T>::BadAsset);
 			ensure!(Self::is_valid_stakeholder(&who, asset), Error::<T>::PermissionDenied);
 			let encoded_call = call.encoded();
 			let call_len = encoded_call.len();
 			let call_hash = blake2_256(encoded_call);
 			let start = start.unwrap_or_else(|| Self::timepoint());
 			ensure!(end.map(|t| t > start).unwrap_or(true), Error::<T>::BadTimepoint);
-			let (id, v) = Self::create_voting(who.clone(), asset, start, end, threshold, call_hash);
+			let (id, v) = Self::new_voting(who.clone(), asset, start, end, threshold, call_hash);
 			ensure!(!Votings::<T>::contains_key(&id), Error::<T>::AlreadyExists);
 			let deposit = T::DepositBase::get()
 				+ BalanceOf::<T>::from((call_len + 31 / 32) as u32);
@@ -354,8 +368,7 @@ pub mod pallet {
 			};
 			if approved {
 				let res = Self::execute(id, v, max_weight)?.actual_weight;
-				Votes::<T>::remove(&(who.clone(), asset), &id);
-				Self::try_return_asset(&who, asset);
+				let _ = Self::remove_vote(&who, asset, id)?;
 				Ok(res.map(|w| {
 					T::WeightInfo::create_and_execute(call_len as u32).saturating_add(w)
 				}).into())
@@ -395,7 +408,7 @@ pub mod pallet {
 			let time = Self::timepoint();
 			ensure!(v.is_actual(&time), Error::<T>::BadTimepoint);
 			let state = Self::put_vote(&voter, asset, id, sign)?;
-			let total = T::Assets::total_issuance(asset);
+			let total = Self::total(asset)?;
 			let approved = match v.threshold {
 				Threshold::Absolute(x) => state.value >= x,
 				Threshold::Relative(x) => {
@@ -407,8 +420,7 @@ pub mod pallet {
 			};
 			if approved {
 				let res = Self::execute(id, v, max_weight)?.actual_weight;
-				Votes::<T>::remove(&(voter.clone(), asset), &id);
-				Self::try_return_asset(&voter, asset);
+				let _ = Self::remove_vote(&voter, asset, id)?;
 				Ok(res.map(|w| {
 					T::WeightInfo::vote_and_execute().saturating_add(w)
 				}).into())
@@ -452,7 +464,7 @@ pub mod pallet {
 			} else {
 				let time = Self::timepoint();
 				if v.is_actual(&time) {
-					let total = T::Assets::total_issuance(asset);
+					let total = Self::total(asset)?;
 					let approved = match v.threshold {
 						Threshold::Absolute(x) => state.value >= x,
 						Threshold::Relative(x) => {
@@ -464,7 +476,7 @@ pub mod pallet {
 					};
 					if approved {
 						let res = Self::execute(id, v, max_weight)?.actual_weight;
-						Votes::<T>::remove(&(who, asset), &id);
+						let _ = Self::remove_vote(&who, asset, id)?;
 						return Ok(res.map(|w| {
 							T::WeightInfo::unvote_and_execute().saturating_add(w)
 						}).into())
@@ -474,7 +486,6 @@ pub mod pallet {
 				}
 				T::WeightInfo::unvote()
 			};
-			Self::try_return_asset(&who, asset);
 			Ok(Some(w).into())
 		}
 
@@ -490,14 +501,13 @@ pub mod pallet {
 			asset: T::AssetId,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
-			let key = (who, asset);
+			let key = (who.clone(), asset);
 			let ids: Vec<_> = Votes::<T>::iter_prefix(&key).map(|p| p.0).collect();
 			let num = ids.len() as u32;
 			for id in ids {
 				ensure!(!Votings::<T>::contains_key(&id), Error::<T>::StillProcessing);
-				Votes::<T>::remove(&key, &id);
+				let _ = Self::remove_vote(&who, asset, id)?;
 			}
-			Self::try_return_asset(&key.0, asset);
 			Ok(Some(T::WeightInfo::retain_asset(num)).into())
 		}
 
@@ -522,7 +532,7 @@ impl<T: Config> Pallet<T> {
 			.expect("infinite length input; no invalid inputs for type; qed")
 	}
 
-	pub(crate) fn create_voting(
+	pub(crate) fn new_voting(
 		author: T::AccountId,
 		asset: T::AssetId,
 		start: TimeOf<T>,
@@ -541,8 +551,51 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn is_valid_stakeholder(account: &T::AccountId, asset: T::AssetId) -> bool {
-		let balance = T::Assets::balance(asset, account);
-		balance > T::AssetBalance::zero() && balance >= T::Assets::minimum_balance(asset)
+		Self::balance(asset, account)
+			.map(|v| v > T::AssetBalance::zero())
+			.unwrap_or_default()
+	}
+
+	fn balance(asset: T::AssetId, account: &T::AccountId) -> Option<T::AssetBalance> {
+		pick_fraction::<T::AssetImpl>(account, asset)
+			.map(|v| *v.amount())
+			.ok()
+	}
+
+	fn total(asset: T::AssetId) -> Result<T::AssetBalance, Error::<T>> {
+		total_fraction::<T::AssetImpl>(asset)
+			.ok_or_else(|| Error::<T>::BadAsset)
+	}
+
+	fn take_guard() -> u32 {
+		for (g, _) in Guards::<T>::drain() {
+			return g.into();
+		}
+		NextGuard::<T>::mutate(|i| { *i = *i + 1; *i }).into()
+	}
+
+	fn release_guard(guard: u32) {
+		Guards::<T>::insert::<u32, HoldGuardOf<T>>(guard, guard.into())
+	}
+
+	fn hold(asset: T::AssetId, account: &T::AccountId) ->  Result<u32, Error<T>> {
+		let guard = Self::take_guard();
+		hold_fraction::<T::AssetImpl>(account, asset, Self::holder_id(), guard.into())
+			.map_err(|_| Error::<T>::PermissionDenied)?;
+		Ok(guard)
+	}
+
+	fn release(asset: T::AssetId, account: &T::AccountId, guard: u32) -> Result<(), Error<T>> {
+		unhold_fraction::<T::AssetImpl>(account, asset, Self::holder_id(), guard.into())
+			.map_err(|_| Error::<T>::PermissionDenied)?;
+		Self::release_guard(guard);
+		Ok(())
+	}
+
+	fn holder_id() -> <T::AssetImpl as NFTImplT>::FractionHolderId {
+		let entropy = (b"modl/", Self::name().as_bytes()).using_encoded(blake2_256);
+		Decode::decode(&mut TrailingZeroInput::new(entropy.as_ref()))
+			.expect("infinite length input; no invalid inputs for type; qed")
 	}
 
 	fn close_voting(id: VotingId, v: &VotingOf<T>) -> DispatchResult {
@@ -564,13 +617,13 @@ impl<T: Config> Pallet<T> {
 	) -> Result<State<T::AssetBalance>, Error<T>> {
 		let n = Votes::<T>::iter_prefix_values((voter.clone(), asset)).count() as u16;
 		ensure!(n < T::MaxVotesPerAccountAsset::get(), Error::<T>::LimitVotingsPerAsset);
-		ensure!(!Votes::<T>::contains_key((voter.clone(), asset), id), Error::<T>::AlreadyVoted);
-		let value = T::Assets::balance(asset, voter);
-		let min = T::Assets::minimum_balance(asset);
-		ensure!(value >= min, Error::<T>::InsufficientAssetBalance);
+		let value = Self::balance(asset, voter).ok_or_else(|| Error::<T>::InsufficientAssetBalance)?;
 		let mut state = States::<T>::get(id).unwrap_or_default();
 		state.add(value, sign);
-		Votes::<T>::insert((voter.clone(), asset), id, sign);
+		let key = (voter.clone(), asset);
+		ensure!(!Votes::<T>::contains_key(&key, &id), Error::<T>::AlreadyVoted);
+		let guard = Self::hold(asset, voter)?;
+		Votes::<T>::insert(key, id, (sign, guard));
 		States::<T>::insert(id, state.clone());
 		Ok(state)
 	}
@@ -581,18 +634,23 @@ impl<T: Config> Pallet<T> {
 		id: VotingId,
 	) -> Result<State<T::AssetBalance>, DispatchError> {
 		let mut state = States::<T>::get(id).ok_or_else(|| Error::<T>::StateNotFound)?;
-		let value = T::Assets::balance(asset, voter);
-		let sign = Votes::<T>::take((voter.clone(), asset), id).ok_or_else(|| Error::<T>::NotVoted)?;
+		let value = Self::balance(asset, voter).ok_or_else(|| Error::<T>::InsufficientAssetBalance)?;
+		let sign = Self::remove_vote(voter, asset, id)?;
 		state.remove(value, sign);
 		States::<T>::insert(id, state.clone());
 		Ok(state)
 	}
 
-	fn try_return_asset(account: &T::AccountId, asset: T::AssetId) {
-		for _ in Votes::<T>::iter_prefix(&(account.clone(), asset)) {
-			return;
-		}
-		// TODO unlock account's asset
+	fn remove_vote(
+		voter: &T::AccountId,
+		asset: T::AssetId,
+		id: VotingId,
+	) -> Result<Sign, DispatchError> {
+		let key = (voter.clone(), asset);
+		let (sign, guard) = Votes::<T>::get(&key, &id).ok_or_else(|| Error::<T>::NotVoted)?;
+		Self::release(asset, voter, guard)?;
+		Votes::<T>::remove(&key, &id);
+		Ok(sign)
 	}
 
 	pub fn execute(id: VotingId, voting: VotingOf<T>, max_weight: Weight) -> DispatchResultWithPostInfo {
