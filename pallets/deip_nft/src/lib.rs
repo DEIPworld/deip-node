@@ -2,6 +2,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod impl_asset_system;
+mod impl_fungibles;
 mod impl_nonfungibles;
 
 pub use pallet::*;
