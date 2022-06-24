@@ -1,4 +1,4 @@
-use deip_asset_system::{pick_fraction, pick_item, total_fraction, NFTokenFractionT};
+use deip_asset_system::{burn_fraction, mint_fraction, pick_fraction, pick_item, total_fraction, NFTokenFractionT, item_of_ft};
 use frame_support::{
     dispatch::{DispatchError, DispatchResult},
     sp_runtime::traits::Zero,
@@ -60,8 +60,8 @@ impl<T: Config> Mutate<T::AccountId> for Pallet<T> {
         who: &T::AccountId,
         amount: Self::Balance,
     ) -> DispatchResult {
-        // @TODO add mint_fraction to api.
-        todo!()
+        let item = item_of_ft::<Self>(asset)?;
+        mint_fraction::<Self>(item, who, amount)
     }
 
     fn burn_from(
@@ -69,7 +69,7 @@ impl<T: Config> Mutate<T::AccountId> for Pallet<T> {
         who: &T::AccountId,
         amount: Self::Balance,
     ) -> Result<Self::Balance, DispatchError> {
-        // @TODO add burn_fraction to api.
-        todo!()
+        let item = item_of_ft::<Self>(asset)?;
+        burn_fraction::<Self>(item, who, amount)
     }
 }
