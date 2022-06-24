@@ -6,6 +6,22 @@ use crate::{CollectionRecordT, FractionalT, FractionRecordT, NFTImplT, Seal, err
 
 // Fraction ops:
 
+pub fn mint_fraction<Impl: NFTImplT>(
+    item: Impl::ItemId,
+    who: &Impl::Account,
+    amount: Impl::FractionAmount,
+) -> DispatchResult {
+    todo!()
+}
+
+pub fn burn_fraction<Impl: NFTImplT>(
+    item: Impl::ItemId,
+    who: &Impl::Account,
+    amount: Impl::FractionAmount,
+) -> Result<Impl::FractionAmount, DispatchError> {
+    todo!()
+}
+
 pub fn total_fraction<Impl: NFTImplT>(
     fingerprint: Impl::Fingerprint,
 ) -> Option<Impl::FractionAmount>
@@ -146,6 +162,12 @@ pub fn pick_collection<Impl: NFTImplT>(
 }
 
 //
+
+pub fn item_of_ft<Impl: NFTImplT>(
+    ft_id: Impl::FTokenId
+) -> Result<Impl::ItemId, DispatchError> {
+    todo!()
+}
 
 pub trait Unique<Impl: NFTImplT> {
     fn fingerprint(self) -> Impl::Fingerprint;
