@@ -31,7 +31,7 @@ pub mod pallet {
 
     type ItemIdOf<T> = <Pallet<T> as NFTImplT>::ItemId;
     pub(crate) type AssetIdOf<T> = <T as Config>::AssetId;
-    type FractionAmountOf<T> = <Pallet<T> as NFTImplT>::FractionAmount;
+    pub(crate) type FractionAmountOf<T> = <Pallet<T> as NFTImplT>::FractionAmount;
 
     #[pallet::config]
     pub trait Config:
