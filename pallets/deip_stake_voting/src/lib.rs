@@ -26,107 +26,115 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub(crate) mod tests;
 mod benchmarking;
+pub(crate) mod tests;
 pub mod weights;
 
 use codec::{Decode, Encode};
-use frame_support::dispatch::{DispatchResult, DispatchError, DispatchResultWithPostInfo, PostDispatchInfo, Codec};
-use frame_support::{ensure, transactional};
-use frame_support::traits::{Currency, Get, ReservableCurrency, WrapperKeepOpaque, PalletInfoAccess};
+use deip_asset_system::*;
+use frame_support::dispatch::{
+    Codec, DispatchError, DispatchResult, DispatchResultWithPostInfo, PostDispatchInfo,
+};
+use frame_support::traits::{
+    Currency, Get, PalletInfoAccess, ReservableCurrency, WrapperKeepOpaque,
+};
 use frame_support::weights::{GetDispatchInfo, Weight};
 use frame_support::RuntimeDebug;
+use frame_support::{ensure, transactional};
 use frame_system::{Config as SystemConfig, RawOrigin};
 use scale_info::TypeInfo;
 use sp_io::hashing::blake2_256;
-use sp_runtime::traits::{AtLeast32Bit, TrailingZeroInput, Dispatchable, Zero};
+use sp_runtime::traits::{AtLeast32Bit, Dispatchable, TrailingZeroInput, Zero};
 use sp_std::prelude::*;
-use deip_asset_system::*;
 pub use weights::WeightInfo;
 
 pub use pallet::*;
 
 type TimeOf<T> = Timepoint<<T as SystemConfig>::BlockNumber>;
 
-type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+type BalanceOf<T> =
+    <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 type ThresholdOf<T> = Threshold<<T as Config>::AssetBalance>;
 
-type VotingOf<T> = Voting<<T as SystemConfig>::AccountId, <T as Config>::AssetId, TimeOf<T>, ThresholdOf<T>>;
+type VotingOf<T> =
+    Voting<<T as SystemConfig>::AccountId, <T as Config>::AssetId, TimeOf<T>, ThresholdOf<T>>;
 
-type HoldGuardOf<T> = <<T as Config>::AssetImpl as NFTImplT>::FractionHoldGuard;
+type HoldGuardOf<T> = <<T as Config>::Assets as NFTImplT>::FractionHoldGuard;
 
 type Guard = u32;
 
 // A global extrinsic index, formed as the extrinsic index within a block, together with that
 /// block's height. This allows a transaction in which a multisig operation of a particular
 /// composite was created to be uniquely identified.
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
+#[derive(
+    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Default, RuntimeDebug, TypeInfo,
+)]
 pub struct Timepoint<Height> {
-	/// The height of the chain at the point in time.
-	height: Height,
-	/// The index of the extrinsic at the point in time.
-	index: u32,
+    /// The height of the chain at the point in time.
+    height: Height,
+    /// The index of the extrinsic at the point in time.
+    index: u32,
 }
 
 #[derive(Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct Voting<Account, Asset, Time, Threshold> {
     author: Account,
     asset: Asset,
-	start: Time,
-	end: Option<Time>,
-	threshold: Threshold,
-	delegate: Account,
-	call_hash: CallHash,
+    start: Time,
+    end: Option<Time>,
+    threshold: Threshold,
+    delegate: Account,
+    call_hash: CallHash,
 }
 
 #[derive(Clone, Default, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct State<Value> {
-	votes: u32,
-	value: Value,
-	fullness: Value,
+    votes: u32,
+    value: Value,
+    fullness: Value,
 }
 
 impl<Value: AtLeast32Bit + Copy> State<Value> {
-	pub(crate) fn add(&mut self, value: Value, sign: Sign) {
-		self.votes += 1;
-		self.fullness += value;
-		match sign {
-			Sign::Positive => self.value += value,
-			Sign::Negative => self.value -= value,
-			_ => (),
-		}
-	}
+    pub(crate) fn add(&mut self, value: Value, sign: Sign) {
+        self.votes += 1;
+        self.fullness += value;
+        match sign {
+            Sign::Positive => self.value += value,
+            Sign::Negative => self.value -= value,
+            _ => (),
+        }
+    }
 
-	pub(crate) fn remove(&mut self, value: Value, sign: Sign) {
-		self.votes -= 1;
-		self.fullness -= value;
-		match sign {
-			Sign::Positive => self.value -= value,
-			Sign::Negative => self.value += value,
-			_ => (),
-		}
-	}
+    pub(crate) fn remove(&mut self, value: Value, sign: Sign) {
+        self.votes -= 1;
+        self.fullness -= value;
+        match sign {
+            Sign::Positive => self.value -= value,
+            Sign::Negative => self.value += value,
+            _ => (),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub enum Sign {
-	Positive,
-	Negative,
+    Positive,
+    Negative,
     Neutral,
 }
 
 #[derive(Clone, Copy, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub enum Threshold<Value> {
-	Absolute(Value),
-	Relative(Value),
-	RelativeExcept(Value),
+    Absolute(Value),
+    Relative(Value),
+    RelativeExcept(Value),
 }
 
 impl<Account, Asset, Time: PartialOrd, Value> Voting<Account, Asset, Time, Value> {
-	pub fn is_actual(&self, time: &Time) -> bool {
-		time >= &self.start && self.end.as_ref().map_or(true, |end| time <= end)
-	}
+    pub fn is_actual(&self, time: &Time) -> bool {
+        time >= &self.start && self.end.as_ref().map_or(true, |end| time <= end)
+    }
 }
 
 type OpaqueCall<T> = WrapperKeepOpaque<<T as Config>::Call>;
@@ -138,175 +146,166 @@ type VotingId = [u8; 32];
 #[frame_support::pallet]
 #[doc(hidden)]
 pub mod pallet {
-	use super::*;
-	use frame_support::pallet_prelude::*;
-	use frame_system::pallet_prelude::*;
-	use frame_system::Call as SystemCall;
+    use super::*;
+    use frame_support::pallet_prelude::*;
+    use frame_system::pallet_prelude::*;
+    use frame_system::Call as SystemCall;
 
-	#[pallet::config]
-	pub trait Config: frame_system::Config {
-		/// The overarching event type.
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+    #[pallet::config]
+    pub trait Config: frame_system::Config {
+        /// The overarching event type.
+        type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
-		/// The overarching call type.
-		type Call: Parameter
-			+ Dispatchable<Origin = Self::Origin, PostInfo = PostDispatchInfo>
-			+ GetDispatchInfo
+        /// The overarching call type.
+        type Call: Parameter
+            + Dispatchable<Origin = Self::Origin, PostInfo = PostDispatchInfo>
+            + GetDispatchInfo
             + Codec
-			+ From<SystemCall<Self>>;
+            + From<SystemCall<Self>>;
 
-		/// The currency mechanism.
-		type Currency: ReservableCurrency<Self::AccountId>;
+        /// The currency mechanism.
+        type Currency: ReservableCurrency<Self::AccountId>;
 
-		/// The base amount of currency needed to reserve for creating a multisig execution or to
-		/// store a dispatch call for later.
-		///
-		/// This is held for an additional storage item whose value size is
-		/// `4 + sizeof((BlockNumber, Balance, AccountId))` bytes and whose key size is
-		/// `32 + sizeof(AccountId)` bytes.
-		type DepositBase: Get<BalanceOf<Self>>;
+        /// The base amount of currency needed to reserve for creating a multisig execution or to
+        /// store a dispatch call for later.
+        ///
+        /// This is held for an additional storage item whose value size is
+        /// `4 + sizeof((BlockNumber, Balance, AccountId))` bytes and whose key size is
+        /// `32 + sizeof(AccountId)` bytes.
+        type DepositBase: Get<BalanceOf<Self>>;
 
-		/// Asset identifier
-		type AssetId: Member + Parameter + Default + Copy;
+        /// Asset identifier
+        type AssetId: Member + Parameter + Default + Copy;
 
-		/// Asset balance value
-		type AssetBalance: Member + Parameter + AtLeast32Bit + Default + Copy;
+        /// Asset balance value
+        type AssetBalance: Member + Parameter + AtLeast32Bit + Default + Copy;
 
-		/// Assets storage/provider
-		type AssetImpl: NFTImplT<
-				Account=Self::AccountId,
-				Fingerprint=Self::AssetId,
-				FractionAmount=Self::AssetBalance,
-			>;
+        /// Assets storage/provider
+        type Assets: NFTImplT<
+            Account = Self::AccountId,
+            Fingerprint = Self::AssetId,
+            FractionAmount = Self::AssetBalance,
+        >;
 
-		/// Asset system object
-		type Asset: NFTokenFractionT<Self::AssetImpl>;
+        /// Asset system object
+        //type Asset: NFTokenFractionT<Self::AssetImpl>;
 
-		#[pallet::constant]
-		/// Max value for relative threshold, it's equivalent to 100%
-		type RelativeThresholdLimit: Get<Self::AssetBalance>;
+        #[pallet::constant]
+        /// Max value for relative threshold, it's equivalent to 100%
+        type RelativeThresholdLimit: Get<Self::AssetBalance>;
 
-		#[pallet::constant]
-		/// Max value for relative threshold, it's equivalent to 100%
-		type MaxVotesPerAccountAsset: Get<u16>;
+        #[pallet::constant]
+        /// Max value for relative threshold, it's equivalent to 100%
+        type MaxVotesPerAccountAsset: Get<u16>;
 
-		/// Weight information for extrinsics in this pallet.
-		type WeightInfo: WeightInfo;
-	}
+        /// Weight information for extrinsics in this pallet.
+        type WeightInfo: WeightInfo;
+    }
 
-	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
-	pub struct Pallet<T>(_);
+    #[pallet::pallet]
+    #[pallet::generate_store(pub(super) trait Store)]
+    pub struct Pallet<T>(_);
 
-	/// The set of open voting operations.
-	#[pallet::storage]
-	pub type Votings<T: Config> =
-		StorageMap<_, Identity, VotingId, VotingOf<T>>;
+    /// The set of open voting operations.
+    #[pallet::storage]
+    pub type Votings<T: Config> = StorageMap<_, Identity, VotingId, VotingOf<T>>;
 
-	/// The set of open voting operation states.
-	#[pallet::storage]
-	pub type States<T: Config> =
-		StorageMap<_, Identity, VotingId, State<T::AssetBalance>>;
+    /// The set of open voting operation states.
+    #[pallet::storage]
+    pub type States<T: Config> = StorageMap<_, Identity, VotingId, State<T::AssetBalance>>;
 
-	/// The set of votes. [Need to unlock holders' assets]
-	#[pallet::storage]
-	pub type Votes<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, (T::AccountId, T::AssetId), Identity, VotingId, (Sign, Guard)>;
+    /// The set of votes. [Need to unlock holders' assets]
+    #[pallet::storage]
+    pub type Votes<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        (T::AccountId, T::AssetId),
+        Identity,
+        VotingId,
+        (Sign, Guard),
+    >;
 
-	/// The set of call data to be executed and reserved balance for it
-	#[pallet::storage]
-	pub type Calls<T: Config> =
-		StorageMap<_, Identity, CallHash, (OpaqueCall<T>, T::AccountId, BalanceOf<T>)>;
+    /// The set of call data to be executed and reserved balance for it
+    #[pallet::storage]
+    pub type Calls<T: Config> =
+        StorageMap<_, Identity, CallHash, (OpaqueCall<T>, T::AccountId, BalanceOf<T>)>;
 
-	#[pallet::storage]
-	pub type NextGuard<T: Config> =
-        StorageValue<_, Guard, ValueQuery>;
+    #[pallet::storage]
+    pub type NextGuard<T: Config> = StorageValue<_, Guard, ValueQuery>;
 
-	#[pallet::storage]
-	pub type Guards<T: Config> =
-		StorageMap<_, Blake2_128Concat, Guard, HoldGuardOf<T>>;
+    #[pallet::storage]
+    pub type Guards<T: Config> = StorageMap<_, Blake2_128Concat, Guard, HoldGuardOf<T>>;
 
-	#[pallet::error]
-	pub enum Error<T> {
-		/// Voting for the call is already exists and pending
-		AlreadyExists,
-		/// Call is already voted by this signatory
-		AlreadyVoted,
-		/// Voting exists and pending
-		StillProcessing,
-		/// Call isn't voted by this signatory
-		NotVoted,
-		/// Unknown asset or unexpected total issuance
-		BadAsset,
-		/// Unknown depositoraccount
-		UnknownDepositor,
-		/// Insufficent asset minimum balance for an account
-		InsufficientAssetBalance,
-		/// Voting operation wasn't found
-		NotFound,
-		/// Voting state wasn't found in storage
-		StateNotFound,
-		/// Origin hasn't access to call the operation
-		PermissionDenied,
-		/// A different timepoint was given to the voting operation that is underway.
-		BadTimepoint,
-		/// Call data wasn't found
-		NoCall,
-		/// Threshold value is out of bounds
-		BadThresholdValue,
-		/// Reserved balance has unexpected low value
-		UnexpectedLowReservedBalance,
-		/// Unexpected call data or unknown encoding format
-		BadCallEncoding,
-		/// Too much votings with the asset are running
-		LimitVotingsPerAsset,
-		/// The maximum weight information provided was too low.
-		MaxWeightTooLow,
-	}
+    #[pallet::error]
+    pub enum Error<T> {
+        /// Voting for the call is already exists and pending
+        AlreadyExists,
+        /// Call is already voted by this signatory
+        AlreadyVoted,
+        /// Voting exists and pending
+        StillProcessing,
+        /// Bad voting state
+        BadState,
+        /// Call isn't voted by this signatory
+        NotVoted,
+        /// Unknown asset or unexpected total issuance
+        BadAsset,
+        /// Unknown depositoraccount
+        UnknownDepositor,
+        /// Insufficent asset minimum balance for an account
+        InsufficientAssetBalance,
+        /// Voting operation wasn't found
+        NotFound,
+        /// Voting state wasn't found in storage
+        StateNotFound,
+        /// Origin hasn't access to call the operation
+        PermissionDenied,
+        /// A different timepoint was given to the voting operation that is underway.
+        BadTimepoint,
+        /// Call data wasn't found
+        NoCall,
+        /// Threshold value is out of bounds
+        BadThresholdValue,
+        /// Reserved balance has unexpected low value
+        UnexpectedLowReservedBalance,
+        /// Unexpected call data or unknown encoding format
+        BadCallEncoding,
+        /// Too much votings with the asset are running
+        LimitVotingsPerAsset,
+        /// The maximum weight information provided was too low.
+        MaxWeightTooLow,
+    }
 
-	#[pallet::event]
-	#[pallet::generate_deposit(pub(super) fn deposit_event)]
-	pub enum Event<T: Config> {
-		/// A new voting operation has begun.
-		Created {
-			id: VotingId,
-			voting: VotingOf<T>,
-		},
-		/// The asset's holder has made voting update (voted/unvoted).
-		Updated {
-			id: VotingId,
-			author: T::AccountId,
-		},
-		/// A voting operation has been finished, its call has been executed.
-		Executed {
-			id: VotingId,
-			voting: VotingOf<T>,
-			result: DispatchResult,
-		},
-		/// A voting has been cancelled by an asset's holder.
-		Cancelled {
-			id: VotingId,
-			voting: VotingOf<T>,
-		},
-	}
+    #[pallet::event]
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    pub enum Event<T: Config> {
+        /// A new voting operation has begun.
+        Created { id: VotingId, voting: VotingOf<T> },
+        /// The asset's holder has made voting update (voted/unvoted).
+        Updated { id: VotingId, author: T::AccountId },
+        /// A voting operation has been finished, its call has been executed.
+        Executed { id: VotingId, voting: VotingOf<T>, result: DispatchResult },
+        /// A voting has been cancelled by an asset's holder.
+        Cancelled { id: VotingId, voting: VotingOf<T> },
+    }
 
-	#[pallet::call]
-	impl<T: Config> Pallet<T> {
-		/// Create a new voting operation and put a positive vote for the call
-		///
-		/// If caller's asset balance reaches the threshold, then dispatch the call.
-		///
-		/// Payment: `DepositBase` will be reserved if this is the first approval.
-		/// It is returned once this dispatch happens or is cancelled.
-		///
-		/// The dispatch origin for this call must be _Signed_.
-		///
-		/// - `asset`: Asset identifier to restrict a voting around it
-		/// - `start`: Voting activation timepoint (optional); initialized with the extrinsic call timepoint if it's empty
-		/// - `end`: Voting deactivation timepoint (optional); permanent voting if it's empty
-		/// - `threshold`: Absolute or relative asset balance threshold; minimum sum of asset holders' balances for operation to be executed
-		/// - `call`: The call to be executed
-		#[pallet::weight({
+    #[pallet::call]
+    impl<T: Config> Pallet<T> {
+        /// Create a new voting operation and put a positive vote for the call
+        ///
+        /// If caller's asset balance reaches the threshold, then dispatch the call.
+        ///
+        /// Payment: `DepositBase` will be reserved if this is the first approval.
+        /// It is returned once this dispatch happens or is cancelled.
+        ///
+        /// The dispatch origin for this call must be _Signed_.
+        ///
+        /// - `asset`: Asset identifier to restrict a voting around it
+        /// - `start`: Voting activation timepoint (optional); initialized with the extrinsic call timepoint if it's empty
+        /// - `end`: Voting deactivation timepoint (optional); permanent voting if it's empty
+        /// - `threshold`: Absolute or relative asset balance threshold; minimum sum of asset holders' balances for operation to be executed
+        /// - `call`: The call to be executed
+        #[pallet::weight({
 			let z = call.encoded_len() as u32;
 			(
 				T::WeightInfo::create(z)
@@ -315,76 +314,77 @@ pub mod pallet {
 				DispatchClass::Normal
 			)
 		})]
-		#[transactional]
-		pub fn create(
-			origin: OriginFor<T>,
-			asset: T::AssetId,
-			start: Option<TimeOf<T>>,
-			end: Option<TimeOf<T>>,
-			threshold: ThresholdOf<T>,
-			call: OpaqueCall<T>,
-			max_weight: Weight,
-		) -> DispatchResultWithPostInfo {
-			let who = ensure_signed(origin)?;
-			let zero = T::AssetBalance::zero();
-			let max_balance = Self::total(asset)?;
-			match threshold {
-				Threshold::Absolute(v) => {
-					ensure!(v > zero && v <= max_balance, Error::<T>::BadThresholdValue);
-				}
-				Threshold::Relative(v) => {
-					let limit = T::RelativeThresholdLimit::get();
-					ensure!(v > zero && v <= limit, Error::<T>::BadThresholdValue);
-				}
-				Threshold::RelativeExcept(v) => {
-					let limit = T::RelativeThresholdLimit::get();
-					ensure!(v >= zero && v < limit, Error::<T>::BadThresholdValue);
-				}
-			}
-			ensure!(Self::is_valid_stakeholder(&who, asset), Error::<T>::PermissionDenied);
-			let encoded_call = call.encoded();
-			let call_len = encoded_call.len();
-			let call_hash = blake2_256(encoded_call);
-			let start = start.unwrap_or_else(|| Self::timepoint());
-			ensure!(end.map(|t| t > start).unwrap_or(true), Error::<T>::BadTimepoint);
-			let (id, v) = Self::new_voting(who.clone(), asset, start, end, threshold, call_hash);
-			ensure!(!Votings::<T>::contains_key(&id), Error::<T>::AlreadyExists);
-			let deposit = T::DepositBase::get()
-				+ BalanceOf::<T>::from((call_len + 31 / 32) as u32);
-			T::Currency::reserve(&who, deposit)?;
-			// TODO optimize: don't touch storage if author's asset balance is enough to execute
-			let state = Self::put_vote(&who, asset, id, Sign::Positive)?;
-			Calls::<T>::insert(&call_hash, (call, who.clone(), deposit));
-			Votings::<T>::insert(id, v.clone());
-			Self::deposit_event(Event::<T>::Created { id, voting: v.clone() });
-			let approved = match v.threshold {
-				Threshold::Absolute(x) => state.value >= x,
-				Threshold::Relative(x) => {
-					state.value >= get_relative_balance(x, max_balance, T::RelativeThresholdLimit::get())
-				}
-				Threshold::RelativeExcept(x) => {
-					state.value > get_relative_balance(x, max_balance, T::RelativeThresholdLimit::get())
-				}
-			};
-			if approved {
-				let res = Self::execute(id, v, max_weight)?.actual_weight;
-				let _ = Self::remove_vote(&who, asset, id)?;
-				Ok(res.map(|w| {
-					T::WeightInfo::create_and_execute(call_len as u32).saturating_add(w)
-				}).into())
-			} else {
-				Ok(Some(T::WeightInfo::create(call_len as u32)).into())
-			}
-		}
+        #[transactional]
+        pub fn create(
+            origin: OriginFor<T>,
+            asset: T::AssetId,
+            start: Option<TimeOf<T>>,
+            end: Option<TimeOf<T>>,
+            threshold: ThresholdOf<T>,
+            call: OpaqueCall<T>,
+            max_weight: Weight,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let zero = T::AssetBalance::zero();
+            let max_balance = Self::total(asset)?;
+            match threshold {
+                Threshold::Absolute(v) => {
+                    ensure!(v > zero && v <= max_balance, Error::<T>::BadThresholdValue);
+                },
+                Threshold::Relative(v) => {
+                    let limit = T::RelativeThresholdLimit::get();
+                    ensure!(v > zero && v <= limit, Error::<T>::BadThresholdValue);
+                },
+                Threshold::RelativeExcept(v) => {
+                    let limit = T::RelativeThresholdLimit::get();
+                    ensure!(v >= zero && v < limit, Error::<T>::BadThresholdValue);
+                },
+            }
+            ensure!(Self::is_valid_stakeholder(&who, asset), Error::<T>::PermissionDenied);
+            let encoded_call = call.encoded();
+            let call_len = encoded_call.len();
+            let call_hash = blake2_256(encoded_call);
+            let start = start.unwrap_or_else(|| Self::timepoint());
+            ensure!(end.map(|t| t > start).unwrap_or(true), Error::<T>::BadTimepoint);
+            let (id, v) = Self::new_voting(who.clone(), asset, start, end, threshold, call_hash);
+            ensure!(!Votings::<T>::contains_key(&id), Error::<T>::AlreadyExists);
+            let deposit = T::DepositBase::get() + BalanceOf::<T>::from((call_len + 31 / 32) as u32);
+            T::Currency::reserve(&who, deposit)?;
+            // TODO optimize: don't touch storage if author's asset balance is enough to execute
+            let state = Self::put_vote(&who, asset, id, Sign::Positive)?;
+            Calls::<T>::insert(&call_hash, (call, who.clone(), deposit));
+            Votings::<T>::insert(id, v.clone());
+            Self::deposit_event(Event::<T>::Created { id, voting: v.clone() });
+            let approved = match v.threshold {
+                Threshold::Absolute(x) => state.value >= x,
+                Threshold::Relative(x) => {
+                    state.value
+                        >= get_relative_balance(x, max_balance, T::RelativeThresholdLimit::get())
+                },
+                Threshold::RelativeExcept(x) => {
+                    state.value
+                        > get_relative_balance(x, max_balance, T::RelativeThresholdLimit::get())
+                },
+            };
+            if approved {
+                let res = Self::execute(id, v, max_weight)?.actual_weight;
+                let _ = Self::remove_vote(&who, asset, id)?;
+                Ok(res
+                    .map(|w| T::WeightInfo::create_and_execute(call_len as u32).saturating_add(w))
+                    .into())
+            } else {
+                Ok(Some(T::WeightInfo::create(call_len as u32)).into())
+            }
+        }
 
-		/// Add a new vote into the active voting operation
-		///
-		/// The dispatch origin for this call must be _Signed_.
-		///
-		/// - `id`: Voting unique identifier (voting struct hash)
-		/// - `sign`: Vote value (sign: positive (yes) | neutral | negative (no))
-		/// - `max_weight`: Maximum call execution weight
-		#[pallet::weight({
+        /// Add a new vote into the active voting operation
+        ///
+        /// The dispatch origin for this call must be _Signed_.
+        ///
+        /// - `id`: Voting unique identifier (voting struct hash)
+        /// - `sign`: Vote value (sign: positive (yes) | neutral | negative (no))
+        /// - `max_weight`: Maximum call execution weight
+        #[pallet::weight({
 			(
 				T::WeightInfo::vote()
 				.max(T::WeightInfo::vote_and_execute())
@@ -393,52 +393,53 @@ pub mod pallet {
 				Pays::No
 			)
 		})]
-		#[transactional]
-		pub fn vote(
-			origin: OriginFor<T>,
-			id: VotingId,
-			sign: Sign,
-			max_weight: Weight,
-		) -> DispatchResultWithPostInfo {
-			let voter = ensure_signed(origin)?;
-			let v = Votings::<T>::get(&id).ok_or_else(|| Error::<T>::NotFound)?;
-			let asset = v.asset;
-			ensure!(!Votes::<T>::contains_key(&(voter.clone(), asset), id), Error::<T>::AlreadyVoted);
-			ensure!(Self::is_valid_stakeholder(&voter, asset), Error::<T>::PermissionDenied);
-			let time = Self::timepoint();
-			ensure!(v.is_actual(&time), Error::<T>::BadTimepoint);
-			let state = Self::put_vote(&voter, asset, id, sign)?;
-			let total = Self::total(asset)?;
-			let approved = match v.threshold {
-				Threshold::Absolute(x) => state.value >= x,
-				Threshold::Relative(x) => {
-					state.value >= get_relative_balance(x, total, T::RelativeThresholdLimit::get())
-				}
-				Threshold::RelativeExcept(x) => {
-					state.value > get_relative_balance(x, total, T::RelativeThresholdLimit::get())
-				}
-			};
-			if approved {
-				let res = Self::execute(id, v, max_weight)?.actual_weight;
-				let _ = Self::remove_vote(&voter, asset, id)?;
-				Ok(res.map(|w| {
-					T::WeightInfo::vote_and_execute().saturating_add(w)
-				}).into())
-			} else {
-				Self::deposit_event(Event::<T>::Updated { id, author: voter });
-				// TODO cancel if it's fulfilled
-				// if threshold - balance > total - completeness
-				Ok(Some(T::WeightInfo::vote()).into())
-			}
-		}
+        #[transactional]
+        pub fn vote(
+            origin: OriginFor<T>,
+            id: VotingId,
+            sign: Sign,
+            max_weight: Weight,
+        ) -> DispatchResultWithPostInfo {
+            let voter = ensure_signed(origin)?;
+            let v = Votings::<T>::get(&id).ok_or_else(|| Error::<T>::NotFound)?;
+            let asset = v.asset;
+            ensure!(
+                !Votes::<T>::contains_key(&(voter.clone(), asset), id),
+                Error::<T>::AlreadyVoted
+            );
+            ensure!(Self::is_valid_stakeholder(&voter, asset), Error::<T>::PermissionDenied);
+            let time = Self::timepoint();
+            ensure!(v.is_actual(&time), Error::<T>::BadTimepoint);
+            let state = Self::put_vote(&voter, asset, id, sign)?;
+            let total = Self::total(asset)?;
+            let approved = match v.threshold {
+                Threshold::Absolute(x) => state.value >= x,
+                Threshold::Relative(x) => {
+                    state.value >= get_relative_balance(x, total, T::RelativeThresholdLimit::get())
+                },
+                Threshold::RelativeExcept(x) => {
+                    state.value > get_relative_balance(x, total, T::RelativeThresholdLimit::get())
+                },
+            };
+            if approved {
+                let res = Self::execute(id, v, max_weight)?.actual_weight;
+                let _ = Self::remove_vote(&voter, asset, id)?;
+                Ok(res.map(|w| T::WeightInfo::vote_and_execute().saturating_add(w)).into())
+            } else {
+                Self::deposit_event(Event::<T>::Updated { id, author: voter });
+                // TODO cancel if it's fulfilled
+                // if threshold - balance > total - completeness
+                Ok(Some(T::WeightInfo::vote()).into())
+            }
+        }
 
-		/// Remove vote from the active voting operation
-		///
-		/// The dispatch origin for this call must be _Signed_.
-		///
-		/// - `id`: Voting unique identifier (hash)
-		/// - `max_weight`: Maximum call execution weight
-		#[pallet::weight({
+        /// Remove vote from the active voting operation
+        ///
+        /// The dispatch origin for this call must be _Signed_.
+        ///
+        /// - `id`: Voting unique identifier (hash)
+        /// - `max_weight`: Maximum call execution weight
+        #[pallet::weight({
 			(
 				T::WeightInfo::unvote()
 				.max(T::WeightInfo::unvote_and_cancel())
@@ -447,241 +448,251 @@ pub mod pallet {
 				DispatchClass::Normal
 			)
 		})]
-		#[transactional]
-		pub fn cancel(
-			origin: OriginFor<T>,
-			id: VotingId,
-			max_weight: Weight,
-		) -> DispatchResultWithPostInfo {
-			let who = ensure_signed(origin)?;
-			let v = Votings::<T>::get(&id).ok_or_else(|| Error::<T>::NotFound)?;
-			let asset = v.asset;
-			let state = Self::pop_vote(&who, asset, id)?;
-			let w = if state.votes == 0 {
-				Self::close_voting(id, &v)?;
-				Self::deposit_event(Event::<T>::Cancelled { id, voting: v.clone() });
-				T::WeightInfo::unvote_and_cancel()
-			} else {
-				let time = Self::timepoint();
-				if v.is_actual(&time) {
-					let total = Self::total(asset)?;
-					let approved = match v.threshold {
-						Threshold::Absolute(x) => state.value >= x,
-						Threshold::Relative(x) => {
-							state.value >= get_relative_balance(x, total, T::RelativeThresholdLimit::get())
-						}
-						Threshold::RelativeExcept(x) => {
-							state.value > get_relative_balance(x, total, T::RelativeThresholdLimit::get())
-						}
-					};
-					if approved {
-						let res = Self::execute(id, v, max_weight)?.actual_weight;
-						let _ = Self::remove_vote(&who, asset, id)?;
-						return Ok(res.map(|w| {
-							T::WeightInfo::unvote_and_execute().saturating_add(w)
-						}).into())
-					} else {
-						Self::deposit_event(Event::<T>::Updated { id, author: who.clone() });
-					}
-				}
-				T::WeightInfo::unvote()
-			};
-			Ok(Some(w).into())
-		}
+        #[transactional]
+        pub fn cancel(
+            origin: OriginFor<T>,
+            id: VotingId,
+            max_weight: Weight,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let v = Votings::<T>::get(&id).ok_or_else(|| Error::<T>::NotFound)?;
+            let asset = v.asset;
+            let state = Self::pop_vote(&who, asset, id)?;
+            let w = if state.votes == 0 {
+                Self::close_voting(id, &v)?;
+                Self::deposit_event(Event::<T>::Cancelled { id, voting: v.clone() });
+                T::WeightInfo::unvote_and_cancel()
+            } else {
+                let time = Self::timepoint();
+                if v.is_actual(&time) {
+                    let total = Self::total(asset)?;
+                    let approved = match v.threshold {
+                        Threshold::Absolute(x) => state.value >= x,
+                        Threshold::Relative(x) => {
+                            state.value
+                                >= get_relative_balance(x, total, T::RelativeThresholdLimit::get())
+                        },
+                        Threshold::RelativeExcept(x) => {
+                            state.value
+                                > get_relative_balance(x, total, T::RelativeThresholdLimit::get())
+                        },
+                    };
+                    if approved {
+                        let res = Self::execute(id, v, max_weight)?.actual_weight;
+                        return Ok(res
+                            .map(|w| T::WeightInfo::unvote_and_execute().saturating_add(w))
+                            .into());
+                    } else {
+                        Self::deposit_event(Event::<T>::Updated { id, author: who.clone() });
+                    }
+                }
+                T::WeightInfo::unvote()
+            };
+            Ok(Some(w).into())
+        }
 
-		/// Return control on the asset to its holder
-		///
-		/// The dispatch origin for this call must be _Signed_.
-		///
-		/// - `asset`: Asset identifier to be unlocked for the holder (caller)
-		#[pallet::weight((T::WeightInfo::retain_asset(T::MaxVotesPerAccountAsset::get() as u32), DispatchClass::Normal))]
-		#[transactional]
-		pub fn retain_asset(
-			origin: OriginFor<T>,
-			asset: T::AssetId,
-		) -> DispatchResultWithPostInfo {
-			let who = ensure_signed(origin)?;
-			let key = (who.clone(), asset);
-			let ids: Vec<_> = Votes::<T>::iter_prefix(&key).map(|p| p.0).collect();
-			let num = ids.len() as u32;
-			for id in ids {
-				ensure!(!Votings::<T>::contains_key(&id), Error::<T>::StillProcessing);
-				let _ = Self::remove_vote(&who, asset, id)?;
-			}
-			Ok(Some(T::WeightInfo::retain_asset(num)).into())
-		}
+        /// Return control on the asset to its holder
+        ///
+        /// The dispatch origin for this call must be _Signed_.
+        ///
+        /// - `asset`: Asset identifier to be unlocked for the holder (caller)
+        #[pallet::weight((T::WeightInfo::retain_asset(T::MaxVotesPerAccountAsset::get() as u32), DispatchClass::Normal))]
+        #[transactional]
+        pub fn retain_asset(origin: OriginFor<T>, asset: T::AssetId) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let key = (who.clone(), asset);
+            let ids: Vec<_> = Votes::<T>::iter_prefix(&key).map(|p| p.0).collect();
+            let num = ids.len() as u32;
+            for id in ids {
+                ensure!(!Votings::<T>::contains_key(&id), Error::<T>::StillProcessing);
+                let _ = Self::remove_vote(&who, asset, id)?;
+            }
+            Ok(Some(T::WeightInfo::retain_asset(num)).into())
+        }
 
-		/*
-		// TODO
-		#[pallet::weight((T::WeightInfo::cancel_all(), DispatchClass::Normal))]
-		pub fn cancel_all(
-			origin: OriginFor<T>,
-			asset: T::AssetId,
-		) -> DispatchResultWithPostInfo {
-			todo!()
-		}
-		*/
-	}
+        /*
+        // TODO
+        #[pallet::weight((T::WeightInfo::cancel_all(), DispatchClass::Normal))]
+        pub fn cancel_all(
+            origin: OriginFor<T>,
+            asset: T::AssetId,
+        ) -> DispatchResultWithPostInfo {
+            todo!()
+        }
+        */
+    }
 }
 
 impl<T: Config> Pallet<T> {
-	// by analogy with substrate's frames proxy and multisig
-	pub fn voting_account_id(asset: T::AssetId, threshold: ThresholdOf<T>) -> T::AccountId {
-		let entropy = (b"modeip/stakevoting", asset, threshold).using_encoded(blake2_256);
-		Decode::decode(&mut TrailingZeroInput::new(entropy.as_ref()))
-			.expect("infinite length input; no invalid inputs for type; qed")
-	}
+    // by analogy with substrate's frames proxy and multisig
+    pub fn voting_account_id(asset: T::AssetId, threshold: ThresholdOf<T>) -> T::AccountId {
+        let entropy = (b"modeip/stakevoting", asset, threshold).using_encoded(blake2_256);
+        Decode::decode(&mut TrailingZeroInput::new(entropy.as_ref()))
+            .expect("infinite length input; no invalid inputs for type; qed")
+    }
 
-	pub(crate) fn new_voting(
-		author: T::AccountId,
-		asset: T::AssetId,
-		start: TimeOf<T>,
-		end: Option<TimeOf<T>>,
-		threshold: ThresholdOf<T>,
-		call_hash: CallHash,
-	) -> (VotingId, VotingOf<T>) {
-		let delegate = Self::voting_account_id(asset, threshold);
-		let v = VotingOf::<T> { author, asset, start, end, threshold, delegate, call_hash };
-		let id = blake2_256(&v.encode());
-		(id, v)
-	}
+    pub(crate) fn new_voting(
+        author: T::AccountId,
+        asset: T::AssetId,
+        start: TimeOf<T>,
+        end: Option<TimeOf<T>>,
+        threshold: ThresholdOf<T>,
+        call_hash: CallHash,
+    ) -> (VotingId, VotingOf<T>) {
+        let delegate = Self::voting_account_id(asset, threshold);
+        let v = VotingOf::<T> { author, asset, start, end, threshold, delegate, call_hash };
+        let id = blake2_256(&v.encode());
+        (id, v)
+    }
 
-	pub fn get_voting(id: &VotingId) -> Option<VotingOf<T>> {
-		Votings::<T>::get(id)
-	}
+    pub fn get_voting(id: &VotingId) -> Option<VotingOf<T>> {
+        Votings::<T>::get(id)
+    }
 
-	fn is_valid_stakeholder(account: &T::AccountId, asset: T::AssetId) -> bool {
-		Self::balance(asset, account)
-			.map(|v| v > T::AssetBalance::zero())
-			.unwrap_or_default()
-	}
+    fn is_valid_stakeholder(account: &T::AccountId, asset: T::AssetId) -> bool {
+        let zero = T::AssetBalance::zero();
+        Self::balance(asset, account).map(|v| v > zero).unwrap_or_default()
+    }
 
-	fn balance(asset: T::AssetId, account: &T::AccountId) -> Option<T::AssetBalance> {
-		pick_fraction::<T::AssetImpl>(account, asset)
-			.map(|v| *v.amount())
-			.ok()
-	}
+    fn balance(asset: T::AssetId, account: &T::AccountId) -> Option<T::AssetBalance> {
+        pick_fraction::<T::Assets>(account, asset).map(|v| *v.amount()).ok()
+    }
 
-	fn total(asset: T::AssetId) -> Result<T::AssetBalance, Error::<T>> {
-		total_fraction::<T::AssetImpl>(asset)
-			.ok_or_else(|| Error::<T>::BadAsset)
-	}
+    fn total(asset: T::AssetId) -> Result<T::AssetBalance, Error<T>> {
+        total_fraction::<T::Assets>(asset).ok_or_else(|| Error::<T>::BadAsset)
+    }
 
-	fn take_guard() -> u32 {
-		for (g, _) in Guards::<T>::drain() {
-			return g.into();
-		}
-		NextGuard::<T>::mutate(|i| { *i = *i + 1; *i }).into()
-	}
+    fn take_guard() -> u32 {
+        for (g, _) in Guards::<T>::drain() {
+            return g.into();
+        }
+        NextGuard::<T>::mutate(|i| {
+            *i = *i + 1;
+            *i
+        })
+        .into()
+    }
 
-	fn release_guard(guard: u32) {
-		Guards::<T>::insert::<u32, HoldGuardOf<T>>(guard, guard.into())
-	}
+    fn release_guard(guard: u32) {
+        Guards::<T>::insert::<u32, HoldGuardOf<T>>(guard, guard.into())
+    }
 
-	fn hold(asset: T::AssetId, account: &T::AccountId) ->  Result<u32, Error<T>> {
-		let guard = Self::take_guard();
-		hold_fraction::<T::AssetImpl>(account, asset, Self::holder_id(), guard.into())
-			.map_err(|_| Error::<T>::PermissionDenied)?;
-		Ok(guard)
-	}
+    fn hold(asset: T::AssetId, account: &T::AccountId) -> Result<u32, Error<T>> {
+        let guard = Self::take_guard();
+        hold_fraction::<T::Assets>(account, asset, Self::holder_id(), guard.into())
+            .map_err(|_| Error::<T>::PermissionDenied)?;
+        Ok(guard)
+    }
 
-	fn release(asset: T::AssetId, account: &T::AccountId, guard: u32) -> Result<(), Error<T>> {
-		unhold_fraction::<T::AssetImpl>(account, asset, Self::holder_id(), guard.into())
-			.map_err(|_| Error::<T>::PermissionDenied)?;
-		Self::release_guard(guard);
-		Ok(())
-	}
+    fn release(asset: T::AssetId, account: &T::AccountId, guard: u32) -> Result<(), Error<T>> {
+        unhold_fraction::<T::Assets>(account, asset, Self::holder_id(), guard.into())
+            .map_err(|_| Error::<T>::PermissionDenied)?;
+        Self::release_guard(guard);
+        Ok(())
+    }
 
-	fn holder_id() -> <T::AssetImpl as NFTImplT>::FractionHolderId {
-		let entropy = (b"modl/", Self::name().as_bytes()).using_encoded(blake2_256);
-		Decode::decode(&mut TrailingZeroInput::new(entropy.as_ref()))
-			.expect("infinite length input; no invalid inputs for type; qed")
-	}
+    fn holder_id() -> <T::Assets as NFTImplT>::FractionHolderId {
+        let entropy = (b"modl/", Self::name().as_bytes()).using_encoded(blake2_256);
+        Decode::decode(&mut TrailingZeroInput::new(entropy.as_ref()))
+            .expect("infinite length input; no invalid inputs for type; qed")
+    }
 
-	fn close_voting(id: VotingId, v: &VotingOf<T>) -> DispatchResult {
-		Votings::<T>::remove(&id);
-		States::<T>::remove(&id);
-		let (_call, depositor, deposit) = Calls::<T>::take(&v.call_hash).ok_or_else(|| Error::<T>::NoCall)?;
-		ensure!(depositor == v.author, Error::<T>::UnknownDepositor);
-		let reserved = T::Currency::reserved_balance(&depositor);
-		ensure!(reserved >= deposit, Error::<T>::UnexpectedLowReservedBalance);
-		T::Currency::unreserve(&depositor, deposit); // should be reserved within `create` call
-		Ok(())
-	}
+    fn close_voting(id: VotingId, v: &VotingOf<T>) -> DispatchResult {
+        Votings::<T>::remove(&id);
+        States::<T>::remove(&id);
+        let (_call, depositor, deposit) =
+            Calls::<T>::take(&v.call_hash).ok_or_else(|| Error::<T>::NoCall)?;
+        ensure!(depositor == v.author, Error::<T>::UnknownDepositor);
+        let reserved = T::Currency::reserved_balance(&depositor);
+        ensure!(reserved >= deposit, Error::<T>::UnexpectedLowReservedBalance);
+        T::Currency::unreserve(&depositor, deposit); // should be reserved within `create` call
+        Ok(())
+    }
 
-	fn put_vote(
-		voter: &T::AccountId,
-		asset: T::AssetId,
-		id: VotingId,
-		sign: Sign,
-	) -> Result<State<T::AssetBalance>, Error<T>> {
-		let n = Votes::<T>::iter_prefix_values((voter.clone(), asset)).count() as u16;
-		ensure!(n < T::MaxVotesPerAccountAsset::get(), Error::<T>::LimitVotingsPerAsset);
-		let value = Self::balance(asset, voter).ok_or_else(|| Error::<T>::InsufficientAssetBalance)?;
-		let mut state = States::<T>::get(id).unwrap_or_default();
-		state.add(value, sign);
-		let key = (voter.clone(), asset);
-		ensure!(!Votes::<T>::contains_key(&key, &id), Error::<T>::AlreadyVoted);
-		let guard = Self::hold(asset, voter)?;
-		Votes::<T>::insert(key, id, (sign, guard));
-		States::<T>::insert(id, state.clone());
-		Ok(state)
-	}
+    fn put_vote(
+        voter: &T::AccountId,
+        asset: T::AssetId,
+        id: VotingId,
+        sign: Sign,
+    ) -> Result<State<T::AssetBalance>, Error<T>> {
+        let n = Votes::<T>::iter_prefix_values((voter.clone(), asset)).count() as u16;
+        ensure!(n < T::MaxVotesPerAccountAsset::get(), Error::<T>::LimitVotingsPerAsset);
+        let value =
+            Self::balance(asset, voter).ok_or_else(|| Error::<T>::InsufficientAssetBalance)?;
+        let mut state = States::<T>::get(id).unwrap_or_default();
+        state.add(value, sign);
+        let key = (voter.clone(), asset);
+        ensure!(!Votes::<T>::contains_key(&key, &id), Error::<T>::AlreadyVoted);
+        let guard = Self::hold(asset, voter)?;
+        Votes::<T>::insert(key, id, (sign, guard));
+        States::<T>::insert(id, state.clone());
+        Ok(state)
+    }
 
-	fn pop_vote(
-		voter: &T::AccountId,
-		asset: T::AssetId,
-		id: VotingId,
-	) -> Result<State<T::AssetBalance>, DispatchError> {
-		let mut state = States::<T>::get(id).ok_or_else(|| Error::<T>::StateNotFound)?;
-		let value = Self::balance(asset, voter).ok_or_else(|| Error::<T>::InsufficientAssetBalance)?;
-		let sign = Self::remove_vote(voter, asset, id)?;
-		state.remove(value, sign);
-		States::<T>::insert(id, state.clone());
-		Ok(state)
-	}
+    fn pop_vote(
+        voter: &T::AccountId,
+        asset: T::AssetId,
+        id: VotingId,
+    ) -> Result<State<T::AssetBalance>, DispatchError> {
+        let mut state = States::<T>::get(id).ok_or_else(|| Error::<T>::StateNotFound)?;
+        ensure!(state.votes > 0, Error::<T>::BadState);
+        let value =
+            Self::balance(asset, voter).ok_or_else(|| Error::<T>::InsufficientAssetBalance)?;
+        let sign = Self::remove_vote(voter, asset, id)?;
+        state.remove(value, sign);
+        States::<T>::insert(id, state.clone());
+        Ok(state)
+    }
 
-	fn remove_vote(
-		voter: &T::AccountId,
-		asset: T::AssetId,
-		id: VotingId,
-	) -> Result<Sign, DispatchError> {
-		let key = (voter.clone(), asset);
-		let (sign, guard) = Votes::<T>::get(&key, &id).ok_or_else(|| Error::<T>::NotVoted)?;
-		Self::release(asset, voter, guard)?;
-		Votes::<T>::remove(&key, &id);
-		Ok(sign)
-	}
+    fn remove_vote(
+        voter: &T::AccountId,
+        asset: T::AssetId,
+        id: VotingId,
+    ) -> Result<Sign, DispatchError> {
+        let key = (voter.clone(), asset);
+        let (sign, guard) = Votes::<T>::get(&key, &id).ok_or_else(|| Error::<T>::NotVoted)?;
+        Self::release(asset, voter, guard)?;
+        Votes::<T>::remove(&key, &id);
+        Ok(sign)
+    }
 
-	pub fn execute(id: VotingId, voting: VotingOf<T>, max_weight: Weight) -> DispatchResultWithPostInfo {
-		let (data, author, balance) = Calls::<T>::get(&voting.call_hash).ok_or_else(|| Error::<T>::NoCall)?;
-		let call = data.try_decode().ok_or_else(|| Error::<T>::BadCallEncoding)?;
-		let dispatch_info = call.get_dispatch_info();
-		ensure!(max_weight >= dispatch_info.weight, Error::<T>::MaxWeightTooLow);
-		Votings::<T>::remove(id);
-		States::<T>::remove(id);
-		Calls::<T>::remove(&voting.call_hash);
-		ensure!(T::Currency::reserved_balance(&author) >= balance, Error::<T>::UnexpectedLowReservedBalance);
-		T::Currency::unreserve(&author, balance); // should be reserved within `create` call
-		let call_res = call.dispatch(RawOrigin::Signed(voting.delegate.clone()).into());
-		let result = call_res.map(|_| ()).map_err(|e| e.error);
-		Self::deposit_event(Event::<T>::Executed { id, voting, result });
-		Ok(get_result_weight(call_res).into())
-	}
+    pub fn execute(
+        id: VotingId,
+        voting: VotingOf<T>,
+        max_weight: Weight,
+    ) -> DispatchResultWithPostInfo {
+        let (data, author, balance) =
+            Calls::<T>::get(&voting.call_hash).ok_or_else(|| Error::<T>::NoCall)?;
+        let call = data.try_decode().ok_or_else(|| Error::<T>::BadCallEncoding)?;
+        let dispatch_info = call.get_dispatch_info();
+        ensure!(max_weight >= dispatch_info.weight, Error::<T>::MaxWeightTooLow);
+        Votings::<T>::remove(id);
+        States::<T>::remove(id);
+        Calls::<T>::remove(&voting.call_hash);
+        ensure!(
+            T::Currency::reserved_balance(&author) >= balance,
+            Error::<T>::UnexpectedLowReservedBalance
+        );
+        T::Currency::unreserve(&author, balance); // should be reserved within `create` call
+        let call_res = call.dispatch(RawOrigin::Signed(voting.delegate.clone()).into());
+        let result = call_res.map(|_| ()).map_err(|e| e.error);
+        Self::deposit_event(Event::<T>::Executed { id, voting, result });
+        Ok(get_result_weight(call_res).into())
+    }
 
-	/// The current `Timepoint`.
-	pub fn timepoint() -> Timepoint<T::BlockNumber> {
-		Timepoint {
-			height: <frame_system::Pallet<T>>::block_number(),
-			index: <frame_system::Pallet<T>>::extrinsic_index().unwrap_or_default(),
-		}
-	}
+    /// The current `Timepoint`.
+    pub fn timepoint() -> Timepoint<T::BlockNumber> {
+        Timepoint {
+            height: <frame_system::Pallet<T>>::block_number(),
+            index: <frame_system::Pallet<T>>::extrinsic_index().unwrap_or_default(),
+        }
+    }
 }
 
 /// Convert value relative to the limit into real balance.
 #[inline]
 fn get_relative_balance<B: AtLeast32Bit + Copy>(value: B, total: B, limit: B) -> B {
-	(total / limit) * value + (((total % limit) * value) / limit)
+    (total / limit) * value + (((total % limit) * value) / limit)
 }
 
 /// Return the weight of a dispatch call result as an `Option`.
@@ -689,8 +700,8 @@ fn get_relative_balance<B: AtLeast32Bit + Copy>(value: B, total: B, limit: B) ->
 /// Will return the weight regardless of what the state of the result is.
 #[inline]
 fn get_result_weight(result: DispatchResultWithPostInfo) -> Option<Weight> {
-	match result {
-		Ok(post_info) => post_info.actual_weight,
-		Err(err) => err.post_info.actual_weight,
-	}
+    match result {
+        Ok(post_info) => post_info.actual_weight,
+        Err(err) => err.post_info.actual_weight,
+    }
 }

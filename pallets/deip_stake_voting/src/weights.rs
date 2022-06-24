@@ -59,93 +59,48 @@ pub trait WeightInfo {
 /// Weights for pallet_multisig using the Substrate node and recommended hardware.
 pub struct Weights<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for Weights<T> {
-	// Storage: Assets Asset (r:1 w:0)
-	// Storage: Assets Account (r:1 w:0)
-	// Storage: DeipStakeVoting Votings (r:1 w:1)
-	// Storage: DeipStakeVoting Votes (r:2 w:1)
-	// Storage: DeipStakeVoting States (r:1 w:1)
-	// Storage: DeipStakeVoting Calls (r:0 w:1)
 	fn create(z: u32, ) -> Weight {
-		(196_450_000 as Weight)
+		(101_274_000 as Weight)
+			// Standard Error: 0
 			.saturating_add((2_000 as Weight).saturating_mul(z as Weight))
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(T::DbWeight::get().reads(9 as Weight))
+			.saturating_add(T::DbWeight::get().writes(7 as Weight))
 	}
-	// Storage: Assets Asset (r:1 w:0)
-	// Storage: Assets Account (r:1 w:0)
-	// Storage: DeipStakeVoting Votings (r:1 w:1)
-	// Storage: DeipStakeVoting Votes (r:2 w:1)
-	// Storage: DeipStakeVoting States (r:1 w:1)
-	// Storage: DeipStakeVoting Calls (r:0 w:1)
 	fn create_and_execute(z: u32, ) -> Weight {
-		(154_254_000 as Weight)
+		(175_846_000 as Weight)
 			// Standard Error: 0
-			.saturating_add((4_000 as Weight).saturating_mul(z as Weight))
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add((3_000 as Weight).saturating_mul(z as Weight))
+			.saturating_add(T::DbWeight::get().reads(9 as Weight))
+			.saturating_add(T::DbWeight::get().writes(8 as Weight))
 	}
-	// Storage: DeipStakeVoting Votings (r:1 w:0)
-	// Storage: DeipStakeVoting Votes (r:2 w:1)
-	// Storage: Assets Account (r:1 w:0)
-	// Storage: Assets Asset (r:1 w:0)
-	// Storage: unknown [0x3a65787472696e7369635f696e646578] (r:1 w:0)
-	// Storage: DeipStakeVoting States (r:1 w:1)
 	fn vote() -> Weight {
-		(87_276_000 as Weight)
-			// Standard Error: 0
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		(100_003_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(10 as Weight))
+			.saturating_add(T::DbWeight::get().writes(5 as Weight))
 	}
-	// Storage: DeipStakeVoting Votings (r:1 w:1)
-	// Storage: DeipStakeVoting Votes (r:2 w:1)
-	// Storage: Assets Account (r:1 w:0)
-	// Storage: Assets Asset (r:1 w:0)
-	// Storage: unknown [0x3a65787472696e7369635f696e646578] (r:1 w:0)
-	// Storage: DeipStakeVoting States (r:1 w:1)
-	// Storage: DeipStakeVoting Calls (r:1 w:1)
 	fn vote_and_execute() -> Weight {
-		(141_230_000 as Weight)
+		(159_621_000 as Weight)
 			// Standard Error: 0
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(T::DbWeight::get().reads(11 as Weight))
+			.saturating_add(T::DbWeight::get().writes(8 as Weight))
 	}
-	// Storage: DeipStakeVoting Votings (r:1 w:0)
-	// Storage: DeipStakeVoting States (r:1 w:1)
-	// Storage: Assets Account (r:1 w:0)
-	// Storage: DeipStakeVoting Votes (r:2 w:1)
-	// Storage: unknown [0x3a65787472696e7369635f696e646578] (r:1 w:0)
-	// Storage: Assets Asset (r:1 w:0)
 	fn unvote() -> Weight {
-		(78_065_000 as Weight)
+		(81_363_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+			.saturating_add(T::DbWeight::get().writes(5 as Weight))
 	}
-	// Storage: DeipStakeVoting Votings (r:1 w:1)
-	// Storage: DeipStakeVoting States (r:1 w:1)
-	// Storage: Assets Account (r:1 w:0)
-	// Storage: DeipStakeVoting Votes (r:1 w:1)
-	// Storage: unknown [0x3a65787472696e7369635f696e646578] (r:1 w:0)
-	// Storage: Assets Asset (r:1 w:0)
-	// Storage: DeipStakeVoting Calls (r:1 w:1)
 	fn unvote_and_execute() -> Weight {
-		(104_508_000 as Weight)
-			// Standard Error: 0
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
-	}
-	// Storage: DeipStakeVoting Votings (r:1 w:1)
-	// Storage: DeipStakeVoting States (r:1 w:1)
-	// Storage: Assets Account (r:1 w:0)
-	// Storage: DeipStakeVoting Votes (r:2 w:1)
-	// Storage: DeipStakeVoting Calls (r:1 w:1)
-	fn unvote_and_cancel() -> Weight {
-		(105_987_000 as Weight)
+		(100_718_000 as Weight)
 			// Standard Error: 0
 			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(T::DbWeight::get().writes(7 as Weight))
 	}
-	// Storage: DeipStakeVoting Votes (r:2 w:1)
-	// Storage: DeipStakeVoting Votings (r:1 w:0)
+	fn unvote_and_cancel() -> Weight {
+		(100_718_000 as Weight)
+			// Standard Error: 0
+			.saturating_add(T::DbWeight::get().reads(6 as Weight))
+			.saturating_add(T::DbWeight::get().writes(7 as Weight))
+	}
 	fn retain_asset(u: u32) -> Weight {
 		let dbw = T::DbWeight::get();
 		(39_224_000 as Weight)
