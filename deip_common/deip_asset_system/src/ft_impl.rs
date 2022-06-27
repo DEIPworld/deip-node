@@ -52,14 +52,14 @@ pub trait FTImplT:
         Ok(id)
     }
 
-    fn _can_mint(
+    fn can_mint(
         _id: Self::FTokenId,
         _account: &Self::Account,
         _: Seal
-    ) -> DispatchResult
+    ) -> bool
     {
-        // Self::Fungibles::is_lock_mint()
-        Ok(())
+        // @TODO Self::Fungibles::is_lock_mint()
+        true
     }
 
     fn mint_ft(
@@ -69,7 +69,7 @@ pub trait FTImplT:
         _: Seal
     ) -> DispatchResult
     {
-        Self::_can_mint(id, account, Seal(()))?;
+       ensure!(Self::can_mint(id, account, Seal(())), Self::Error::no_permission());
         let minimum_balance = Self::Fungibles::minimum_balance(id);
 
         ensure!(amount >= minimum_balance, Self::Error::insufficient_balance());
