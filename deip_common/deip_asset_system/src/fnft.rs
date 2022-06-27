@@ -18,7 +18,7 @@ pub fn mint_fraction<Impl: NFTImplT>(
 }
 
 pub fn burn_fraction<Impl: NFTImplT>(
-    item: Impl::ItemId,
+    item: Impl::FTokenId,
     who: &Impl::Account,
     amount: Impl::FractionAmount,
 ) -> Result<Impl::FractionAmount, DispatchError> {
@@ -165,12 +165,6 @@ pub fn pick_collection<Impl: NFTImplT>(
 }
 
 //
-
-pub fn lookup_item_by_ft_id<Impl: NFTImplT>(
-    ft_id: Impl::FTokenId
-) -> Result<Impl::Fingerprint, DispatchError> {
-    todo!()
-}
 
 pub trait Unique<Impl: NFTImplT> {
     fn fingerprint(self) -> Impl::Fingerprint;

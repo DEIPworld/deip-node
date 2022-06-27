@@ -5,11 +5,13 @@ use deip_asset_system::{
 use frame_support::sp_runtime::app_crypto::sp_core::H160;
 
 use crate::{
-    AssetIdOf, CollectionRepo, Config, Error, FractionHolds, FractionRepo, FractionalRepo,
-    ItemRepo, NextCollectionId, Pallet,
+    AssetIdOf, CollectionRepo, Config, Error, FingerprintByFractionTokenId, FractionHolds,
+    FractionRepo, FractionalRepo, ItemRepo, NextCollectionId, Pallet,
 };
 
 impl<T: Config> NFTImplT for Pallet<T> {
+    type FingerprintByFractionTokenId = FingerprintByFractionTokenId<T>;
+
     type Fungibles = T::Fungibles;
 
     type Fingerprint = T::Hash;

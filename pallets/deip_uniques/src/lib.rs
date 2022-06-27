@@ -259,6 +259,11 @@ pub mod pallet {
         (sp_core::H160, u32)
     >;
 
+    /// Storage with fraction FT id - item fingerprint mapping.
+    #[pallet::storage]
+    pub type FingerprintByFractionTokenId<T: Config> = 
+        StorageMap<_, Blake2_128Concat, T::AssetId, T::Hash>;
+
     #[pallet::error]
     pub enum Error<T> {
         DeipNftClassIdExists,

@@ -4,7 +4,7 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::sp_runtime;
 use frame_support::traits::tokens::nonfungibles::{Inspect, Create, Mutate, Transfer};
 use deip_asset_system::{NFTImplT, NFTokenCollectionRecord, NFTokenItemRecord, NFTokenFractionRecord, error::Error as NftError};
-use crate::{Config, Pallet, Error};
+use crate::{Config, Pallet, Error, FingerprintByFractionTokenId};
 use sp_runtime::traits::AtLeast32BitUnsigned;
 
 impl<T: Config> NFTImplT for Pallet<T>
@@ -13,6 +13,7 @@ impl<T: Config> NFTImplT for Pallet<T>
         T::InstanceId: AtLeast32BitUnsigned,
         T::AssetId: AtLeast32BitUnsigned,
 {
+    type FingerprintByFractionTokenId = FingerprintByFractionTokenId<T>;
     type Fungibles = T::Fungibles;
 
     type Fingerprint = T::Hash;
