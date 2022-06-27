@@ -116,6 +116,11 @@ pub mod pallet {
     #[pallet::storage]
     pub type NextCollectionId<T: Config> = StorageValue<_, T::CollectionId, ValueQuery>;
 
+    /// Storage with fraction FT id - item fingerprint mapping.
+    #[pallet::storage]
+    pub type FingerprintByFractionTokenId<T: Config> =
+        StorageMap<_, Blake2_128Concat, AssetIdOf<T>, T::Hash>;
+
     #[pallet::pallet]
     #[pallet::generate_store(pub(super) trait Store)]
     pub struct Pallet<T>(_);

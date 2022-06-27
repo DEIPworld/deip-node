@@ -1,10 +1,6 @@
-use deip_asset_system::{
-    burn_fraction, lookup_item_by_ft_id, mint_fraction, pick_fraction, pick_item,
-    total_fraction, NFTokenFractionT,
-};
+use deip_asset_system::{burn_fraction, mint_fraction};
 use frame_support::{
     dispatch::{DispatchError, DispatchResult},
-    sp_runtime::traits::Zero,
     traits::{
         fungibles::{Inspect, Mutate},
         tokens::{DepositConsequence, WithdrawConsequence},
@@ -63,8 +59,7 @@ impl<T: Config> Mutate<T::AccountId> for Pallet<T> {
         who: &T::AccountId,
         amount: Self::Balance,
     ) -> DispatchResult {
-        let item = lookup_item_by_ft_id::<Self>(asset)?;
-        mint_fraction::<Self>(item, who, amount)
+        mint_fraction::<Self>(asset, who, amount)
     }
 
     fn burn_from(
@@ -72,7 +67,6 @@ impl<T: Config> Mutate<T::AccountId> for Pallet<T> {
         who: &T::AccountId,
         amount: Self::Balance,
     ) -> Result<Self::Balance, DispatchError> {
-        let item = lookup_item_by_ft_id::<Self>(asset)?;
-        burn_fraction::<Self>(item, who, amount)
+        burn_fraction::<Self>(asset, who, amount)
     }
 }
