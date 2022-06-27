@@ -259,6 +259,7 @@ pub trait NFTImplT
     fn fractionalize(
         item: Self::ItemRecord,
         total: Self::FractionAmount,
+        lock_minting: bool,
         _: Seal
     ) -> DispatchResult {
         ensure!(!total.is_zero(), Self::Error::bad_value());

@@ -142,6 +142,7 @@ pub mod pallet {
             item: T::Hash,
             issuer: T::AccountId,
             total_amount: FractionAmountOf<T>,
+            limited: bool,
         },
         ItemTransferred {
             item: T::Hash,
@@ -269,6 +270,7 @@ pub mod pallet {
         /// Parameters
         /// - `item`: Unique id of the item to be fractionalized.
         /// - `total_amount`: Amount of the fractions.
+        /// - `limited`: If set to true, further minting will be locked.
         ///
         /// Emits:
         ///     [`Event::ItemFractionalized`] when successful.
@@ -278,12 +280,13 @@ pub mod pallet {
             origin: OriginFor<T>,
             item: T::Hash,
             total_amount: FractionAmountOf<T>,
+            limited: bool,
         ) -> DispatchResult {
             let issuer = ensure_signed(origin)?;
 
-            fractionalize_item::<Self>(item, &issuer, total_amount)?;
+            fractionalize_item::<Self>(item, &issuer, total_amount, limited)?;
 
-            Self::deposit_event(Event::ItemFractionalized { item, issuer, total_amount });
+            Self::deposit_event(Event::ItemFractionalized { item, issuer, total_amount, limited });
             Ok(())
         }
     }
