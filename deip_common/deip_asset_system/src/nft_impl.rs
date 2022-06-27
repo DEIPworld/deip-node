@@ -44,6 +44,9 @@ pub trait NFTImplT
         Self::ItemRecord
     >;
 
+    /// Storage with item id - fingerprint mapping.
+    type FingerprintByFractionTokenId: StorageMap<Self::FTokenId, Self::Fingerprint>;
+
     type FractionRepo: StorageDoubleMap<
         Self::Fingerprint,
         Self::Account,
@@ -80,6 +83,11 @@ pub trait NFTImplT
         nonfungibles::Mutate<Self::Account>;
 
     type Error: Error + Into<DispatchError>;
+
+    fn get_fingerprint_by_fraction_token_id(ft_id: &Self::FTokenId) -> Result<Self::Fingerprint, Self::Error> {
+        Self::FingerprintByFractionTokenId::try_get(&ft_id)
+            .map_err(|_| Self::Error::unknown_item())
+    }
 
     fn _obtain_collection_id(_: Seal) -> Option<Self::CollectionId> {
         let id = Self::NextCollectionId::try_get()
@@ -152,11 +160,8 @@ pub trait NFTImplT
         );
     }
 
-    fn _insert_fractional(fraction: &Self::FractionRecord, _: Seal) {
-        Self::FractionalRepo::insert(
-            fraction.fingerprint(),
-            fraction.fractional()
-        );
+    fn _insert_fractional(fingerprint: &Self::Fingerprint, fractional: &Self::Fractional, _: Seal) {
+        Self::FractionalRepo::insert(fingerprint, fractional);
     }
 
     fn _remove_fraction(
@@ -252,49 +257,71 @@ pub trait NFTImplT
     }
 
     fn fractionalize(
-        mut item: Self::ItemRecord,
+        item: Self::ItemRecord,
         total: Self::FractionAmount,
         _: Seal
-    ) -> DispatchResult
-    {
+    ) -> DispatchResult {
         ensure!(!total.is_zero(), Self::Error::bad_value());
 
         ensure!(!item.is_fractional(), Self::Error::no_permission());
 
         let minimum_balance = One::one();
 
+        let account = item.account().clone();
+        let fingerprint = *item.fingerprint();
+
         let ft_id = Self::Fungibles::create_ft(
-            item.account().clone(),
+            account.clone(),
             minimum_balance,
             Seal(())
         )?;
 
-        Self::Fungibles::mint_ft(
-            ft_id,
-            item.account(),
-            total,
-            Seal(())
-        )?;
+        Self::mint_fraction(item, &account, total, Seal(()))?;
 
-        Self::Fungibles::lock_minting(ft_id, item.account(), Seal(()))?;
+        Self::Fungibles::lock_minting(ft_id, &account, Seal(()))?;
 
-        let fractional = Self::Fractional::new(ft_id, total);
+        Self::FingerprintByFractionTokenId::insert(ft_id, fingerprint);
 
+        Ok(())
+    }
+
+    fn mint_fraction(
+        mut item: Self::ItemRecord,
+        who: &Self::Account,
+        amount: Self::FractionAmount,
+        _: Seal
+    ) -> DispatchResult {
+        let seal = Seal(());
+
+        ensure!(!amount.is_zero(), Self::Error::bad_value());
+
+        let fractional = item.fractional().ok_or_else(|| Self::Error::not_fractionalized().into())?;
+        let ft_id = *fractional.ft_id();
+
+        ensure!(Self::Fungibles::can_mint(ft_id, who, seal), Self::Error::no_permission());
+
+        Self::Fungibles::mint_ft(ft_id, who, amount, seal)?;
+
+        let total_amount = *fractional.total() + amount;
+
+        let fractional = Self::Fractional::new(ft_id, total_amount);
+
+        let fingerprint = *item.fingerprint();
         let fraction = Self::FractionRecord::new(
-            item.account(),
-            *item.fingerprint(),
+            who,
+            fingerprint,
             fractional,
-            total,
-            <Self::FractionHoldGuard>::zero(),
+            total_amount,
+            <Self::FractionHoldGuard>::zero(), // @TODO check holds
         );
 
-        Self::_insert_fractional(&fraction, Seal(()));
+        Self::_insert_fractional(&fingerprint, &fractional, seal);
 
-        Self::_insert_fraction(fraction, Seal(()));
+        Self::_insert_fraction(fraction, seal);
 
-        item.fractionalize(fractional);
+        item.set_fractional(fractional);
 
-        Self::_insert_item(item, Seal(()));
+        Self::_insert_item(item, seal);
 
         Ok(())
     }
@@ -495,7 +522,7 @@ pub trait ItemRecordT<Impl: NFTImplT + ?Sized>: Sized {
         *self._mut_account() = to.clone();
     }
 
-    fn fractionalize(&mut self, fractional: Impl::Fractional) {
+    fn set_fractional(&mut self, fractional: Impl::Fractional) {
         self._mut_fractional().replace(fractional);
     }
 

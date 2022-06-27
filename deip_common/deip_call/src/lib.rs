@@ -60,6 +60,7 @@ impl Serialize for WrappedCall<Call> {
             Call::Assets(..) |
             Call::Uniques(..) |
             // Call::DeipUniques(..) |
+            Call::DeipNft(..) |
             Call::System(_) |
             Call::DeipPortal(_) |
             Call::Timestamp(_) |

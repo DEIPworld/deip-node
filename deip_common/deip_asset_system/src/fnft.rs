@@ -7,11 +7,14 @@ use crate::{CollectionRecordT, FractionalT, FractionRecordT, NFTImplT, Seal, err
 // Fraction ops:
 
 pub fn mint_fraction<Impl: NFTImplT>(
-    item: Impl::ItemId,
+    item: Impl::FTokenId,
     who: &Impl::Account,
     amount: Impl::FractionAmount,
 ) -> DispatchResult {
-    todo!()
+    let fingerprint = Impl::get_fingerprint_by_fraction_token_id(&item).map_err(Into::into)?;
+    let item = Impl::find_item(fingerprint, Seal(()))
+        .ok_or_else(|| Impl::Error::unknown_item().into())?;
+    Impl::mint_fraction(item, who, amount, Seal(()))
 }
 
 pub fn burn_fraction<Impl: NFTImplT>(
@@ -163,9 +166,9 @@ pub fn pick_collection<Impl: NFTImplT>(
 
 //
 
-pub fn item_of_ft<Impl: NFTImplT>(
+pub fn lookup_item_by_ft_id<Impl: NFTImplT>(
     ft_id: Impl::FTokenId
-) -> Result<Impl::ItemId, DispatchError> {
+) -> Result<Impl::Fingerprint, DispatchError> {
     todo!()
 }
 
