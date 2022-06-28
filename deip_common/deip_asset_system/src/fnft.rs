@@ -105,13 +105,13 @@ pub fn fractionalize_item<Impl: NFTImplT>(
     fingerprint: Impl::Fingerprint,
     account: &Impl::Account,
     total: Impl::FractionAmount,
-    lock_minting: bool,
+    limited: bool,
 ) -> DispatchResult
 {
     pick_item::<Impl>(fingerprint)?
         .check_account(account)
         .map_err(|_| Impl::Error::wrong_owner().into())?
-        .fractionalize(total, lock_minting)
+        .fractionalize(total, limited)
 }
 
 pub fn pick_item<Impl: NFTImplT>(
@@ -263,7 +263,7 @@ pub trait NFTokenItemT<Impl: NFTImplT>: Sized
 
     fn transfer_item(self, to: &Impl::Account) -> DispatchResult;
 
-    fn fractionalize(self, total: Impl::FractionAmount, lock_minting: bool) -> DispatchResult;
+    fn fractionalize(self, total: Impl::FractionAmount, limited: bool) -> DispatchResult;
 }
 
 pub trait NFTokenFractionT<Impl: NFTImplT>: Sized
@@ -383,9 +383,9 @@ impl<Impl: NFTImplT> NFTokenItemT<Impl> for NFTokenItem<Impl>
         Impl::transfer_item(item, to, Seal(()))
     }
 
-    fn fractionalize(self, total: Impl::FractionAmount, lock_minting: bool) -> DispatchResult {
+    fn fractionalize(self, total: Impl::FractionAmount, limited: bool) -> DispatchResult {
         let Self(item) = self;
-        Impl::fractionalize(item, total, lock_minting, Seal(()))
+        Impl::fractionalize(item, total, limited, Seal(()))
     }
 }
 
