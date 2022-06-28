@@ -279,7 +279,9 @@ pub trait NFTImplT
 
         Self::mint_fraction(item, &account, total, Seal(()))?;
 
-        Self::Fungibles::lock_minting(ft_id, &account, Seal(()))?;
+        if lock_minting {
+            Self::Fungibles::lock_minting(ft_id, &account, Seal(()))?;
+        }
 
         Self::FingerprintByFractionTokenId::insert(ft_id, fingerprint);
 
