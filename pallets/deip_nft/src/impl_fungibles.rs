@@ -1,4 +1,4 @@
-use deip_asset_system::{burn_fraction, mint_fraction};
+use deip_asset_system::{burn_fraction, mint_fraction, NFTImplT};
 use frame_support::{
     dispatch::{DispatchError, DispatchResult},
     traits::{
@@ -59,7 +59,8 @@ impl<T: Config> Mutate<T::AccountId> for Pallet<T> {
         who: &T::AccountId,
         amount: Self::Balance,
     ) -> DispatchResult {
-        mint_fraction::<Self>(asset, who, amount)
+        let item = Self::get_fingerprint_by_fraction_token_id(&asset)?;
+        mint_fraction::<Self>(item, who, amount)
     }
 
     fn burn_from(

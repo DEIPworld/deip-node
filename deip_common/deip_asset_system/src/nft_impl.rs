@@ -354,6 +354,8 @@ pub trait NFTImplT
             to
         )?;
 
+        // @TODO transfer_ownership AssetId
+
         item.transfer_item(to);
 
         Self::_insert_item(item, Seal(()));
