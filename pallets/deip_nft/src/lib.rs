@@ -11,13 +11,13 @@ pub use pallet_uniques;
 #[frame_support::pallet]
 pub mod pallet {
     use deip_asset_system::{
-        create_collection, fractionalize_item, mint_fraction, mint_item, transfer_fraction,
-        transfer_item, FTImplT, NFTokenCollectionRecord, NFTokenFractionRecord,
-        NFTokenItemRecord, OpaqueUnique,
+        burn_fraction, create_collection, fractionalize_item, mint_fraction, mint_item,
+        transfer_fraction, transfer_item, FTImplT, NFTImplT, NFTokenCollectionRecord,
+        NFTokenFractionRecord, NFTokenItemRecord, OpaqueUnique,
     };
     use frame_support::{
         dispatch::DispatchResult,
-        pallet_prelude::{ 
+        pallet_prelude::{
             Member, NMapKey, StorageDoubleMap, StorageMap, StorageNMap, StorageValue, ValueQuery,
         },
         traits::IsType,
@@ -162,6 +162,11 @@ pub mod pallet {
             owner: T::AccountId,
             amount: T::NFTFractionAmount,
         },
+        FractionBurned {
+            item: T::Hash,
+            owner: T::AccountId,
+            amount: T::NFTFractionAmount,
+        },
         FractionTransferred {
             item: T::NFTItemId,
             from: T::AccountId,
@@ -280,6 +285,29 @@ pub mod pallet {
             mint_fraction::<Self>(item, &owner, amount)?;
 
             Self::deposit_event(Event::FractionMinted { item, owner, amount });
+            Ok(())
+        }
+
+        /// Burns fractions from item.
+        ///
+        /// Parameters
+        /// - `item`: Unique identifier of the fractionalized item.
+        /// - `amount`: Amount of fractions to be burned.
+        ///
+        /// Emits:
+        ///     [`Event::FractionBurned`] when successful.
+        #[pallet::weight(1_000_000)]
+        #[transactional]
+        pub fn burn_fraction(
+            origin: OriginFor<T>,
+            item: T::Hash,
+            amount: T::NFTFractionAmount,
+        ) -> DispatchResult {
+            let owner = ensure_signed(origin)?;
+
+            let amount = burn_fraction::<Self>(item, &owner, amount)?;
+
+            Self::deposit_event(Event::FractionBurned { item, owner, amount });
             Ok(())
         }
 
