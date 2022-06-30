@@ -47,12 +47,12 @@ use sp_std::marker::PhantomData;
 /// Weight functions needed for pallet_multisig.
 pub trait WeightInfo {
 	fn create(z: u32) -> Weight;
-	fn create_and_execute(z: u32) -> Weight;
 	fn vote() -> Weight;
 	fn vote_and_execute() -> Weight;
 	fn unvote() -> Weight;
 	fn unvote_and_execute() -> Weight;
-	fn unvote_and_cancel() -> Weight;
+	fn unvote_last() -> Weight;
+	fn close() -> Weight;
 	fn retain_asset(u: u32) -> Weight;
 }
 
@@ -65,13 +65,6 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
 			.saturating_add((2_000 as Weight).saturating_mul(z as Weight))
 			.saturating_add(T::DbWeight::get().reads(9 as Weight))
 			.saturating_add(T::DbWeight::get().writes(7 as Weight))
-	}
-	fn create_and_execute(z: u32, ) -> Weight {
-		(175_846_000 as Weight)
-			// Standard Error: 0
-			.saturating_add((3_000 as Weight).saturating_mul(z as Weight))
-			.saturating_add(T::DbWeight::get().reads(9 as Weight))
-			.saturating_add(T::DbWeight::get().writes(8 as Weight))
 	}
 	fn vote() -> Weight {
 		(100_003_000 as Weight)
@@ -95,7 +88,13 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
 			.saturating_add(T::DbWeight::get().reads(6 as Weight))
 			.saturating_add(T::DbWeight::get().writes(7 as Weight))
 	}
-	fn unvote_and_cancel() -> Weight {
+	fn unvote_last() -> Weight {
+		(100_718_000 as Weight)
+			// Standard Error: 0
+			.saturating_add(T::DbWeight::get().reads(6 as Weight))
+			.saturating_add(T::DbWeight::get().writes(7 as Weight))
+	}
+	fn close() -> Weight {
 		(100_718_000 as Weight)
 			// Standard Error: 0
 			.saturating_add(T::DbWeight::get().reads(6 as Weight))
