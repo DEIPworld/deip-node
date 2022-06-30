@@ -11,13 +11,13 @@ pub use pallet_uniques;
 #[frame_support::pallet]
 pub mod pallet {
     use deip_asset_system::{
-        create_collection, fractionalize_item, mint_item, transfer_fraction, transfer_item,
-        FTImplT, NFTokenCollectionRecord, NFTokenFractionRecord, NFTokenItemRecord,
-        OpaqueUnique,
+        create_collection, fractionalize_item, mint_fraction, mint_item, transfer_fraction,
+        transfer_item, FTImplT, NFTokenCollectionRecord, NFTokenFractionRecord,
+        NFTokenItemRecord, OpaqueUnique,
     };
     use frame_support::{
         dispatch::DispatchResult,
-        pallet_prelude::{
+        pallet_prelude::{ 
             Member, NMapKey, StorageDoubleMap, StorageMap, StorageNMap, StorageValue, ValueQuery,
         },
         traits::IsType,
@@ -25,15 +25,16 @@ pub mod pallet {
     };
     use frame_system::{ensure_signed, pallet_prelude::OriginFor};
     use sp_core::H160;
-    use sp_runtime::{
-        traits::{AtLeast32BitUnsigned, StaticLookup, Bounded},
-    };
+    use sp_runtime::traits::{AtLeast32BitUnsigned, Bounded, StaticLookup};
 
     #[pallet::config]
     pub trait Config:
-        frame_system::Config<Hash=Self::NFTItemId>
-        + pallet_assets::Config<AssetId=Self::InternalFTokenId, Balance=Self::NFTFractionAmount>
-        + pallet_uniques::Config<ClassId=Self::InternalCollectionId, InstanceId=Self::NFTCollectionSize>
+        frame_system::Config<Hash = Self::NFTItemId>
+        + pallet_assets::Config<AssetId = Self::InternalFTokenId, Balance = Self::NFTFractionAmount>
+        + pallet_uniques::Config<
+            ClassId = Self::InternalCollectionId,
+            InstanceId = Self::NFTCollectionSize,
+        >
     {
         /// Because this pallet emits events, it depends on the runtime's definition of an event.
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
@@ -61,7 +62,12 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         T::NFTCollectionId,
-        NFTokenCollectionRecord<T::AccountId, T::NFTCollectionId, T::InternalCollectionId, T::NFTCollectionSize>,
+        NFTokenCollectionRecord<
+            T::AccountId,
+            T::NFTCollectionId,
+            T::InternalCollectionId,
+            T::NFTCollectionSize,
+        >,
     >;
 
     /// Records of an NFT by fingerprint, account and NFT id.
@@ -87,7 +93,13 @@ pub mod pallet {
         T::NFTItemId,
         Blake2_128Concat,
         T::AccountId,
-        NFTokenFractionRecord<T::AccountId, T::NFTItemId, (T::InternalFTokenId, T::NFTFractionAmount), T::NFTFractionAmount, u32>,
+        NFTokenFractionRecord<
+            T::AccountId,
+            T::NFTItemId,
+            (T::InternalFTokenId, T::NFTFractionAmount),
+            T::NFTFractionAmount,
+            u32,
+        >,
     >;
 
     /// Records of fraction asset id and balance by item fingerprint.
@@ -145,6 +157,11 @@ pub mod pallet {
             from: T::AccountId,
             to: T::AccountId,
         },
+        FractionMinted {
+            item: T::Hash,
+            owner: T::AccountId,
+            amount: T::NFTFractionAmount,
+        },
         FractionTransferred {
             item: T::NFTItemId,
             from: T::AccountId,
@@ -182,9 +199,8 @@ pub mod pallet {
         pub fn create_collection(
             origin: OriginFor<T>,
             id: T::NFTCollectionId,
-            max_items: Option<T::NFTCollectionSize>
-        ) -> DispatchResult
-        {
+            max_items: Option<T::NFTCollectionSize>,
+        ) -> DispatchResult {
             let issuer = ensure_signed(origin.clone())?;
 
             let max_items = max_items.unwrap_or_else(T::NFTCollectionSize::max_value);
@@ -239,6 +255,31 @@ pub mod pallet {
             transfer_item::<Self>(item, &from, &to)?;
 
             Self::deposit_event(Event::ItemTransferred { item, from, to });
+            Ok(())
+        }
+
+        /// Mints additional fungible tokens, fractions for an NFT or coins.
+        /// Fails if issuance of the fractions was limited on fractionalization
+        /// stage.
+        ///
+        /// Parameters
+        /// - `item`: Unique identifier of the fractionalized item.
+        /// - `amount`: Amount of fractions to be minted.
+        ///
+        /// Emits:
+        ///     [`Event::FractionMinted`] when successful.
+        #[pallet::weight(1_000_000)]
+        #[transactional]
+        pub fn mint_fraction(
+            origin: OriginFor<T>,
+            item: T::Hash,
+            amount: T::NFTFractionAmount,
+        ) -> DispatchResult {
+            let owner = ensure_signed(origin)?;
+
+            mint_fraction::<Self>(item, &owner, amount)?;
+
+            Self::deposit_event(Event::FractionMinted { item, owner, amount });
             Ok(())
         }
 

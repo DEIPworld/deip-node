@@ -5,8 +5,8 @@ use deip_asset_system::{
 use sp_core::H160;
 
 use crate::{
-    CollectionRepo, Config, Error, FingerprintByFractionTokenId, FractionHolds,
-    FractionRepo, FractionalRepo, ItemRepo, NextCollectionId, Pallet,
+    CollectionRepo, Config, Error, FingerprintByFractionTokenId, FractionHolds, FractionRepo,
+    FractionalRepo, ItemRepo, NextCollectionId, Pallet,
 };
 
 impl<T: Config> NFTImplT for Pallet<T> {
@@ -15,6 +15,7 @@ impl<T: Config> NFTImplT for Pallet<T> {
     type Fingerprint = T::NFTItemId;
 
     type CollectionId = T::NFTCollectionId;
+
     type Hasher = T::Hashing;
 
     type InternalCollectionId = T::InternalCollectionId;
@@ -29,8 +30,12 @@ impl<T: Config> NFTImplT for Pallet<T> {
 
     type Fractional = (Self::FTokenId, Self::FractionAmount);
 
-    type CollectionRecord =
-        NFTokenCollectionRecord<Self::Account, Self::CollectionId, Self::InternalCollectionId, Self::ItemId>;
+    type CollectionRecord = NFTokenCollectionRecord<
+        Self::Account,
+        Self::CollectionId,
+        Self::InternalCollectionId,
+        Self::ItemId,
+    >;
 
     type ItemRecord = NFTokenItemRecord<
         Self::Account,
