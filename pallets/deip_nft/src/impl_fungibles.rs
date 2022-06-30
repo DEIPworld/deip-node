@@ -68,6 +68,7 @@ impl<T: Config> Mutate<T::AccountId> for Pallet<T> {
         who: &T::AccountId,
         amount: Self::Balance,
     ) -> Result<Self::Balance, DispatchError> {
-        burn_fraction::<Self>(asset, who, amount)
+        let item = Self::get_fingerprint_by_fraction_token_id(&asset)?;
+        burn_fraction::<Self>(item, who, amount)
     }
 }

@@ -295,7 +295,7 @@ pub trait NFTImplT
         mut item: Self::ItemRecord,
         who: &Self::Account,
         amount: Self::FractionAmount,
-        _: Seal
+        _: Seal,
     ) -> DispatchResult {
         let seal = Seal(());
 
@@ -330,6 +330,15 @@ pub trait NFTImplT
         Self::_insert_item(item, seal);
 
         Ok(())
+    }
+
+    fn burn_fraction(
+        mut item: Self::ItemRecord,
+        who: &Self::Account,
+        amount: Self::FractionAmount,
+        _: Seal,
+    ) -> Result<Self::FractionAmount, DispatchError> {
+        todo!()
     }
 
     fn transfer_collection(

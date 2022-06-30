@@ -17,11 +17,12 @@ pub fn mint_fraction<Impl: NFTImplT>(
 }
 
 pub fn burn_fraction<Impl: NFTImplT>(
-    item: Impl::FTokenId,
+    item: Impl::Fingerprint,
     who: &Impl::Account,
     amount: Impl::FractionAmount,
 ) -> Result<Impl::FractionAmount, DispatchError> {
-    todo!()
+    let item = Impl::find_item(item, Seal(())).ok_or_else(|| Impl::Error::unknown_item().into())?;
+    Impl::burn_fraction(item, who, amount, Seal(()))
 }
 
 pub fn total_fraction<Impl: NFTImplT>(
