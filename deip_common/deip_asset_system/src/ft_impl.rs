@@ -55,10 +55,20 @@ pub trait FTImplT:
     fn can_mint(
         _id: Self::FTokenId,
         _account: &Self::Account,
-        _: Seal
+        _: Seal,
     ) -> bool
     {
         // @TODO Self::Fungibles::is_lock_mint()
+        true
+    }
+
+    fn can_burn(
+        _: Self::FTokenId,
+        _: &Self::Account,
+        _: Seal,
+    ) -> bool {
+        // @TODO add checks
+
         true
     }
 
@@ -79,6 +89,15 @@ pub trait FTImplT:
             account,
             amount
         )
+    }
+
+    fn burn_ft(
+        id: Self::FTokenId,
+        account: &Self::Account,
+        amount: Self::FTokenAmount,
+        _: Seal
+    ) -> Result<Self::FTokenAmount, DispatchError> {
+        todo!()
     }
 
     fn lock_minting(
