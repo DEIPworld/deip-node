@@ -30,7 +30,7 @@ pub trait FTImplT:
 
     fn _obtain_ft_id(_: Seal) -> Option<Self::FTokenId> {
         let id = Self::NextFTokenId::try_get()
-            .unwrap_or(Self::FTokenId::zero());
+            .unwrap_or_else(|_| Self::FTokenId::zero());
         Self::NextFTokenId::put(id.checked_add(&Self::FTokenId::one())?);
         Some(id)
     }
@@ -79,7 +79,7 @@ pub trait FTImplT:
         _: Seal
     ) -> DispatchResult
     {
-       ensure!(Self::can_mint(id, account, Seal(())), Self::Error::no_permission());
+        ensure!(Self::can_mint(id, account, Seal(())), Self::Error::no_permission());
         let minimum_balance = Self::Fungibles::minimum_balance(id);
 
         ensure!(amount >= minimum_balance, Self::Error::insufficient_balance());
@@ -93,11 +93,16 @@ pub trait FTImplT:
 
     fn burn_ft(
         id: Self::FTokenId,
-        account: &Self::Account,
+        admin: &Self::Account,
         amount: Self::FTokenAmount,
-        _: Seal
+        seal: Seal
     ) -> Result<Self::FTokenAmount, DispatchError> {
-        todo!()
+        ensure!(Self::can_mint(id, admin, seal), Self::Error::no_permission());
+
+        let minimum_balance = Self::Fungibles::minimum_balance(id);
+        ensure!(amount >= minimum_balance, Self::Error::insufficient_balance());
+        
+        Self::Fungibles::burn_from(id, admin, amount)
     }
 
     fn lock_minting(

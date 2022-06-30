@@ -357,6 +357,8 @@ pub trait NFTImplT
         ensure!(amount <= total_amount, Self::Error::insufficient_balance());
 
         let ft_id = *item_fractional_part.ft_id();
+
+        // @TODO belongs to FTImpl trait
         ensure!(Self::Fungibles::can_burn(ft_id, who, seal), Self::Error::no_permission());
 
         let withdrawn_amount = Self::Fungibles::burn_ft(ft_id, who, amount, seal)?;
