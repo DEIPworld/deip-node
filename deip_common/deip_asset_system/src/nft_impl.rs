@@ -90,9 +90,37 @@ pub trait NFTImplT
             .map_err(|_| Self::Error::unknown_item())
     }
 
+    fn _update_fractions_amount(
+        mut item: Self::ItemRecord,
+        ft_id: Self::FTokenId,
+        new_amount: Self::FractionAmount,
+        seal: Seal,
+    ) {
+        let fingerprint = *item.fingerprint();
+        let admin = item.account();
+
+        let new_item_fractional_part = Self::Fractional::new(ft_id, new_amount);
+
+        let fraction = Self::FractionRecord::new(
+            admin,
+            fingerprint,
+            new_item_fractional_part,
+            new_amount,
+            Self::FractionHoldGuard::zero(),
+        );
+        
+        Self::_insert_fractional(&fingerprint, &new_item_fractional_part, seal);
+
+        Self::_insert_fraction(fraction, seal);
+
+        item.set_fractional(new_item_fractional_part);
+
+        Self::_insert_item(item, seal);
+    }
+
     fn _obtain_collection_id(_: Seal) -> Option<Self::InternalCollectionId> {
         let id = Self::NextCollectionId::try_get()
-            .unwrap_or(Self::InternalCollectionId::zero());
+            .unwrap_or_else(|_| Self::InternalCollectionId::zero());
         Self::NextCollectionId::put(id.checked_add(&Self::InternalCollectionId::one())?);
         Some(id)
     }
@@ -292,13 +320,11 @@ pub trait NFTImplT
     }
 
     fn mint_fraction(
-        mut item: Self::ItemRecord,
+        item: Self::ItemRecord,
         who: &Self::Account,
         amount: Self::FractionAmount,
-        _: Seal,
+        seal: Seal,
     ) -> DispatchResult {
-        let seal = Seal(());
-
         ensure!(!amount.is_zero(), Self::Error::bad_value());
 
         let fractional = item.fractional().ok_or_else(|| Self::Error::not_fractionalized().into())?;
@@ -310,35 +336,38 @@ pub trait NFTImplT
 
         let total_amount = *fractional.total() + amount;
 
-        let fractional = Self::Fractional::new(ft_id, total_amount);
-
-        let fingerprint = *item.fingerprint();
-        let fraction = Self::FractionRecord::new(
-            who,
-            fingerprint,
-            fractional,
-            total_amount,
-            <Self::FractionHoldGuard>::zero(), // @TODO check holds
-        );
-
-        Self::_insert_fractional(&fingerprint, &fractional, seal);
-
-        Self::_insert_fraction(fraction, seal);
-
-        item.set_fractional(fractional);
-
-        Self::_insert_item(item, seal);
+        Self::_update_fractions_amount(item, ft_id, total_amount, seal);
 
         Ok(())
     }
 
     fn burn_fraction(
-        mut item: Self::ItemRecord,
+        item: Self::ItemRecord,
         who: &Self::Account,
         amount: Self::FractionAmount,
-        _: Seal,
+        seal: Seal,
     ) -> Result<Self::FractionAmount, DispatchError> {
-        todo!()
+        ensure!(item.account() == who, Self::Error::wrong_owner());
+        ensure!(!amount.is_zero(), Self::Error::bad_value());
+
+        let item_fractional_part = item
+            .fractional()
+            .ok_or_else(|| Self::Error::not_fractionalized().into())?;
+        let total_amount = *item_fractional_part.total();
+        ensure!(amount <= total_amount, Self::Error::insufficient_balance());
+
+        let ft_id = *item_fractional_part.ft_id();
+        ensure!(Self::Fungibles::can_burn(ft_id, who, seal), Self::Error::no_permission());
+
+        let withdrawn_amount = Self::Fungibles::burn_ft(ft_id, who, amount, seal)?;
+
+        let after_burn_amount = total_amount
+            .checked_sub(&withdrawn_amount)
+            .ok_or_else(|| Self::Error::overflow().into())?;
+
+        Self::_update_fractions_amount(item, ft_id, after_burn_amount, seal);
+
+        Ok(withdrawn_amount)
     }
 
     fn transfer_collection(
