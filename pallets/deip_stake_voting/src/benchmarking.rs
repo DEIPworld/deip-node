@@ -160,7 +160,7 @@ benchmarks! {
     }: vote(RawOrigin::Signed(caller.clone()), id, Sign::Positive, max_weight::<T>(z))
     verify {
         assert_eq!(Votings::<T>::get(&id), Some(voting));
-        let state = State { votes: 1, yas: value, summ: value, ..Default::default() };
+        let state = State { votes: 1, yas: value, sum: value, ..Default::default() };
         assert_eq!(States::<T>::get(&id), Some(state));
         let asset: <T as Config>::AssetId = asset.into();
         let caller_vote = Votes::<T>::get(&(caller, asset), &id);
@@ -206,7 +206,7 @@ benchmarks! {
     }: unvote(RawOrigin::Signed(caller.clone()), id, max_weight::<T>(z))
     verify {
         assert_eq!(Votings::<T>::get(&id), Some(voting));
-        let state = State { votes: 1, yas: value.into(), summ: value.into(), ..Default::default() };
+        let state = State { votes: 1, yas: value.into(), sum: value.into(), ..Default::default() };
         assert_eq!(States::<T>::get(&id), Some(state));
         let asset: <T as Config>::AssetId = asset.into();
         let author_vote = Votes::<T>::get(&(author, asset), &id);
@@ -263,7 +263,7 @@ benchmarks! {
     verify {
         assert_eq!(Votings::<T>::get(&id), Some(voting.clone()));
         assert!(States::<T>::get(&id).is_none());
-        assert!(Calls::<T>::get(&voting.call_hash).is_none());
+        assert!(Calls::<T>::get(&voting.call_hash).is_some());
         let asset: <T as Config>::AssetId = asset.into();
         assert!(Votes::<T>::get(&(caller, asset), &id).is_none());
     }

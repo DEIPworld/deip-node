@@ -60,49 +60,48 @@ pub trait WeightInfo {
 pub struct Weights<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for Weights<T> {
 	fn create(z: u32, ) -> Weight {
-		(101_274_000 as Weight)
+		(39_655_000 as Weight)
 			// Standard Error: 0
 			.saturating_add((2_000 as Weight).saturating_mul(z as Weight))
-			.saturating_add(T::DbWeight::get().reads(9 as Weight))
-			.saturating_add(T::DbWeight::get().writes(7 as Weight))
+			.saturating_add(T::DbWeight::get().reads(3 as Weight))
+			.saturating_add(T::DbWeight::get().writes(2 as Weight))
 	}
 	fn vote() -> Weight {
-		(100_003_000 as Weight)
+		(126_383_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(10 as Weight))
 			.saturating_add(T::DbWeight::get().writes(5 as Weight))
 	}
 	fn vote_and_execute() -> Weight {
-		(159_621_000 as Weight)
+		(195_207_000 as Weight)
 			// Standard Error: 0
 			.saturating_add(T::DbWeight::get().reads(11 as Weight))
 			.saturating_add(T::DbWeight::get().writes(8 as Weight))
 	}
 	fn unvote() -> Weight {
-		(81_363_000 as Weight)
+		(106_709_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(7 as Weight))
 			.saturating_add(T::DbWeight::get().writes(5 as Weight))
 	}
 	fn unvote_and_execute() -> Weight {
-		(100_718_000 as Weight)
+		(149_602_000 as Weight)
 			// Standard Error: 0
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
+			.saturating_add(T::DbWeight::get().reads(8 as Weight))
 			.saturating_add(T::DbWeight::get().writes(7 as Weight))
 	}
 	fn unvote_last() -> Weight {
-		(100_718_000 as Weight)
-			// Standard Error: 0
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(7 as Weight))
+		(72_965_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(5 as Weight))
+			.saturating_add(T::DbWeight::get().writes(5 as Weight))
 	}
 	fn close() -> Weight {
-		(100_718_000 as Weight)
+		(72_769_000 as Weight)
 			// Standard Error: 0
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(7 as Weight))
+			.saturating_add(T::DbWeight::get().reads(3 as Weight))
+			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
 	fn retain_asset(u: u32) -> Weight {
 		let dbw = T::DbWeight::get();
-		(39_224_000 as Weight)
+		(77_670_000 as Weight)
 			.saturating_add(dbw.reads((u * 2 + 1) as Weight))
 			.saturating_add(dbw.writes(u as Weight))
 	}

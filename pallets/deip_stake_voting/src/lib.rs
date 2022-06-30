@@ -93,13 +93,13 @@ pub struct State<Value> {
     votes: u32,
     yas: Value,
     nos: Value,
-    summ: Value,
+    sum: Value,
 }
 
 impl<Value: AtLeast32Bit + Copy> State<Value> {
     pub(crate) fn add(&mut self, value: Value, sign: Sign) {
         self.votes += 1;
-        self.summ += value;
+        self.sum += value;
         match sign {
             Sign::Positive => self.yas += value,
             Sign::Negative => self.nos -= value,
@@ -109,7 +109,7 @@ impl<Value: AtLeast32Bit + Copy> State<Value> {
 
     pub(crate) fn remove(&mut self, value: Value, sign: Sign) {
         self.votes -= 1;
-        self.summ -= value;
+        self.sum -= value;
         match sign {
             Sign::Positive => self.yas -= value,
             Sign::Negative => self.nos += value,
@@ -125,6 +125,10 @@ impl<Value: AtLeast32Bit + Copy> State<Value> {
         }
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.sum.is_zero() && self.yas.is_zero() && self.nos.is_zero() && self.votes == 0
+    }
+
     pub(crate) fn is_reached(&self, threshold: Threshold<Value>, total: Value, limit: Value) -> bool {
         let v = self.value();
         use Threshold::*;
@@ -136,7 +140,7 @@ impl<Value: AtLeast32Bit + Copy> State<Value> {
     }
 
     pub(crate) fn is_fullfilled(&self, threshold: Threshold<Value>, total: Value, limit: Value) -> bool {
-        let s = total - self.summ;
+        let s = total - self.sum;
         let v = self.value() + s; // max attainable
         use Threshold::*;
         match threshold {
@@ -647,15 +651,17 @@ impl<T: Config> Pallet<T> {
         asset: T::AssetId,
         id: VotingId,
     ) -> Result<State<T::AssetBalance>, DispatchError> {
-        let mut state = States::<T>::get(id).ok_or_else(|| Error::<T>::StateNotFound)?;
+        let mut state = States::<T>::take(id).ok_or_else(|| Error::<T>::StateNotFound)?;
         ensure!(state.votes > 0, Error::<T>::BadState);
         let value =
             Self::balance(asset, voter).ok_or_else(|| Error::<T>::InsufficientAssetBalance)?;
         let sign = Self::remove_vote(voter, asset, id)?;
         state.remove(value, sign);
         if state.votes > 0 {
-            ensure!(state.value().is_zero(), Error::<T>::BadState);
+            ensure!(!state.is_empty(), Error::<T>::BadState);
             States::<T>::insert(id, state.clone());
+        } else {
+            ensure!(state.is_empty(), Error::<T>::BadState);
         }
         Ok(state)
     }
