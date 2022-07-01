@@ -12,8 +12,8 @@ pub use pallet_uniques;
 pub mod pallet {
     use deip_asset_system::{
         burn_fraction, create_collection, fractionalize_item, mint_fraction, mint_item,
-        transfer_fraction, transfer_item, FTImplT, NFTokenCollectionRecord,
-        NFTokenFractionRecord, NFTokenItemRecord, OpaqueUnique,
+        transfer_fraction, transfer_item, FTImplT, NFTokenCollectionRecord, NFTokenFractionRecord,
+        NFTokenItemRecord, OpaqueUnique,
     };
     use frame_support::{
         dispatch::DispatchResult,
@@ -233,7 +233,7 @@ pub mod pallet {
         ) -> DispatchResult {
             let owner = ensure_signed(origin)?;
 
-            mint_item(collection, &owner, OpaqueUnique::<Self>(item)).unwrap();
+            mint_item(collection, &owner, OpaqueUnique::<Self>(item))?;
 
             Self::deposit_event(Event::ItemMinted { collection, item, owner });
             Ok(())
