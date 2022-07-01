@@ -319,8 +319,8 @@ pub mod pallet {
         Updated { id: VotingId, author: T::AccountId },
         /// A voting operation has been finished, its call has been executed.
         Executed { id: VotingId, voting: VotingOf<T>, result: DispatchResult },
-        /// A voting has been cancelled by an asset's holder.
-        Cancelled { id: VotingId, voting: VotingOf<T> },
+        /// A voting has been closed by its author.
+        Closed { id: VotingId, voting: VotingOf<T> },
     }
 
     #[pallet::call]
@@ -502,7 +502,7 @@ pub mod pallet {
                 ensure!(can_close, Error::<T>::StillProcessing);
             }
             Self::close_voting(id, &v)?;
-            Self::deposit_event(Event::<T>::Cancelled { id, voting: v.clone() });
+            Self::deposit_event(Event::<T>::Closed { id, voting: v.clone() });
             Ok(())
         }
 
