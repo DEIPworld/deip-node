@@ -288,7 +288,7 @@ pub trait NFTImplT
     }
 
     fn fractionalize(
-        item: Self::ItemRecord,
+        mut item: Self::ItemRecord,
         total: Self::FractionAmount,
         limited: bool,
         _: Seal
@@ -307,6 +307,10 @@ pub trait NFTImplT
             minimum_balance,
             Seal(())
         )?;
+
+        // mint_fraction checks if fractional part of the item is set.
+        // So it needs to be initialized beforehand.
+        item.set_fractional(Self::Fractional::new(ft_id, Self::FractionAmount::zero()));
 
         Self::mint_fraction(item, &account, total, Seal(()))?;
 
