@@ -152,11 +152,14 @@ pub fn mint_item<Impl: NFTImplT>(
     id: Impl::CollectionId,
     account: &Impl::Account,
     unique: impl Unique<Impl>
-) -> Result<(), ()>
+) -> DispatchResult
 {
-    pick_collection::<Impl>(id)?
-        .check_account(account)?
+    pick_collection::<Impl>(id)
+        .map_err(|_| Impl::Error::unknown_collection().into())?
+        .check_account(account)
+        .map_err(|_| Impl::Error::wrong_owner().into())?
         .mint_item(unique)
+        .map_err(|_| Impl::Error::other().into())
 }
 
 pub fn pick_collection<Impl: NFTImplT>(
