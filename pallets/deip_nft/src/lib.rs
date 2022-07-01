@@ -12,7 +12,7 @@ pub use pallet_uniques;
 pub mod pallet {
     use deip_asset_system::{
         burn_fraction, create_collection, fractionalize_item, mint_fraction, mint_item,
-        transfer_fraction, transfer_item, FTImplT, NFTImplT, NFTokenCollectionRecord,
+        transfer_fraction, transfer_item, FTImplT, NFTokenCollectionRecord,
         NFTokenFractionRecord, NFTokenItemRecord, OpaqueUnique,
     };
     use frame_support::{
