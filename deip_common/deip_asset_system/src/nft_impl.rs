@@ -17,10 +17,11 @@ pub trait NFTImplT
     >;
 
     type Fingerprint: Copy + Parameter + 'static;
+    type CollectionId: From<sp_core::H160> + Copy + Parameter;
 
     type Hasher: Hash<Output = Self::Fingerprint>;
 
-    type CollectionId: AtLeast32BitUnsigned + Copy + Parameter;
+    type InternalCollectionId: AtLeast32BitUnsigned + Copy + Parameter;
     type ItemId: AtLeast32BitUnsigned + Copy + Parameter + 'static;
     type FTokenId: AtLeast32BitUnsigned + Copy + Parameter;
 
@@ -70,12 +71,12 @@ pub trait NFTImplT
         (Self::FractionHolderId, Self::FractionHoldGuard)
     >;
 
-    type NextCollectionId: StorageValue<Self::CollectionId>;
+    type NextCollectionId: StorageValue<Self::InternalCollectionId>;
 
     type Nonfungibles:
         nonfungibles::Inspect<
             Self::Account,
-            ClassId = Self::CollectionId,
+            ClassId = Self::InternalCollectionId,
             InstanceId = Self::ItemId,
         > +
         nonfungibles::Transfer<Self::Account> +
@@ -89,10 +90,10 @@ pub trait NFTImplT
             .map_err(|_| Self::Error::unknown_item())
     }
 
-    fn _obtain_collection_id(_: Seal) -> Option<Self::CollectionId> {
+    fn _obtain_collection_id(_: Seal) -> Option<Self::InternalCollectionId> {
         let id = Self::NextCollectionId::try_get()
-            .unwrap_or(Self::CollectionId::zero());
-        Self::NextCollectionId::put(id.checked_add(&Self::CollectionId::one())?);
+            .unwrap_or(Self::InternalCollectionId::zero());
+        Self::NextCollectionId::put(id.checked_add(&Self::InternalCollectionId::one())?);
         Some(id)
     }
 
@@ -198,17 +199,18 @@ pub trait NFTImplT
 
     fn create_collection(
         account: &Self::Account,
+        id: Self::CollectionId,
         max_items: Self::ItemId,
         _: Seal
-    ) -> Result<Self::CollectionId, DispatchError>
+    ) -> Result<(), DispatchError>
     {
         ensure!(!max_items.is_zero(), Self::Error::bad_value());
 
-        let id = Self::_obtain_collection_id(Seal(()))
+        let internal_id = Self::_obtain_collection_id(Seal(()))
             .ok_or_else(|| Self::Error::unknown_collection().into())?;
 
         Self::Nonfungibles::create_class(
-            &id,
+            &internal_id,
             account,
             account
         )?;
@@ -216,13 +218,14 @@ pub trait NFTImplT
         let collection = Self::CollectionRecord::new(
             account,
             id,
+            internal_id,
             max_items,
             Self::ItemId::zero(),
         );
 
         Self::_insert_collection(collection, Seal(()));
 
-        Ok(id)
+        Ok(())
     }
 
     fn mint_item(
@@ -239,7 +242,7 @@ pub trait NFTImplT
             collection.account(),
             fingerprint,
             id,
-            *collection.collection_id(),
+            *collection.internal_id(),
             None
         );
 
@@ -464,6 +467,8 @@ pub trait CollectionRecordT<Impl: NFTImplT + ?Sized>: Sized
 
     fn collection_id(&self) -> &Impl::CollectionId;
 
+    fn internal_id(&self) -> &Impl::InternalCollectionId;
+
     fn max_items(&self) -> &Impl::ItemId;
 
     fn items(&self) -> &Impl::ItemId;
@@ -471,6 +476,7 @@ pub trait CollectionRecordT<Impl: NFTImplT + ?Sized>: Sized
     fn new(
         account: &Impl::Account,
         collection_id: Impl::CollectionId,
+        internal_id: Impl::InternalCollectionId,
         max_items: Impl::ItemId,
         items: Impl::ItemId,
     ) -> Self;
@@ -503,7 +509,7 @@ pub trait ItemRecordT<Impl: NFTImplT + ?Sized>: Sized {
 
     fn item_id(&self) -> &Impl::ItemId;
 
-    fn collection_id(&self) -> &Impl::CollectionId;
+    fn collection_id(&self) -> &Impl::InternalCollectionId;
 
     fn fractional(&self) -> Option<&Impl::Fractional>;
 
@@ -511,7 +517,7 @@ pub trait ItemRecordT<Impl: NFTImplT + ?Sized>: Sized {
         account: &Impl::Account,
         fingerprint: Impl::Fingerprint,
         item_id: Impl::ItemId,
-        collection_id: Impl::CollectionId,
+        collection_id: Impl::InternalCollectionId,
         fractional: Option<Impl::Fractional>,
     ) -> Self;
 
@@ -627,9 +633,10 @@ pub trait FractionRecordT<Impl: NFTImplT + ?Sized>: Sized {
 //
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, TypeInfo, Debug)]
-pub struct NFTokenCollectionRecord<Account, CollectionId, ItemId> {
+pub struct NFTokenCollectionRecord<Account, CollectionId, InternalId, ItemId> {
     pub account: Account,
     pub collection_id: CollectionId,
+    pub internal_id: InternalId,
     pub max_items: ItemId,
     pub items: ItemId,
 }
@@ -638,6 +645,7 @@ impl<Impl: NFTImplT + ?Sized> CollectionRecordT<Impl> for
     NFTokenCollectionRecord<
         Impl::Account,
         Impl::CollectionId,
+        Impl::InternalCollectionId,
         Impl::ItemId
     >
 {
@@ -647,6 +655,10 @@ impl<Impl: NFTImplT + ?Sized> CollectionRecordT<Impl> for
 
     fn collection_id(&self) -> &Impl::CollectionId {
         &self.collection_id
+    }
+
+    fn internal_id(&self) -> &Impl::InternalCollectionId {
+        &self.internal_id
     }
 
     fn max_items(&self) -> &Impl::ItemId {
@@ -660,6 +672,7 @@ impl<Impl: NFTImplT + ?Sized> CollectionRecordT<Impl> for
     fn new(
         account: &Impl::Account,
         collection_id: Impl::CollectionId,
+        internal_id: Impl::InternalCollectionId,
         max_items: Impl::ItemId,
         items: Impl::ItemId
     ) -> Self
@@ -667,6 +680,7 @@ impl<Impl: NFTImplT + ?Sized> CollectionRecordT<Impl> for
         Self {
             account: account.clone(),
             collection_id,
+            internal_id,
             max_items,
             items
         }
@@ -697,7 +711,7 @@ impl<Impl: NFTImplT + ?Sized> ItemRecordT<Impl> for
         Impl::Account,
         Impl::Fingerprint,
         Impl::ItemId,
-        Impl::CollectionId,
+        Impl::InternalCollectionId,
         Impl::Fractional
     >
 {
@@ -713,7 +727,7 @@ impl<Impl: NFTImplT + ?Sized> ItemRecordT<Impl> for
         &self.item_id
     }
 
-    fn collection_id(&self) -> &Impl::CollectionId {
+    fn collection_id(&self) -> &Impl::InternalCollectionId {
         &self.collection_id
     }
 
@@ -725,7 +739,7 @@ impl<Impl: NFTImplT + ?Sized> ItemRecordT<Impl> for
         account: &Impl::Account,
         fingerprint: Impl::Fingerprint,
         item_id: Impl::ItemId,
-        collection_id: Impl::CollectionId,
+        collection_id: Impl::InternalCollectionId,
         fractional: Option<Impl::Fractional>
     ) -> Self
     {

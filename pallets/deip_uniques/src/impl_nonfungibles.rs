@@ -17,10 +17,11 @@ impl<T: Config> NFTImplT for Pallet<T>
     type Fungibles = T::Fungibles;
 
     type Fingerprint = T::Hash;
+    type CollectionId = sp_core::H160;
 
     type Hasher = T::Hashing;
 
-    type CollectionId = T::ClassId;
+    type InternalCollectionId = T::ClassId;
     type ItemId = T::InstanceId;
     type FTokenId = T::AssetId;
 
@@ -33,13 +34,14 @@ impl<T: Config> NFTImplT for Pallet<T>
     type CollectionRecord = NFTokenCollectionRecord<
         Self::Account,
         Self::CollectionId,
+        Self::InternalCollectionId,
         Self::ItemId
     >;
     type ItemRecord = NFTokenItemRecord<
         Self::Account,
         Self::Fingerprint,
         Self::ItemId,
-        Self::CollectionId,
+        Self::InternalCollectionId,
         Self::Fractional
     >;
     type FractionRecord = NFTokenFractionRecord<
@@ -193,7 +195,7 @@ impl<T> NftError for Error<T> {
     fn wrong_owner() -> Self {
         todo!()
     }
-    
+
 
     fn unknown_f_token_id() -> Self {
         todo!()
@@ -210,4 +212,4 @@ impl<T> NftError for Error<T> {
     fn not_fractionalized() -> Self {
         todo!()
     }
-} 
+}

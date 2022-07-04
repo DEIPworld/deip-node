@@ -7,14 +7,14 @@ use frame_support::{
     },
 };
 
-use crate::{AssetIdOf, Config, FractionAmountOf, Pallet};
+use crate::{Config, Pallet};
 
 type Assets<T> = pallet_assets::Pallet<T>;
 
 impl<T: Config> Inspect<T::AccountId> for Pallet<T> {
-    type AssetId = AssetIdOf<T>;
+    type AssetId = T::InternalFTokenId;
 
-    type Balance = FractionAmountOf<T>;
+    type Balance = T::NFTFractionAmount;
 
     fn total_issuance(asset: Self::AssetId) -> Self::Balance {
         Assets::<T>::total_issuance(asset)

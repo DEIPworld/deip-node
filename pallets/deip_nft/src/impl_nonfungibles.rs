@@ -1,3 +1,5 @@
+#![allow(unused_variables)]
+
 use frame_support::{
     dispatch::DispatchResult,
     traits::tokens::nonfungibles::{Create, Inspect, Mutate, Transfer},
@@ -6,9 +8,9 @@ use frame_support::{
 use crate::{Config, Pallet};
 
 impl<T: Config> Inspect<T::AccountId> for Pallet<T> {
-    type InstanceId = T::ItemId;
+    type InstanceId = T::NFTCollectionSize;
 
-    type ClassId = T::CollectionId;
+    type ClassId = T::InternalCollectionId;
 
     fn owner(class: &Self::ClassId, instance: &Self::InstanceId) -> Option<T::AccountId> {
         todo!()

@@ -1,4 +1,8 @@
 {
+  "NFTCollectionId": "H160",
+  "NFTCollectionSize": "u32",
+  "NFTItemId": "H256",
+  "NFTFractionAmount": "u128",
   "PortalUpdate": {
     "delegate": "Option<PortalDelegate>",
     "metadata": "Option<PortalMetadata>"
