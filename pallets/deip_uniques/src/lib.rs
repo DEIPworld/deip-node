@@ -204,10 +204,11 @@ pub mod pallet {
 
     #[pallet::storage]
     pub type CollectionRepo<T: Config> = StorageMap<_,
-        Twox64Concat,
-        T::ClassId,
+        Blake2_128Concat,
+        sp_core::H160,
         deip_asset_system::NFTokenCollectionRecord<
             T::AccountId,
+            sp_core::H160,
             T::ClassId,
             T::InstanceId
         >
@@ -261,7 +262,7 @@ pub mod pallet {
 
     /// Storage with fraction FT id - item fingerprint mapping.
     #[pallet::storage]
-    pub type FingerprintByFractionTokenId<T: Config> = 
+    pub type FingerprintByFractionTokenId<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AssetId, T::Hash>;
 
     #[pallet::error]

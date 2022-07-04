@@ -16,6 +16,8 @@ frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "
 pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-uniques = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 
 [features]
 default = ["std"]
@@ -27,4 +29,6 @@ std = [
     "pallet-assets/std",
     "pallet-uniques/std",
     "scale-info/std",
+    "sp-core/std",
+    "sp-runtime/std",
 ]

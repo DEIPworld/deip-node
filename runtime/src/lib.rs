@@ -866,11 +866,13 @@ impl pallet_deip_vesting::Config for Runtime {
 impl pallet_deip_nft::Config for Runtime {
     type Event = Event;
 
-    type CollectionId = NftClassId; //@TODO
+    type NFTCollectionId = sp_core::H160;
+    type NFTCollectionSize = InstanceId;
+    type NFTItemId = Hash;
+    type NFTFractionAmount = Balance;
 
-    type ItemId = InstanceId; //@TODO
-
-    type AssetId = AssetId;
+    type InternalCollectionId = NftClassId;
+    type InternalFTokenId = AssetId;
 
     type Fungibles = DeipAssets;
 }
