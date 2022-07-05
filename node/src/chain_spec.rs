@@ -4,7 +4,7 @@ use appchain_deip_runtime::{
     AccountId, DeipAssetsConfig, BabeConfig, DeipConfig, DeipDaoConfig,
     DeipPortalConfig, DeipProposalConfig, DeipVestingConfig, GenesisConfig, GrandpaConfig,
     BalancesConfig, Signature, SudoConfig, SystemConfig, DeipUniquesConfig, SessionConfig,
-    OctopusLposConfig, WASM_BINARY, DeipEcosystemFundConfig, DeipInvestmentOpportunityConfig,
+    OctopusLposConfig, WASM_BINARY, DeipEcosystemFundConfig, DeipCrowdfundingConfig,
 };
 
 use sc_chain_spec::ChainSpecExtension;
@@ -316,6 +316,6 @@ fn genesis(
         deip_ecosystem_fund: DeipEcosystemFundConfig {
             fee_recipient: ecosystem_fund_key.clone()
         },
-        deip_investment_opportunity: DeipInvestmentOpportunityConfig {},
+        deip_crowdfunding: DeipCrowdfundingConfig {},
     }
 }

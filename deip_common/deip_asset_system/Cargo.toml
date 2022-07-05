@@ -13,7 +13,6 @@ sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "po
 sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-deip-assets-error = { path = "../deip_assets_error", default-features = false }
 deip_serializable_u128 = { path = "../../deip_common/deip_serializable_u128", default-features = false }
 
 # alias "parity-scale-code" to "codec"
@@ -35,6 +34,5 @@ std = [
     "sp-core/std",
     "frame-system/std",
     "frame-support/std",
-    "deip-assets-error/std",
     "deip_serializable_u128/std",
 ]

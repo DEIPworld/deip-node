@@ -23,7 +23,7 @@ use scale_info::TypeInfo;
 use sp_core::H160;
 use sp_std::prelude::*;
 use crate::{Config, Error, Event, Call, Pallet};
-use deip_asset_system::{NFTokenFractionT, ReserveError, UnreserveError};
+use deip_asset_system::{NFTokenFractionT};
 pub use crate::crowdfunding::*;
 pub use deip_asset_system::asset::*;
 use crate::{

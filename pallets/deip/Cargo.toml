@@ -15,7 +15,6 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
 
-deip-assets-error = { path = "../../deip_common/deip_assets_error", default-features = false }
 deip-transaction-ctx = { path = "../../deip_common/deip_transaction_ctx", default-features = false }
 deip_serializable_u128 = { path = "../../deip_common/deip_serializable_u128", default-features = false }
 deip-asset-system = { path = "../../deip_common/deip_asset_system", default-features = false }
@@ -73,7 +72,6 @@ std = [
     "sp-io/std",
     "sp-runtime/std",
     "sp-std/std",
-    "deip-assets-error/std",
     "deip_serializable_u128/std",
     "deip-transaction-ctx/std",
     "frame-benchmarking/std",

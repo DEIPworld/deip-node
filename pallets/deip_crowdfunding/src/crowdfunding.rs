@@ -14,6 +14,7 @@ use sp_std::collections::btree_map::BTreeMap;
 use sp_std::default::Default;
 use deip_serializable_u128::SerializableAtLeast32BitUnsigned;
 use deip_asset_system::asset::{Asset};
+use deip_asset_system::transfer_fraction;
 use deip_transaction_ctx::{TransactionCtxId, TransactionCtxT};
 
 use crate::module::{*};
@@ -132,12 +133,10 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
     {
         ensure!(self.shares < T::MaxShares::get(), crate::Error::TooMuchShares);
         self.shares.saturating_inc();
-        let (id, amount) = shares;
         Ok(SharesTransfer::<T>::new(
-            T::Asset::pick_fraction(id, self.creator())
-                .ok_or_else(|| crate::Error::BalanceIsNotEnough)?,
+            shares,
+            self.creator(),
             self.account(),
-            amount
         ))
     }
 
@@ -148,12 +147,10 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
     {
         ensure!(self.shares > 0, crate::Error::NoShares);
         self.shares.saturating_dec();
-        let (id, amount) = shares;
         Ok(SharesTransfer::<T>::new(
-            T::Asset::pick_fraction(id, self.account())
-                .ok_or_else(|| crate::Error::ImpossibleSituation)?,
+            shares,
+            self.account(),
             self.creator(),
-            amount
         ))
     }
 
@@ -250,17 +247,23 @@ impl<T: crate::Config> CrowdfundingT<T> for SimpleCrowdfundingV2<T>
 }
 
 pub struct SharesTransfer<'a, T: Config> {
-    asset: T::Asset,
+    shares: (T::AssetId, T::AssetAmount),
+    from: &'a T::AccountId,
     to: &'a T::AccountId,
-    amount: T::AssetAmount
 }
 
 impl<'a, T: Config> SharesTransfer<'a, T> {
-    fn new(asset: T::Asset, to: &'a T::AccountId, amount: T::AssetAmount) -> Self {
-        Self { asset, to, amount }
+    fn new(
+        shares: (T::AssetId, T::AssetAmount),
+        from: &'a T::AccountId,
+        to: &'a T::AccountId
+    ) -> Self
+    {
+        Self { shares, from, to }
     }
     pub fn transfer(self) {
-        self.asset.transfer_amount(self.to, self.amount);
+        let Self { shares: (asset_id, amount), from, to } = self;
+        transfer_fraction::<T::AssetImpl>(asset_id, from, to, amount);
     }
 }
 

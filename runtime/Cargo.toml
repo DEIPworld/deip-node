@@ -20,7 +20,6 @@ beefy-primitives = { git = "https://github.com/paritytech/substrate.git", branch
 borsh = { version = "=0.9.1", default-features = false }
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
 
-deip-assets-error = { path = "../deip_common/deip_assets_error", default-features = false }
 deip-projects-info = { path = "../deip_common/deip_projects_info", default-features = false }
 deip-asset-system = { path = "../deip_common/deip_asset_system", default-features = false }
 
@@ -44,7 +43,7 @@ pallet-deip-assets = { path = "../pallets/deip_assets", default-features = false
 pallet-deip-balances = { path = "../pallets/deip_balances", default-features = false }
 pallet-deip-dao = { path = "../pallets/deip_dao", default-features = false }
 pallet-deip-ecosystem-fund = { path = "../pallets/deip_ecosystem_fund", default-features = false }
-pallet-deip-investment-opportunity = { path = "../pallets/deip_investment_opportunity", default-features = false }
+pallet-deip-crowdfunding = { path = "../pallets/deip_crowdfunding", default-features = false }
 pallet-deip-nft = { path = "../pallets/deip_nft", default-features = false }
 pallet-deip-portal = { path = "../pallets/deip_portal", default-features = false }
 pallet-deip-proposal = { path = "../pallets/deip_proposal", default-features = false }
@@ -99,7 +98,7 @@ runtime-benchmarks = [
     "pallet-deip-portal/runtime-benchmarks",
     "pallet-deip/runtime-benchmarks",
     "pallet-deip-ecosystem-fund/runtime-benchmarks",
-    "pallet-deip-investment-opportunity/runtime-benchmarks",
+    "pallet-deip-crowdfunding/runtime-benchmarks",
 ]
 std = [
     "serde",
@@ -145,13 +144,12 @@ std = [
     "borsh/std",
     "pallet-octopus-lpos/std",
     "pallet-octopus-upward-messages/std",
-    "deip-assets-error/std",
     "pallet-deip/std",
     "pallet-deip-assets/std",
     "pallet-deip-balances/std",
     "pallet-deip-dao/std",
     "pallet-deip-ecosystem-fund/std",
-    "pallet-deip-investment-opportunity/std",
+    "pallet-deip-crowdfunding/std",
     "pallet-deip-nft/std",
     "pallet-deip-portal/std",
     "pallet-deip-proposal/std",

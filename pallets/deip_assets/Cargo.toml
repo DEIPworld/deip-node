@@ -27,7 +27,6 @@ sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkado
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 
-deip-assets-error = { path = "../../deip_common/deip_assets_error", default-features = false }
 deip-projects-info = {path = "../../deip_common/deip_projects_info", default-features = false }
 deip_serializable_u128 = { path = "../../deip_common/deip_serializable_u128", default-features = false }
 deip-asset-system = { path = "../../deip_common/deip_asset_system", default-features = false }
@@ -48,7 +47,6 @@ std = [
     "sp-io/std",
     "sp-runtime/std",
     "sp-std/std",
-    "deip-assets-error/std",
     "deip-projects-info/std",
     "deip_serializable_u128/std",
     "deip-asset-system/std",
