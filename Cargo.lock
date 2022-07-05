@@ -4434,6 +4434,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-deip-market"
+version = "3.0.0"
+dependencies = [
+ "deip-asset-system",
+ "deip-transaction-ctx",
+ "deip_serializable_u128",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-assets",
+ "pallet-balances",
+ "pallet-deip-assets",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-deip-portal"
 version = "3.0.0"
 dependencies = [
