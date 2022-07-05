@@ -20,7 +20,6 @@ beefy-primitives = { git = "https://github.com/paritytech/substrate.git", branch
 borsh = { version = "=0.9.1", default-features = false }
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
 
-deip-assets-error = { path = "../deip_common/deip_assets_error", default-features = false }
 deip-projects-info = { path = "../deip_common/deip_projects_info", default-features = false }
 deip-asset-system = { path = "../deip_common/deip_asset_system", default-features = false }
 
@@ -145,7 +144,6 @@ std = [
     "borsh/std",
     "pallet-octopus-lpos/std",
     "pallet-octopus-upward-messages/std",
-    "deip-assets-error/std",
     "pallet-deip/std",
     "pallet-deip-assets/std",
     "pallet-deip-balances/std",

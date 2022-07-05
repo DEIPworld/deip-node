@@ -13,7 +13,6 @@ pub use nft_impl::*;
 pub use fnft::*;
 pub use ft_impl::*;
 
-pub use deip_assets_error::{ReserveError, UnreserveError};
 use sp_std::prelude::*;
 
 #[derive(Debug, Clone, Copy)]

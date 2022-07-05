@@ -10,8 +10,6 @@ use sp_runtime::{
 use codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
-use deip_assets_error::{ReserveError, UnreserveError};
-
 pub const DEFAULT_ACCOUNT_ID: <Test as system::Config>::AccountId = 123;
 pub const ALICE_ACCOUNT_ID: <Test as system::Config>::AccountId = 124;
 pub const BOB_ACCOUNT_ID: <Test as system::Config>::AccountId = 125;

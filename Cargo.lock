@@ -181,7 +181,6 @@ dependencies = [
  "beefy-primitives",
  "borsh",
  "deip-asset-system",
- "deip-assets-error",
  "deip-projects-info",
  "frame-benchmarking",
  "frame-executive",
@@ -1406,7 +1405,6 @@ dependencies = [
 name = "deip-asset-system"
 version = "0.1.0"
 dependencies = [
- "deip-assets-error",
  "deip_serializable_u128",
  "frame-support",
  "frame-system",
@@ -1418,10 +1416,6 @@ dependencies = [
  "sp-runtime",
  "sp-std",
 ]
-
-[[package]]
-name = "deip-assets-error"
-version = "0.1.0"
 
 [[package]]
 name = "deip-assets-rpc"
@@ -1641,6 +1635,16 @@ name = "downcast-rs"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
+
+[[package]]
+name = "draft"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "rustc-hex",
+]
 
 [[package]]
 name = "dtoa"
@@ -4296,7 +4300,6 @@ name = "pallet-deip"
 version = "3.0.0"
 dependencies = [
  "deip-asset-system",
- "deip-assets-error",
  "deip-projects-info",
  "deip-transaction-ctx",
  "deip_serializable_u128",
@@ -4323,7 +4326,6 @@ name = "pallet-deip-assets"
 version = "3.0.0"
 dependencies = [
  "deip-asset-system",
- "deip-assets-error",
  "deip-projects-info",
  "deip_serializable_u128",
  "frame-support",
