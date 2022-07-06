@@ -97,9 +97,34 @@ pub fn unvote(
 
 #
 
+## Execute active voting
+
+Confirms the active voting execution and removes added vote for the caller.
+May be called by any holder of the asset.
+This operation executes the call if the threshold is reached.
+
+Arguments:
+- `origin` - caller | account owner;
+- `id` - unique voting identifier;
+- `max_weight` - call weight witness;
+
+Dispatch events:
+```Executed { id: VotingId, voting: VotingOf<T> }```
+
+> The `max_weight` argument is a necessary parameter for the transaction cost calculation, it compares with the call execution weight.
+
+```rust
+pub fn execute(
+    origin: OriginFor<T>,
+    id: VotingId,
+    max_weight: Weight,
+) -> DispatchResultWithPostInfo
+```
+
+#
 ## Close inactive or insolvable voting
 
-Closes the voting and drops the call information from storage.
+Closes the voting and deletes the call information from storage.
 May be called by voting author only.
 This operation fully removes the voting data and returns reserved currency to the author if there is no votes or the threshold can't be reached or the voting is out of time.
 
