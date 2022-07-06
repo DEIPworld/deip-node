@@ -420,7 +420,7 @@ pub mod pallet {
             let state = Self::put_vote(&voter, asset, id, sign)?;
             let total = Self::total(asset)?;
             if state.is_reached(v.threshold, total, T::RelativeThresholdLimit::get()) {
-                let res = Self::execute(id, v, max_weight)?.actual_weight;
+                let res = Self::execute_call(id, v, max_weight)?.actual_weight;
                 let _ = Self::remove_vote(&voter, asset, id)?;
                 Ok(res.map(|w| T::WeightInfo::vote_and_execute().saturating_add(w)).into())
             } else {
@@ -463,7 +463,7 @@ pub mod pallet {
                 if v.is_actual(&time) {
                     let total = Self::total(asset)?;
                     if state.is_reached(v.threshold, total, T::RelativeThresholdLimit::get()) {
-                        let res = Self::execute(id, v, max_weight)?.actual_weight;
+                        let res = Self::execute_call(id, v, max_weight)?.actual_weight;
                         return Ok(res
                             .map(|w| T::WeightInfo::unvote_and_execute().saturating_add(w))
                             .into());
@@ -474,6 +474,44 @@ pub mod pallet {
                 T::WeightInfo::unvote()
             };
             Ok(Some(w).into())
+        }
+
+        /// Manually execute the voting when the threshold is reached
+        /// by some specific reasons like burning or minting the asset fractions
+        ///
+        /// The dispatch origin for this call must be _Signed_.
+        ///
+        /// - `id`: Voting unique identifier
+        /// - `max_weight`: Maximum call execution weight
+        #[pallet::weight({
+			(
+				T::WeightInfo::execute()
+				.saturating_add(*max_weight),
+				DispatchClass::Normal
+			)
+		})]
+        #[transactional]
+        pub fn execute(
+            origin: OriginFor<T>,
+            id: VotingId,
+            max_weight: Weight,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let v = Votings::<T>::get(&id).ok_or_else(|| Error::<T>::NotFound)?;
+            let asset = v.asset;
+            ensure!(Self::is_valid_stakeholder(&who, asset), Error::<T>::PermissionDenied);
+            let time = Self::timepoint();
+            ensure!(v.is_actual(&time), Error::<T>::BadTimepoint);
+            let state = States::<T>::get(&id).ok_or_else(|| Error::<T>::StateNotFound)?;
+            let total = Self::total(asset)?;
+            let limit = T::RelativeThresholdLimit::get();
+            ensure!(state.is_reached(v.threshold, total, limit), Error::<T>::BadState);
+            let res = Self::execute_call(id, v, max_weight)?.actual_weight;
+            let key = (who.clone(), asset);
+            if Votes::<T>::contains_key(&key, &id) {
+                let _ = Self::remove_vote(&who, asset, id)?;
+            }
+            Ok(res.map(|w| T::WeightInfo::execute().saturating_add(w)).into())
         }
 
         /// Close voting if there is no votes or it's fullfilled
@@ -678,7 +716,7 @@ impl<T: Config> Pallet<T> {
         Ok(sign)
     }
 
-    pub fn execute(
+    pub fn execute_call(
         id: VotingId,
         voting: VotingOf<T>,
         max_weight: Weight,

@@ -52,6 +52,7 @@ pub trait WeightInfo {
 	fn unvote() -> Weight;
 	fn unvote_and_execute() -> Weight;
 	fn unvote_last() -> Weight;
+	fn execute() -> Weight;
 	fn close() -> Weight;
 	fn retain_asset(u: u32) -> Weight;
 }
@@ -92,6 +93,12 @@ impl<T: frame_system::Config> WeightInfo for Weights<T> {
 		(72_965_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(5 as Weight))
 			.saturating_add(T::DbWeight::get().writes(5 as Weight))
+	}
+	fn execute() -> Weight {
+		(131_781_000 as Weight)
+			// Standard Error: 0
+			.saturating_add(T::DbWeight::get().reads(8 as Weight))
+			.saturating_add(T::DbWeight::get().writes(7 as Weight))
 	}
 	fn close() -> Weight {
 		(72_769_000 as Weight)

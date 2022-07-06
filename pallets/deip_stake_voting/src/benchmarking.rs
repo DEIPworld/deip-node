@@ -14,6 +14,7 @@ use pallet_deip_nft::Config as DeipNftConfig;
 use pallet_deip_nft::Pallet as DeipNft;
 use sp_runtime::traits::Hash;
 use sp_io::hashing::twox_256;
+use sp_core::H160;
 
 const SEED: u32 = 1;
 
@@ -47,7 +48,8 @@ where
     let caller: T::AccountId = admin.clone();
     let balance = BalanceOf::<T>::max_value();
     <T as Config>::Currency::make_free_balance_be(&caller, balance);
-    let collection = create_collection::<DeipNft<T>>(&caller, 1u32.into()).unwrap();
+    let collection = H160::from([0u8; 20]).into();
+    create_collection::<DeipNft<T>>(&caller, collection, 1u32.into()).unwrap();
     let item = <T as SystemConfig>::Hashing::hash_of(&1u32);
     DeipNft::<T>::mint_item(RawOrigin::Signed(caller.clone()).into(), collection, item).unwrap();
     (item, caller)
@@ -64,7 +66,7 @@ fn distribute_asset<T>(
     assert!(!accounts.is_empty());
     assert!(!amount.is_zero());
     let total = amount * (accounts.len() as u32 + 1u32).into();
-    fractionalize_item::<DeipNft<T>>(asset, &admin, total).unwrap();
+    fractionalize_item::<DeipNft<T>>(asset, &admin, total, false).unwrap();
     for u in accounts {
         transfer_fraction::<DeipNft<T>>(asset, &admin, u, amount).unwrap();
     }
@@ -264,6 +266,36 @@ benchmarks! {
         assert_eq!(Votings::<T>::get(&id), Some(voting.clone()));
         assert!(States::<T>::get(&id).is_none());
         assert!(Calls::<T>::get(&voting.call_hash).is_some());
+        let asset: <T as Config>::AssetId = asset.into();
+        assert!(Votes::<T>::get(&(caller, asset), &id).is_none());
+    }
+    execute {
+        let z in 0 .. 10000;
+        let n = random_range(2 .. 100);
+        let mut holders = setup_accounts::<T>(n)?;
+        let min = 1u32.into();
+        let (asset, admin) = create_asset::<T>(&holders[0], min);
+        let value = 100u32.into();
+        distribute_asset::<T>(admin, asset, value, &holders[1..]);
+        let limit = T::RelativeThresholdLimit::get();
+        let threshold = Threshold::RelativeExcept(limit / n.into());
+        let caller = holders.pop().unwrap();
+        let time = now::<T>();
+        let (id, voting) = create_voting::<T>(caller.clone(), asset.into(), time, None, threshold, z);
+        StakeVoting::<T>::vote(RawOrigin::Signed(caller.clone()).into(), id, Sign::Positive, max_weight::<T>(z)).unwrap();
+        let burner = holders.pop().unwrap();
+        burn_fraction::<DeipNft<T>>(asset, &burner, value).unwrap();
+        let state = States::<T>::get(&id).unwrap();
+        assert_eq!(state.value(), value);
+        assert_eq!(state.votes, 1);
+        let total = StakeVoting::<T>::total(asset).unwrap();
+        assert_eq!(total, value);
+        assert!(state.is_reached(threshold, total, limit));
+    }: execute(RawOrigin::Signed(caller.clone()), id, max_weight::<T>(z))
+    verify {
+        assert!(Votings::<T>::get(&id).is_none());
+        assert!(States::<T>::get(&id).is_none());
+        assert!(Calls::<T>::get(&voting.call_hash).is_none());
         let asset: <T as Config>::AssetId = asset.into();
         assert!(Votes::<T>::get(&(caller, asset), &id).is_none());
     }
