@@ -4,12 +4,15 @@ use frame_support::pallet_prelude::*;
 use sp_runtime::traits::{Hash, AtLeast32BitUnsigned, One, Zero, CheckedAdd, Saturating, CheckedSub};
 use codec::{Encode, Decode};
 use scale_info::TypeInfo;
+use deip_transaction_ctx::{TransactionCtxT, TransactionCtxId};
 
 use crate::{error::Error, FTImplT, Seal};
 
 
 pub trait NFTImplT
 {
+    type TransactionCtx: TransactionCtxT;
+
     type Fungibles: FTImplT<
         Account=Self::Account,
         FTokenId=Self::FTokenId,
@@ -59,6 +62,8 @@ pub trait NFTImplT
         Self::Fractional
     >;
 
+    type LockGuard: LockGuardT<Self::TransactionCtx> + Parameter; // LockGuard<...>
+
     type FractionHolderId: From<sp_core::H160> +  Copy + Parameter + 'static;
     type FractionHoldGuard: AtLeast32BitUnsigned + Copy + Parameter + 'static;
     type FractionHolds: StorageNMap<
@@ -69,6 +74,17 @@ pub trait NFTImplT
             NMapKey<Blake2_128Concat, Self::FractionHoldGuard>,
         ),
         (Self::FractionHolderId, Self::FractionHoldGuard)
+    >;
+
+    type FractionTransferLockNumber: StorageDoubleMap<
+        <Self::TransactionCtx as TransactionCtx>::BlockNumber,
+        <Self::TransactionCtx as TransactionCtx>::ExtrinsicId,
+        u32
+    >;
+    type ItemTransferLockNumber: StorageDoubleMap<
+        <Self::TransactionCtx as TransactionCtx>::BlockNumber,
+        <Self::TransactionCtx as TransactionCtx>::ExtrinsicId,
+        u32
     >;
 
     type NextCollectionId: StorageValue<Self::InternalCollectionId>;
@@ -108,7 +124,7 @@ pub trait NFTImplT
             new_amount,
             Self::FractionHoldGuard::zero(),
         );
-        
+
         Self::_insert_fractional(&fingerprint, &new_item_fractional_part, seal);
 
         Self::_insert_fraction(fraction, seal);
@@ -338,7 +354,9 @@ pub trait NFTImplT
 
         Self::Fungibles::mint_ft(ft_id, who, amount, seal)?;
 
-        let total_amount = *fractional.total() + amount;
+        let total_amount = fractional.total()
+            .checked_add(amount)
+            .ok_or_else(|| Self::Error::overflow().into());
 
         Self::_update_fractions_amount(item, ft_id, total_amount, seal);
 
@@ -464,11 +482,22 @@ pub trait NFTImplT
 
     fn hold_fraction(
         mut fraction: Self::FractionRecord,
-        holder_id: Self::FractionHolderId,
-        guard: Self::FractionHoldGuard,
         _: Seal
-    ) -> DispatchResult
+    ) -> Result<Self::LockGuard, DispatchError>
     {
+        let timepoint = Self::TransactionCtx::current().id();
+
+        let guard_number
+            = Self::LockGuard::obtain_number::<
+                Self::FractionTransferLockNumber
+            >(&timepoint, Seal(()))
+            .unwrap_or_else(|| Self::Error::overflow().into())?;
+
+        let guard = Self::LockGuard::new(
+            timepoint,
+            guard_number
+        );
+
         let key = Self::_fraction_hold_key(&fraction, holder_id, guard, Seal(()));
 
         ensure!(!Self::FractionHolds::contains_key(&key), Self::Error::no_permission());
@@ -484,8 +513,7 @@ pub trait NFTImplT
 
     fn unhold_fraction(
         mut fraction: Self::FractionRecord,
-        holder_id: Self::FractionHolderId,
-        guard: Self::FractionHoldGuard,
+        guard: Self::LockGuard,
         _: Seal
     ) -> DispatchResult
     {
@@ -503,7 +531,7 @@ pub trait NFTImplT
     }
 }
 
-//
+// Collection record trait:
 
 pub trait CollectionRecordT<Impl: NFTImplT + ?Sized>: Sized
 {
@@ -544,7 +572,7 @@ pub trait CollectionRecordT<Impl: NFTImplT + ?Sized>: Sized
     }
 }
 
-//
+// Item record trait:
 
 pub trait ItemRecordT<Impl: NFTImplT + ?Sized>: Sized {
     fn account(&self) -> &Impl::Account;
@@ -586,7 +614,7 @@ pub trait ItemRecordT<Impl: NFTImplT + ?Sized>: Sized {
     }
 }
 
-//
+// Fractional:
 
 pub trait FractionalT<Impl: NFTImplT + ?Sized>: Sized {
     fn ft_id(&self) -> &Impl::FTokenId;
@@ -618,7 +646,7 @@ impl<Impl: NFTImplT + ?Sized> FractionalT<Impl> for (Impl::FTokenId, Impl::Fract
     }
 }
 
-//
+// Fraction record trait:
 
 pub trait FractionRecordT<Impl: NFTImplT + ?Sized>: Sized {
     fn account(&self) -> &Impl::Account;
@@ -674,7 +702,7 @@ pub trait FractionRecordT<Impl: NFTImplT + ?Sized>: Sized {
     }
 }
 
-//
+// Collection record:
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, TypeInfo, Debug)]
 pub struct NFTokenCollectionRecord<Account, CollectionId, InternalId, ItemId> {
@@ -739,7 +767,7 @@ impl<Impl: NFTImplT + ?Sized> CollectionRecordT<Impl> for
     }
 }
 
-//
+// Item record:
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, TypeInfo, Debug)]
 pub struct NFTokenItemRecord<Account, Fingerprint, ItemId, CollectionId, Fractional> {
@@ -805,7 +833,7 @@ impl<Impl: NFTImplT + ?Sized> ItemRecordT<Impl> for
     }
 }
 
-//
+// Fraction record:
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, TypeInfo, Debug)]
 pub struct NFTokenFractionRecord<Account, Fingerprint, Fractional, Amount, HoldGuard> {
@@ -868,5 +896,61 @@ impl<Impl: NFTImplT + ?Sized> FractionRecordT<Impl>
 
     fn _mut_holds(&mut self) -> &mut Impl::FractionHoldGuard {
         &mut self.holds
+    }
+}
+
+// Locks:
+
+#[derive(Encode, Decode, Clone, Eq, PartialEq, TypeInfo, Debug)]
+pub struct LockGuard<BlockNumber, ExtrinsicIndex, LockNumber> {
+    timepoint: (BlockNumber, ExtrinsicIndex),
+    number: LockNumber
+}
+
+pub trait LockGuardT<Ctx: TransactionCtxT>: Sized
+{
+    fn new(
+        timepoint: TransactionCtxId<Ctx>,
+        number: u32
+    ) -> Self;
+
+    fn obtain_number<S: StorageDoubleMap<
+        Ctx::BlockNumber,
+        Ctx::ExtrinsicId,
+        u32
+    >>
+    (
+        timepoint: &TransactionCtxId<Ctx>,
+        _: Seal
+    ) -> Option<u32>
+    {
+        let number = S::try_get(
+            &timepoint.block_number,
+            &timepoint.extrinsic_id
+        ).unwrap_or_else(|| 0u32);
+        S::put(timepoint, number.checked_add(1u32)?);
+        Some(number)
+    }
+}
+
+impl<Ctx: TransactionCtxT> LockGuardT<Ctx>
+    for LockGuard<
+        Ctx::BlockNumber,
+        Ctx::ExtrinsicId,
+        u32
+    >
+{
+    fn new(
+        timepoint: TransactionCtxId<Ctx>,
+        number: u32
+    ) -> Self
+    {
+        let TransactionCtxId {
+            block_number, extrinsic_id
+        } = timepoint;
+        Self {
+            timepoint: (block_number, extrinsic_id),
+            number
+        }
     }
 }

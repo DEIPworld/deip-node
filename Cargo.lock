@@ -1407,6 +1407,7 @@ name = "deip-asset-system"
 version = "0.1.0"
 dependencies = [
  "deip-assets-error",
+ "deip-transaction-ctx",
  "deip_serializable_u128",
  "frame-support",
  "frame-system",
@@ -1641,6 +1642,16 @@ name = "downcast-rs"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
+
+[[package]]
+name = "draft"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "rustc-hex",
+]
 
 [[package]]
 name = "dtoa"
