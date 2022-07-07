@@ -56,7 +56,10 @@ pub mod pallet {
 
 		type Token: Member + Parameter + AtLeast32BitUnsigned + Default + Copy;
 
-		type Tokens: NFTImplT<Fingerprint=Self::Token>;
+		type Tokens: NFTImplT<
+				Fingerprint=Self::Token,
+				Account=Self::AccountId,
+			>;
 
 		#[pallet::constant]
 		type MinOfferPrice: Get<BalanceOf<Self>>;
@@ -119,7 +122,7 @@ pub mod pallet {
 		/// Offer was accepted
 		OfferAccepted {
 			owner: T::AccountId,
-			buyer: T::AccountId,
+			offerer: T::AccountId,
 			token: T::Token,
 		},
 	}
@@ -229,13 +232,8 @@ pub mod pallet {
 			expires: Option<T::BlockNumber>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			let nft = pick_item::<T::Tokens>(&token)
-				.map_err(|_| Error::<T>::TokenNotFound)?;
-			nft = nft.check_account(&who)
-				.ok_or(Error::<T>::PermissionDenied)?;
-			ensure!(nft.is_transferable(), Error::<T>::TokenNotForSale);
-			Self::lock(&token)?;
-			Listed::<T>::insert(token, Listing { owner: who, price, expires });
+			Self::lock(&token, &who)?;
+			Listed::<T>::insert(token, Listing { owner: who.clone(), price, expires });
 			Self::deposit_event(Event::Listed { owner: who, token, price });
 			Ok(())
 		}
@@ -258,8 +256,8 @@ pub mod pallet {
 					.ok_or(Error::<T>::TokenNotFound)?;
 				ensure!(who == owner, Error::<T>::PermissionDenied);
 			}
-			Self::unlock(&token)?;
-			Self::deposit_event(Event::Unlisted { by: who, token });
+			Self::unlock(&token, &listing.owner)?;
+			Self::deposit_event(Event::Unlisted { owner: listing.owner, token });
 			Ok(())
 		}
 
@@ -281,13 +279,13 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			ensure!(price >= T::MinOfferPrice::get(), Error::<T>::OfferTooLow);
-			let owner = Self::owner(&token).ok_or(Error::<T>::TokenNotFound)?;
-			ensure!(who != owner, Error::<T>::PermissionDenied);
 			ensure!(!Self::has_active_offer(&token, &who), Error::<T>::AlreadyOffered);
+			let owner = Self::owner(&token).ok_or(Error::<T>::TokenNotFound)?;
+			ensure!(who != owner, Error::<T>::CannotOfferOnOwnToken);
 			T::Currency::reserve(&who, price)?;
-			let offer = Offer { price, expires };
+			let offer = Offer { maker: who.clone(), price, expires };
 			Offers::<T>::insert(token, who.clone(), offer);
-			Self::deposit_event(Event::OfferPlaced { offerer: who, token,  price });
+			Self::deposit_event(Event::OfferAdded { offerer: who, token,  price });
 			Ok(())
 		}
 
@@ -304,18 +302,14 @@ pub mod pallet {
 			token: T::Token,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			Offers::<T>::try_mutate_exists(
-				&token,
-				&who,
-				|opt| -> DispatchResult {
-					let offer = opt.take().ok_or(Error::<T>::UnknownOffer)?;
-					let owner = Self::owner(&token).ok_or(Error::<T>::TokenNotFound)?;
-					ensure!(who == owner || who == offer.maker, Error::<T>::PermissionDenied);
-					T::Currency::unreserve(&offer.maker, offer.price);
-					Self::deposit_event(Event::OfferWithdrawn { offerer: who, token });
-					Ok(())
-				},
-			)
+			let offer = Offers::<T>::take(&token, &who).ok_or(Error::<T>::UnknownOffer)?;
+			if who != offer.maker {
+				let owner = Self::owner(&token).ok_or(Error::<T>::TokenNotFound)?;
+				ensure!(who == owner, Error::<T>::PermissionDenied);
+			}
+			T::Currency::unreserve(&offer.maker, offer.price);
+			Self::deposit_event(Event::OfferWithdrawn { offerer: offer.maker, token });
+			Ok(())
 		}
 
 		// Accept an offer on a RMRK NFT from a potential buyer.
@@ -342,7 +336,7 @@ pub mod pallet {
 			}
 			T::Currency::unreserve(&offer.maker, offer.price);
 			Self::make_transfer(buyer.clone(), owner.clone(), token, offer.price)?;
-			Self::deposit_event(Event::OfferAccepted { owner, buyer, token });
+			Self::deposit_event(Event::OfferAccepted { owner, offerer: buyer, token });
 			Ok(())
 		}
 	}
@@ -387,11 +381,11 @@ impl<T: Config> Pallet<T> {
 		todo!()
 	}
 
-	fn lock(token: &T::Token, owner: T::AccountId) -> DispatchResult {
+	fn lock(token: &T::Token, account: &T::AccountId) -> DispatchResult {
 		todo!()
 	}
 
-	fn unlock(token: &T::Token, owner: T::AccountId) -> DispatchResult {
+	fn unlock(token: &T::Token, account: &T::AccountId) -> DispatchResult {
 		todo!()
 	}
 
