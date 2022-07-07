@@ -480,6 +480,49 @@ pub trait NFTImplT
         Ok(())
     }
 
+    fn lock_collection(
+        mut collection: Self::CollectionRecord,
+        _: Seal
+    ) -> Result<Self::LockGuard, DispatchError>
+    {
+        todo!()
+    }
+
+    fn lock_item(
+        mut item: Self::ItemRecord,
+        mask: ItemLockMask,
+        _: Seal
+    ) -> Result<Self::LockGuard, DispatchError>
+    {
+        todo!()
+    }
+
+    fn lock_fraction(
+        mut fraction: Self::FractionRecord,
+        mask: FractionLockMask,
+        seal: Seal
+    ) -> Result<Self::LockGuard, DispatchError>
+    {
+        fraction.lock(mask);
+        Self::_insert_fraction(fraction, seal);
+
+        let timepoint = Self::TransactionCtx::current().id();
+
+        let guard_number
+            = Self::LockGuard::obtain_number::<Self::FractionTransferLockNumber>
+            (&timepoint, Seal(()))
+            .unwrap_or_else(|| Self::Error::overflow().into())?;
+
+        let guard = Self::LockGuard::new(
+            timepoint,
+            guard_number
+        );
+
+        guard.lock::<Self>();
+
+        Ok(guard)
+    }
+
     fn hold_fraction(
         mut fraction: Self::FractionRecord,
         _: Seal
@@ -659,6 +702,8 @@ pub trait FractionRecordT<Impl: NFTImplT + ?Sized>: Sized {
 
     fn holds(&self) -> &Impl::FractionHoldGuard;
 
+    fn lock_mask(&self) -> FractionLockMask;
+
     fn new(
         account: &Impl::Account,
         fingerprint: Impl::Fingerprint,
@@ -670,6 +715,8 @@ pub trait FractionRecordT<Impl: NFTImplT + ?Sized>: Sized {
     fn _mut_amount(&mut self) -> &mut Impl::FractionAmount;
 
     fn _mut_holds(&mut self) -> &mut Impl::FractionHoldGuard;
+
+    fn _mut_lock_mask(&mut self) -> &mut u8;
 
     fn can_fuse(&self) -> bool {
         self.amount() == self.fractional().total()
@@ -699,6 +746,14 @@ pub trait FractionRecordT<Impl: NFTImplT + ?Sized>: Sized {
     fn dec_holds(&mut self) -> Result<(), ()> {
         *self._mut_holds() = self.holds().checked_sub(&One::one()).ok_or(())?;
         Ok(())
+    }
+
+    fn lock(&mut self, mask: FractionLockMask) {
+        *self._mut_lock_mask() = self.lock_mask().or(mask).into();
+    }
+
+    fn unlock(&mut self, mask: FractionLockMask) {
+        *self._mut_lock_mask() = self.lock_mask().and(!mask).into();
     }
 }
 
@@ -842,6 +897,7 @@ pub struct NFTokenFractionRecord<Account, Fingerprint, Fractional, Amount, HoldG
     fractional: Fractional,
     amount: Amount,
     holds: HoldGuard,
+    lock_mask: u8
 }
 
 impl<Impl: NFTImplT + ?Sized> FractionRecordT<Impl>
@@ -873,6 +929,10 @@ impl<Impl: NFTImplT + ?Sized> FractionRecordT<Impl>
         &self.holds
     }
 
+    fn lock_mask(&self) -> FractionLockMask {
+        self.lock_mask.into()
+    }
+
     fn new(
         account: &Impl::Account,
         fingerprint: Impl::Fingerprint,
@@ -886,7 +946,8 @@ impl<Impl: NFTImplT + ?Sized> FractionRecordT<Impl>
             fingerprint,
             fractional,
             amount,
-            holds
+            holds,
+            lock_mask: 0u8
         }
     }
 
@@ -897,22 +958,35 @@ impl<Impl: NFTImplT + ?Sized> FractionRecordT<Impl>
     fn _mut_holds(&mut self) -> &mut Impl::FractionHoldGuard {
         &mut self.holds
     }
+
+    fn _mut_lock_mask(&mut self) -> &mut u8 {
+        &mut self.lock_mask
+    }
 }
 
 // Locks:
 
-#[derive(Encode, Decode, Clone, Eq, PartialEq, TypeInfo, Debug)]
+#[derive(Encode, Decode, Clone, Copy, Eq, PartialEq, TypeInfo, Debug)]
 pub struct LockGuard<BlockNumber, ExtrinsicIndex, LockNumber> {
     timepoint: (BlockNumber, ExtrinsicIndex),
-    number: LockNumber
+    number: LockNumber,
+    mask: u8
 }
 
-pub trait LockGuardT<Ctx: TransactionCtxT>: Sized
+pub trait LockGuardT<Ctx: TransactionCtxT>: Sized + Copy
+    where
+        Ctx::BlockNumber: Copy,
+        Ctx::ExtrinsicId: Copy,
 {
     fn new(
         timepoint: TransactionCtxId<Ctx>,
-        number: u32
+        number: u32,
+        mask: u8
     ) -> Self;
+
+    fn block_number(&self) -> Ctx::BlockNumber;
+
+    fn extrinsic_index(&self) -> Ctx::ExtrinsicId;
 
     fn obtain_number<S: StorageDoubleMap<
         Ctx::BlockNumber,
@@ -925,11 +999,53 @@ pub trait LockGuardT<Ctx: TransactionCtxT>: Sized
     ) -> Option<u32>
     {
         let number = S::try_get(
-            &timepoint.block_number,
-            &timepoint.extrinsic_id
+            timepoint.block_number,
+            timepoint.extrinsic_id
         ).unwrap_or_else(|| 0u32);
         S::put(timepoint, number.checked_add(1u32)?);
         Some(number)
+    }
+}
+
+pub trait FractionLockGuardT<Impl: NFTImplT + ?Sized>: LockGuardT<Impl::TransactionCtx>
+{
+    fn lock<
+        S: StorageDoubleMap<
+            Impl::Fingerprint,
+            Impl::Account,
+            Impl::FractionHoldGuard
+        >
+    >(fraction: &mut Impl::FractionRecord)
+    {
+        fraction.inc_holds();
+        S::insert(
+            fraction.fingerprint(),
+            fraction.account(),
+            fraction.holds()
+        );
+    }
+
+    fn unlock<
+        S: StorageDoubleMap<
+            Impl::Fingerprint,
+            Impl::Account,
+            Impl::FractionHoldGuard
+        >
+    >(fraction: &mut Impl::FractionRecord)
+    {
+        fraction.dec_holds();
+        if fraction.holds().is_zero() {
+            S::remove(
+                fraction.fingerprint(),
+                fraction.account()
+            );
+        } else {
+            S::insert(
+                fraction.fingerprint(),
+                fraction.account(),
+                fraction.holds()
+            );
+        }
     }
 }
 
@@ -942,7 +1058,8 @@ impl<Ctx: TransactionCtxT> LockGuardT<Ctx>
 {
     fn new(
         timepoint: TransactionCtxId<Ctx>,
-        number: u32
+        number: u32,
+        mask: u8
     ) -> Self
     {
         let TransactionCtxId {
@@ -950,7 +1067,30 @@ impl<Ctx: TransactionCtxT> LockGuardT<Ctx>
         } = timepoint;
         Self {
             timepoint: (block_number, extrinsic_id),
-            number
+            number,
+            mask
         }
     }
+
+    fn block_number(&self) -> Ctx::BlockNumber {
+        self.timepoint.0
+    }
+
+    fn extrinsic_index(&self) -> Ctx::ExtrinsicId {
+        self.timepoint.1
+    }
+}
+
+use bitmask_enum::bitmask;
+
+#[bitmask(u8)]
+pub enum ItemLockMask {
+    Transfer     = 0b0001,
+    MintFraction = 0b0010,
+    BurnFraction = 0b0100,
+}
+
+#[bitmask(u8)]
+pub enum FractionLockMask {
+    Transfer = 0b0001,
 }
