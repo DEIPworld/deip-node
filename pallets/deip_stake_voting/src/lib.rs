@@ -280,6 +280,8 @@ pub mod pallet {
         StillProcessing,
         /// Bad voting state
         BadState,
+        /// Threshold isn't reached yet
+        ThresholdIsNotReached,
         /// Call isn't voted by this signatory
         NotVoted,
         /// Unknown asset or unexpected total issuance
@@ -503,9 +505,10 @@ pub mod pallet {
             let time = Self::timepoint();
             ensure!(v.is_actual(&time), Error::<T>::BadTimepoint);
             let state = States::<T>::get(&id).ok_or_else(|| Error::<T>::StateNotFound)?;
+            ensure!(!state.is_empty(), Error::<T>::BadState);
             let total = Self::total(asset)?;
             let limit = T::RelativeThresholdLimit::get();
-            ensure!(state.is_reached(v.threshold, total, limit), Error::<T>::BadState);
+            ensure!(state.is_reached(v.threshold, total, limit), Error::<T>::ThresholdIsNotReached);
             let res = Self::execute_call(id, v, max_weight)?.actual_weight;
             let key = (who.clone(), asset);
             if Votes::<T>::contains_key(&key, &id) {
