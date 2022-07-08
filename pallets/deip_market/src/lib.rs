@@ -10,7 +10,9 @@ use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
+mod tests;
 mod weights;
+mod benchmarking;
 
 use weights::WeightInfo;
 
@@ -187,32 +189,6 @@ pub mod pallet {
 			todo!()
 		}*/
 
-		/// Buy a listed NFT. Ensure that the NFT is available for purchase and has not recently
-		/// been purchased, sent, or burned.
-		///
-		/// Parameters:
-		/// 	- `origin` - Account of the potential buyer
-		/// 	- `token` - Token identifier
-		/// 	- `value` - Price at which buyer purchased at
-		#[pallet::weight(10000)]
-		#[transactional]
-		pub fn buy(
-			origin: OriginFor<T>,
-			token: T::Token,
-			value: BalanceOf<T>,
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-			let owner = Self::owner(&token).ok_or_else(|| Error::<T>::TokenNotFound)?;
-			ensure!(who != owner, Error::<T>::CannotBuyOwnToken);
-			let info = Listed::<T>::take(&token).ok_or(Error::<T>::TokenNotForSale)?;
-			ensure!(info.owner == owner, Error::<T>::TokenNotForSale);
-			if let Some(t) = info.expires {
-				ensure!(t > Self::current_time(), Error::<T>::ListingHasExpired);
-			}
-			ensure!(value >= info.price, Error::<T>::UnexpectedPrice);
-			Self::make_transfer(who, owner, token, value)
-		}
-
 		/// List a token on the Marketplace for purchase. A listing can be cancelled, and is
 		/// automatically considered cancelled when a `buy` is executed on top of a given listing.
 		/// An NFT that has another NFT as its owner CANNOT be listed. An NFT owned by a NFT must
@@ -259,6 +235,32 @@ pub mod pallet {
 			Self::unlock(&token, &listing.owner)?;
 			Self::deposit_event(Event::Unlisted { owner: listing.owner, token });
 			Ok(())
+		}
+
+		/// Buy a listed NFT. Ensure that the NFT is available for purchase and has not recently
+		/// been purchased, sent, or burned.
+		///
+		/// Parameters:
+		/// 	- `origin` - Account of the potential buyer
+		/// 	- `token` - Token identifier
+		/// 	- `value` - Price at which buyer purchased at
+		#[pallet::weight(10000)]
+		#[transactional]
+		pub fn buy(
+			origin: OriginFor<T>,
+			token: T::Token,
+			value: BalanceOf<T>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let owner = Self::owner(&token).ok_or_else(|| Error::<T>::TokenNotFound)?;
+			ensure!(who != owner, Error::<T>::CannotBuyOwnToken);
+			let info = Listed::<T>::take(&token).ok_or(Error::<T>::TokenNotForSale)?;
+			ensure!(info.owner == owner, Error::<T>::TokenNotForSale);
+			if let Some(t) = info.expires {
+				ensure!(t > Self::current_time(), Error::<T>::ListingHasExpired);
+			}
+			ensure!(value >= info.price, Error::<T>::UnexpectedPrice);
+			Self::make_transfer(who, owner, token, value)
 		}
 
 		/// Make an offer on a RMRK NFT for purchase. An offer can be set with an expiration where
@@ -382,11 +384,13 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn lock(token: &T::Token, account: &T::AccountId) -> DispatchResult {
-		todo!()
+		// TODO
+		Ok(())
 	}
 
 	fn unlock(token: &T::Token, account: &T::AccountId) -> DispatchResult {
-		todo!()
+		// TODO
+		Ok(())
 	}
 
 	fn owner(token: &T::Token) -> Option<T::AccountId> {
