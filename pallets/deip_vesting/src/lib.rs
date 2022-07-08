@@ -120,9 +120,95 @@ pub mod pallet {
         type VestingWeightInfo: WeightInfo;
     }
 
+
+    use frame_support::traits::{StorageVersion, GetStorageVersion};
+    use sp_runtime::AccountId32;
+    use bs58;
+
+    pub const V0: StorageVersion = StorageVersion::new(0);
+    pub const V1: StorageVersion = StorageVersion::new(1);
+
+
+    #[doc(hidden)]
     #[pallet::pallet]
     #[pallet::generate_store(pub(super) trait Store)]
+    #[pallet::storage_version(V1)]
     pub struct Pallet<T>(_);
+
+    pub mod v1 {
+        use super::*;
+
+        pub fn migrate_vestings<T: Config>() -> Weight {
+
+            let mut reads: usize = 0;
+            let mut writes: usize = 0;
+
+            let reserve_fund = from_ss58check::<T>("5CP7ESrfSG2gYGdfbLPex6nFj5Eotz3gzaW69F1cCAXLrqAH");
+
+            let allocations_to_return = vec![
+                from_ss58check::<T>("5FUBk8tjkXUauTwKDvhjj3ujBGNswQH5evY3WkCFd1TxrUct"),
+                from_ss58check::<T>("5GRdTZyJYjUM53ZC1FkrzTaNqSmw1N8WShTxDdKaWCbUe4su"),
+                from_ss58check::<T>("5F2BhPMUZjU39PCGr4CRrgXTp2bxenvXYdUMNeHTrx5EWEfL"),
+                from_ss58check::<T>("5Ebi4kE8kBwuuYvJH9GQmfmbF6v2trviVQS86Hv4PEpoDiML"),
+                from_ss58check::<T>("5Gq4YB8A4keRLFu84cKQNizWo93RLCyt3TZqENMeFxxXpmTJ"),
+                from_ss58check::<T>("5GHNyHmqtBUoDDxrZiYn5btVx2axrt7Yxaf9LxkjWJiXm2Ev"),
+                from_ss58check::<T>("5Exf3FTXKUPJXDWPvHQC48un7ZkZ4EFbZYPz3GavrUeBJHXm"),
+                from_ss58check::<T>("5HWF2Xz2gr4abfbtcEZPPRaETB7Hhp7L53bcW4ZLnoyfEZz7"),
+            ];
+
+            for to_return in allocations_to_return {
+                let vesting = VestingPlans::<T>::take(to_return.clone()).unwrap();
+                reads += 1;
+                writes += 1;
+
+                T::Currency::remove_lock(VESTING_ID, &to_return);
+                reads += 6;
+                writes += 7;
+
+                T::Currency::transfer(
+                    &to_return,
+                    &reserve_fund,
+                    vesting.total_amount,
+                    ExistenceRequirement::AllowDeath,
+                ).unwrap();
+                reads += 4;
+                writes += 3;
+            }
+
+            T::DbWeight::get().reads_writes(
+                reads.try_into().unwrap_or(Weight::MAX),
+                writes.try_into().unwrap_or(Weight::MAX),
+            )
+        }
+
+        pub fn from_ss58check<T: Config>(address_str: &str) -> T::AccountId {
+            let mut address_vec = Vec::new();
+            address_vec.resize(35, 0u8);
+
+            bs58::decode(address_str).into(&mut address_vec).unwrap();
+            let raw_account_vec:Vec<u8> = address_vec.drain(1..33).collect(); // https://docs.substrate.io/v3/advanced/ss58/
+            let mut raw_account_arr = [0; 32];
+            let bytes = &raw_account_vec[..raw_account_arr.len()];
+            raw_account_arr.copy_from_slice(bytes);
+            let account32: AccountId32 = raw_account_arr.into();
+            let mut account32_arr = AccountId32::as_ref(&account32);
+            T::AccountId::decode(&mut account32_arr).unwrap()
+        }
+    }
+
+    #[doc(hidden)]
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+
+        fn on_runtime_upgrade() -> Weight {
+            if Self::on_chain_storage_version() == V0
+                && Self::current_storage_version() == V1
+            {
+                return v1::migrate_vestings::<T>();
+            }
+            0
+        }
+    }
 
     #[pallet::storage]
     #[pallet::getter(fn vesting_plans)]
