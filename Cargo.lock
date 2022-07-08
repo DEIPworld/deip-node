@@ -4498,6 +4498,7 @@ name = "pallet-deip-vesting"
 version = "3.0.0"
 dependencies = [
  "blake2",
+ "bs58",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
