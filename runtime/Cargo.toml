@@ -50,6 +50,7 @@ pallet-deip-portal = { path = "../pallets/deip_portal", default-features = false
 pallet-deip-proposal = { path = "../pallets/deip_proposal", default-features = false }
 pallet-deip-uniques = { path = "../pallets/deip_uniques", default-features = false }
 pallet-deip-vesting = { path = "../pallets/deip_vesting", default-features = false }
+pallet-deip-market = { path = "../pallets/deip_market", default-features = false }
 pallet-grandpa = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-im-online = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 pallet-mmr = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
@@ -100,6 +101,7 @@ runtime-benchmarks = [
     "pallet-deip/runtime-benchmarks",
     "pallet-deip-ecosystem-fund/runtime-benchmarks",
     "pallet-deip-investment-opportunity/runtime-benchmarks",
+    "pallet-deip-market/runtime-benchmarks",
 ]
 std = [
     "serde",
@@ -157,6 +159,7 @@ std = [
     "pallet-deip-proposal/std",
     "pallet-deip-uniques/std",
     "pallet-deip-vesting/std",
+    "pallet-deip-market/std",
     "deip-asset-system/std",
     "pallet-octopus-appchain/std",
 ]

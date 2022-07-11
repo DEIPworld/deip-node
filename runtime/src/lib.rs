@@ -870,6 +870,19 @@ impl pallet_deip_f_nft::Config for Runtime {
     type Fungibles = DeipAssets;
 }
 
+parameter_types! {
+    pub const MinOfferPrice: u64 = 100000000;
+}
+
+impl pallet_deip_market::Config for Runtime {
+    type Event = Event;
+    type Currency = Balances;
+    type Token = Hash;
+    type Tokens = DeipNft;
+    type MinOfferPrice = MinOfferPrice
+    type WeightInfo = pallet_deip_market::weights::Weights<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -910,8 +923,8 @@ construct_runtime!(
         DeipVesting: pallet_deip_vesting::{Pallet, Call, Storage, Event<T>, Config<T>},
         DeipEcosystemFund: pallet_deip_ecosystem_fund::{Pallet, Config<T>, Storage},
         DeipInvestmentOpportunity: pallet_deip_investment_opportunity,
-
         DeipFNFT: pallet_deip_f_nft,
+        DeipMarket: pallet_deip_market::{Pallet, Call, Storage, Config<T>},
     }
 );
 
@@ -1191,6 +1204,7 @@ impl_runtime_apis! {
             list_benchmark!(list, extra, pallet_deip_proposal, DeipProposal);
             list_benchmark!(list, extra, pallet_deip_dao, DeipDao);
             list_benchmark!(list, extra, pallet_deip_portal, DeipPortal);
+            list_benchmark!(list, extra, pallet_deip_market, DeipMarket);
             // list_benchmark!(list, extra, pallet_deip, Deip);
             list_benchmark!(list, extra, pallet_deip_investment_opportunity, DeipInvestmentOpportunity);
 
@@ -1232,6 +1246,7 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, pallet_deip_proposal, DeipProposal);
             add_benchmark!(params, batches, pallet_deip_dao, DeipDao);
             add_benchmark!(params, batches, pallet_deip_portal, DeipPortal);
+            add_benchmark!(params, batches, pallet_deip_market, DeipMarket);
             // add_benchmark!(params, batches, pallet_deip, Deip);
             add_benchmark!(params, batches, pallet_deip_investment_opportunity, DeipInvestmentOpportunity);
 
