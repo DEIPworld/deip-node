@@ -10,7 +10,7 @@ use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-mod tests;
+//mod tests;
 mod weights;
 mod benchmarking;
 
@@ -23,7 +23,7 @@ pub use pallet::*;
 pub struct Listing<Account, Value, Time> {
 	owner: Account,
 	price: Value,
-	expires: Option<Time>,
+	until: Option<Time>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -31,7 +31,7 @@ pub struct Listing<Account, Value, Time> {
 pub struct Offer<Account, Value, Time> {
 	maker: Account,
 	price: Value,
-	expires: Option<Time>,
+	until: Option<Time>,
 }
 
 pub type BalanceOf<T> =
@@ -198,18 +198,18 @@ pub mod pallet {
 		/// - `origin` - Account of owner of the RMRK NFT to be listed
 		/// - `token` - Token identifier
 		/// - `price` - Price of the RMRK NFT
-		/// - `expires` - Optional BlockNumber for when the listing expires
+		/// - `until` - Optional BlockNumber for when the listing expires
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
 		pub fn list(
 			origin: OriginFor<T>,
 			token: T::Token,
 			price: BalanceOf<T>,
-			expires: Option<T::BlockNumber>,
+			until: Option<T::BlockNumber>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::lock(&token, &who)?;
-			Listed::<T>::insert(token, Listing { owner: who.clone(), price, expires });
+			Listed::<T>::insert(token, Listing { owner: who.clone(), price, until });
 			Self::deposit_event(Event::Listed { owner: who, token, price });
 			Ok(())
 		}
@@ -241,9 +241,9 @@ pub mod pallet {
 		/// been purchased, sent, or burned.
 		///
 		/// Parameters:
-		/// 	- `origin` - Account of the potential buyer
-		/// 	- `token` - Token identifier
-		/// 	- `value` - Price at which buyer purchased at
+		/// - `origin` - Account of the potential buyer
+		/// - `token` - Token identifier
+		/// - `value` - Price at which buyer purchased at
 		#[pallet::weight(10000)]
 		#[transactional]
 		pub fn buy(
@@ -256,7 +256,7 @@ pub mod pallet {
 			ensure!(who != owner, Error::<T>::CannotBuyOwnToken);
 			let info = Listed::<T>::take(&token).ok_or(Error::<T>::TokenNotForSale)?;
 			ensure!(info.owner == owner, Error::<T>::TokenNotForSale);
-			if let Some(t) = info.expires {
+			if let Some(t) = info.until {
 				ensure!(t > Self::current_time(), Error::<T>::ListingHasExpired);
 			}
 			ensure!(value >= info.price, Error::<T>::UnexpectedPrice);
@@ -268,16 +268,16 @@ pub mod pallet {
 		///
 		/// Parameters:
 		/// - `origin` - Account of the potential buyer
-		/// - `asset` - Asset identifier
+		/// - `token` - Token identifier
 		/// - `price` - Price of the token
-		/// - `expiration` - Expiration of the offer
+		/// - `until` - Optional BlockNumber for when the offer expires
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
 		pub fn make_offer(
 			origin: OriginFor<T>,
 			token: T::Token,
 			price: BalanceOf<T>,
-			expires: Option<T::BlockNumber>,
+			until: Option<T::BlockNumber>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			ensure!(price >= T::MinOfferPrice::get(), Error::<T>::OfferTooLow);
@@ -285,7 +285,7 @@ pub mod pallet {
 			let owner = Self::owner(&token).ok_or(Error::<T>::TokenNotFound)?;
 			ensure!(who != owner, Error::<T>::CannotOfferOnOwnToken);
 			T::Currency::reserve(&who, price)?;
-			let offer = Offer { maker: who.clone(), price, expires };
+			let offer = Offer { maker: who.clone(), price, until };
 			Offers::<T>::insert(token, who.clone(), offer);
 			Self::deposit_event(Event::OfferAdded { offerer: who, token,  price });
 			Ok(())
@@ -333,7 +333,7 @@ pub mod pallet {
 			let owner = Self::owner(&token).ok_or(Error::<T>::TokenNotFound)?;
 			ensure!(owner == buyer, Error::<T>::TokenNotForSale);
 			let offer = Offers::<T>::take(&token, &buyer).ok_or(Error::<T>::UnknownOffer)?;
-			if let Some(t) = offer.expires {
+			if let Some(t) = offer.until {
 				ensure!(t > Self::current_time(), Error::<T>::OfferHasExpired);
 			}
 			T::Currency::unreserve(&offer.maker, offer.price);
