@@ -46,10 +46,9 @@ fn mint_token<T>(
     mint_item::<DeipNft<T>>(collection, owner, OpaqueUnique::<DeipNft<T>>(item)).unwrap()
 }
 
-fn now<T: Config>() -> <T as SystemConfig>::BlockNumber {
-    Market::<T>::current_time()
+fn get_price() -> u64 {
+    10000000000
 }
-
 
 benchmarks! {
     where_clause {
@@ -60,7 +59,7 @@ benchmarks! {
         let owner = new_account::<T>(1);
         let (collection, token) = prepare_token::<T>(&owner);
         mint_token::<T>(&owner, collection, token);
-        let price = 10000u32.into();
+        let price = get_price().into();
     }: list(RawOrigin::Signed(owner.clone()), token, price, None)
     verify {
         let listing = ListingOf::<T> { owner: owner.clone(), price, until: None };
@@ -71,7 +70,7 @@ benchmarks! {
         let owner = new_account::<T>(1);
         let (collection, token) = prepare_token::<T>(&owner);
         mint_token::<T>(&owner, collection, token);
-        let price = 10000u32.into();
+        let price = get_price().into();
         Market::<T>::list(RawOrigin::Signed(owner.clone()).into(), token, price, None).unwrap();
     }: unlist(RawOrigin::Signed(owner.clone()), token)
     verify {
@@ -82,7 +81,7 @@ benchmarks! {
         let owner = new_account::<T>(1);
         let (collection, token) = prepare_token::<T>(&owner);
         mint_token::<T>(&owner, collection, token);
-        let value = 10000u32.into();
+        let value = get_price().into();
         Market::<T>::list(RawOrigin::Signed(owner.clone()).into(), token, value, None).unwrap();
         let buyer = new_account::<T>(2);
         assert!(owner != buyer);
@@ -96,7 +95,7 @@ benchmarks! {
         let owner = new_account::<T>(1);
         let (collection, token) = prepare_token::<T>(&owner);
         mint_token::<T>(&owner, collection, token);
-        let price = 10000u32.into();
+        let price = get_price().into();
         let buyer = new_account::<T>(2);
     }: make_offer(RawOrigin::Signed(buyer.clone()), token, price, None)
     verify {
@@ -108,7 +107,7 @@ benchmarks! {
         let owner = new_account::<T>(1);
         let (collection, token) = prepare_token::<T>(&owner);
         mint_token::<T>(&owner, collection, token);
-        let price = 10000u32.into();
+        let price = get_price().into();
         let buyer = new_account::<T>(2);
         Market::<T>::make_offer(RawOrigin::Signed(buyer.clone()).into(), token, price, None).unwrap();
     }: withdraw_offer(RawOrigin::Signed(buyer.clone()), token)

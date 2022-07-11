@@ -871,7 +871,7 @@ impl pallet_deip_f_nft::Config for Runtime {
 }
 
 parameter_types! {
-    pub const MinOfferPrice: u64 = 100000000;
+    pub const MinOfferPrice: u64 = 1000000000;
 }
 
 impl pallet_deip_market::Config for Runtime {
@@ -879,7 +879,7 @@ impl pallet_deip_market::Config for Runtime {
     type Currency = Balances;
     type Token = Hash;
     type Tokens = DeipNft;
-    type MinOfferPrice = MinOfferPrice
+    type MinOfferPrice = MinOfferPrice;
     type WeightInfo = pallet_deip_market::weights::Weights<Runtime>;
 }
 

@@ -1,18 +1,19 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use frame_support::pallet_prelude::*;
 use frame_support::dispatch::DispatchResult;
 use frame_support::{ensure, transactional};
 use frame_support::traits::{Currency, ExistenceRequirement, ReservableCurrency};
 use frame_system::{ensure_signed, Config as SystemConfig};
 use deip_asset_system::*;
-use sp_runtime::traits::AtLeast32BitUnsigned;
 use scale_info::TypeInfo;
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
 //mod tests;
-mod weights;
-mod benchmarking;
+pub mod weights;
+pub mod benchmarking;
 
 use weights::WeightInfo;
 
@@ -56,7 +57,7 @@ pub mod pallet {
 
 		type Currency: ReservableCurrency<Self::AccountId>;
 
-		type Token: Member + Parameter + AtLeast32BitUnsigned + Default + Copy;
+		type Token: Member + Parameter + Default + Copy;
 
 		type Tokens: NFTImplT<
 				Fingerprint=Self::Token,
@@ -231,8 +232,9 @@ pub mod pallet {
 				let owner = Self::owner(&token)
 					.ok_or(Error::<T>::TokenNotFound)?;
 				ensure!(who == owner, Error::<T>::PermissionDenied);
+			} else {
+				Self::unlock(&token, &who)?;
 			}
-			Self::unlock(&token, &listing.owner)?;
 			Self::deposit_event(Event::Unlisted { owner: listing.owner, token });
 			Ok(())
 		}
@@ -329,16 +331,14 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			ensure!(who != offerer, Error::<T>::CannotBuyOwnToken);
-			let owner = Self::owner(&token).ok_or(Error::<T>::TokenNotFound)?;
-			ensure!(who == owner, Error::<T>::PermissionDenied);
 			let offer = Offers::<T>::take(&token, &offerer).ok_or(Error::<T>::UnknownOffer)?;
 			ensure!(offerer == offer.maker, Error::<T>::UnknownOffer); // should be unreachable
 			if let Some(t) = offer.until {
 				ensure!(t > Self::current_time(), Error::<T>::OfferHasExpired);
 			}
 			T::Currency::unreserve(&offer.maker, offer.price);
-			Self::make_transfer(offer.maker, owner.clone(), token, offer.price)?;
-			Self::deposit_event(Event::OfferAccepted { owner, offerer, token });
+			Self::make_transfer(offer.maker, who.clone(), token, offer.price)?;
+			Self::deposit_event(Event::OfferAccepted { owner: who, offerer, token });
 			Ok(())
 		}
 	}
@@ -354,23 +354,6 @@ impl<T: Config> Pallet<T> {
 		frame_system::Pallet::<T>::block_number()
 	}
 
-	/// Buy the NFT helper funciton logic to handle both transactional calls of `buy` and
-	/// `accept_offer`
-	///
-	/// Parameters:
-	/// - `buyer`: The account that is buying the RMRK NFT
-	/// - `token`: Token identifier
-	/// - `value`: Optional value at which the buyer purchased a RMRK NFT
-	/// - `is_offer`: Whether the call is from `accept_offer` or `buy`
-	fn buy_listed(
-		buyer: &T::AccountId,
-		seller: &T::AccountId,
-		token: &T::Token,
-		value: BalanceOf<T>,
-	) -> DispatchResult {
-		todo!()
-	}
-
 	fn make_transfer(buyer: T::AccountId, owner: T::AccountId, token: T::Token, price: BalanceOf<T>) -> DispatchResult {
 		Self::unlock(&token, &owner)?;
 		T::Currency::transfer(&buyer, &owner, price, ExistenceRequirement::KeepAlive)?;
@@ -380,20 +363,27 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn change_owner(token: &T::Token, from: &T::AccountId, to: &T::AccountId) -> Result<(), Error<T>> {
-		todo!()
+		transfer_item::<T::Tokens>(token.clone(), from, to)
+			.map_err(|_| Error::<T>::NonTransferable)
 	}
 
 	fn owner(token: &T::Token) -> Option<T::AccountId> {
-		todo!()
+		pick_item::<T::Tokens>(token.clone())
+			.ok()
+			.map(|x| x.account().clone())
 	}
 
 	fn lock(token: &T::Token, account: &T::AccountId) -> DispatchResult {
 		// TODO
+		let owner = Self::owner(&token).ok_or(Error::<T>::TokenNotFound)?;
+		ensure!(owner.eq(account), Error::<T>::PermissionDenied);
 		Ok(())
 	}
 
 	fn unlock(token: &T::Token, account: &T::AccountId) -> DispatchResult {
 		// TODO
+		let owner = Self::owner(&token).ok_or(Error::<T>::TokenNotFound)?;
+		ensure!(owner.eq(account), Error::<T>::PermissionDenied);
 		Ok(())
 	}
 
