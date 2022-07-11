@@ -314,31 +314,31 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// Accept an offer on a RMRK NFT from a potential buyer.
-		//
-		// Parameters:
-		// - `origin` - Account of the current owner that is accepting the offerer's offer
-		// - `collection_id` - Collection id of the RMRK NFT
-		// - 'item_id` - NFT id of the RMRK NFT
-		// - `offerer` - Account that made the offer
+		/// Accept an offer on a RMRK NFT from a potential buyer.
+		///
+		/// Parameters:
+		/// - `origin` - Account of the current owner that is accepting the offerer's offer
+		/// - `token` - Token identifier
+		/// - `offerer` - Account that made the offer
 		#[pallet::weight(T::WeightInfo::accept_offer())]
 		#[transactional]
 		pub fn accept_offer(
 			origin: OriginFor<T>,
 			token: T::Token,
-			buyer: T::AccountId,
+			offerer: T::AccountId,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			ensure!(who != buyer, Error::<T>::CannotBuyOwnToken);
+			ensure!(who != offerer, Error::<T>::CannotBuyOwnToken);
 			let owner = Self::owner(&token).ok_or(Error::<T>::TokenNotFound)?;
-			ensure!(owner == buyer, Error::<T>::TokenNotForSale);
-			let offer = Offers::<T>::take(&token, &buyer).ok_or(Error::<T>::UnknownOffer)?;
+			ensure!(who == owner, Error::<T>::PermissionDenied);
+			let offer = Offers::<T>::take(&token, &offerer).ok_or(Error::<T>::UnknownOffer)?;
+			ensure!(offerer == offer.maker, Error::<T>::UnknownOffer); // should be unreachable
 			if let Some(t) = offer.until {
 				ensure!(t > Self::current_time(), Error::<T>::OfferHasExpired);
 			}
 			T::Currency::unreserve(&offer.maker, offer.price);
-			Self::make_transfer(buyer.clone(), owner.clone(), token, offer.price)?;
-			Self::deposit_event(Event::OfferAccepted { owner, offerer: buyer, token });
+			Self::make_transfer(offer.maker, owner.clone(), token, offer.price)?;
+			Self::deposit_event(Event::OfferAccepted { owner, offerer, token });
 			Ok(())
 		}
 	}
@@ -383,6 +383,10 @@ impl<T: Config> Pallet<T> {
 		todo!()
 	}
 
+	fn owner(token: &T::Token) -> Option<T::AccountId> {
+		todo!()
+	}
+
 	fn lock(token: &T::Token, account: &T::AccountId) -> DispatchResult {
 		// TODO
 		Ok(())
@@ -391,10 +395,6 @@ impl<T: Config> Pallet<T> {
 	fn unlock(token: &T::Token, account: &T::AccountId) -> DispatchResult {
 		// TODO
 		Ok(())
-	}
-
-	fn owner(token: &T::Token) -> Option<T::AccountId> {
-		todo!()
 	}
 
 	/// Helper function to check if an asset is listed
