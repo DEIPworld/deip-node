@@ -199,7 +199,7 @@ pub mod pallet {
 		/// - `token` - Token identifier
 		/// - `price` - Price of the RMRK NFT
 		/// - `until` - Optional BlockNumber for when the listing expires
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
+		#[pallet::weight(T::WeightInfo::list())]
 		#[transactional]
 		pub fn list(
 			origin: OriginFor<T>,
@@ -219,7 +219,7 @@ pub mod pallet {
 		/// Parameters:
 		/// - `origin` - Account owner of the listed RMRK NFT
 		/// - `token` - Token identifier
-		#[pallet::weight(10000)]
+		#[pallet::weight(T::WeightInfo::unlist())]
 		#[transactional]
 		pub fn unlist(
 			origin: OriginFor<T>,
@@ -244,7 +244,7 @@ pub mod pallet {
 		/// - `origin` - Account of the potential buyer
 		/// - `token` - Token identifier
 		/// - `value` - Price at which buyer purchased at
-		#[pallet::weight(10000)]
+		#[pallet::weight(T::WeightInfo::buy())]
 		#[transactional]
 		pub fn buy(
 			origin: OriginFor<T>,
@@ -271,7 +271,7 @@ pub mod pallet {
 		/// - `token` - Token identifier
 		/// - `price` - Price of the token
 		/// - `until` - Optional BlockNumber for when the offer expires
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
+		#[pallet::weight(T::WeightInfo::make_offer())]
 		#[transactional]
 		pub fn make_offer(
 			origin: OriginFor<T>,
@@ -297,7 +297,7 @@ pub mod pallet {
 		/// Parameters:
 		/// - `origin` - Account that wants to withdraw their offer
 		/// - `token` - Token identifier
-		#[pallet::weight(10000)]
+		#[pallet::weight(T::WeightInfo::withdraw_offer())]
 		#[transactional]
 		pub fn withdraw_offer(
 			origin: OriginFor<T>,
@@ -321,7 +321,7 @@ pub mod pallet {
 		// - `collection_id` - Collection id of the RMRK NFT
 		// - 'item_id` - NFT id of the RMRK NFT
 		// - `offerer` - Account that made the offer
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
+		#[pallet::weight(T::WeightInfo::accept_offer())]
 		#[transactional]
 		pub fn accept_offer(
 			origin: OriginFor<T>,
