@@ -157,6 +157,12 @@ pub mod pallet {
             ];
 
             for to_return in allocations_to_return {
+
+                reads += 1;
+                if !VestingPlans::<T>::contains_key(to_return.clone()) {
+                  continue;
+                }
+
                 let vesting = VestingPlans::<T>::take(to_return.clone()).unwrap();
                 reads += 1;
                 writes += 1;
