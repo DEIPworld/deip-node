@@ -757,7 +757,7 @@ impl pallet_deip::Config for Runtime {
     type MaxNdaParties = MaxNdaParties;
 }
 
-use deip_asset_system::{NFTokenFraction};
+use deip_asset_system::NFTokenFraction;
 
 impl pallet_deip_investment_opportunity::Config for Runtime {
     type DeipInvestmentWeightInfo = pallet_deip_investment_opportunity::weights::Weights<Self>;
@@ -902,7 +902,7 @@ construct_runtime!(
         Historical: pallet_session_historical::{Pallet},
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage},
         Assets: pallet_assets::{Pallet, Call, Storage, Event<T>},
-        Uniques: pallet_uniques::{Pallet, Call, Storage, Event<T>},
+        Uniques: pallet_uniques::{Pallet, Storage, Event<T>},
         Mmr: pallet_mmr::{Pallet, Storage},
         Beefy: pallet_beefy::{Pallet, Config<T>},
         MmrLeaf: pallet_beefy_mmr,
