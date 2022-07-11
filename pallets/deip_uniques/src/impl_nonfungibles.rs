@@ -1,17 +1,22 @@
-use sp_std::prelude::*;
+use crate::{Config, Error, FingerprintByFractionTokenId, Pallet};
 use codec::{Decode, Encode};
-use frame_support::dispatch::DispatchResult;
-use frame_support::sp_runtime;
-use frame_support::traits::tokens::nonfungibles::{Inspect, Create, Mutate, Transfer};
-use deip_asset_system::{NFTImplT, NFTokenCollectionRecord, NFTokenItemRecord, NFTokenFractionRecord, error::Error as NftError};
-use crate::{Config, Pallet, Error, FingerprintByFractionTokenId};
+use deip_asset_system::{
+    error::Error as NftError, NFTImplT, NFTokenCollectionRecord, NFTokenFractionRecord,
+    NFTokenItemRecord,
+};
+use frame_support::{
+    dispatch::DispatchResult,
+    sp_runtime,
+    traits::tokens::nonfungibles::{Create, Inspect, Mutate, Transfer},
+};
 use sp_runtime::traits::AtLeast32BitUnsigned;
+use sp_std::prelude::*;
 
 impl<T: Config> NFTImplT for Pallet<T>
-    where
-        T::ClassId: AtLeast32BitUnsigned,
-        T::InstanceId: AtLeast32BitUnsigned,
-        T::AssetId: AtLeast32BitUnsigned,
+where
+    T::ClassId: AtLeast32BitUnsigned,
+    T::InstanceId: AtLeast32BitUnsigned,
+    T::AssetId: AtLeast32BitUnsigned,
 {
     type FingerprintByFractionTokenId = FingerprintByFractionTokenId<T>;
     type Fungibles = T::Fungibles;
@@ -35,14 +40,14 @@ impl<T: Config> NFTImplT for Pallet<T>
         Self::Account,
         Self::CollectionId,
         Self::InternalCollectionId,
-        Self::ItemId
+        Self::ItemId,
     >;
     type ItemRecord = NFTokenItemRecord<
         Self::Account,
         Self::Fingerprint,
         Self::ItemId,
         Self::InternalCollectionId,
-        Self::Fractional
+        Self::Fractional,
     >;
     type FractionRecord = NFTokenFractionRecord<
         Self::Account,
@@ -71,98 +76,112 @@ impl<T: Config> Inspect<T::AccountId> for Pallet<T> {
     type ClassId = T::ClassId;
 
     fn owner(class: &Self::ClassId, instance: &Self::InstanceId) -> Option<T::AccountId> {
-        <pallet_uniques::Pallet<T> as Inspect<T::AccountId>>::owner(
-            class, instance
-        )
+        <pallet_uniques::Pallet<T> as Inspect<T::AccountId>>::owner(class, instance)
     }
 
     fn class_owner(class: &Self::ClassId) -> Option<T::AccountId> {
-        <pallet_uniques::Pallet<T> as Inspect<T::AccountId>>::class_owner(
-            class
-        )
+        <pallet_uniques::Pallet<T> as Inspect<T::AccountId>>::class_owner(class)
     }
 
-    fn attribute(class: &Self::ClassId, instance: &Self::InstanceId, key: &[u8]) -> Option<Vec<u8>> {
-        <pallet_uniques::Pallet<T> as Inspect<T::AccountId>>::attribute(
-            class, instance, key
-        )
+    fn attribute(
+        class: &Self::ClassId,
+        instance: &Self::InstanceId,
+        key: &[u8],
+    ) -> Option<Vec<u8>> {
+        <pallet_uniques::Pallet<T> as Inspect<T::AccountId>>::attribute(class, instance, key)
     }
 
-    fn typed_attribute<K: Encode, V: Decode>(class: &Self::ClassId, instance: &Self::InstanceId, key: &K) -> Option<V> {
-        <pallet_uniques::Pallet<T> as Inspect<T::AccountId>>::typed_attribute(
-            class, instance, key
-        )
+    fn typed_attribute<K: Encode, V: Decode>(
+        class: &Self::ClassId,
+        instance: &Self::InstanceId,
+        key: &K,
+    ) -> Option<V> {
+        <pallet_uniques::Pallet<T> as Inspect<T::AccountId>>::typed_attribute(class, instance, key)
     }
 
     fn class_attribute(class: &Self::ClassId, key: &[u8]) -> Option<Vec<u8>> {
-        <pallet_uniques::Pallet<T> as Inspect<T::AccountId>>::class_attribute(
-            class, key
-        )
+        <pallet_uniques::Pallet<T> as Inspect<T::AccountId>>::class_attribute(class, key)
     }
 
     fn typed_class_attribute<K: Encode, V: Decode>(class: &Self::ClassId, key: &K) -> Option<V> {
-        <pallet_uniques::Pallet<T> as Inspect<T::AccountId>>::typed_class_attribute(
-            class, key
-        )
+        <pallet_uniques::Pallet<T> as Inspect<T::AccountId>>::typed_class_attribute(class, key)
     }
 
     fn can_transfer(class: &Self::ClassId, instance: &Self::InstanceId) -> bool {
-        <pallet_uniques::Pallet<T> as Inspect<T::AccountId>>::can_transfer(
-            class, instance
-        )
+        <pallet_uniques::Pallet<T> as Inspect<T::AccountId>>::can_transfer(class, instance)
     }
 }
 
 impl<T: Config> Create<T::AccountId> for Pallet<T> {
-    fn create_class(class: &Self::ClassId, who: &T::AccountId, admin: &T::AccountId) -> DispatchResult {
-        <pallet_uniques::Pallet<T> as Create<T::AccountId>>::create_class(
-            class, who, admin,
-        )
+    fn create_class(
+        class: &Self::ClassId,
+        who: &T::AccountId,
+        admin: &T::AccountId,
+    ) -> DispatchResult {
+        <pallet_uniques::Pallet<T> as Create<T::AccountId>>::create_class(class, who, admin)
     }
 }
 
 impl<T: Config> Mutate<T::AccountId> for Pallet<T> {
-    fn mint_into(class: &Self::ClassId, instance: &Self::InstanceId, who: &T::AccountId) -> DispatchResult {
-        <pallet_uniques::Pallet<T> as Mutate<T::AccountId>>::mint_into(
-            class, instance, who
-        )
+    fn mint_into(
+        class: &Self::ClassId,
+        instance: &Self::InstanceId,
+        who: &T::AccountId,
+    ) -> DispatchResult {
+        <pallet_uniques::Pallet<T> as Mutate<T::AccountId>>::mint_into(class, instance, who)
     }
 
     fn burn_from(class: &Self::ClassId, instance: &Self::InstanceId) -> DispatchResult {
-        <pallet_uniques::Pallet<T> as Mutate<T::AccountId>>::burn_from(
-            class, instance
-        )
+        <pallet_uniques::Pallet<T> as Mutate<T::AccountId>>::burn_from(class, instance)
     }
 
-    fn set_attribute(class: &Self::ClassId, instance: &Self::InstanceId, key: &[u8], value: &[u8]) -> DispatchResult {
+    fn set_attribute(
+        class: &Self::ClassId,
+        instance: &Self::InstanceId,
+        key: &[u8],
+        value: &[u8],
+    ) -> DispatchResult {
         <pallet_uniques::Pallet<T> as Mutate<T::AccountId>>::set_attribute(
-            class, instance, key, value
+            class, instance, key, value,
         )
     }
 
-    fn set_typed_attribute<K: Encode, V: Encode>(class: &Self::ClassId, instance: &Self::InstanceId, key: &K, value: &V) -> DispatchResult {
+    fn set_typed_attribute<K: Encode, V: Encode>(
+        class: &Self::ClassId,
+        instance: &Self::InstanceId,
+        key: &K,
+        value: &V,
+    ) -> DispatchResult {
         <pallet_uniques::Pallet<T> as Mutate<T::AccountId>>::set_typed_attribute(
-            class, instance, key, value
+            class, instance, key, value,
         )
     }
 
     fn set_class_attribute(class: &Self::ClassId, key: &[u8], value: &[u8]) -> DispatchResult {
-        <pallet_uniques::Pallet<T> as Mutate<T::AccountId>>::set_class_attribute(
-            class, key, value
-        )
+        <pallet_uniques::Pallet<T> as Mutate<T::AccountId>>::set_class_attribute(class, key, value)
     }
 
-    fn set_typed_class_attribute<K: Encode, V: Encode>(class: &Self::ClassId, key: &K, value: &V) -> DispatchResult {
+    fn set_typed_class_attribute<K: Encode, V: Encode>(
+        class: &Self::ClassId,
+        key: &K,
+        value: &V,
+    ) -> DispatchResult {
         <pallet_uniques::Pallet<T> as Mutate<T::AccountId>>::set_typed_class_attribute(
-            class, key, value
+            class, key, value,
         )
     }
 }
 
 impl<T: Config> Transfer<T::AccountId> for Pallet<T> {
-    fn transfer(class: &Self::ClassId, instance: &Self::InstanceId, destination: &T::AccountId) -> DispatchResult {
+    fn transfer(
+        class: &Self::ClassId,
+        instance: &Self::InstanceId,
+        destination: &T::AccountId,
+    ) -> DispatchResult {
         <pallet_uniques::Pallet<T> as Transfer<T::AccountId>>::transfer(
-            class, instance, destination
+            class,
+            instance,
+            destination,
         )
     }
 }
@@ -195,7 +214,6 @@ impl<T> NftError for Error<T> {
     fn wrong_owner() -> Self {
         todo!()
     }
-
 
     fn unknown_f_token_id() -> Self {
         todo!()

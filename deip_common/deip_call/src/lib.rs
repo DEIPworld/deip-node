@@ -58,7 +58,6 @@ impl Serialize for WrappedCall<Call> {
             // Call::DeipAssets(deip_assets_call) =>
             //     Self::serialize_deip_assets_call(deip_assets_call, serializer),
             Call::Assets(..) |
-            Call::Uniques(..) |
             // Call::DeipUniques(..) |
             Call::DeipNft(..) |
             Call::System(_) |
