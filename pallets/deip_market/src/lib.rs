@@ -1,8 +1,8 @@
 use frame_support::pallet_prelude::*;
 use frame_support::dispatch::DispatchResult;
-use frame_support::{ensure, transactional, BoundedVec};
+use frame_support::{ensure, transactional};
 use frame_support::traits::{Currency, ExistenceRequirement, ReservableCurrency};
-use frame_system::{ensure_signed, RawOrigin, Config as SystemConfig};
+use frame_system::{ensure_signed, Config as SystemConfig};
 use deip_asset_system::*;
 use sp_runtime::traits::AtLeast32BitUnsigned;
 use scale_info::TypeInfo;
