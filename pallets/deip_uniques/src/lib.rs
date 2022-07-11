@@ -12,22 +12,15 @@ pub mod pallet {
     use frame_support::traits::GenesisBuild;
 
     use frame_support::{
-        dispatch::{DispatchResult, DispatchResultWithPostInfo, UnfilteredDispatchable, Weight},
-        ensure,
-        pallet_prelude::{NMapKey, OptionQuery, StorageMap, StorageValue, ValueQuery},
-        sp_runtime::traits::{CheckedAdd, One, StaticLookup},
+        dispatch::{ Weight},
+        pallet_prelude::{NMapKey, StorageMap, StorageValue, ValueQuery},
+        sp_runtime::traits::{CheckedAdd, One},
         storage::storage_prefix,
         traits::{Get, Hooks},
-        Blake2_128Concat, BoundedVec, Identity, Parameter, Twox64Concat,
+        Blake2_128Concat, Parameter,
     };
-    use frame_system::pallet_prelude::{BlockNumberFor, OriginFor};
-    use pallet_uniques::{
-        Call as UniquesCall, DestroyWitness, Pallet as UniquesPallet, WeightInfo,
-    };
+    use frame_system::pallet_prelude::{BlockNumberFor};
     use sp_io::{storage::clear_prefix, KillStorageResult};
-
-    // Helper types.
-    type DeipNftClassIdOf<T> = <T as Config>::DeipNftClassId;
 
     #[pallet::config]
     pub trait Config:
@@ -68,16 +61,19 @@ pub mod pallet {
     #[pallet::storage_version(V2)]
     pub struct Pallet<T>(_);
 
-    fn count_items(pallet_name: &[u8], storage_name: &[u8]) -> usize {
-        use frame_support::storage::{storage_prefix, PrefixIterator};
-        let prefix = storage_prefix(pallet_name, storage_name);
-        PrefixIterator::<()>::new(prefix.to_vec(), prefix.to_vec(), |_key, _value| Ok(())).count()
-    }
-
     #[doc(hidden)]
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_runtime_upgrade() -> Weight {
+            fn clear_storage(pallet: &[u8], storage: &[u8]) -> u32 {
+                let prefix = storage_prefix(pallet, storage);
+                let kill_storage_result = clear_prefix(&prefix, None);
+                match kill_storage_result {
+                    KillStorageResult::AllRemoved(writes) => writes,
+                    KillStorageResult::SomeRemaining(writes) => writes,
+                }
+            }
+
             let mut writes = 0u64;
             let reads = 0u64;
 
@@ -85,13 +81,16 @@ pub mod pallet {
                 Pallet::<T>::current_storage_version() == V2
             {
                 let pallet_name = b"DeipUniques";
-                let storage_name = b"NftClassIdByDeipNftClassIdV1";
-                let prefix = storage_prefix(pallet_name, storage_name);
-                let kill_storage_result = clear_prefix(&prefix, None);
-                writes += match kill_storage_result {
-                    KillStorageResult::AllRemoved(writes) => writes,
-                    KillStorageResult::SomeRemaining(writes) => writes,
-                } as u64;
+
+                let storages_to_clear = &[
+                    "NftClassIdByDeipNftClassId",
+                    "NftClassIdByDeipNftClassIdV1",
+                    "DeipNftClassIdByNftClassId",
+                    "DeipNftClassIdByNftClassIdV1",
+                ];
+                for storage in storages_to_clear {
+                    writes += clear_storage(pallet_name, storage.as_bytes()) as u64;
+                }
             }
 
             // if Pallet::<T>::on_chain_storage_version() == V0 &&
@@ -99,8 +98,6 @@ pub mod pallet {
             // {
             //     let mut reads: usize = 0;
             //     for x in &[
-            //         "NftClassIdByDeipNftClassId",
-            //         "DeipNftClassIdByNftClassId",
             //         "NextNftClassId",
             //         "ProjectIdByDeipNftClassId",
             //         "NftBalanceMap",
@@ -112,18 +109,6 @@ pub mod pallet {
             //             "DeipUniques".as_bytes(),
             //         );
             //     }
-            //     NftClassIdByDeipNftClassId::<T>::drain()
-            //         .map(|x| {
-            //             reads += 1;
-            //             x
-            //         })
-            //         .for_each(|(k, v)| );
-            //     DeipNftClassIdByNftClassId::<T>::drain()
-            //         .map(|x| {
-            //             reads += 1;
-            //             x
-            //         })
-            //         .for_each(|(k, v)| DeipNftClassIdByNftClassIdV1::<T>::insert(k, v));
             //     // reads += ProjectIdByDeipNftClassId::<T>::drain().count();
             //     // reads += NftBalanceMap::<T>::drain().count();
 
@@ -172,35 +157,6 @@ pub mod pallet {
             Self { _marker: std::marker::PhantomData }
         }
     }
-
-    /// Storage for matching Deip class id and origin `pallet_uniques` class id.
-    #[pallet::storage]
-    pub type NftClassIdByDeipNftClassId<T: Config> = StorageMap<
-        _,
-        Identity,
-        DeipNftClassIdOf<T>,
-        <T as pallet_uniques::Config>::ClassId,
-        OptionQuery,
-    >;
-
-    /// Storage for matching Deip class id and origin `pallet_uniques` class id.
-    #[pallet::storage]
-    pub type DeipNftClassIdByNftClassId<T: Config> = StorageMap<
-        _,
-        Identity,
-        <T as pallet_uniques::Config>::ClassId,
-        DeipNftClassIdOf<T>,
-        OptionQuery,
-    >;
-    // Migrate key hasher:
-    #[pallet::storage]
-    pub type DeipNftClassIdByNftClassIdV1<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        <T as pallet_uniques::Config>::ClassId,
-        DeipNftClassIdOf<T>,
-        OptionQuery,
-    >;
 
     /// Storage for next NFT origin class id.
     #[pallet::storage]
@@ -292,15 +248,15 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::create())]
-        pub fn deip_create(
-            origin: OriginFor<T>,
-            class: DeipNftClassIdOf<T>,
-            admin: T::DeipAccountId,
-        ) -> DispatchResultWithPostInfo {
-            let call = |class, admin| UniquesCall::<T>::create { class, admin };
-            Self::create_or_force(origin, class, admin, call)
-        }
+        // #[pallet::weight(<T as pallet_uniques::Config>::WeightInfo::create())]
+        // pub fn deip_create(
+        //     origin: OriginFor<T>,
+        //     class: DeipNftClassIdOf<T>,
+        //     admin: T::DeipAccountId,
+        // ) -> DispatchResultWithPostInfo {
+        //     let call = |class, admin| UniquesCall::<T>::create { class, admin };
+        //     Self::create_or_force(origin, class, admin, call)
+        // }
 
         // #[pallet::weight(
         //     pallet_uniques::Call::<T>::destroy{
@@ -319,7 +275,6 @@ pub mod pallet {
         // let res = call.dispatch_bypass_filter(origin);
 
         // if res.is_ok() {
-        //     DeipNftClassIdByNftClassIdV1::<T>::mutate_exists(origin_class_id, |v| *v = None);
         // }
 
         // res
@@ -608,40 +563,36 @@ pub mod pallet {
         // }
     }
 
-    impl<T: Config> Pallet<T> {
-        /// Convert DeipNftClassId to origin class id.
+    // impl<T: Config> Pallet<T> {
+        // Convert DeipNftClassId to origin class id.
         // fn deip_to_origin_class_id(class: DeipNftClassIdOf<T>) -> Result<T::NftClassId, Error<T>> {
         //         .ok_or(Error::<T>::DeipNftClassIdDoesNotExist)
         // }
 
-        fn create_or_force(
-            origin: OriginFor<T>,
-            class: DeipNftClassIdOf<T>,
-            admin: T::DeipAccountId,
-            call: impl FnOnce(T::NftClassId, <T::Lookup as StaticLookup>::Source) -> UniquesCall<T>,
-        ) -> DispatchResultWithPostInfo {
-            // Check if NFT with this deip id exist.
-            // ensure!(
-            //     Error::<T>::DeipNftClassIdExists
-            // );
+    //     fn create_or_force(
+    //         origin: OriginFor<T>,
+    //         admin: T::DeipAccountId,
+    //         call: impl FnOnce(T::NftClassId, <T::Lookup as StaticLookup>::Source) -> UniquesCall<T>,
+    //     ) -> DispatchResultWithPostInfo {
+    //         // Check if NFT with this deip id exist.
+    //         // ensure!(
+    //         //     Error::<T>::DeipNftClassIdExists
+    //         // );
 
-            // Get next origin class id.
-            let new_class_id = NextNftClassId::<T>::get();
+    //         // Get next origin class id.
+    //         let new_class_id = NextNftClassId::<T>::get();
 
-            // Dispatch call to origin uniques pallet.
-            let admin_source = <T::Lookup as StaticLookup>::unlookup(admin.into());
-            let call = call(new_class_id, admin_source);
-            let post_dispatch_info = call.dispatch_bypass_filter(origin)?;
+    //         // Dispatch call to origin uniques pallet.
+    //         let admin_source = <T::Lookup as StaticLookup>::unlookup(admin.into());
+    //         let call = call(new_class_id, admin_source);
+    //         let post_dispatch_info = call.dispatch_bypass_filter(origin)?;
 
-            // Save next class id.
-            let next_class_id =
-                new_class_id.checked_add(&One::one()).ok_or(Error::<T>::NftClassIdOverflow)?;
-            NextNftClassId::<T>::put(next_class_id);
+    //         // Save next class id.
+    //         let next_class_id =
+    //             new_class_id.checked_add(&One::one()).ok_or(Error::<T>::NftClassIdOverflow)?;
+    //         NextNftClassId::<T>::put(next_class_id);
 
-            // Insert id to map.
-            DeipNftClassIdByNftClassIdV1::<T>::insert(new_class_id, class);
-
-            Ok(post_dispatch_info)
-        }
-    }
+    //         Ok(post_dispatch_info)
+    //     }
+    // }
 }
