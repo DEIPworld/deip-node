@@ -155,10 +155,8 @@ pub mod pallet {
 		OfferTooLow,
 		/// Account cannot offer on a NFT again with an active offer
 		AlreadyOffered,
-		/// Accepted offer has expired and cannot be accepted
-		OfferHasExpired,
-		/// Listing has expired and cannot be bought
-		ListingHasExpired,
+		/// Listing or offer has expired and cannot be bought
+		HasExpired,
 		/// Price differs from when `buy` was executed
 		UnexpectedPrice,
 		/// Not possible to list non-transferable NFT
@@ -198,7 +196,7 @@ pub mod pallet {
 		/// Parameters:
 		/// - `origin` - Account of owner of the RMRK NFT to be listed
 		/// - `token` - Token identifier
-		/// - `price` - Price of the RMRK NFT
+		/// - `price` - Price of the token
 		/// - `until` - Optional BlockNumber for when the listing expires
 		#[pallet::weight(T::WeightInfo::list())]
 		#[transactional]
@@ -209,13 +207,14 @@ pub mod pallet {
 			until: Option<T::BlockNumber>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
+			Self::check_expired(until)?;
 			Self::lock(&token, &who)?;
 			Listed::<T>::insert(token, Listing { owner: who.clone(), price, until });
 			Self::deposit_event(Event::Listed { owner: who, token, price });
 			Ok(())
 		}
 
-		/// Unlist a NFT on the Marketplace and remove from storage in `Listed`.
+		/// Unlist NFT on the Marketplace and remove from storage in `Listed`.
 		///
 		/// Parameters:
 		/// - `origin` - Account owner of the listed RMRK NFT
@@ -256,17 +255,15 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 			let owner = Self::owner(&token).ok_or_else(|| Error::<T>::TokenNotFound)?;
 			ensure!(who != owner, Error::<T>::CannotBuyOwnToken);
-			let info = Listed::<T>::take(&token).ok_or(Error::<T>::TokenNotForSale)?;
-			ensure!(info.owner == owner, Error::<T>::TokenNotForSale);
-			if let Some(t) = info.until {
-				ensure!(t > Self::current_time(), Error::<T>::ListingHasExpired);
-			}
-			ensure!(value >= info.price, Error::<T>::UnexpectedPrice);
+			let listing = Listed::<T>::take(&token).ok_or(Error::<T>::NotListed)?;
+			ensure!(listing.owner == owner, Error::<T>::TokenNotForSale);
+			Self::check_expired(listing.until)?;
+			ensure!(value >= listing.price, Error::<T>::UnexpectedPrice);
 			Self::make_transfer(who, owner, token, value)
 		}
 
-		/// Make an offer on a RMRK NFT for purchase. An offer can be set with an expiration where
-		/// the offer can no longer be accepted by the RMRK NFT owner
+		/// Make an offer on a NFT for purchase. An offer can be set with an expiration where
+		/// the offer can no longer be accepted by the NFT owner
 		///
 		/// Parameters:
 		/// - `origin` - Account of the potential buyer
@@ -282,6 +279,7 @@ pub mod pallet {
 			until: Option<T::BlockNumber>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
+			Self::check_expired(until)?;
 			ensure!(price >= T::MinOfferPrice::get(), Error::<T>::OfferTooLow);
 			ensure!(!Self::has_active_offer(&token, &who), Error::<T>::AlreadyOffered);
 			let owner = Self::owner(&token).ok_or(Error::<T>::TokenNotFound)?;
@@ -307,10 +305,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let offer = Offers::<T>::take(&token, &who).ok_or(Error::<T>::UnknownOffer)?;
-			if who != offer.maker {
-				let owner = Self::owner(&token).ok_or(Error::<T>::TokenNotFound)?;
-				ensure!(who == owner, Error::<T>::PermissionDenied);
-			}
+			ensure!(who == offer.maker, Error::<T>::PermissionDenied);
 			T::Currency::unreserve(&offer.maker, offer.price);
 			Self::deposit_event(Event::OfferWithdrawn { offerer: offer.maker, token });
 			Ok(())
@@ -333,9 +328,7 @@ pub mod pallet {
 			ensure!(who != offerer, Error::<T>::CannotBuyOwnToken);
 			let offer = Offers::<T>::take(&token, &offerer).ok_or(Error::<T>::UnknownOffer)?;
 			ensure!(offerer == offer.maker, Error::<T>::UnknownOffer); // should be unreachable
-			if let Some(t) = offer.until {
-				ensure!(t > Self::current_time(), Error::<T>::OfferHasExpired);
-			}
+			Self::check_expired(offer.until)?;
 			T::Currency::unreserve(&offer.maker, offer.price);
 			Self::make_transfer(offer.maker, who.clone(), token, offer.price)?;
 			Self::deposit_event(Event::OfferAccepted { owner: who, offerer, token });
@@ -349,9 +342,14 @@ impl<T: Config> Pallet<T> {
 		todo!()
 	}
 
-	#[inline]
-	fn current_time() -> T::BlockNumber {
-		frame_system::Pallet::<T>::block_number()
+	fn check_expired(time: Option<T::BlockNumber>) -> Result<(), Error<T>> {
+		if let Some(t) = time {
+			let now = frame_system::Pallet::<T>::block_number();
+			if t <= now {
+				return Err(Error::<T>::HasExpired);
+			}
+		}
+		Ok(())
 	}
 
 	fn make_transfer(buyer: T::AccountId, owner: T::AccountId, token: T::Token, price: BalanceOf<T>) -> DispatchResult {
@@ -385,15 +383,6 @@ impl<T: Config> Pallet<T> {
 		let owner = Self::owner(&token).ok_or(Error::<T>::TokenNotFound)?;
 		ensure!(owner.eq(account), Error::<T>::PermissionDenied);
 		Ok(())
-	}
-
-	/// Helper function to check if an asset is listed
-	///
-	/// Parameters:
-	/// - token: Token identifier
-	#[inline]
-	fn is_listed(token: &T::Token) -> bool {
-		Listed::<T>::contains_key(token)
 	}
 
 	/// Helper function to check if an account has already submitted an offer

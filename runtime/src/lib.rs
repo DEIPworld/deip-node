@@ -871,7 +871,7 @@ impl pallet_deip_f_nft::Config for Runtime {
 }
 
 parameter_types! {
-    pub const MinOfferPrice: u64 = 1000000000;
+    pub const MinOfferPrice: u64 = 1000000;
 }
 
 impl pallet_deip_market::Config for Runtime {

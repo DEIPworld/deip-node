@@ -13,27 +13,39 @@ pub trait WeightInfo {
 pub struct Weights<T>(PhantomData<T>);
 
 impl<T: frame_system::Config> WeightInfo for Weights<T> {
-    fn buy() -> Weight {
-        100000
-    }
-
     fn list() -> Weight {
-        100000
+		(60_811_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+			.saturating_add(T::DbWeight::get().writes(1 as Weight))
     }
 
     fn unlist() -> Weight {
-        100000
+		(52_578_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+    }
+
+    fn buy() -> Weight {
+		(184_130_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(4 as Weight))
+			.saturating_add(T::DbWeight::get().writes(5 as Weight))
     }
 
     fn make_offer() -> Weight {
-        100000
+		(97_821_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(T::DbWeight::get().writes(1 as Weight))
     }
 
     fn withdraw_offer() -> Weight {
-        100000
+		(80_853_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+			.saturating_add(T::DbWeight::get().writes(1 as Weight))
     }
 
     fn accept_offer() -> Weight {
-        100000
+		(211_693_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(4 as Weight))
+			.saturating_add(T::DbWeight::get().writes(5 as Weight))
     }
 }

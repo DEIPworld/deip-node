@@ -6,7 +6,6 @@ use frame_system::RawOrigin;
 use sp_runtime::traits::Bounded;
 
 use crate::Pallet as Market;
-use deip_asset_system::*;
 use frame_system::Config as SystemConfig;
 use pallet_deip_nft::Config as DeipNftConfig;
 use pallet_deip_nft::Pallet as DeipNft;
@@ -46,8 +45,8 @@ fn mint_token<T>(
     mint_item::<DeipNft<T>>(collection, owner, OpaqueUnique::<DeipNft<T>>(item)).unwrap()
 }
 
-fn get_price() -> u64 {
-    10000000000
+fn get_price() -> u32 {
+    1000000000u32
 }
 
 benchmarks! {
@@ -114,6 +113,18 @@ benchmarks! {
     verify {
         assert_eq!(Offers::<T>::get(&token, &buyer), None);
         assert_eq!(Market::<T>::owner(&token), Some(owner));
+    }
+    accept_offer {
+        let owner = new_account::<T>(1);
+        let (collection, token) = prepare_token::<T>(&owner);
+        mint_token::<T>(&owner, collection, token);
+        let price = get_price().into();
+        let buyer = new_account::<T>(2);
+        Market::<T>::make_offer(RawOrigin::Signed(buyer.clone()).into(), token, price, None).unwrap();
+    }: accept_offer(RawOrigin::Signed(owner.clone()), token, buyer.clone())
+    verify {
+        assert_eq!(Offers::<T>::get(&token, &buyer), None);
+        assert_eq!(Market::<T>::owner(&token), Some(buyer));
     }
 
     impl_benchmark_test_suite!(Market, crate::tests::new_test_ext(), crate::tests::Test);
