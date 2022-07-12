@@ -646,14 +646,7 @@ impl pallet_uniques::Config for Runtime {
     type WeightInfo = pallet_uniques::weights::SubstrateWeight<Runtime>;
 }
 
-impl pallet_deip_uniques::Config for Runtime {
-    type DeipNftClassId = DeipNftClassId;
-    type DeipAccountId = deip_account::DeipAccountId<<Self as frame_system::Config>::AccountId>;
-    type ProjectId = pallet_deip::ProjectId;
-    type NftClassId = <Self as pallet_uniques::Config>::ClassId;
-    type MaxOriginClassId = MaxOriginClassId;
-    type Fungibles = DeipAssets;
-}
+impl pallet_deip_uniques::Config for Runtime {}
 
 impl pallet_beefy::Config for Runtime {
     type BeefyId = BeefyId;
@@ -774,7 +767,7 @@ impl pallet_deip_investment_opportunity::Config for Runtime {
 
     type AssetId = Self::Hash;
 
-    type AssetImpl = DeipUniques;
+    type AssetImpl = DeipFNFT;
 
     type Asset = NFTokenFraction<Self::AssetImpl>;
 }
@@ -863,7 +856,7 @@ impl pallet_deip_vesting::Config for Runtime {
     type VestingWeightInfo = pallet_deip_vesting::weights::SubstrateWeight<Runtime>;
 }
 
-impl pallet_deip_nft::Config for Runtime {
+impl pallet_deip_f_nft::Config for Runtime {
     type Event = Event;
 
     type NFTCollectionId = sp_core::H160;
@@ -910,7 +903,7 @@ construct_runtime!(
         Utility: pallet_utility::{Pallet, Call, Event},
         Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config},
         DeipAssets: pallet_deip_assets::{Pallet, Storage, Config<T>},
-        DeipUniques: pallet_deip_uniques::{Pallet, Storage, Config<T>},
+        DeipUniques: pallet_deip_uniques::{Pallet, Storage},
         DeipProposal: pallet_deip_proposal::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
         DeipDao: pallet_deip_dao::{Pallet, Call, Storage, Event<T>, Config},
         DeipPortal: pallet_deip_portal::{Pallet, Call, Storage, Config, ValidateUnsigned},
@@ -918,7 +911,7 @@ construct_runtime!(
         DeipEcosystemFund: pallet_deip_ecosystem_fund::{Pallet, Config<T>, Storage},
         DeipInvestmentOpportunity: pallet_deip_investment_opportunity,
 
-        DeipNft: pallet_deip_nft,
+        DeipFNFT: pallet_deip_f_nft,
     }
 );
 

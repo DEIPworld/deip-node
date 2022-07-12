@@ -203,8 +203,8 @@ dependencies = [
  "pallet-deip-balances",
  "pallet-deip-dao",
  "pallet-deip-ecosystem-fund",
+ "pallet-deip-f-nft",
  "pallet-deip-investment-opportunity",
- "pallet-deip-nft",
  "pallet-deip-portal",
  "pallet-deip-proposal",
  "pallet-deip-uniques",
@@ -4394,6 +4394,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-deip-f-nft"
+version = "3.0.0"
+dependencies = [
+ "deip-asset-system",
+ "frame-support",
+ "frame-system",
+ "pallet-assets",
+ "pallet-uniques",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-runtime",
+]
+
+[[package]]
 name = "pallet-deip-investment-opportunity"
 version = "3.0.0"
 dependencies = [
@@ -4416,21 +4431,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
-]
-
-[[package]]
-name = "pallet-deip-nft"
-version = "3.0.0"
-dependencies = [
- "deip-asset-system",
- "frame-support",
- "frame-system",
- "pallet-assets",
- "pallet-uniques",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-runtime",
 ]
 
 [[package]]

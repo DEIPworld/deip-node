@@ -45,7 +45,7 @@ pallet-deip-balances = { path = "../pallets/deip_balances", default-features = f
 pallet-deip-dao = { path = "../pallets/deip_dao", default-features = false }
 pallet-deip-ecosystem-fund = { path = "../pallets/deip_ecosystem_fund", default-features = false }
 pallet-deip-investment-opportunity = { path = "../pallets/deip_investment_opportunity", default-features = false }
-pallet-deip-nft = { path = "../pallets/deip_nft", default-features = false }
+pallet-deip-f-nft = { path = "../pallets/deip_f_nft", default-features = false }
 pallet-deip-portal = { path = "../pallets/deip_portal", default-features = false }
 pallet-deip-proposal = { path = "../pallets/deip_proposal", default-features = false }
 pallet-deip-uniques = { path = "../pallets/deip_uniques", default-features = false }
@@ -152,7 +152,7 @@ std = [
     "pallet-deip-dao/std",
     "pallet-deip-ecosystem-fund/std",
     "pallet-deip-investment-opportunity/std",
-    "pallet-deip-nft/std",
+    "pallet-deip-f-nft/std",
     "pallet-deip-portal/std",
     "pallet-deip-proposal/std",
     "pallet-deip-uniques/std",

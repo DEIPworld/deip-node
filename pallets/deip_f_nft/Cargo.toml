@@ -4,7 +4,7 @@ description = "FRAME pallet that wraps Substrate uniques"
 edition = "2018"
 homepage = "https://deip.world/"
 license = "Apache-2.0"
-name = "pallet-deip-nft"
+name = "pallet-deip-f-nft"
 repository = "https://github.com/DEIPworld/deip-canary-network"
 version = "3.0.0"
 
