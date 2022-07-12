@@ -1,9 +1,9 @@
 use appchain_deip_runtime::{
     currency::{OCTS, UNITS as DEIP},
-    opaque::Block, opaque::SessionKeys, Balance, BeefyConfig, ImOnlineConfig, OctopusAppchainConfig,
+    opaque::{Block, SessionKeys}, Balance, BeefyConfig, ImOnlineConfig, OctopusAppchainConfig,
     AccountId, DeipAssetsConfig, BabeConfig, DeipConfig, DeipDaoConfig,
     DeipPortalConfig, DeipProposalConfig, DeipVestingConfig, GenesisConfig, GrandpaConfig,
-    BalancesConfig, Signature, SudoConfig, SystemConfig, DeipUniquesConfig, SessionConfig,
+    BalancesConfig, Signature, SudoConfig, SystemConfig, SessionConfig,
     OctopusLposConfig, WASM_BINARY, DeipEcosystemFundConfig, DeipInvestmentOpportunityConfig,
 };
 
@@ -100,7 +100,7 @@ pub fn get_appchain_config(
     premined_amount: Balance,
     era_payout: Balance,
 ) -> (String, Balance, Balance) {
-	(anchor_contract.to_string(), premined_amount, era_payout)
+    (anchor_contract.to_string(), premined_amount, era_payout)
 }
 
 pub fn octopus_mainnet_config() -> Result<ChainSpec, String> {
@@ -308,7 +308,6 @@ fn genesis(
             domain_count: domains.len() as u32,
         },
         deip_assets: DeipAssetsConfig::default(),
-        deip_uniques: DeipUniquesConfig::default(),
         deip_proposal: DeipProposalConfig {},
         deip_dao: DeipDaoConfig {},
         deip_portal: DeipPortalConfig {},
