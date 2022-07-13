@@ -42,7 +42,7 @@ frame_support::construct_runtime!(
         Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
         Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config},
         Assets: pallet_assets::{Pallet, Storage, Event<T>},
-        DeipAssets: pallet_deip_assets::{Pallet, Storage, Call},
+        DeipAssets: pallet_deip_assets::{Pallet, Storage},
     }
 );
 
