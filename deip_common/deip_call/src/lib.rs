@@ -59,7 +59,7 @@ impl Serialize for WrappedCall<Call> {
             //     Self::serialize_deip_assets_call(deip_assets_call, serializer),
             Call::Assets(..) |
             // Call::DeipUniques(..) |
-            Call::DeipNft(..) |
+            Call::DeipFNFT(..) |
             Call::System(_) |
             Call::DeipPortal(_) |
             Call::Timestamp(_) |
@@ -288,18 +288,12 @@ impl WrappedCall<Call> {
         use pallet_deip_investment_opportunity::Call::*;
 
         match deip_call {
-            create { id, creator, shares, fund } =>
-                CallObject {
-                    module: "crowdfunding",
-                    call: "create",
-                    args: &CrowdfundingCreateCallArgs {
-                        id,
-                        creator,
-                        shares,
-                        fund,
-                    },
-                }
-                .serialize(serializer),
+            create { id, creator, shares, fund } => CallObject {
+                module: "crowdfunding",
+                call: "create",
+                args: &CrowdfundingCreateCallArgs { id, creator, shares, fund },
+            }
+            .serialize(serializer),
 
             commit_shares { id, shares } => CallObject {
                 module: "crowdfunding",
@@ -318,13 +312,7 @@ impl WrappedCall<Call> {
             ready { id, start_time, end_time, soft_cap, hard_cap } => CallObject {
                 module: "crowdfunding",
                 call: "ready",
-                args: &CrowdfundingReadyCallArgs {
-                    id,
-                    start_time,
-                    end_time,
-                    soft_cap,
-                    hard_cap
-                },
+                args: &CrowdfundingReadyCallArgs { id, start_time, end_time, soft_cap, hard_cap },
             }
             .serialize(serializer),
 
@@ -844,12 +832,12 @@ struct DeipUpdateProjectCallArgs<A, B, C> {
 }
 
 #[derive(Serialize)]
-struct CrowdfundingReadyCallArgs<A, B, C ,D, E> {
+struct CrowdfundingReadyCallArgs<A, B, C, D, E> {
     id: A,
     start_time: B,
     end_time: C,
     soft_cap: D,
-    hard_cap: E
+    hard_cap: E,
 }
 
 #[derive(Serialize)]
