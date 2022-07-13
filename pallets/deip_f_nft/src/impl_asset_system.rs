@@ -1,13 +1,27 @@
 use deip_asset_system::{
-    error::Error as NftError, NFTImplT, NFTokenCollectionRecord, NFTokenFractionRecord,
+    error::Error as NftError, FTImplT, NFTImplT, NFTokenCollectionRecord, NFTokenFractionRecord,
     NFTokenItemRecord,
 };
 use sp_core::H160;
 
 use crate::{
     CollectionRepo, Config, Error, FingerprintByFractionTokenId, FractionHolds, FractionRepo,
-    FractionalRepo, ItemRepo, NextCollectionId, Pallet,
+    FractionalRepo, ItemRepo, NextCollectionId, Pallet, NextFTokenId
 };
+
+impl<T: Config> FTImplT for Pallet<T> {
+    type Account = T::AccountId;
+
+    type FTokenId = T::InternalFTokenId;
+
+    type FTokenAmount = T::NFTFractionAmount;
+
+    type NextFTokenId = NextFTokenId<T>;
+
+    type Fungibles = pallet_assets::Pallet<T>;
+
+    type Error = Error<T>;
+}
 
 impl<T: Config> NFTImplT for Pallet<T> {
     type Fungibles = T::Fungibles;

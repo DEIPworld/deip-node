@@ -66,7 +66,7 @@ pub mod pallet {
         }
     }
 
-    // #[pallet::storage]
     // [deprecated] transferred to pallet_deip_f_nft
+    // #[pallet::storage]
     // pub type NextCollectionId<T: Config> = StorageValue<_, T::ClassId, ValueQuery>;
 }
