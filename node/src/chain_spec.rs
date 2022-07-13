@@ -1,7 +1,7 @@
 use appchain_deip_runtime::{
     currency::{OCTS, UNITS as DEIP},
     opaque::{Block, SessionKeys}, Balance, BeefyConfig, ImOnlineConfig, OctopusAppchainConfig,
-    AccountId, DeipAssetsConfig, BabeConfig, DeipConfig, DeipDaoConfig,
+    AccountId, BabeConfig, DeipConfig, DeipDaoConfig,
     DeipPortalConfig, DeipProposalConfig, DeipVestingConfig, GenesisConfig, GrandpaConfig,
     BalancesConfig, Signature, SudoConfig, SystemConfig, SessionConfig,
     OctopusLposConfig, WASM_BINARY, DeipEcosystemFundConfig, DeipInvestmentOpportunityConfig,
@@ -287,7 +287,7 @@ fn genesis(
                 })
                 .collect::<Vec<_>>(),
         },
-        sudo: SudoConfig { key: sudo_key.clone() },
+        sudo: SudoConfig { key: sudo_key },
         babe: BabeConfig {
             authorities: vec![],
             epoch_config: Some(appchain_deip_runtime::BABE_GENESIS_EPOCH_CONFIG),
@@ -307,13 +307,12 @@ fn genesis(
             domains: domains.iter().cloned().map(|k| (k, Domain { external_id: k })).collect(),
             domain_count: domains.len() as u32,
         },
-        deip_assets: DeipAssetsConfig::default(),
         deip_proposal: DeipProposalConfig {},
         deip_dao: DeipDaoConfig {},
         deip_portal: DeipPortalConfig {},
         deip_vesting: DeipVestingConfig { vesting: vesting_plans },
         deip_ecosystem_fund: DeipEcosystemFundConfig {
-            fee_recipient: ecosystem_fund_key.clone()
+            fee_recipient: ecosystem_fund_key,
         },
         deip_investment_opportunity: DeipInvestmentOpportunityConfig {},
     }

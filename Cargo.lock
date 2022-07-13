@@ -4324,16 +4324,9 @@ dependencies = [
 name = "pallet-deip-assets"
 version = "3.0.0"
 dependencies = [
- "deip-asset-system",
- "deip-assets-error",
- "deip-projects-info",
  "deip_serializable_u128",
  "frame-support",
  "frame-system",
- "pallet-assets",
- "pallet-balances",
- "pallet-sudo",
- "pallet-transaction-payment",
  "parity-scale-codec",
  "scale-info",
  "serde",
