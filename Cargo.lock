@@ -4480,12 +4480,8 @@ dependencies = [
 name = "pallet-deip-uniques"
 version = "3.0.0"
 dependencies = [
- "deip-asset-system",
- "deip-projects-info",
  "frame-support",
  "frame-system",
- "pallet-assets",
- "pallet-uniques",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
