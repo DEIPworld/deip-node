@@ -19,13 +19,27 @@ pub mod pallet {
         dispatch::DispatchResult,
         pallet_prelude::{
             Member, NMapKey, StorageDoubleMap, StorageMap, StorageNMap, StorageValue, ValueQuery,
+            Weight,
         },
-        traits::IsType,
+        traits::{Hooks, IsType},
         transactional, Blake2_128Concat, Parameter,
     };
-    use frame_system::{ensure_signed, pallet_prelude::OriginFor};
+    use frame_system::{
+        ensure_signed,
+        pallet_prelude::{BlockNumberFor, OriginFor},
+    };
     use sp_core::H160;
     use sp_runtime::traits::{AtLeast32BitUnsigned, Bounded, StaticLookup};
+
+    #[doc(hidden)]
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_runtime_upgrade() -> Weight {
+            let reads = 0;
+            let writes = 0;
+            T::DbWeight::get().reads_writes(reads, writes)
+        }
+    }
 
     #[pallet::config]
     pub trait Config:
