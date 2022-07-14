@@ -9,8 +9,8 @@ use crate::Pallet as Market;
 use frame_system::Config as SystemConfig;
 use pallet_deip_f_nft::Config as DeipFNFTConfig;
 use pallet_deip_f_nft::Pallet as DeipFNFT;
-use sp_runtime::traits::Hash;
 use sp_core::H160;
+use sp_runtime::traits::Hash;
 
 const SEED: u32 = 1;
 
@@ -35,11 +35,8 @@ where
     (collection, item)
 }
 
-fn mint_token<T>(
-    owner: &T::AccountId,
-    collection: T::NFTCollectionId,
-    item: T::NFTItemId,
-) where
+fn mint_token<T>(owner: &T::AccountId, collection: T::NFTCollectionId, item: T::NFTItemId)
+where
     T: DeipFNFTConfig,
 {
     mint_item::<DeipFNFT<T>>(collection, owner, OpaqueUnique::<DeipFNFT<T>>(item)).unwrap()
