@@ -4513,7 +4513,7 @@ dependencies = [
  "frame-system",
  "pallet-assets",
  "pallet-balances",
- "pallet-deip-nft",
+ "pallet-deip-f-nft",
  "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
