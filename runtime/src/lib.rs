@@ -812,7 +812,7 @@ impl pallet_deip_stake_voting::Config for Runtime {
     type DepositBase = DepositBase;
     type AssetId = Self::Hash;
     type AssetBalance = <Self as pallet_assets::Config>::Balance;
-    type Assets = DeipNft;
+    type Assets = DeipFNFT;
     type RelativeThresholdLimit = RelativeThresholdLimit;
     type MaxVotesPerAccountAsset = MaxVotesPerAccountAsset;
     type WeightInfo = pallet_deip_stake_voting::weights::Weights<Runtime>;
