@@ -7,8 +7,8 @@ use sp_runtime::traits::Bounded;
 
 use crate::Pallet as Market;
 use frame_system::Config as SystemConfig;
-use pallet_deip_nft::Config as DeipNftConfig;
-use pallet_deip_nft::Pallet as DeipNft;
+use pallet_deip_f_nft::Config as DeipFNFTConfig;
+use pallet_deip_f_nft::Pallet as DeipFNFT;
 use sp_runtime::traits::Hash;
 use sp_core::H160;
 
@@ -25,12 +25,12 @@ fn new_account<T: Config>(i: u32) -> T::AccountId {
 
 fn prepare_token<T>(owner: &T::AccountId) -> (T::NFTCollectionId, T::NFTItemId)
 where
-    T: DeipNftConfig + Config,
+    T: DeipFNFTConfig + Config,
 {
     let balance = BalanceOf::<T>::max_value();
     <T as Config>::Currency::make_free_balance_be(&owner, balance);
     let collection = H160::from([0u8; 20]).into();
-    create_collection::<DeipNft<T>>(&owner, collection, 1u32.into()).unwrap();
+    create_collection::<DeipFNFT<T>>(&owner, collection, 1u32.into()).unwrap();
     let item = <T as SystemConfig>::Hashing::hash_of(&1u32);
     (collection, item)
 }
@@ -40,9 +40,9 @@ fn mint_token<T>(
     collection: T::NFTCollectionId,
     item: T::NFTItemId,
 ) where
-    T: DeipNftConfig,
+    T: DeipFNFTConfig,
 {
-    mint_item::<DeipNft<T>>(collection, owner, OpaqueUnique::<DeipNft<T>>(item)).unwrap()
+    mint_item::<DeipFNFT<T>>(collection, owner, OpaqueUnique::<DeipFNFT<T>>(item)).unwrap()
 }
 
 fn get_price() -> u32 {
@@ -52,7 +52,7 @@ fn get_price() -> u32 {
 benchmarks! {
     where_clause {
         where T: Config<Token=<T as SystemConfig>::Hash>
-            + DeipNftConfig
+            + DeipFNFTConfig
     }
     list {
         let owner = new_account::<T>(1);

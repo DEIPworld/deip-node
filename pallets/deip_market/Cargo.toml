@@ -30,7 +30,7 @@ deip-asset-system = { path = "../../deip_common/deip_asset_system", default-feat
 
 # Benchmarking deips:
 pallet-balances = { git = "https://github.com/DEIPworld/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
-pallet-deip-nft = { path = "../deip_nft", default-features = false, optional = true }
+pallet-deip-f-nft = { path = "../deip_f_nft", default-features = false, optional = true }
 
 # alias "parity-scale-code" to "codec"
 [dependencies.codec]
@@ -45,7 +45,7 @@ runtime-benchmarks = [
     "frame-benchmarking",
     "pallet-balances",
     "pallet-assets",
-    "pallet-deip-nft",
+    "pallet-deip-f-nft",
 ]
 
 std = [
@@ -56,7 +56,7 @@ std = [
     "frame-system/std",
     "pallet-balances/std",
     "pallet-assets/std",
-    "pallet-deip-nft/std",
+    "pallet-deip-f-nft/std",
     "sp-core/std",
     "sp-io/std",
     "sp-std/std",

@@ -878,7 +878,7 @@ impl pallet_deip_market::Config for Runtime {
     type Event = Event;
     type Currency = Balances;
     type Token = Hash;
-    type Tokens = DeipNft;
+    type Tokens = DeipFNFT;
     type MinOfferPrice = MinOfferPrice;
     type WeightInfo = pallet_deip_market::weights::Weights<Runtime>;
 }
@@ -924,7 +924,7 @@ construct_runtime!(
         DeipEcosystemFund: pallet_deip_ecosystem_fund::{Pallet, Config<T>, Storage},
         DeipInvestmentOpportunity: pallet_deip_investment_opportunity,
         DeipFNFT: pallet_deip_f_nft,
-        DeipMarket: pallet_deip_market::{Pallet, Call, Storage, Config<T>},
+        DeipMarket: pallet_deip_market::{Pallet, Call, Storage, Event<T>},
     }
 );
 
