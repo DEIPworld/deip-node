@@ -1,6 +1,6 @@
 # Stake Voting Pallet
 
-The Stake Voting pallet provides multisignature operations based on asset ownership (stakeholders).
+The Stake Voting pallet provides multi-signature operations based on asset ownership (stakeholders).
 This pallet exposes the following extrinsic calls:
 
 #
@@ -8,8 +8,7 @@ This pallet exposes the following extrinsic calls:
 ## Create and start new voting
 
 Creates and starts a new voting operation for the asset holders.
-This operation automatically puts a new positive vote for the call.
-May be called by the asset holders only.
+The only asset holders are allowed to call this operation.
 
 Arguments:
 - `origin` - caller | account owner;
@@ -42,8 +41,8 @@ pub fn create(
 ## Vote for / against the call
 
 Puts a new positive, neutral or negative vote into the active voting.
-May be called by the asset shares holder.
-This operation can fully remove the voting or execute it if the threshold is reached.
+This operation executes the voting call if the threshold is reached. It automatically returns the asset shares to the caller (not to all voters) while the execution.
+The only asset holders are allowed to call this operation.
 
 Arguments:
 - `origin` - caller | account owner;
@@ -73,8 +72,8 @@ pub fn vote(
 ## Cancel voting participation (unvote)
 
 Cancels caller's participation in the active voting and removes previously added vote.
-May be called by any voter and voting author.
-This operation can execute the call if the threshold is reached.
+This operation executes the voting call if the threshold is reached.
+It may be called by any voter.
 
 Arguments:
 - `origin` - caller | account owner;
@@ -99,9 +98,8 @@ pub fn unvote(
 
 ## Execute active voting
 
-Confirms the active voting execution and removes added vote for the caller.
-May be called by any holder of the asset.
-This operation executes the call if the threshold is reached.
+Confirms the active voting execution and removes a vote for the caller. Should be called to complete the voting operation if the threshold has been reached due to changes in the values of stakeholder shares or the value of total supply (total fractions). If the caller has voted for this voting operation, the asset shares automatically return to the caller.
+The only asset holders are allowed to call this operation.
 
 Arguments:
 - `origin` - caller | account owner;
@@ -147,7 +145,7 @@ pub fn close(
 ## Return control of the asset to its holder
 
 Unlock caller's asset that has been locked by voting operations.
-Should be called after closing or execution all votings for this asset.
+Should be called after closing or execution all votings for this asset if the asset shares weren't returned to theirs owner automatically while executing.
 This only applies to locking an asset through voting.
 
 Arguments:
