@@ -165,29 +165,6 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/*#[pallet::weight(10000)]
-		#[transactional]
-		pub fn list_draft(
-			origin: OriginFor<T>,
-			
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-			ensure!(Self::is_portal_account(&who), Error::<T>::NoPermission);
-			todo!()
-		}
-
-		#[pallet::weight(10000)]
-		#[transactional]
-		pub fn redeem(
-			origin: OriginFor<T>,
-			voucher: Voucher<T>,
-			
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-			ensure!(Self::is_portal_account(&who), Error::<T>::NoPermission);
-			todo!()
-		}*/
-
 		/// List a token on the Marketplace for purchase. A listing can be cancelled, and is
 		/// automatically considered cancelled when a `buy` is executed on top of a given listing.
 		/// An NFT that has another NFT as its owner CANNOT be listed. An NFT owned by a NFT must
@@ -311,7 +288,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Accept an offer on a RMRK NFT from a potential buyer.
+		/// Accept an offer on a NFT from a potential buyer.
 		///
 		/// Parameters:
 		/// - `origin` - Account of the current owner that is accepting the offerer's offer
@@ -338,10 +315,6 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	fn is_portal_account(account: &T::AccountId) -> bool {
-		todo!()
-	}
-
 	fn check_expired(time: Option<T::BlockNumber>) -> Result<(), Error<T>> {
 		if let Some(t) = time {
 			let now = frame_system::Pallet::<T>::block_number();
