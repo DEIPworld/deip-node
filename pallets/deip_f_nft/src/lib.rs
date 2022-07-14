@@ -17,11 +17,13 @@ pub mod pallet {
     };
     use frame_support::{
         dispatch::DispatchResult,
+        migration::storage_key_iter,
         pallet_prelude::{
             Member, NMapKey, StorageDoubleMap, StorageMap, StorageNMap, StorageValue, ValueQuery,
             Weight,
         },
-        traits::{Hooks, IsType},
+        sp_runtime::traits::{AtLeast32BitUnsigned, Bounded, CheckedAdd, One, StaticLookup, Zero},
+        traits::{tokens::currency::Currency, Get, Hooks, IsType},
         transactional, Blake2_128Concat, Parameter,
     };
     use frame_system::{
@@ -29,7 +31,6 @@ pub mod pallet {
         pallet_prelude::{BlockNumberFor, OriginFor},
     };
     use sp_core::H160;
-    use sp_runtime::traits::{AtLeast32BitUnsigned, Bounded, StaticLookup};
 
     #[doc(hidden)]
     #[pallet::hooks]
@@ -37,6 +38,39 @@ pub mod pallet {
         fn on_runtime_upgrade() -> Weight {
             let reads = 0;
             let writes = 0;
+
+            // NextFTokenId
+            let pallet = b"Assets";
+            let storage = b"Asset";
+            type DepositBalanceOf<T> = <<T as pallet_assets::Config>::Currency as Currency<
+                <T as frame_system::Config>::AccountId,
+            >>::Balance;
+            let iterator = storage_key_iter::<
+                T::AssetId,
+                pallet_assets::AssetDetails<T::Balance, T::AccountId, DepositBalanceOf<T>>,
+                Blake2_128Concat,
+            >(pallet, storage);
+            let next_id = iterator
+                .map(|(id, _)| id)
+                .max()
+                .and_then(|id| id.checked_add(&One::one()))
+                .unwrap_or_else(Zero::zero);
+            NextFTokenId::<T>::put(next_id);
+
+            // CollectionRepo
+
+            // ItemRepo
+
+            // FingerprintByFractionTokenId
+
+            // FractionRepo
+
+            // FractionalRepo
+
+            // FractionHolds
+
+            // NextCollectionId
+
             T::DbWeight::get().reads_writes(reads, writes)
         }
     }
@@ -60,7 +94,7 @@ pub mod pallet {
         type NFTFractionAmount: Member + Parameter + AtLeast32BitUnsigned + Copy + Default;
 
         type InternalCollectionId: Member + Parameter + AtLeast32BitUnsigned + Copy + Default;
-        type InternalFTokenId: Member + Parameter + AtLeast32BitUnsigned + Copy + Default;
+        type InternalFTokenId: Member + Parameter + AtLeast32BitUnsigned + Copy + Default + One;
 
         /// Pallet with low level control over fungible tokens.
         type Fungibles: FTImplT<
