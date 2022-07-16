@@ -22,7 +22,7 @@ Follow these steps to get started :hammer_and_wrench:
 
 ### Rust Setup
 
-First, complete the [basic Rust setup instructions](./doc/rust-setup.md).
+First, complete the [basic Rust setup instructions](./docs/rust-setup.md).
 
 ### Run
 
