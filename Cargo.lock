@@ -205,6 +205,7 @@ dependencies = [
  "pallet-deip-ecosystem-fund",
  "pallet-deip-f-nft",
  "pallet-deip-investment-opportunity",
+ "pallet-deip-market",
  "pallet-deip-portal",
  "pallet-deip-proposal",
  "pallet-deip-uniques",
@@ -4424,6 +4425,29 @@ dependencies = [
  "pallet-deip-assets",
  "pallet-timestamp",
  "pallet-transaction-payment",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-deip-market"
+version = "3.0.0"
+dependencies = [
+ "deip-asset-system",
+ "deip-transaction-ctx",
+ "deip_serializable_u128",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-assets",
+ "pallet-balances",
+ "pallet-deip-f-nft",
+ "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
  "serde",

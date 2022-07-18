@@ -1,0 +1,67 @@
+[package]
+authors = ["DEIP world <https://github.com/DEIPworld>"]
+description = "FRAME pallet for selling and buying tokens"
+edition = "2018"
+homepage = "https://deip.world/"
+license = "Apache-2.0"
+name = "pallet-deip-market"
+repository = "https://github.com/DEIPworld/deip-node"
+version = "3.0.0"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
+pallet-timestamp = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+serde = { version = "1.0.130", features = ["derive"], optional = true }
+sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
+
+deip-transaction-ctx = { path = "../../deip_common/deip_transaction_ctx", default-features = false }
+deip_serializable_u128 = { path = "../../deip_common/deip_serializable_u128", default-features = false }
+deip-asset-system = { path = "../../deip_common/deip_asset_system", default-features = false }
+
+# Benchmarking deips:
+pallet-balances = { git = "https://github.com/DEIPworld/substrate.git", branch = "polkadot-v0.9.13", default-features = false, optional = true }
+pallet-deip-f-nft = { path = "../deip_f_nft", default-features = false, optional = true }
+
+# alias "parity-scale-code" to "codec"
+[dependencies.codec]
+default-features = false
+features = ["derive"]
+package = "parity-scale-codec"
+version = "2.0.0"
+
+[features]
+default = ["std"]
+runtime-benchmarks = [
+    "frame-benchmarking",
+    "pallet-balances",
+    "pallet-assets",
+    "pallet-deip-f-nft",
+]
+
+std = [
+    "codec/std",
+    "scale-info/std",
+    "serde",
+    "frame-support/std",
+    "frame-system/std",
+    "pallet-balances/std",
+    "pallet-assets/std",
+    "pallet-deip-f-nft/std",
+    "sp-core/std",
+    "sp-io/std",
+    "sp-std/std",
+    "sp-runtime/std",
+    "frame-benchmarking/std",
+    "deip_serializable_u128/std",
+    "deip-asset-system/std",
+]
