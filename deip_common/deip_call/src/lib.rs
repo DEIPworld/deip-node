@@ -76,6 +76,7 @@ impl Serialize for WrappedCall<Call> {
             Call::Utility(_) |
             Call::Multisig(_) |
             Call::DeipMarket(_) |
+            Call::DeipStakeVoting(_) |
             Call::DeipVesting(_) => CallObject {
                 module: "unsupported_module",
                 call: "unsupported_call",
@@ -97,7 +98,7 @@ impl WrappedCall<Call> {
         use pallet_deip::Call::*;
 
         match deip_call {
-            create_project { is_private, external_id, team_id, description, domains } =>
+            create_project { is_private, external_id, team_id, description, domains } => {
                 CallObject {
                     module: "deip",
                     call: "create_project",
@@ -109,7 +110,8 @@ impl WrappedCall<Call> {
                         domains,
                     },
                 }
-                .serialize(serializer),
+                .serialize(serializer)
+            },
 
             update_project { project_id, description, is_private } => CallObject {
                 module: "deip",
@@ -501,9 +503,10 @@ impl WrappedCall<Call> {
             }
             .serialize(serializer),
 
-            deip_thaw { id, who } =>
+            deip_thaw { id, who } => {
                 CallObject { module, call: "deip_thaw", args: &DeipAssetsThawCallArgs { id, who } }
-                    .serialize(serializer),
+                    .serialize(serializer)
+            },
 
             deip_freeze_asset { id } => CallObject {
                 module,
