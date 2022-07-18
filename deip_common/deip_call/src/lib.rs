@@ -55,10 +55,6 @@ impl Serialize for WrappedCall<Call> {
             Call::DeipDao(deip_dao_call) =>
                 Self::serialize_deip_dao_call(deip_dao_call, serializer),
 
-            // Call::DeipAssets(deip_assets_call) =>
-            //     Self::serialize_deip_assets_call(deip_assets_call, serializer),
-            Call::Assets(..) |
-            // Call::DeipUniques(..) |
             Call::DeipFNFT(..) |
             Call::System(_) |
             Call::DeipPortal(_) |
@@ -442,104 +438,6 @@ impl WrappedCall<Call> {
                 module: "deip_dao",
                 call: "on_behalf",
                 args: &DeipDaoOnBehalfCallArgs { name, call: &WrappedCall::wrap(call.borrow()) },
-            }
-            .serialize(serializer),
-
-            __Ignore(..) => unreachable!(),
-        }
-    }
-
-    #[allow(dead_code)]
-    fn serialize_deip_assets_call<S>(
-        call: &pallet_deip_assets::Call<Runtime>,
-        serializer: S,
-    ) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        use pallet_deip_assets::Call::*;
-
-        let module = "deip_assets";
-        match call {
-            deip_create { id, admin, min_balance } => CallObject {
-                module,
-                call: "deip_create",
-                args: &DeipAssetsCreateCallArgs::new(id, admin, min_balance),
-            }
-            .serialize(serializer),
-
-            deip_destroy { id, witness: _ } => CallObject {
-                module,
-                call: "deip_destroy",
-                args: &DeipAssetsDestroyCallArgs { id, witness: () },
-            }
-            .serialize(serializer),
-
-            deip_mint { id, beneficiary, amount } => CallObject {
-                module,
-                call: "deip_mint",
-                args: &DeipAssetsMintCallArgs::new(id, beneficiary, amount),
-            }
-            .serialize(serializer),
-
-            deip_burn { id, who, amount } => CallObject {
-                module,
-                call: "deip_burn",
-                args: &DeipAssetsBurnCallArgs::new(id, who, amount),
-            }
-            .serialize(serializer),
-
-            deip_transfer { id, target, amount } => CallObject {
-                module,
-                call: "deip_transfer",
-                args: &DeipAssetsTransferCallArgs::new(id, target, amount),
-            }
-            .serialize(serializer),
-
-            deip_freeze { id, who } => CallObject {
-                module,
-                call: "deip_freeze",
-                args: &DeipAssetsFreezeCallArgs { id, who },
-            }
-            .serialize(serializer),
-
-            deip_thaw { id, who } => {
-                CallObject { module, call: "deip_thaw", args: &DeipAssetsThawCallArgs { id, who } }
-                    .serialize(serializer)
-            },
-
-            deip_freeze_asset { id } => CallObject {
-                module,
-                call: "deip_freeze_asset",
-                args: &DeipAssetsFreezeAssetCallArgs { id },
-            }
-            .serialize(serializer),
-
-            deip_thaw_asset { id } => CallObject {
-                module,
-                call: "deip_thaw_asset",
-                args: &DeipAssetsThawAssetCallArgs { id },
-            }
-            .serialize(serializer),
-
-            deip_transfer_ownership { id, owner } => CallObject {
-                module,
-                call: "deip_transfer_ownership",
-                args: &DeipAssetsTransferOwnershipCallArgs { id, owner },
-            }
-            .serialize(serializer),
-
-            deip_set_team { id, issuer, admin, freezer } => CallObject {
-                module,
-                call: "deip_set_team",
-                args: &DeipAssetsSetTeamCallArgs { id, issuer, admin, freezer },
-            }
-            .serialize(serializer),
-
-            deip_set_metadata { id, name, symbol, decimals } => CallObject {
-                module,
-                call: "deip_set_metadata",
-                args: &DeipAssetsSetMetadataCallArgs { id, name, symbol, decimals },
             }
             .serialize(serializer),
 

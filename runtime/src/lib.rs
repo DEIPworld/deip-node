@@ -595,14 +595,7 @@ impl deip_asset_system::AssetIdInitT<DeipAssetId> for AssetIdInit {
     }
 }
 
-impl pallet_deip_assets::Config for Runtime {
-    type ProjectsInfo = Self;
-    type DeipAccountId = deip_account::DeipAccountId<Self::AccountId>;
-    type AssetsAssetId = AssetId;
-    type AssetId = DeipAssetId;
-    type AssetIdInit = AssetIdInit;
-    type WipePeriod = WipePeriod;
-}
+impl pallet_deip_assets::Config for Runtime {}
 
 impl pallet_deip_balances::Config for Runtime {}
 
@@ -886,7 +879,7 @@ impl pallet_deip_f_nft::Config for Runtime {
     type InternalCollectionId = NftClassId;
     type InternalFTokenId = AssetId;
 
-    type Fungibles = DeipAssets;
+    type Fungibles = pallet_deip_f_nft::Pallet<Self>;
 }
 
 parameter_types! {
@@ -926,7 +919,7 @@ construct_runtime!(
         ImOnline: pallet_im_online,
         Historical: pallet_session_historical::{Pallet},
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage},
-        Assets: pallet_assets::{Pallet, Call, Storage, Event<T>},
+        Assets: pallet_assets::{Pallet, Storage, Event<T>},
         Uniques: pallet_uniques::{Pallet, Storage, Event<T>},
         Mmr: pallet_mmr::{Pallet, Storage},
         Beefy: pallet_beefy::{Pallet, Config<T>},
@@ -934,8 +927,6 @@ construct_runtime!(
         Multisig: pallet_multisig::{Pallet, Call, Storage, Event<T>},
         Utility: pallet_utility::{Pallet, Call, Event},
         Deip: pallet_deip::{Pallet, Call, Storage, Event<T>, Config},
-        DeipAssets: pallet_deip_assets::{Pallet, Storage, Config<T>},
-        DeipUniques: pallet_deip_uniques::{Pallet, Storage},
         DeipProposal: pallet_deip_proposal::{Pallet, Call, Storage, Event<T>, Config, ValidateUnsigned},
         DeipDao: pallet_deip_dao::{Pallet, Call, Storage, Event<T>, Config},
         DeipStakeVoting: pallet_deip_stake_voting::{Pallet, Call, Storage, Event<T>},
@@ -945,6 +936,10 @@ construct_runtime!(
         DeipInvestmentOpportunity: pallet_deip_investment_opportunity,
         DeipFNFT: pallet_deip_f_nft,
         DeipMarket: pallet_deip_market::{Pallet, Call, Storage, Event<T>},
+
+        // deprecated
+        DeipAssets: pallet_deip_assets::{Pallet, Storage},
+        DeipUniques: pallet_deip_uniques::{Pallet, Storage},
     }
 );
 

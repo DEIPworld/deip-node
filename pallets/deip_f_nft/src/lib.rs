@@ -124,6 +124,10 @@ pub mod pallet {
     #[pallet::storage]
     pub type NextCollectionId<T: Config> = StorageValue<_, T::InternalCollectionId, ValueQuery>;
 
+    /// Id of the next fraction to be created.
+    #[pallet::storage]
+    pub type NextFTokenId<T: Config> = StorageValue<_, T::InternalFTokenId, ValueQuery>;
+
     /// Storage with fraction FT id - item fingerprint mapping.
     #[pallet::storage]
     pub type FingerprintByFractionTokenId<T: Config> =
