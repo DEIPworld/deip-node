@@ -6,7 +6,7 @@ use sp_core::H160;
 
 use crate::{
     CollectionRepo, Config, Error, FingerprintByFractionTokenId, FractionHolds, FractionRepo,
-    FractionalRepo, ItemRepo, NextCollectionId, Pallet, NextFTokenId
+    FractionalRepo, ItemRepo, NextCollectionId, NextFTokenId, Pallet,
 };
 
 impl<T: Config> FTImplT for Pallet<T> {

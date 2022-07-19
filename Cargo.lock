@@ -4400,7 +4400,6 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "sp-core",
- "sp-runtime",
 ]
 
 [[package]]

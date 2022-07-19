@@ -14,8 +14,7 @@ pub use frame_support::{
         TransactionValidity, Weight,
     },
     parameter_types,
-    traits::fungibles::Inspect,
-    traits::{Everything, KeyOwnerProofSystem, StorageInfo},
+    traits::{fungibles::Inspect, Everything, KeyOwnerProofSystem, StorageInfo},
     weights::{
         constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
         IdentityFee,
